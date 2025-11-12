@@ -1,6 +1,6 @@
-# The Greggory Foundation Ltd - Website
+﻿# Website for The Greggory Foundation Ltd
 
-A modern, professional website for The Greggory Foundation Ltd, a leading consultancy that uses expert project management principles to drive business management, innovation, improvement, and successful project delivery.
+A modern, professional website for The Greggory Foundation Ltd, a consultancy that uses expert project management principles to drive business management, innovation, improvement, and successful project delivery.
 
 ## Features
 
@@ -36,11 +36,11 @@ npm run preview
 
 ```
 src/
-├── components/       # Reusable components
-├── pages/           # Page components
-├── App.jsx          # Main app component
-├── main.jsx         # Entry point
-└── index.css        # Global styles
+  components/       # Reusable components
+  pages/            # Page components
+  App.jsx           # Main app component
+  main.jsx          # Entry point
+  index.css         # Global styles
 ```
 
 ## Technologies Used
