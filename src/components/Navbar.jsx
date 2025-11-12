@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, LogIn } from 'lucide-react'
 import BrandHeader from './BrandHeader'
 import { useAuth } from '../context/AuthContext'
+import companies from '../data/companies'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -12,6 +13,11 @@ const Navbar = () => {
 
   const navigation = [
     { name: 'Home', path: '/' },
+    { 
+      name: 'Our Companies', 
+      path: '#',
+      dropdown: companies
+    },
     { name: 'Projects & Activities', path: '/projects' },
     { name: 'About Us', path: '/about' },
     { name: 'Our Services', path: '/services' },
@@ -31,28 +37,61 @@ const Navbar = () => {
     <nav className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-[160px]">
-          {/* Brand Header */}
-          <div className="flex flex-col">
-            <Link to="/" className="text-2xl font-extrabold text-navy-900 hover:text-navy-700 transition-colors">
-              THE GREGGORY FOUNDATION LTD
-            </Link>
-            <p className="text-sm text-teal-700 font-medium">Your Vision Delivered with Trust</p>
+          {/* Brand Header with Logo */}
+          <div className="flex items-center space-x-4">
+            <img 
+              src="/b7.PNG" 
+              alt="The Greggory Foundation Logo" 
+              className="h-16 w-auto object-contain"
+              onError={(e) => {
+                console.error('Failed to load logo:', e.target.src);
+              }}
+            />
+            <div>
+              <Link to="/" className="text-2xl font-extrabold text-navy-900 hover:text-navy-700 transition-colors">
+                THE GREGGORY FOUNDATION LTD
+              </Link>
+              <p className="text-sm text-teal-700 font-medium">Your Vision Delivered with Trust</p>
+            </div>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navigation.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`text-sm font-medium transition-colors duration-200 ${
-                  isActive(item.path)
-                    ? 'text-teal-600 border-b-2 border-teal-600'
-                    : 'text-gray-700 hover:text-teal-600'
-                }`}
-              >
-                {item.name}
-              </Link>
+              <div key={item.path} className="relative group">
+                {item.dropdown ? (
+                  <>
+                    <button className="flex items-center text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors duration-200">
+                      {item.name}
+                      <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden group-hover:block">
+                      {item.dropdown.map((subItem) => (
+                        <Link
+                          key={subItem.path}
+                          to={subItem.path}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          {subItem.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <Link
+                    to={item.path}
+                    className={`text-sm font-medium transition-colors duration-200 ${
+                      isActive(item.path)
+                        ? 'text-teal-600 border-b-2 border-teal-600'
+                        : 'text-gray-700 hover:text-teal-600'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                )}
+              </div>
             ))}
             {isAuthenticated ? (
               <button
@@ -86,18 +125,24 @@ const Navbar = () => {
           <div className="md:hidden pb-4">
             <div className="flex flex-col space-y-2">
               {navigation.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setIsOpen(false)}
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    isActive(item.path)
-                      ? 'bg-teal-50 text-teal-600'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-teal-600'
-                  }`}
-                >
-                  {item.name}
-                </Link>
+                item.dropdown ? (
+                  <div key={item.path} className="px-3">
+                    <MobileDropdown item={item} closeMenu={() => setIsOpen(false)} />
+                  </div>
+                ) : (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setIsOpen(false)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium ${
+                      isActive(item.path)
+                        ? 'bg-teal-50 text-teal-600'
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-teal-600'
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                )
               ))}
               {isAuthenticated ? (
                 <button
@@ -124,4 +169,28 @@ const Navbar = () => {
   )
 }
 
-export default Navbar
+  // MobileDropdown component used inside Navbar for mobile 'Our Companies' submenu
+  function MobileDropdown({ item, closeMenu }){
+    const [open, setOpen] = useState(false)
+    return (
+      <div>
+        <button onClick={() => setOpen(!open)} className="w-full text-left flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+          <span>{item.name}</span>
+          <svg className={`ml-2 h-4 w-4 transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {open && (
+          <div className="mt-2 ml-2 border-l border-gray-200 pl-2">
+            {item.dropdown.map((sub) => (
+              <Link key={sub.path} to={sub.path} onClick={() => { closeMenu(); }} className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                {sub.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  export default Navbar

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import companies from '../data/companies'
 import { Mail, Phone, MapPin, Send, Linkedin, Twitter, Facebook, Clock } from 'lucide-react'
 
 const Contact = () => {
@@ -15,6 +16,7 @@ const Contact = () => {
   const [submitStatus, setSubmitStatus] = useState(null)
   const [preferredChannel, setPreferredChannel] = useState('email')
   const [successToken, setSuccessToken] = useState('')
+  const [showCustomCompany, setShowCustomCompany] = useState(false)
 
   const handleChange = (e) => {
     setFormData({
@@ -170,17 +172,42 @@ const Contact = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="company" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Company Name
+                      Company / Subsidiary
                     </label>
-                    <input
-                      type="text"
+                    <select
                       id="company"
                       name="company"
-                      value={formData.company}
-                      onChange={handleChange}
+                      value={showCustomCompany ? 'other' : formData.company}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val === 'other') {
+                          setShowCustomCompany(true)
+                          setFormData({ ...formData, company: '' })
+                        } else {
+                          setShowCustomCompany(false)
+                          setFormData({ ...formData, company: val })
+                        }
+                      }}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                      placeholder="Company Inc."
-                    />
+                    >
+                      <option value="">Select a company (optional)</option>
+                      {companies.map((c) => (
+                        <option key={c.path} value={c.name}>{c.name}</option>
+                      ))}
+                      <option value="other">Other (enter manually)</option>
+                    </select>
+
+                    {showCustomCompany && (
+                      <input
+                        type="text"
+                        id="company-custom"
+                        name="company"
+                        value={formData.company}
+                        onChange={handleChange}
+                        className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                        placeholder="Enter company or organisation name"
+                      />
+                    )}
                   </div>
 
                   <div>
