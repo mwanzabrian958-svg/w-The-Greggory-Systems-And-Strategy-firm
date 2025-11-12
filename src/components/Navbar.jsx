@@ -40,7 +40,7 @@ const Navbar = () => {
           {/* Brand Header with Logo */}
           <div className="flex items-center space-x-4">
             <img 
-              src="/brand-header.png" 
+              src="/b7.PNG" 
               alt="The Greggory Foundation Logo" 
               className="h-16 w-auto object-contain"
               onError={(e) => {
