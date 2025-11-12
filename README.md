@@ -1,5 +1,7 @@
 ﻿# Website for The Greggory Foundation Ltd
 
+[![Build and Deploy](https://github.com/Brianmwanza-bit/Website-for-the-Greggory-Foundation-Ltd/actions/workflows/deploy.yml/badge.svg)](https://github.com/Brianmwanza-bit/Website-for-the-Greggory-Foundation-Ltd/actions/workflows/deploy.yml)
+
 A modern, professional website for The Greggory Foundation Ltd, a consultancy that uses expert project management principles to drive business management, innovation, improvement, and successful project delivery.
 
 ## Features
