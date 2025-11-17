@@ -36,6 +36,12 @@ const Home = () => {
       <section className="relative bg-gradient-to-br from-navy-900 via-navy-800 to-navy-900 text-white py-20 md:py-32">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNiIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIi8+PC9nPjwvc3ZnPg==')] opacity-20"></div>
         
+        {/* Background Image on Right Side */}
+        <div 
+          className="absolute right-0 top-0 h-full w-1/3 md:w-1/2 bg-cover bg-center bg-no-repeat opacity-30"
+          style={{ backgroundImage: "url('/brand-header.png/suti4.PNG')" }}
+        ></div>
+        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex justify-start md:justify-start mb-6">
             <BrandHeader
@@ -47,8 +53,11 @@ const Home = () => {
           </div>
           <div className="max-w-4xl">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-              <span>Strategic Project Management for Modern Business</span>
-              <span className="block md:inline md:ml-4 md:pl-4 md:border-l md:border-teal-500 text-teal-200 text-2xl md:text-3xl font-semibold">
+              <span>THE GREGGORY FOUNDATION LTD</span>
+              <span className="block text-2xl md:text-3xl font-semibold text-teal-200">
+                Your Vision Delivered with Trust
+              </span>
+              <span className="block md:inline md:ml-4 md:pl-4 md:border-l md:border-teal-500 text-teal-200 text-xl md:text-2xl font-semibold">
                 Strategic Project Development for all clients
               </span>
             </h1>
@@ -72,9 +81,9 @@ const Home = () => {
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="section-title">Empowering Your Success Through Project Management</h2>
+            <h2 className="section-title">Empowering Your Success Through Comprehensive Solutions</h2>
             <p className="section-subtitle mx-auto mt-4">
-              At The Greggory Foundation Ltd., we believe that every business challenge—from daily operations to radical innovation—is a project that can be planned, executed, and delivered successfully. We apply rigorous project management frameworks to unlock your organization's full potential.
+              At THE GREGGORY FOUNDATION LTD, we believe that every business challenge—from property management to specialized services—can be delivered with excellence. Through our subsidiary companies like BARAKA HOUSING AGENCY and our comprehensive service portfolio, we apply proven frameworks to unlock your organization's full potential and deliver results with trust.
             </p>
           </div>
         </div>

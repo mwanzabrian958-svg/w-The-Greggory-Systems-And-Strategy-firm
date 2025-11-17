@@ -1,6 +1,5 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import BrandHeader from './BrandHeader'
 
 const AuthLayout = ({ children, title, subtitle }) => {
   return (
@@ -9,7 +8,12 @@ const AuthLayout = ({ children, title, subtitle }) => {
         {/* Logo and optional heading */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-2">
-            <BrandHeader align="center" size="md" responsive={true} wrapperClass="h-[144px] sm:h-[144px]" />
+            <img 
+              src="/brand-header.png/sja.PNG" 
+              alt="SJA" 
+              className="h-[144px] w-auto object-contain"
+              style={{ display: 'block' }}
+            />
           </div>
           {title ? <h2 className="text-2xl font-bold text-navy-900 mt-6">{title}</h2> : null}
           {subtitle ? <p className="text-gray-500 text-sm mt-2">{subtitle}</p> : null}

@@ -16,8 +16,7 @@ const Contact = () => {
   const [submitStatus, setSubmitStatus] = useState(null)
   const [preferredChannel, setPreferredChannel] = useState('email')
   const [successToken, setSuccessToken] = useState('')
-  const [showCustomCompany, setShowCustomCompany] = useState(false)
-
+  
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -89,7 +88,7 @@ const Contact = () => {
   const services = [
     'Business Management',
     'Innovation & Improvement',
-    'Project Management',
+    'Comprehensive Solutions',
     'Project Proposal Composition',
     'System Creation (Apps to Websites)',
     'PMO Setup',
@@ -177,37 +176,15 @@ const Contact = () => {
                     <select
                       id="company"
                       name="company"
-                      value={showCustomCompany ? 'other' : formData.company}
-                      onChange={(e) => {
-                        const val = e.target.value
-                        if (val === 'other') {
-                          setShowCustomCompany(true)
-                          setFormData({ ...formData, company: '' })
-                        } else {
-                          setShowCustomCompany(false)
-                          setFormData({ ...formData, company: val })
-                        }
-                      }}
+                      value={formData.company}
+                      onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      placeholder="Select a company (optional)"
                     >
-                      <option value="">Select a company (optional)</option>
-                      {companies.map((c) => (
-                        <option key={c.path} value={c.name}>{c.name}</option>
-                      ))}
-                      <option value="other">Other (enter manually)</option>
+                      <option value="" disabled hidden>Select a company (optional)</option>
+                      <option value="THE GREGGORY FOUNDATION LTD">THE GREGGORY FOUNDATION LTD</option>
+                      <option value="BARAKA HOUSING AGENCY">BARAKA HOUSING AGENCY</option>
                     </select>
-
-                    {showCustomCompany && (
-                      <input
-                        type="text"
-                        id="company-custom"
-                        name="company"
-                        value={formData.company}
-                        onChange={handleChange}
-                        className="mt-3 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                        placeholder="Enter company or organisation name"
-                      />
-                    )}
                   </div>
 
                   <div>

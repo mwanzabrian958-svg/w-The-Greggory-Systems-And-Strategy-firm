@@ -80,9 +80,9 @@ const Services = () => {
     {
       id: 'project',
       icon: <CheckCircle className="w-12 h-12" />,
-      title: 'Project Management',
-      subtitle: 'Dedicated Project & Program Leadership',
-      description: 'From conception to completion, we provide the expertise to lead your most important projects to success. Our seasoned project managers bring methodological rigor and practical experience to ensure on-time, on-budget delivery.',
+      title: 'Comprehensive Solutions',
+      subtitle: 'Dedicated Service & Program Leadership',
+      description: 'From conception to completion, we provide the expertise to lead your most important initiatives to success. Our seasoned professionals bring methodological rigor and practical experience to ensure on-time, on-budget delivery across all our subsidiary companies.',
       offerings: [
         {
           icon: <Settings className="w-6 h-6" />,
@@ -97,7 +97,7 @@ const Services = () => {
         {
           icon: <Zap className="w-6 h-6" />,
           title: 'Agile/Scrum Coaching & PMO Setup',
-          description: 'Implement agile practices and establish Project Management Offices for organizational capability.'
+          description: 'Implement agile practices and establish Service Delivery Offices for organizational capability.'
         }
       ],
       benefits: [
@@ -126,9 +126,9 @@ const Services = () => {
       {/* Introduction */}
       <section className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="section-title">Project Management as Your Competitive Advantage</h2>
+          <h2 className="section-title">Comprehensive Solutions as Your Competitive Advantage</h2>
           <p className="section-subtitle mx-auto mt-4">
-            At The Greggory Foundation, we view every aspect of your business through the lens of project management. 
+            At THE GREGGORY FOUNDATION LTD, we view every aspect of your business through the lens of comprehensive solutions and specialized services. 
             Whether you're managing daily operations, pursuing innovation, or delivering critical initiatives, 
             we provide the frameworks, expertise, and leadership to ensure success.
           </p>

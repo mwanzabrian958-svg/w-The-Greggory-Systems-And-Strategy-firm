@@ -7,6 +7,7 @@ import companies from '../data/companies'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, logout } = useAuth()
@@ -21,7 +22,6 @@ const Navbar = () => {
     { name: 'Projects & Activities', path: '/projects' },
     { name: 'About Us', path: '/about' },
     { name: 'Our Services', path: '/services' },
-    { name: 'Case Studies', path: '/case-studies' },
     { name: 'Blog', path: '/blog' },
     { name: 'Contact', path: '/contact' },
   ]
@@ -35,46 +35,59 @@ const Navbar = () => {
 
   return (
     <nav className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto pl-0 pr-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-[160px]">
           {/* Brand Header with Logo */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center flex-shrink-0" style={{ marginLeft: '-16px' }}>
             <img 
-              src="/b7.PNG" 
-              alt="The Greggory Foundation Logo" 
-              className="h-16 w-auto object-contain"
+              src="/brand-header.png/sja.PNG" 
+              alt="SJA" 
+              className="h-30 w-auto object-contain"
+              style={{ 
+                display: 'block',
+                marginLeft: '-16px',
+                position: 'relative',
+                zIndex: 10
+              }}
               onError={(e) => {
-                console.error('Failed to load logo:', e.target.src);
+                console.error('Failed to load sja image:', e.target.src);
+              }}
+              onLoad={() => {
+                console.log('SJA image loaded successfully');
               }}
             />
-            <div>
-              <Link to="/" className="text-2xl font-extrabold text-navy-900 hover:text-navy-700 transition-colors">
-                THE GREGGORY FOUNDATION LTD
-              </Link>
-              <p className="text-sm text-teal-700 font-medium">Your Vision Delivered with Trust</p>
-            </div>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6 flex-nowrap overflow-visible">
             {navigation.map((item) => (
-              <div key={item.path} className="relative group">
+              <div key={item.path} className="relative group whitespace-nowrap">
                 {item.dropdown ? (
                   <>
-                    <button className="flex items-center text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors duration-200">
+                    <button 
+                      className="flex items-center text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors duration-200 px-2 py-1"
+                      onClick={() => setDropdownOpen(!dropdownOpen)}
+                    >
                       {item.name}
                       <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
-                    <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden group-hover:block">
+                    <div 
+                      className={`absolute left-0 mt-2 w-80 bg-gradient-to-br from-blue-500/90 to-blue-600/90 backdrop-blur-lg rounded-lg shadow-xl py-3 z-50 border border-blue-400/30 ${
+                        dropdownOpen ? 'block' : 'hidden'
+                      }`}
+                      onMouseLeave={() => setDropdownOpen(false)}
+                    >
                       {item.dropdown.map((subItem) => (
                         <Link
                           key={subItem.path}
                           to={subItem.path}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setDropdownOpen(false)}
+                          className="flex items-center px-4 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md mx-1 transition-all duration-200"
                         >
-                          {subItem.name}
+                          <span className="text-blue-200 mr-3">•</span>
+                          <span className="break-words">{subItem.name}</span>
                         </Link>
                       ))}
                     </div>
@@ -82,9 +95,9 @@ const Navbar = () => {
                 ) : (
                   <Link
                     to={item.path}
-                    className={`text-sm font-medium transition-colors duration-200 ${
-                      isActive(item.path)
-                        ? 'text-teal-600 border-b-2 border-teal-600'
+                    className={`text-sm font-medium transition-colors duration-200 px-2 py-1 ${
+                      location.pathname === item.path
+                        ? 'text-teal-600'
                         : 'text-gray-700 hover:text-teal-600'
                     }`}
                   >

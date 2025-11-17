@@ -1,24 +1,24 @@
-import React, { useEffect } from 'react'
-import BrandHeader from '../../components/BrandHeader'
-import { Link } from 'react-router-dom'
+import React, { useEffect } from 'react';
+import BrandHeader from '../../components/BrandHeader';
+import { Link } from 'react-router-dom';
 
-export default function MamaGirlsHousing(){
-  const title = 'MAMA GIRLS HOUSING AND REAL ESTATE AGENCY — Greggory Properties'
-  const metaDescription = 'MAMA GIRLS HOUSING AND REAL ESTATE AGENCY is Greggory Properties\' specialist in property sales, lettings and professional property management.'
+export default function MamaGirlsHousing() {
+  const title = 'MAMA GIRLS HOUSING AND REAL ESTATE AGENCY — Greggory Properties';
+  const metaDescription = 'MAMA GIRLS HOUSING AND REAL ESTATE AGENCY is Greggory Properties\' specialist in property sales, lettings and professional property management.';
 
   useEffect(() => {
-    document.title = title
-    let meta = document.querySelector('meta[name="description"]')
+    document.title = title;
+    let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
-      meta = document.createElement('meta')
-      meta.name = 'description'
-      document.head.appendChild(meta)
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      document.head.appendChild(meta);
     }
-    meta.content = metaDescription
+    meta.content = metaDescription;
     return () => {
       // optionally restore previous title (no-op here)
     }
-  }, [])
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto py-16 px-4">
@@ -47,5 +47,5 @@ export default function MamaGirlsHousing(){
         </div>
       </section>
     </div>
-  )
+  );
 }

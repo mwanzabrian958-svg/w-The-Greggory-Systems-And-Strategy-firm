@@ -79,7 +79,7 @@ const Privacy = () => {
 
             <h2>7. Third-Party Services</h2>
             <p>
-              Our Service may contain links to third-party websites or services that are not owned or controlled by The Greggory Foundation Ltd. We have no control over and assume no responsibility for their privacy policies.
+              Our Service may contain links to third-party websites or services that are not owned or controlled by THE GREGGORY FOUNDATION LTD. We have no control over and assume no responsibility for their privacy policies.
             </p>
 
             <h2>8. Children's Privacy</h2>

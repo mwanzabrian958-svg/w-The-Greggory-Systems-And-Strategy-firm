@@ -112,7 +112,7 @@ const ForgotPassword = () => {
 
       {/* Footer */}
       <p className="text-center text-xs text-gray-500 mt-6">
-        &copy; 2024 The Greggory Foundation Ltd. All rights reserved.
+        &copy; 2024 THE GREGGORY FOUNDATION LTD. All rights reserved.
       </p>
     </AuthLayout>
   )

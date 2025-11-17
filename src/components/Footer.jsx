@@ -18,7 +18,7 @@ const Footer = () => {
               </Link>
             </div>
             <p className="text-gray-300 mb-4">
-              Strategic Project Management for Modern Business. Turning your vision into successfully managed projects.
+              Strategic Project Development for all clients. Your Vision Delivered with Trust.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-300 hover:text-teal-400 transition-colors">
@@ -94,7 +94,7 @@ const Footer = () => {
 
         {/* Bottom Bar */}
         <div className="border-t border-navy-700 mt-8 pt-8 text-center text-gray-400 text-sm">
-          <p>&copy; {currentYear} The Greggory Foundation Ltd. All rights reserved.</p>
+          <p>&copy; {currentYear} THE GREGGORY FOUNDATION LTD. All rights reserved.</p>
         </div>
       </div>
     </footer>

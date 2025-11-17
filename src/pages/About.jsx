@@ -6,7 +6,7 @@ const About = () => {
       name: 'Brian Maundu Mwanza',
       role: 'Chief Executive Officer (CEO)',
       credentials: 'PMP, PMI-ACP, PRINCE2 Practitioner',
-      bio: 'Leads The Greggory Foundation Ltd. with a focus on strategic project delivery, operational excellence, and client value.'
+      bio: 'Leads THE GREGGORY FOUNDATION LTD with a focus on strategic delivery, operational excellence, and client value through our subsidiary companies.'
     },
     {
       name: 'Brian Maundu Mwanza',
@@ -73,7 +73,7 @@ const About = () => {
               <h2 className="section-title">Our Story</h2>
               <div className="space-y-4 text-gray-600">
                 <p>
-                  The Greggory Foundation Ltd. was born from a simple yet powerful observation: organizations across all industries struggle not because they lack vision or talent, but because they lack the structured approach to turn ideas into reality.
+                  THE GREGGORY FOUNDATION LTD was born from a simple yet powerful observation: organizations across all industries struggle not because they lack vision or talent, but because they lack the structured approach to turn ideas into reality through comprehensive solutions and specialized services.
                 </p>
                 <p>
                   Founded by Dr. James Greggory, a veteran project management professional with decades of experience, our foundation was built on the belief that project management is the key to unlocking business potential. We saw countless initiatives fail not due to poor concepts, but due to inadequate planning, execution, and control.
