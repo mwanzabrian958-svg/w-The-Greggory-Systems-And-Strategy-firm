@@ -1,6 +1,9 @@
 -- Schema for Greggory Foundation Ltd Website (MySQL)
 -- Created for MySQL/phpMyAdmin compatibility
 
+CREATE DATABASE IF NOT EXISTS greggory_foundation_db;
+USE greggory_foundation_db;
+
 -- --------------------
 -- Helper ENUMs (MySQL syntax)
 -- --------------------
@@ -79,7 +82,7 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   last_login TIMESTAMP NULL,
   
-  FOREIGN KEY (job_id) REFERENCES team_members(id)
+  INDEX idx_users_job (job_id)
 );
 
 CREATE INDEX idx_users_email ON users(email);
@@ -230,6 +233,11 @@ CREATE TABLE IF NOT EXISTS team_members (
   FOREIGN KEY (photo_image_id) REFERENCES images(id)
 );
 
+-- Add FK from users.job_id to team_members.id now that team_members exists
+ALTER TABLE users
+  ADD CONSTRAINT fk_users_job
+  FOREIGN KEY (job_id) REFERENCES team_members(id);
+
 -- --------------------
 -- Company Values
 -- --------------------
@@ -297,6 +305,10 @@ CREATE TABLE IF NOT EXISTS management_info (
   FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
   FOREIGN KEY (updated_by) REFERENCES users(id)
 );
+
+-- Ensure single row per company for ON DUPLICATE KEY logic in API
+ALTER TABLE management_info
+  ADD UNIQUE KEY uniq_management_company (company_id);
 
 -- --------------------
 -- Case Studies

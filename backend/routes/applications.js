@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const requireAdmin = require('../middleware/auth');
 
 // Create new application
 router.post('/', (req, res) => {
@@ -181,7 +182,7 @@ router.get('/', (req, res) => {
 });
 
 // Update application status
-router.patch('/:id/status', (req, res) => {
+router.patch('/:id/status', requireAdmin, (req, res) => {
   const { id } = req.params;
   const { status_id } = req.body;
   

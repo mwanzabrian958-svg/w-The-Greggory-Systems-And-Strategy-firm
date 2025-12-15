@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import AuthLayout from '../components/AuthLayout'
 import { useAuth } from '../context/AuthContext'
+import { usersAPI } from '../services/api'
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -80,16 +81,21 @@ const Login = () => {
     if (nextErrors.email || nextErrors.password) return
 
     setIsLoading(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Login attempt:', formData)
+    try {
+      // Call backend to update last_login and validate user
+      await usersAPI.login({
+        email: formData.email.trim(),
+        password: formData.password
+      })
       setIsLoading(false)
-      // Navigate to dashboard or home after successful login
       login()
       const from = location.state && location.state.from ? location.state.from : '/'
       navigate(from, { replace: true })
-    }, 1500)
+    } catch (err) {
+      console.error('Login failed:', err)
+      setIsLoading(false)
+      alert('Login failed. Please check your credentials and try again.')
+    }
   }
 
   const handleGoogleLogin = () => {

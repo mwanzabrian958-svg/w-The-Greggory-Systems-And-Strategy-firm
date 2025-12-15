@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, User, Phone } from 'lucide-react'
 import AuthLayout from '../components/AuthLayout'
+import { usersAPI } from '../services/api'
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -53,14 +54,22 @@ const Signup = () => {
     if (Object.values(nextErrors).some(Boolean)) return
 
     setIsLoading(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Signup attempt:', formData)
+    try {
+      // Backend expects: email, password_hash, name, primary_role, job_id
+      await usersAPI.create({
+        email: formData.email.trim(),
+        password_hash: formData.password, // Note: replace with proper hashing on backend later
+        name: formData.fullName.trim(),
+        primary_role: 'customer',
+        job_id: null,
+      })
       setIsLoading(false)
-      // Navigate to login after successful signup
       navigate('/login')
-    }, 1500)
+    } catch (err) {
+      console.error('Signup failed:', err)
+      setIsLoading(false)
+      alert('Signup failed. Please try again later.')
+    }
   }
 
   const handleGoogleSignup = () => {
@@ -69,7 +78,7 @@ const Signup = () => {
   }
 
   return (
-    <AuthLayout title="Create Account" subtitle="Join The Greggory Foundation to access exclusive project management resources">
+    <AuthLayout title="Create Account">
       {/* Signup Form */}
       <div className="bg-white rounded-2xl shadow-lg p-8">
           {/* Title/subtitle moved to AuthLayout */}

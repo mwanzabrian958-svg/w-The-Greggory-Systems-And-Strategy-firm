@@ -14,6 +14,8 @@ import CaseStudies from './pages/CaseStudies'
 import Blog from './pages/Blog'
 import Contact from './pages/Contact'
 import HousingAgency from './pages/companies/BARAKA HOUSING AGENCY'
+import HousingManagementLogin from './pages/companies/HousingLogin'
+import HousingManagementDashboard from './pages/companies/Dashboard'
 import ApplicationForm from './pages/ApplicationForm'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -58,6 +60,8 @@ function Layout() {
           <Route path="/blog" element={<Blog />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/companies/housing" element={<HousingAgency />} />
+          <Route path="/housing-management/login" element={<HousingManagementLogin />} />
+          <Route path="/housing-management/dashboard" element={<HousingManagementDashboard />} />
           <Route path="/application-form" element={<ApplicationForm />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

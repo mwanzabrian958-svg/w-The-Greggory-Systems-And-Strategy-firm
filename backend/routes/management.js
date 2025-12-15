@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const requireAdmin = require('../middleware/auth');
 
 // Get management info by company
 router.get('/:companyId', (req, res) => {
@@ -33,7 +34,7 @@ router.get('/:companyId', (req, res) => {
 });
 
 // Update management info (protected route - would need authentication middleware)
-router.put('/:companyId', (req, res) => {
+router.put('/:companyId', requireAdmin, (req, res) => {
   const { companyId } = req.params;
   const { station_manager, service_area, base_location, updated_by } = req.body;
   
