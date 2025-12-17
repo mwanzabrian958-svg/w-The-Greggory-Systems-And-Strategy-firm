@@ -3,28 +3,11 @@ import { Target, Eye, Heart, Award, Users, TrendingUp, CheckCircle } from 'lucid
 const About = () => {
   const team = [
     {
-      name: 'Brian Maundu Mwanza',
+      name: 'Brian Mwanza',
       role: 'Chief Executive Officer (CEO)',
-      credentials: 'PMP, PMI-ACP, PRINCE2 Practitioner',
-      bio: 'Leads THE GREGGORY FOUNDATION LTD with a focus on strategic delivery, operational excellence, and client value through our subsidiary companies.'
-    },
-    {
-      name: 'Brian Maundu Mwanza',
-      role: 'Director of Operations',
-      credentials: 'PMP, PMI-ACP, PRINCE2 Practitioner',
-      bio: 'Oversees all operational aspects with a focus on efficiency, process improvement, and service delivery.'
-    },
-    {
-      name: 'Brian Maundu Mwanza',
-      role: 'Head of Innovation',
-      credentials: 'PMP, PMI-ACP, PRINCE2 Practitioner',
-      bio: 'Drives innovation and digital transformation initiatives to keep the company at the forefront of project management.'
-    },
-    {
-      name: 'Brian Maundu Mwanza',
-      role: 'Senior Project Manager',
-      credentials: 'PMP, PMI-ACP, PRINCE2 Practitioner',
-      bio: 'Personally manages key client projects, ensuring successful delivery and client satisfaction.'
+      credentials: 'PMP, PMI-ACP',
+      bio: 'Leads THE GREGGORY FOUNDATION LTD with a focus on strategic delivery, operational excellence, and client value through our subsidiary companies.',
+      image: '/images/brian-mwanza-ceo.jpg'
     }
   ]
 

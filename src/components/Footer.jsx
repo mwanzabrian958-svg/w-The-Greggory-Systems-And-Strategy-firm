@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
-import { Mail, Phone, MapPin, Linkedin, Twitter, Facebook } from 'lucide-react'
+import { Mail, Phone, MapPin } from 'lucide-react'
 import BrandHeader from './BrandHeader'
+import SocialMediaIcons from './SocialMediaIcons'
 
 const Footer = () => {
   const currentYear = new Date().getFullYear()
@@ -20,22 +21,11 @@ const Footer = () => {
             <p className="text-gray-300 mb-4">
               Strategic Project Development for all clients. Your Vision Delivered with Trust.
             </p>
-            <div className="flex space-x-4">
-              <a href="#" className="text-gray-300 hover:text-teal-400 transition-colors">
-                <Linkedin size={20} />
-              </a>
-              <a href="#" className="text-gray-300 hover:text-teal-400 transition-colors">
-                <Twitter size={20} />
-              </a>
-              <a 
-                href="https://www.facebook.com/profile.php?id=61583677166945" 
-                className="text-gray-300 hover:text-teal-400 transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Facebook size={20} />
-              </a>
-            </div>
+            <SocialMediaIcons 
+              className="text-gray-300" 
+              hoverColor="hover:text-teal-400"
+              iconSize={20}
+            />
           </div>
 
           {/* Quick Links */}
@@ -65,6 +55,11 @@ const Footer = () => {
               <li>
                 <Link to="/blog" className="text-gray-300 hover:text-teal-400 transition-colors">
                   Blog
+                </Link>
+              </li>
+              <li>
+                <Link to="/admin" className="text-teal-400 hover:text-teal-300 transition-colors font-medium">
+                  Admin Dashboard
                 </Link>
               </li>
             </ul>

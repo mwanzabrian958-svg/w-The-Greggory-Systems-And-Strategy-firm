@@ -13,7 +13,7 @@ import Services from './pages/Services'
 import CaseStudies from './pages/CaseStudies'
 import Blog from './pages/Blog'
 import Contact from './pages/Contact'
-import HousingAgency from './pages/companies/BARAKA HOUSING AGENCY'
+import HousingAgency from './pages/companies/BARAKA HOUSING AGENCY.jsx'
 import HousingManagementLogin from './pages/companies/HousingLogin'
 import HousingManagementDashboard from './pages/companies/Dashboard'
 import ApplicationForm from './pages/ApplicationForm'
@@ -22,6 +22,9 @@ import Signup from './pages/Signup'
 import ForgotPassword from './pages/ForgotPassword'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
+import AdminDashboard from './pages/AdminDashboard'
+import AdminBlogEditor from './pages/AdminBlogEditor'
+import AdminCaseStudyEditor from './pages/AdminCaseStudyEditor'
 
 function Layout() {
   const location = useLocation()
@@ -68,6 +71,11 @@ function Layout() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/blog/new" element={<AdminBlogEditor />} />
+          <Route path="/admin/blog/:id" element={<AdminBlogEditor />} />
+          <Route path="/admin/case-studies/new" element={<AdminCaseStudyEditor />} />
+          <Route path="/admin/case-studies/:id" element={<AdminCaseStudyEditor />} />
         </Routes>
       </main>
       {!isAuthPage && <Footer />}

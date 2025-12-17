@@ -8,9 +8,10 @@ import companies from '../data/companies'
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  const { isAuthenticated, logout } = useAuth()
+  const { isAuthenticated, logout, currentUser } = useAuth()
 
   const navigation = [
     { name: 'Home', path: '/' },
@@ -59,13 +60,13 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-6 flex-nowrap overflow-visible">
-            {navigation.map((item) => (
-              <div key={item.path} className="relative group whitespace-nowrap">
+          <div className="hidden md:flex items-start space-x-2 flex-nowrap overflow-visible">
+            {navigation.map((item, index) => (
+              <div key={item.path} className="relative group whitespace-nowrap flex items-start">
                 {item.dropdown ? (
                   <>
                     <button 
-                      className="flex items-center text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors duration-200 px-2 py-1"
+                      className="flex items-center text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors duration-200 px-1 py-1"
                       onClick={() => setDropdownOpen(!dropdownOpen)}
                     >
                       {item.name}
@@ -93,44 +94,63 @@ const Navbar = () => {
                     </div>
                   </>
                 ) : (
-                  <Link
-                    to={item.path}
-                    className={`text-sm font-medium transition-colors duration-200 px-2 py-1 ${
-                      location.pathname === item.path
-                        ? 'text-teal-600'
-                        : 'text-gray-700 hover:text-teal-600'
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
+                  <div className={item.name === 'Home' ? 'flex flex-col items-start' : 'flex items-center'}>
+                    <Link
+                      to={item.path}
+                      className={`text-sm font-medium transition-colors duration-200 px-1 py-1 ${
+                        location.pathname === item.path
+                          ? 'text-teal-600'
+                          : 'text-gray-700 hover:text-teal-600'
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                    {/* Show Login/Logout button directly under Home link */}
+                    {item.name === 'Home' && (
+                      <div className="mt-1">
+                        {isAuthenticated ? (
+                          <button
+                            onClick={handleLogout}
+                            className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+                          >
+                            Logout
+                          </button>
+                        ) : (
+                          <Link 
+                            to="/login"
+                            className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-1"
+                          >
+                            <LogIn size={14} />
+                            Login
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ))}
-            {isAuthenticated ? (
-              <button
-                onClick={handleLogout}
-                className="bg-gray-100 text-navy-900 px-5 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-              >
-                Logout
-              </button>
-            ) : (
-              <Link 
-                to="/login"
-                className="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
-              >
-                <LogIn size={18} />
-                Login
-              </Link>
-            )}
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-md text-gray-700 hover:text-teal-600 hover:bg-gray-100"
-          >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="flex items-center space-x-2">
+            {/* User Display Box - Mobile */}
+            <div className="hidden md:flex items-center space-x-2 bg-gray-100 px-3 py-1.5 rounded-lg border border-gray-200">
+              <div className="h-7 w-7 rounded-full bg-teal-600 flex items-center justify-center text-white text-xs font-medium">
+                JL
+              </div>
+              <div className="text-sm font-medium text-gray-700">
+                John Lee
+              </div>
+            </div>
+            
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2 rounded-md text-gray-700 hover:text-teal-600 hover:bg-gray-100"
+            >
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
@@ -142,38 +162,44 @@ const Navbar = () => {
                   <div key={item.path} className="px-3">
                     <MobileDropdown item={item} closeMenu={() => setIsOpen(false)} />
                   </div>
-                ) : (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setIsOpen(false)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive(item.path)
-                        ? 'bg-teal-50 text-teal-600'
-                        : 'text-gray-700 hover:bg-gray-100 hover:text-teal-600'
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
-                )
-              ))}
-              {isAuthenticated ? (
-                <button
-                  onClick={() => { setIsOpen(false); handleLogout() }}
-                  className="bg-gray-100 text-navy-900 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors"
-                >
-                  Logout
-                </button>
-              ) : (
-                <Link 
-                  to="/login"
-                  onClick={() => setIsOpen(false)}
-                  className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
-                >
-                  <LogIn size={18} />
-                  Login
-                </Link>
-              )}
+                 ) : (
+                   <div key={item.path} className={item.name === 'Home' ? 'flex flex-col' : ''}>
+                     <Link
+                       to={item.path}
+                       onClick={() => setIsOpen(false)}
+                       className={`px-3 py-2 rounded-md text-sm font-medium ${
+                         isActive(item.path)
+                           ? 'bg-teal-50 text-teal-600'
+                           : 'text-gray-700 hover:bg-gray-100 hover:text-teal-600'
+                       }`}
+                     >
+                       {item.name}
+                     </Link>
+                     {/* Show Login/Logout button directly under Home link on mobile */}
+                     {item.name === 'Home' && (
+                       <div className="ml-3 mt-1">
+                         {isAuthenticated ? (
+                           <button
+                             onClick={() => { setIsOpen(false); handleLogout() }}
+                             className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+                           >
+                             Logout
+                           </button>
+                         ) : (
+                           <Link 
+                             to="/login"
+                             onClick={() => setIsOpen(false)}
+                             className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
+                           >
+                             <LogIn size={16} />
+                             Login
+                           </Link>
+                         )}
+                       </div>
+                     )}
+                   </div>
+                 )
+               ))}
             </div>
           </div>
         )}

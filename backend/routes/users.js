@@ -2,9 +2,71 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
+const requireAdmin = require('../middleware/auth');
+const authController = require('../controllers/authController');
+
+// Test registration endpoint
+router.post('/test-register', async (req, res) => {
+  try {
+    console.log('Test registration request received:', req.body);
+    
+    const { email, password, name, userType } = req.body;
+    
+    // Basic validation
+    if (!email || !password || !name) {
+      console.log('Validation failed - missing fields');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Please provide all required fields' 
+      });
+    }
+
+    // Check if user already exists
+    const [existing] = await db.promise().query(
+      'SELECT id FROM users WHERE email = ?', 
+      [email]
+    );
+    
+    if (existing.length > 0) {
+      console.log('User already exists:', email);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User with this email already exists' 
+      });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create user
+    const [result] = await db.promise().query(
+      'INSERT INTO users (email, password_hash, name, primary_role) VALUES (?, ?, ?, ?)',
+      [email, hashedPassword, name, userType || 'user']
+    );
+
+    console.log('User created successfully:', result.insertId);
+    res.status(201).json({ 
+      success: true, 
+      message: 'User registered successfully',
+      userId: result.insertId
+    });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Registration failed',
+      error: error.message 
+    });
+  }
+});
+
+// Google Authentication
+router.post('/google-auth', authController.googleAuth);
 
 // Get all users (admin only)
-router.get('/', (req, res) => {
+router.get('/', requireAdmin, (req, res) => {
   const query = `
     SELECT u.id, u.email, u.name, u.primary_role, u.is_active, u.created_at, u.last_login,
            tm.name as job_title, tm.role as job_role
@@ -23,8 +85,8 @@ router.get('/', (req, res) => {
   });
 });
 
-// Get user by ID
-router.get('/:id', (req, res) => {
+// Get user by ID (admin only)
+router.get('/:id', requireAdmin, (req, res) => {
   const { id } = req.params;
   
   const query = `
@@ -49,10 +111,10 @@ router.get('/:id', (req, res) => {
   });
 });
 
-// Create new user (admin only)
+// Create new user (used by admin + public signup)
 router.post('/', async (req, res) => {
   try {
-    const { email, password_hash, name, primary_role, job_id } = req.body;
+    const { email, password_hash, name, primary_role, job_id, profile_image_id } = req.body;
     if (!email || !password_hash || !name) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -60,11 +122,11 @@ router.post('/', async (req, res) => {
     const hashed = await bcrypt.hash(password_hash, 10);
 
     const query = `
-      INSERT INTO users (email, password_hash, name, primary_role, job_id)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO users (email, password_hash, name, primary_role, job_id, profile_image_id)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(query, [email, hashed, name, primary_role || 'employee', job_id], (err, result) => {
+    db.query(query, [email, hashed, name, primary_role || 'employee', job_id, profile_image_id || null], (err, result) => {
       if (err) {
         console.error('Error creating user:', err);
         return res.status(500).json({ error: 'Failed to create user' });
@@ -79,6 +141,26 @@ router.post('/', async (req, res) => {
     console.error('Signup error:', e);
     res.status(500).json({ error: 'Failed to create user' });
   }
+});
+
+// Delete user (admin only)
+router.delete('/:id', requireAdmin, (req, res) => {
+  const { id } = req.params;
+
+  const query = 'DELETE FROM users WHERE id = ?';
+
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting user:', err);
+      return res.status(500).json({ error: 'Failed to delete user' });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ message: 'User deleted successfully' });
+  });
 });
 
 // Simple login endpoint (mock - would need proper authentication)

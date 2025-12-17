@@ -7,13 +7,15 @@ require('dotenv').config();
 const db = require('./config/database');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true
+  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Rate limiting
@@ -37,12 +39,16 @@ const propertyRoutes = require('./routes/properties');
 const applicationRoutes = require('./routes/applications');
 const userRoutes = require('./routes/users');
 const managementRoutes = require('./routes/management');
+const contentRoutes = require('./routes/content');
+const imageRoutes = require('./routes/images');
 
 // Use routes
 app.use('/api/properties', propertyRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/management', managementRoutes);
+app.use('/api/content', contentRoutes);
+app.use('/api/images', imageRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

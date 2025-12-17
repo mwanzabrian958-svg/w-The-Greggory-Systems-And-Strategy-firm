@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import companies from '../data/companies'
-import { Mail, Phone, MapPin, Send, Linkedin, Twitter, Facebook, Clock } from 'lucide-react'
+import { Mail, Phone, MapPin, Send, Clock } from 'lucide-react'
+import SocialMediaIcons from '../components/SocialMediaIcons'
+import { X } from 'lucide-react'
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -62,25 +64,39 @@ const Contact = () => {
     {
       icon: <Phone className="w-6 h-6" />,
       title: 'Call Us',
-      content: '+254799789956',
+      content: '+254 799 789 956',
       link: 'tel:+254799789956'
     },
     {
       icon: <Phone className="w-6 h-6" />,
       title: 'WhatsApp',
-      content: '+254799789956',
+      content: '+254 799 789 956',
       link: 'https://wa.me/254799789956'
     },
     {
       icon: <MapPin className="w-6 h-6" />,
       title: 'Visit Us',
-      content: 'rafiki kabarak, kabarak',
+      content: 'Rafiki Kabarak, Kabarak, Kenya',
       link: '#'
     },
     {
       icon: <Clock className="w-6 h-6" />,
       title: 'Business Hours',
-      content: 'Monday - Friday: 9:00 AM - 6:00 PM',
+      content: 'Monday - Friday: 9:00 AM - 6:00 PM EAT',
+      link: '#'
+    },
+    {
+      icon: (
+        <div>
+          <SocialMediaIcons 
+            className="text-navy-700" 
+            hoverColor="hover:text-teal-500"
+            iconSize={20}
+          />
+        </div>
+      ),
+      title: 'Connect With Us',
+      content: 'Follow us on social media',
       link: '#'
     }
   ]
@@ -302,26 +318,11 @@ const Contact = () => {
               <div className="bg-gray-50 rounded-lg p-6">
                 <h3 className="font-semibold text-navy-900 mb-4">Connect With Us</h3>
                 <div className="flex gap-4">
-                  <a 
-                    href="#" 
+                  <SocialMediaIcons 
                     className="bg-white p-3 rounded-lg text-navy-900 hover:bg-teal-600 hover:text-white transition-colors shadow-md"
-                  >
-                    <Linkedin size={24} />
-                  </a>
-                  <a 
-                    href="#" 
-                    className="bg-white p-3 rounded-lg text-navy-900 hover:bg-teal-600 hover:text-white transition-colors shadow-md"
-                  >
-                    <Twitter size={24} />
-                  </a>
-                  <a 
-                    href="https://www.facebook.com/profile.php?id=61583677166945" 
-                    className="bg-white p-3 rounded-lg text-navy-900 hover:bg-teal-600 hover:text-white transition-colors shadow-md"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Facebook size={24} />
-                  </a>
+                    iconSize={24}
+                    hoverColor="hover:text-white"
+                  />
                 </div>
               </div>
 

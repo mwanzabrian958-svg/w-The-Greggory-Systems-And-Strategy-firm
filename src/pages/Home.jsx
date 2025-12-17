@@ -140,10 +140,10 @@ const Home = () => {
               <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
             </svg>
             <blockquote className="text-xl md:text-2xl text-gray-700 mb-6 italic">
-              "The Greggory Foundation transformed our approach to business management. Their project management expertise helped us increase efficiency by 35% and deliver projects on time, every time."
+              "At The Greggory Foundation Ltd, we are committed to transforming businesses through expert project management. Our approach helps organizations increase efficiency and deliver projects successfully."
             </blockquote>
-            <div className="font-semibold text-navy-900">Sarah Johnson</div>
-            <div className="text-gray-600">CEO, TechInnovate Solutions</div>
+            <div className="font-semibold text-navy-900">Brian Mwanza</div>
+            <div className="text-gray-600">Chief Executive Officer, The Greggory Foundation Ltd</div>
           </div>
         </div>
       </section>

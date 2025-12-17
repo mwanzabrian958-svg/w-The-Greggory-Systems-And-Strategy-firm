@@ -6,19 +6,33 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js",
+    "server": "nodemon server.js"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.18.0",
+    "@react-oauth/google": "^0.12.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.284.0",
+    "mysql2": "^3.15.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.16.0",
-    "lucide-react": "^0.284.0"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.1.0",
     "autoprefixer": "^10.4.16",
+    "nodemon": "^3.0.3",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.3",
-  "vite": "^7.2.2"
+    "vite": "^7.2.2"
   }
 }

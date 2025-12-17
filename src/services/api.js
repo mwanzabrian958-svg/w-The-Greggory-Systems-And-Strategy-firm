@@ -1,6 +1,6 @@
 // API service for connecting to backend
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:8080/api';
 
 // Generic API helper
 const apiCall = async (endpoint, options = {}) => {
@@ -87,6 +87,12 @@ export const usersAPI = {
     body: JSON.stringify(credentials),
   }),
   
+  // Google Authentication
+  googleAuth: (data) => apiCall('/users/google-auth', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  
   // Get all users (admin)
   getAll: () => apiCall('/users'),
   
@@ -100,6 +106,72 @@ export const usersAPI = {
   }),
 };
 
+// Images API (profile photos, etc.)
+export const imagesAPI = {
+  // Upload a profile image (returns { image_id })
+  uploadProfile: (payload) => apiCall('/images/profile', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
+  
+  // Delete image (admin only)
+  delete: (id) => apiCall(`/images/${id}`, {
+    method: 'DELETE',
+  }),
+};
+
+// Content API (requires admin key header)
+const contentApiCall = async (endpoint, options = {}) => {
+  const adminKey = localStorage.getItem('admin_key') || '';
+  return apiCall(endpoint, {
+    ...options,
+    headers: {
+      'x-admin-key': adminKey,
+      ...options.headers,
+    },
+  });
+};
+
+export const contentAPI = {
+  // Blog articles
+  getBlogArticles: (publishedOnly = false) => 
+    apiCall(`/content/blog${publishedOnly ? '?published_only=true' : ''}`),
+  getBlogArticle: (id) => apiCall(`/content/blog/${id}`),
+  createBlogArticle: (data) => contentApiCall('/content/blog', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  updateBlogArticle: (id, data) => contentApiCall(`/content/blog/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  deleteBlogArticle: (id) => contentApiCall(`/content/blog/${id}`, {
+    method: 'DELETE',
+  }),
+  
+  // Case studies
+  getCaseStudies: () => apiCall('/content/case-studies'),
+  getCaseStudy: (id) => apiCall(`/content/case-studies/${id}`),
+  createCaseStudy: (data) => contentApiCall('/content/case-studies', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
+  updateCaseStudy: (id, data) => contentApiCall(`/content/case-studies/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  }),
+  deleteCaseStudy: (id) => contentApiCall(`/content/case-studies/${id}`, {
+    method: 'DELETE',
+  }),
+  
+  // Contact forms
+  getContactForms: () => contentApiCall('/content/contact-forms'),
+  getContactForm: (id) => contentApiCall(`/content/contact-forms/${id}`),
+  deleteContactForm: (id) => contentApiCall(`/content/contact-forms/${id}`, {
+    method: 'DELETE',
+  }),
+};
+
 // Health check
 export const healthCheck = () => apiCall('/health');
 
@@ -108,5 +180,7 @@ export default {
   applications: applicationsAPI,
   management: managementAPI,
   users: usersAPI,
+  content: contentAPI,
+  images: imagesAPI,
   healthCheck,
 };
