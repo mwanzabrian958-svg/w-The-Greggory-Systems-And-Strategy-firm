@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Black Background -->
+  <rect width="200" height="200" fill="#1a1a1a"/>
+  
+  <!-- Golden Phoenix/Bird -->
+  <g transform="translate(100, 80)">
+    <!-- Center body -->
+    <ellipse cx="0" cy="15" rx="8" ry="20" fill="#f4d03f"/>
+    
+    <!-- Head -->
+    <circle cx="0" cy="-5" r="10" fill="#f4d03f"/>
+    
+    <!-- Beak -->
+    <path d="M 0,-8 L 4,-12 L 0,-10 Z" fill="#f4d03f"/>
+    
+    <!-- Left Wing -->
+    <path d="M -8,10 Q -40,-10 -50,-5 Q -48,0 -45,5 Q -35,0 -25,8 Q -20,5 -15,10 Q -20,15 -12,18 Z" fill="#f4d03f"/>
+    
+    <!-- Right Wing -->
+    <path d="M 8,10 Q 40,-10 50,-5 Q 48,0 45,5 Q 35,0 25,8 Q 20,5 15,10 Q 20,15 12,18 Z" fill="#f4d03f"/>
+    
+    <!-- Wing details - feathers -->
+    <path d="M -25,8 L -30,0 M -15,10 L -18,2 M -12,18 L -15,10" stroke="#d4af37" stroke-width="1.5" fill="none"/>
+    <path d="M 25,8 L 30,0 M 15,10 L 18,2 M 12,18 L 15,10" stroke="#d4af37" stroke-width="1.5" fill="none"/>
+    
+    <!-- Tail feathers -->
+    <path d="M -4,35 Q -8,45 -10,55 Q -6,50 -4,45 Z" fill="#f4d03f"/>
+    <path d="M 0,35 Q 0,50 0,60 Q 0,52 0,45 Z" fill="#f4d03f"/>
+    <path d="M 4,35 Q 8,45 10,55 Q 6,50 4,45 Z" fill="#f4d03f"/>
+  </g>
+  
+  <!-- Company name (for larger favicon sizes) -->
+  <text x="100" y="170" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">THE GREGGORY FOUNDATION</text>
+  <text x="100" y="185" font-family="Arial, sans-serif" font-size="7" fill="#cccccc" text-anchor="middle">Your Vision Delivered with Trust</text>
+</svg>
