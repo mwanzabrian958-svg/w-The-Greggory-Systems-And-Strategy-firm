@@ -3632,14 +3632,26 @@ app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Connected to MySQL server at ${process.env.DB_HOST || 'localhost'}`);
   console.log(`Access the API at http://localhost:${PORT}/api`);
-  console.log(`\n[BACKEND] Auth endpoints ready:`);
-  console.log(`  POST /api/users/register`);
-  console.log(`  POST /api/users/login`);
-  console.log(`  POST /api/images/profile`);
-  console.log(`  POST /api/admin-verification/register`);
-  console.log(`  POST /api/admin-verification/authenticate-enhanced`);
-  console.log(`  POST /api/developer-verification/authenticate`);
-  console.log(`  POST /api/admin/profile-photo`);
-  console.log(`  GET  /api/users/profile-photo/:userId`);
-  console.log(`  GET  /api/admin/profile-photo/:role/:userId`);
+  
+  console.log(`\n========================================`);
+  console.log(`USER AUTH PLATFORM (users table)`);
+  console.log(`========================================`);
+  console.log(`POST /api/users/register          - Register with photo BLOB`);
+  console.log(`POST /api/users/login             - Login returns photo URL`);
+  console.log(`GET  /api/users/profile-photo/:id - Retrieve user photo`);
+  
+  console.log(`\n========================================`);
+  console.log(`ADMIN AUTH PLATFORM (admin_users table)`);
+  console.log(`========================================`);
+  console.log(`POST /api/admin-verification/register              - Register with photo BLOB`);
+  console.log(`POST /api/admin-verification/authenticate-enhanced - Login returns photo info`);
+  console.log(`GET  /api/admin/profile-photo/admin/:id            - Retrieve admin photo`);
+  
+  console.log(`\n========================================`);
+  console.log(`DEVELOPER AUTH PLATFORM (developer_users table)`);
+  console.log(`========================================`);
+  console.log(`POST /api/admin-verification/register           - Register with photo BLOB`);
+  console.log(`POST /api/developer-verification/authenticate   - Login returns photo info`);
+  console.log(`GET  /api/admin/profile-photo/developer/:id     - Retrieve dev photo`);
+  console.log(`========================================\n`);
 });
