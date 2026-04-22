@@ -3627,72 +3627,19 @@ app.use((req, res) => {
   }
 });
 
-// Function to list all registered endpoints
-function listEndpoints() {
-  const routes = [];
-  
-  app._router.stack.forEach((middleware) => {
-    if (middleware.route) {
-      // Routes registered directly
-      const path = middleware.route.path;
-      const methods = Object.keys(middleware.route.methods).map(m => m.toUpperCase()).join(', ');
-      routes.push({ method: methods, path });
-    } else if (middleware.name === 'router') {
-      // Router middleware
-      middleware.handle.stack.forEach((handler) => {
-        if (handler.route) {
-          const path = handler.route.path;
-          const methods = Object.keys(handler.route.methods).map(m => m.toUpperCase()).join(', ');
-          routes.push({ method: methods, path });
-        }
-      });
-    }
-  });
-  
-  // Group by method for cleaner output
-  const grouped = routes.reduce((acc, route) => {
-    if (!acc[route.method]) acc[route.method] = [];
-    acc[route.method].push(route.path);
-    return acc;
-  }, {});
-  
-  console.log('\n' + '='.repeat(70));
-  console.log('REGISTERED API ENDPOINTS');
-  console.log('='.repeat(70));
-  
-  const methodOrder = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
-  methodOrder.forEach(method => {
-    if (grouped[method]) {
-      console.log(`\n${method}:`);
-      grouped[method].sort().forEach(path => {
-        console.log(`  ${path}`);
-      });
-    }
-  });
-  
-  // Handle multi-method routes
-  Object.keys(grouped).forEach(method => {
-    if (!methodOrder.includes(method)) {
-      console.log(`\n${method}:`);
-      grouped[method].sort().forEach(path => {
-        console.log(`  ${path}`);
-      });
-    }
-  });
-  
-  console.log('\n' + '='.repeat(70));
-  console.log(`TOTAL ENDPOINTS: ${routes.length}`);
-  console.log('='.repeat(70) + '\n');
-}
-
 // Start server
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Connected to MySQL server at ${process.env.DB_HOST || 'localhost'}`);
   console.log(`Access the API at http://localhost:${PORT}/api`);
-  
-  // Print all endpoints after a small delay to ensure routes are registered
-  setTimeout(() => {
-    listEndpoints();
-  }, 100);
+  console.log(`\n[BACKEND] Auth endpoints ready:`);
+  console.log(`  POST /api/users/register`);
+  console.log(`  POST /api/users/login`);
+  console.log(`  POST /api/images/profile`);
+  console.log(`  POST /api/admin-verification/register`);
+  console.log(`  POST /api/admin-verification/authenticate-enhanced`);
+  console.log(`  POST /api/developer-verification/authenticate`);
+  console.log(`  POST /api/admin/profile-photo`);
+  console.log(`  GET  /api/users/profile-photo/:userId`);
+  console.log(`  GET  /api/admin/profile-photo/:role/:userId`);
 });
