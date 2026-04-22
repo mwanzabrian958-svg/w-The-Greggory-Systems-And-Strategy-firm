@@ -95,13 +95,19 @@ const Signup = () => {
     try {
       console.log('Attempting to register user:', formData.email);
       
-      let profileImageId = null;
+      // Prepare user data
+      const userData = {
+        email: formData.email.trim(),
+        password: formData.password,
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        display_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`
+      };
       
-      // Upload profile photo first if selected
+      // Add profile photo directly as base64 if selected
       if (profileFile) {
-        console.log('[SIGNUP] Uploading profile photo...');
+        console.log('[SIGNUP] Converting profile photo to base64...');
         
-        // Convert file to base64
         const base64Data = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result);
@@ -109,38 +115,13 @@ const Signup = () => {
           reader.readAsDataURL(profileFile);
         });
         
-        const photoData = base64Data.split(',')[1]; // Get base64 data after comma
-        const contentType = profileFile.type || 'image/jpeg';
+        // Add base64 photo data directly to registration payload
+        userData.profile_photo_base64 = base64Data;
+        userData.profile_photo_mime_type = profileFile.type || 'image/jpeg';
+        userData.profile_photo_file_name = profileFile.name || 'profile.jpg';
         
-        const imageResponse = await fetch('/api/images/profile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dataBase64: photoData,
-            contentType: contentType,
-            fileName: profileFile.name || 'profile.jpg'
-          })
-        });
-        
-        if (!imageResponse.ok) {
-          throw new Error('Failed to upload profile photo');
-        }
-        
-        const imageData = await imageResponse.json();
-        profileImageId = imageData.image_id;
-        console.log('[SIGNUP] Profile photo uploaded, image_id:', profileImageId);
+        console.log('[SIGNUP] Profile photo ready for direct upload');
       }
-      
-      // Send JSON data with profile image id
-      const userData = {
-        email: formData.email.trim(),
-        password: formData.password,
-        first_name: formData.firstName.trim(),
-        last_name: formData.lastName.trim(),
-        display_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
-        phone: formData.phone,
-        profile_image_id: profileImageId
-      };
 
       const response = await usersAPI.register(userData);
 
