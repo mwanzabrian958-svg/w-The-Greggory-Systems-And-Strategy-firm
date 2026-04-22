@@ -3,7 +3,7 @@ const mysql = require('mysql2');
 const DB_HOST = process.env.DB_HOST || '127.0.0.1';
 const DB_USER = process.env.DB_USER || 'root';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
-const DB_NAME = process.env.DB_NAME || 'greggory_foundation_db';
+const DB_NAME = process.env.DB_NAME || 'greggory_foundation_db_main';
 
 const connection = mysql.createConnection({
   host: DB_HOST,
@@ -11,6 +11,7 @@ const connection = mysql.createConnection({
   password: DB_PASSWORD,
   database: DB_NAME,
   multipleStatements: true,
+  connectTimeout: 10000
 });
 
 connection.connect((err) => {

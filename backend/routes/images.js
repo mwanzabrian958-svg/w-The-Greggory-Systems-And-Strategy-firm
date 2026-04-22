@@ -5,13 +5,9 @@ const requireAdmin = require('../middleware/auth');
 
 // Helper: insert image from base64 string into images.data
 const insertImageFromBase64 = (
-  ownerTable,
-  ownerId,
-  purpose,
   fileName,
   contentType,
   dataBase64,
-  metadata,
   callback
 ) => {
   if (!dataBase64) return callback(new Error('Missing image data'));
@@ -24,20 +20,17 @@ const insertImageFromBase64 = (
   }
 
   const query = `
-    INSERT INTO images (owner_table, owner_id, purpose, url, filename, content_type, data, metadata)
-    VALUES (?, ?, ?, NULL, ?, ?, ?, ?)
+    INSERT INTO images (file_name, content_type, data, file_size, created_at)
+    VALUES (?, ?, ?, ?, NOW())
   `;
 
   db.query(
     query,
     [
-      ownerTable,
-      ownerId || 0,
-      purpose,
-      fileName || null,
-      contentType || null,
+      fileName || 'profile.jpg',
+      contentType || 'image/jpeg',
       buffer,
-      metadata ? JSON.stringify(metadata) : null,
+      buffer.length
     ],
     (err, result) => {
       if (err) return callback(err);
@@ -47,22 +40,18 @@ const insertImageFromBase64 = (
 };
 
 // Upload profile image (used by signup / profile update)
-// Expects JSON: { dataBase64, contentType, fileName, ownerId }
+// Expects JSON: { dataBase64, contentType, fileName }
 router.post('/profile', (req, res) => {
-  const { dataBase64, contentType, fileName, ownerId } = req.body || {};
+  const { dataBase64, contentType, fileName } = req.body || {};
 
   if (!dataBase64) {
     return res.status(400).json({ error: 'Missing image data' });
   }
 
   insertImageFromBase64(
-    'users',
-    ownerId || 0,
-    'profile_photo',
     fileName || 'profile.jpg',
     contentType || 'image/jpeg',
     dataBase64,
-    null,
     (err, imageId) => {
       if (err) {
         console.error('Error inserting profile image:', err);

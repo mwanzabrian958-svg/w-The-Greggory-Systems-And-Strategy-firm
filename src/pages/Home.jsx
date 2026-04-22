@@ -53,7 +53,7 @@ const Home = () => {
           </div>
           <div className="max-w-4xl">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-              <span>THE GREGGORY FOUNDATION LTD</span>
+              <span>The Greggory Foundation Ltd.</span>
               <span className="block text-2xl md:text-3xl font-semibold text-teal-200">
                 Your Vision Delivered with Trust
               </span>
@@ -77,13 +77,45 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Video Section */}
+      <section className="py-16 bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Featured Video</h2>
+            <p className="text-xl text-gray-300">
+              Discover our vision and projects through our featured video content
+            </p>
+          </div>
+          
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-black rounded-lg overflow-hidden shadow-2xl">
+              <video
+                className="w-full h-auto"
+                controls
+                poster="/brand-header.png/sja.PNG"
+              >
+                <source src="/brand-header.png/suti4.PNG" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            
+            <div className="mt-6 text-center">
+              <h3 className="text-xl font-semibold mb-2">The Greggory Foundation Ltd. - Vision & Projects</h3>
+              <p className="text-gray-300">
+                Learn about our strategic project development approach and how we deliver excellence across all our business ventures.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Introduction Section */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="section-title">Empowering Your Success Through Comprehensive Solutions</h2>
             <p className="section-subtitle mx-auto mt-4">
-              At THE GREGGORY FOUNDATION LTD, we believe that every business challenge—from property management to specialized services—can be delivered with excellence. Through our subsidiary companies like BARAKA HOUSING AGENCY and our comprehensive service portfolio, we apply proven frameworks to unlock your organization's full potential and deliver results with trust.
+              At The Greggory Foundation Ltd., we believe that every business challenge-from project creation to business development-can be delivered with excellence. Through our subsidiary companies and our comprehensive service portfolio, we apply proven frameworks to unlock your organization's full potential and deliver results with trust.
             </p>
           </div>
         </div>

@@ -6,7 +6,7 @@ const About = () => {
       name: 'Brian Mwanza',
       role: 'Chief Executive Officer (CEO)',
       credentials: 'PMP, PMI-ACP',
-      bio: 'Leads THE GREGGORY FOUNDATION LTD with a focus on strategic delivery, operational excellence, and client value through our subsidiary companies.',
+      bio: 'Leads The Greggory Foundation Ltd. with a focus on strategic delivery, operational excellence, and client value through our subsidiary companies.',
       image: '/images/brian-mwanza-ceo.jpg'
     }
   ]
@@ -40,7 +40,7 @@ const About = () => {
       <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">About The Greggory Foundation</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">About The Greggory Foundation Ltd.</h1>
             <p className="text-xl text-gray-300">
               Empowering organizations through expert project management since 2021
             </p>
@@ -56,7 +56,7 @@ const About = () => {
               <h2 className="section-title">Our Story</h2>
               <div className="space-y-4 text-gray-600">
                 <p>
-                  THE GREGGORY FOUNDATION LTD was born from a simple yet powerful observation: organizations across all industries struggle not because they lack vision or talent, but because they lack the structured approach to turn ideas into reality through comprehensive solutions and specialized services.
+                  The Greggory Foundation Ltd. was born from a simple yet powerful observation: organizations across all industries struggle not because they lack vision or talent, but because they lack the structured approach to turn ideas into reality through comprehensive solutions and specialized services.
                 </p>
                 <p>
                   Founded by Dr. James Greggory, a veteran project management professional with decades of experience, our foundation was built on the belief that project management is the key to unlocking business potential. We saw countless initiatives fail not due to poor concepts, but due to inadequate planning, execution, and control.
@@ -108,11 +108,11 @@ const About = () => {
         </div>
       </section>
 
-      {/* Why The Greggory Foundation */}
+      {/* Why The Greggory Foundation Ltd. */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="section-title">Why Choose The Greggory Foundation?</h2>
+            <h2 className="section-title">Why Choose The Greggory Foundation Ltd.?</h2>
             <p className="section-subtitle mx-auto mt-4">
               We bring a unique combination of expertise, methodology, and partnership
             </p>

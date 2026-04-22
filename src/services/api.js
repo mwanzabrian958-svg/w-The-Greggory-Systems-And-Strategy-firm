@@ -1,6 +1,7 @@
 // API service for connecting to backend
+// Connected to database: greggory_foundation_db_main
 
-const API_BASE_URL = 'http://localhost:8080/api';
+export const API_BASE_URL = 'http://localhost:5000/api';
 
 // Generic API helper
 const apiCall = async (endpoint, options = {}) => {
@@ -13,11 +14,13 @@ const apiCall = async (endpoint, options = {}) => {
       ...options,
     });
 
+    const data = await response.json();
+    
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+      throw new Error(data.message || data.error || `API Error: ${response.status}`);
     }
 
-    return await response.json();
+    return data;
   } catch (error) {
     console.error('API call failed:', error);
     throw error;
@@ -27,43 +30,92 @@ const apiCall = async (endpoint, options = {}) => {
 // Properties API
 export const propertiesAPI = {
   // Get all properties
-  getAll: () => apiCall('/properties'),
-  
-  // Get properties by company
-  getByCompany: (companyId) => apiCall(`/properties/company/${companyId}`),
+  getAll: (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    return apiCall(`/properties?${params}`);
+  },
   
   // Get property by ID
   getById: (id) => apiCall(`/properties/${id}`),
   
-  // Get property statistics
-  getStats: (companyId) => apiCall(`/properties/stats/${companyId}`),
-  
-  // Get property features for specific room
-  getFeatures: (propertyId, roomNumber) => 
-    apiCall(`/properties/${propertyId}/features/${roomNumber}`),
-};
-
-// Applications API
-export const applicationsAPI = {
-  // Create new application
-  create: (applicationData) => apiCall('/applications', {
+  // Create new property
+  create: (propertyData) => apiCall('/properties', {
     method: 'POST',
-    body: JSON.stringify(applicationData),
+    body: JSON.stringify(propertyData),
   }),
   
-  // Get application by ID
-  getById: (id) => apiCall(`/applications/${id}`),
-  
-  // Get all applications (with optional filters)
+  // Delete property
+  delete: (id) => apiCall(`/properties/${id}`, {
+    method: 'DELETE',
+  }),
+};
+
+// Companies API
+export const companiesAPI = {
+  // Get all companies
   getAll: (filters = {}) => {
     const params = new URLSearchParams(filters);
-    return apiCall(`/applications?${params}`);
+    return apiCall(`/companies?${params}`);
   },
   
-  // Update application status
-  updateStatus: (id, statusId) => apiCall(`/applications/${id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status_id: statusId }),
+  // Get company by ID
+  getById: (id) => apiCall(`/companies/${id}`),
+  
+  // Create new company
+  create: (companyData) => apiCall('/companies', {
+    method: 'POST',
+    body: JSON.stringify(companyData),
+  }),
+  
+  // Delete company
+  delete: (id) => apiCall(`/companies/${id}`, {
+    method: 'DELETE',
+  }),
+};
+
+// Videos API
+export const videosAPI = {
+  // Get all videos
+  getAll: (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    return apiCall(`/videos?${params}`);
+  },
+  
+  // Get video by ID
+  getById: (id) => apiCall(`/videos/${id}`),
+  
+  // Create new video
+  create: (videoData) => apiCall('/videos', {
+    method: 'POST',
+    body: JSON.stringify(videoData),
+  }),
+  
+  // Delete video
+  delete: (id) => apiCall(`/videos/${id}`, {
+    method: 'DELETE',
+  }),
+};
+
+// Contact Forms API
+export const contactFormsAPI = {
+  // Get all contact forms
+  getAll: (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    return apiCall(`/contact-forms?${params}`);
+  },
+  
+  // Get contact form by ID
+  getById: (id) => apiCall(`/contact-forms/${id}`),
+  
+  // Create new contact form
+  create: (formData) => apiCall('/contact-forms', {
+    method: 'POST',
+    body: JSON.stringify(formData),
+  }),
+  
+  // Delete contact form
+  delete: (id) => apiCall(`/contact-forms/${id}`, {
+    method: 'DELETE',
   }),
 };
 
@@ -85,6 +137,12 @@ export const usersAPI = {
   login: (credentials) => apiCall('/users/login', {
     method: 'POST',
     body: JSON.stringify(credentials),
+  }),
+  
+  // Registration - ALWAYS sends JSON to users table
+  register: (userData) => apiCall('/users/register', {
+    method: 'POST',
+    body: JSON.stringify(userData),
   }),
   
   // Google Authentication
@@ -134,40 +192,30 @@ const contentApiCall = async (endpoint, options = {}) => {
 
 export const contentAPI = {
   // Blog articles
-  getBlogArticles: (publishedOnly = false) => 
-    apiCall(`/content/blog${publishedOnly ? '?published_only=true' : ''}`),
-  getBlogArticle: (id) => apiCall(`/content/blog/${id}`),
-  createBlogArticle: (data) => contentApiCall('/content/blog', {
+  getBlogArticles: (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    return apiCall(`/blog-articles?${params}`);
+  },
+  getBlogArticle: (id) => apiCall(`/blog-articles/${id}`),
+  createBlogArticle: (data) => apiCall('/blog-articles', {
     method: 'POST',
     body: JSON.stringify(data),
   }),
-  updateBlogArticle: (id, data) => contentApiCall(`/content/blog/${id}`, {
+  updateBlogArticle: (id, data) => apiCall(`/blog-articles/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   }),
-  deleteBlogArticle: (id) => contentApiCall(`/content/blog/${id}`, {
-    method: 'DELETE',
-  }),
-  
-  // Case studies
-  getCaseStudies: () => apiCall('/content/case-studies'),
-  getCaseStudy: (id) => apiCall(`/content/case-studies/${id}`),
-  createCaseStudy: (data) => contentApiCall('/content/case-studies', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  updateCaseStudy: (id, data) => contentApiCall(`/content/case-studies/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  deleteCaseStudy: (id) => contentApiCall(`/content/case-studies/${id}`, {
+  deleteBlogArticle: (id) => apiCall(`/blog-articles/${id}`, {
     method: 'DELETE',
   }),
   
   // Contact forms
-  getContactForms: () => contentApiCall('/content/contact-forms'),
-  getContactForm: (id) => contentApiCall(`/content/contact-forms/${id}`),
-  deleteContactForm: (id) => contentApiCall(`/content/contact-forms/${id}`, {
+  getContactForms: (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    return apiCall(`/contact-forms?${params}`);
+  },
+  getContactForm: (id) => apiCall(`/contact-forms/${id}`),
+  deleteContactForm: (id) => apiCall(`/contact-forms/${id}`, {
     method: 'DELETE',
   }),
 };
@@ -177,7 +225,9 @@ export const healthCheck = () => apiCall('/health');
 
 export default {
   properties: propertiesAPI,
-  applications: applicationsAPI,
+  companies: companiesAPI,
+  videos: videosAPI,
+  contactForms: contactFormsAPI,
   management: managementAPI,
   users: usersAPI,
   content: contentAPI,

@@ -9,15 +9,13 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    userType: 'user',
-    adminCode: ''
+    password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState({ email: '', password: '', adminCode: '' })
+  const [errors, setErrors] = useState({ email: '', password: '' })
   const navigate = useNavigate()
   const location = useLocation()
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const googleLoadedRef = useRef(false)
   const tokenClientRef = useRef(null)
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
@@ -64,7 +62,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     // Basic validation
-    const nextErrors = { email: '', password: '', adminCode: '' }
+    const nextErrors = { email: '', password: '' }
     const value = formData.email.trim()
     
     if (!value) {
@@ -82,10 +80,6 @@ const Login = () => {
       nextErrors.password = 'Password must be at least 6 characters.'
     }
     
-    // Admin code validation
-    if (formData.userType === 'admin' && formData.adminCode !== '***REMOVED***') {
-      nextErrors.adminCode = 'Invalid admin access code.'
-    }
     setErrors(nextErrors)
     if (Object.values(nextErrors).some(error => error)) return
 
@@ -94,11 +88,37 @@ const Login = () => {
       // Call backend to update last_login and validate user
       const response = await usersAPI.login({
         email: formData.email.trim(),
-        password: formData.password,
-        userType: formData.userType
+        password: formData.password
       })
+      
+      console.log('Login response:', response);
+      
+      // Ensure loading state lasts for full 4 seconds
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      
       setIsLoading(false)
-      login()
+      
+      // Store user information in auth context
+      const userData = response.user || response;
+      const userInfo = {
+        role: 'user',
+        name: userData.display_name || (userData.first_name && userData.last_name 
+          ? `${userData.first_name} ${userData.last_name}` 
+          : formData.email.split('@')[0]),
+        email: userData.email || formData.email,
+        userId: userData.id || userData.userId,
+        id: userData.id || userData.userId,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        display_name: userData.display_name,
+        has_photo: userData.has_photo || false,
+        profilePhotoData: userData.profilePhotoData || null,
+        profile_image_id: userData.profile_image_id || null
+      };
+      
+      // Update auth context with user info
+      login(userInfo);
+      
       const from = location.state && location.state.from ? location.state.from : '/'
       navigate(from, { replace: true })
     } catch (err) {
@@ -139,6 +159,16 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-r-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-700 font-medium">Authenticating...</p>
+            <p className="text-gray-500 text-sm mt-2">Please wait while we verify your credentials</p>
+          </div>
+        </div>
+      )}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-6">
@@ -156,7 +186,7 @@ const Login = () => {
           Welcome back
         </h2>
         <p className="mt-2 text-center text-lg text-gray-600">
-          John Lee
+          {user?.name || 'Welcome back'}
         </p>
       </div>
 
@@ -228,67 +258,22 @@ const Login = () => {
               </p>
             </div>
 
-            {/* User Type Selection */}
-            <div className="mb-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Login as:</p>
-              <div className="flex space-x-6">
-                <div className="flex items-center">
-                  <input
-                    id="user-type-user"
-                    name="userType"
-                    type="radio"
-                    value="user"
-                    checked={formData.userType === 'user'}
-                    onChange={() => setFormData({...formData, userType: 'user'})}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <label htmlFor="user-type-user" className="ml-2 block text-sm text-gray-700">
-                    User
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    id="user-type-admin"
-                    name="userType"
-                    type="radio"
-                    value="admin"
-                    checked={formData.userType === 'admin'}
-                    onChange={() => setFormData({...formData, userType: 'admin'})}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                  />
-                  <label htmlFor="user-type-admin" className="ml-2 block text-sm text-gray-700">
-                    Admin
-                  </label>
-                </div>
-              </div>
-              
-              {formData.userType === 'admin' && (
-                <div className="mt-3">
-                  <label htmlFor="admin-code" className="block text-sm font-medium text-gray-700 mb-1">
-                    Admin Access Code
-                  </label>
-                  <input
-                    type="password"
-                    id="admin-code"
-                    value={formData.adminCode}
-                    onChange={(e) => setFormData({...formData, adminCode: e.target.value})}
-                    placeholder="Enter admin code"
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                  {errors.adminCode && (
-                    <p className="mt-1 text-xs text-red-600">{errors.adminCode}</p>
-                  )}
-                </div>
-              )}
-            </div>
-
+            
             <div>
               <button
                 type="submit"
                 disabled={isLoading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Logging in...' : 'Log in'}
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Logging in...
+                  </>
+                ) : 'Log in'}
               </button>
             </div>
 

@@ -9,27 +9,31 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
     userType: 'user',
-    adminCode: ''
+    profilePhotoUrl: ''
   })
   const [profilePreview, setProfilePreview] = useState(null)
   const [profileFile, setProfileFile] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [errors, setErrors] = useState({
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
     terms: '',
-    adminCode: ''
+    submit: ''
   })
+  const [isLoading, setIsLoading] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -37,11 +41,6 @@ const Signup = () => {
       ...formData,
       [e.target.name]: e.target.value
     })
-    
-    // Clear admin code error when user starts typing
-    if (e.target.name === 'adminCode' && errors.adminCode) {
-      setErrors({ ...errors, adminCode: '' })
-    }
   }
 
   const handleProfileChange = (e) => {
@@ -56,7 +55,8 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const nextErrors = { 
-      fullName: '', 
+      firstName: '', 
+      lastName: '',
       email: '', 
       phone: '', 
       password: '', 
@@ -67,7 +67,8 @@ const Signup = () => {
     };
 
     // Validation
-    if (!formData.fullName.trim()) nextErrors.fullName = 'Please enter your full name.';
+    if (!formData.firstName.trim()) nextErrors.firstName = 'Please enter your first name.';
+    if (!formData.lastName.trim()) nextErrors.lastName = 'Please enter your last name.';
     if (!formData.email.trim()) {
       nextErrors.email = 'Please enter your email address.';
     } else {
@@ -85,11 +86,6 @@ const Signup = () => {
       nextErrors.confirmPassword = 'Passwords do not match.';
     }
     if (!agreedToTerms) nextErrors.terms = 'You must agree to the Terms and Privacy Policy.';
-    
-    // Validate admin code if signing up as admin
-    if (formData.userType === 'admin' && formData.adminCode !== '***REMOVED***') {
-      nextErrors.adminCode = 'Invalid admin access code.';
-    }
 
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
@@ -98,28 +94,92 @@ const Signup = () => {
 
     try {
       console.log('Attempting to register user:', formData.email);
-      const response = await fetch('http://localhost:8080/api/users/test-register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email.trim(),
-          password: formData.password,
-          name: formData.fullName.trim(),
-          userType: formData.userType === 'admin' ? 'admin' : 'user'
-        }),
-      });
+      
+      let profileImageId = null;
+      
+      // Upload profile photo first if selected
+      if (profileFile) {
+        console.log('[SIGNUP] Uploading profile photo...');
+        
+        // Convert file to base64
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(profileFile);
+        });
+        
+        const photoData = base64Data.split(',')[1]; // Get base64 data after comma
+        const contentType = profileFile.type || 'image/jpeg';
+        
+        const imageResponse = await fetch('/api/images/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dataBase64: photoData,
+            contentType: contentType,
+            fileName: profileFile.name || 'profile.jpg'
+          })
+        });
+        
+        if (!imageResponse.ok) {
+          throw new Error('Failed to upload profile photo');
+        }
+        
+        const imageData = await imageResponse.json();
+        profileImageId = imageData.image_id;
+        console.log('[SIGNUP] Profile photo uploaded, image_id:', profileImageId);
+      }
+      
+      // Send JSON data with profile image id
+      const userData = {
+        email: formData.email.trim(),
+        password: formData.password,
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
+        display_name: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+        phone: formData.phone,
+        profile_image_id: profileImageId
+      };
 
-      const data = await response.json();
-      console.log('Registration response:', data);
+      const response = await usersAPI.register(userData);
 
-      if (!response.ok) {
+      console.log('Raw API response:', response);
+      console.log('Response type:', typeof response);
+      
+      // Ensure we have the data in the correct format
+      const data = response && typeof response === 'object' ? response : {};
+      
+      console.log('Processed registration response:', data);
+
+      if (!data.success) {
         throw new Error(data.message || 'Registration failed');
       }
 
       // Registration successful
-      console.log('Registration successful, navigating to login');
+      console.log('Registration successful, showing loading sequence');
+      console.log('About to set isRedirecting to true');
+      
+      // Start redirect loading sequence
+      setIsRedirecting(true);
+      
+      console.log('isRedirecting set to true, starting 4-second countdown');
+      
+      // Show 4-second loading sequence
+      setTimeout(() => {
+        console.log('4 seconds passed, showing success feedback');
+        setShowSuccess(true);
+        // Show success feedback for 1 second before redirect
+        setTimeout(() => {
+          console.log('Now redirecting to login');
+          try {
+            window.location.href = '/login';
+          } catch (error) {
+            console.error('Redirect failed, trying alternative:', error);
+            window.location.replace('/login');
+          }
+        }, 1000);
+      }, 4000);
     } catch (error) {
       console.error('Signup error:', error);
       setErrors(prev => ({
@@ -140,22 +200,15 @@ const Signup = () => {
     <AuthLayout title="Create Account">
       {/* Signup Form */}
       <div className="bg-white rounded-2xl shadow-lg p-8">
-          {/* Profile Photo Selector */}
+          {/* Profile Photo Upload */}
           <div className="flex flex-col items-center mb-6">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center overflow-hidden shadow-sm">
+              {/* Circle with user icon or preview */}
+              <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                 {profilePreview ? (
-                  <img
-                    src={profilePreview}
-                    alt="Profile preview"
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={profilePreview} alt="Profile preview" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-xl font-semibold text-gray-400">
-                    {formData.fullName.trim()
-                      ? formData.fullName.trim().charAt(0).toUpperCase()
-                      : 'A'}
-                  </span>
+                  <User className="w-12 h-12 text-gray-400" />
                 )}
               </div>
               {/* Small + button on bottom-left of the circle */}
@@ -175,26 +228,43 @@ const Signup = () => {
               />
             </div>
             <p className="mt-2 text-xs text-gray-500 text-center max-w-xs">
-              Optional: add a profile photo now. This will be shown next to your name on your profile page when backend support is added.
+              Optional: add a profile photo now. This will be shown next to your name on your profile page.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name Input */}
+            {/* First Name Input */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <User className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 type="text"
-                name="fullName"
-                value={formData.fullName}
+                name="firstName"
+                value={formData.firstName}
                 onChange={handleChange}
-                placeholder="Full Name"
+                placeholder="First Name"
                 required
-                className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition ${errors.fullName ? 'border-red-500' : 'border-gray-200'}`}
+                className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition ${errors.firstName ? 'border-red-500' : 'border-gray-200'}`}
               />
-              {errors.fullName && <p className="mt-1 text-xs text-red-600">{errors.fullName}</p>}
+              {errors.firstName && <p className="mt-1 text-xs text-red-600">{errors.firstName}</p>}
+            </div>
+
+            {/* Last Name Input */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                placeholder="Last Name"
+                required
+                className={`w-full pl-12 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition ${errors.lastName ? 'border-red-500' : 'border-gray-200'}`}
+              />
+              {errors.lastName && <p className="mt-1 text-xs text-red-600">{errors.lastName}</p>}
             </div>
 
             {/* Email Input */}
@@ -345,6 +415,53 @@ const Signup = () => {
             <GoogleSignIn buttonText="Sign up with Google" isSignUp={true} />
           </form>
       </div>
+
+      {/* Loading Overlay */}
+      {(isLoading || isRedirecting) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          {/* Small White Rectangle Block */}
+          <div className="bg-white rounded-lg shadow-2xl p-6 w-80">
+            <div className="flex flex-col items-center space-y-4">
+              {/* Blue Loader */}
+              <div className="relative">
+                <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                <div className="absolute inset-0 w-8 h-8 border-4 border-transparent border-t-blue-400 rounded-full animate-spin animation-delay-150"></div>
+              </div>
+              
+              {/* Loading Message */}
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  {showSuccess ? 'Registration Successful!' : 'Creating Account...'}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {showSuccess 
+                    ? 'Redirecting to login...' 
+                    : 'Please wait while we set up your account'}
+                </p>
+              </div>
+              
+              {/* Progress Indicator */}
+              <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-1000 ease-linear ${
+                    showSuccess ? 'bg-green-500' : 'bg-blue-600'
+                  }`}
+                  style={{ width: showSuccess ? '100%' : '75%' }}
+                ></div>
+              </div>
+              
+              {/* Success Checkmark */}
+              {showSuccess && (
+                <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <p className="text-center text-xs text-gray-500 mt-6">

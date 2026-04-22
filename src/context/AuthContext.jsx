@@ -12,12 +12,24 @@ const defaultContext = {
 const AuthContext = createContext(defaultContext)
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null) // { role: 'employee'|'developer', name?, jobId? }
+  const [user, setUser] = useState(() => {
+    // Restore auth state from localStorage on page load
+    const saved = localStorage.getItem('tgf_user')
+    return saved ? JSON.parse(saved) : null
+  })
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('tgf_user')
-    if (storedUser) {
-      try { setUser(JSON.parse(storedUser)) } catch {}
+    // Validate auth on page load - check if session expired
+    const saved = localStorage.getItem('tgf_user')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        // Check for session expiration if we add expiry later
+        setUser(parsed)
+      } catch (e) {
+        console.error('Failed to parse stored auth:', e)
+        localStorage.removeItem('tgf_user')
+      }
     }
   }, [])
 
@@ -27,9 +39,14 @@ export const AuthProvider = ({ children }) => {
     else localStorage.removeItem('tgf_user')
   }
 
-  const login = () => {
-    // Backward compatibility: simple auth with no role
-    persist({ role: 'employee' })
+  const login = (userData = null) => {
+    // If userData is provided, store it; otherwise use backward compatibility
+    if (userData) {
+      persist(userData)
+    } else {
+      // Backward compatibility: simple auth with no role
+      persist({ role: 'employee' })
+    }
   }
 
   const loginAsEmployee = (jobId, name) => {

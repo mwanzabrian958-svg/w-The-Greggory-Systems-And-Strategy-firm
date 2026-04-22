@@ -93,8 +93,8 @@ export default function ApplicationForm() {
   // Mock property data (in real app, this would come from API or context)
   const getPropertyInfo = (id) => {
     const properties = {
-      '1': { name: 'Modern Apartment', building: 'Baraka Heights', location: 'Kangundo Town', price: 15000, securityDeposit: 15000 },
-      '2': { name: 'Cozy Studio', building: 'Tala Plaza', location: 'Tala Town', price: 8000, securityDeposit: 8000 },
+      '1': { name: 'Modern Apartment', building: 'Greggory Heights', location: 'Kangundo Town', price: 15000, securityDeposit: 15000 },
+      '2': { name: 'Cozy Studio', building: 'Foundation Plaza', location: 'Tala Town', price: 8000, securityDeposit: 8000 },
       '3': { name: 'Luxury Suite', building: 'Greggory Court', location: 'Kangundo', price: 25000, securityDeposit: 25000 }
     };
     return properties[id] || { name: 'Property Name', building: 'Building Name', location: 'Location', price: 0, securityDeposit: 0 };
@@ -103,7 +103,7 @@ export default function ApplicationForm() {
   const selectedProperty = getPropertyInfo(propertyId);
 
   useEffect(() => {
-    document.title = 'Rental Application Form - BARAKA HOUSING AGENCY';
+    document.title = 'Rental Application Form - Greggory Foundation';
   }, []);
 
   const handleFormChange = (e) => {
@@ -318,8 +318,8 @@ export default function ApplicationForm() {
               />
             </div>
             <h1 className="text-3xl font-bold mb-2">Rental Application Form</h1>
-            <p className="text-teal-100 text-lg">BARAKA HOUSING AGENCY</p>
-            <p className="text-teal-200 text-sm mt-1">Your Trusted Housing Partner</p>
+            <p className="text-teal-100 text-lg">THE GREGGORY FOUNDATION LTD</p>
+            <p className="text-teal-200 text-sm mt-1">Strategic Project Development</p>
           </div>
         </div>
 
@@ -574,7 +574,7 @@ export default function ApplicationForm() {
                     <li>Professional cleaning services if required</li>
                     <li>Replacement of damaged or missing items</li>
                   </ul>
-                  <li><span className="font-semibold">Dispute Resolution:</span> In case of deposit refund disputes, both parties agree to first attempt mediation through BARAKA HOUSING AGENCY before pursuing legal action.</li>
+                  <li><span className="font-semibold">Dispute Resolution:</span> In case of deposit refund disputes, both parties agree to first attempt mediation through THE GREGGORY FOUNDATION LTD before pursuing legal action.</li>
                 </ul>
               </div>
             </div>

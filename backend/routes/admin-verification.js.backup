@@ -1,0 +1,280 @@
+// Enhanced Admin Verification System
+// Verifies user is actually an admin before accepting admin code
+
+const express = require('express');
+const router = express.Router();
+const db = require('../config/database');
+const bcrypt = require('bcryptjs');
+
+// =============================================
+// ADMIN VERIFICATION ENDPOINT
+// Checks if user exists in admin_users table
+// =============================================
+router.post('/verify-admin-user', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Basic validation
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required for admin verification'
+      });
+    }
+    
+    // Check if user exists in admin_users table
+    const [adminResults] = await db.promise().query(
+      `SELECT au.*, 'admin' as role_type,
+       CASE 
+         WHEN au.admin_level = 'super_admin' THEN 'Super Administrator'
+         WHEN au.admin_level = 'admin' THEN 'Administrator' 
+         ELSE 'Moderator'
+       END as job_title,
+       au.admin_level as job_role
+       FROM admin_users au 
+       WHERE au.email = ? AND au.is_active = true AND au.deleted_at IS NULL`,
+      [email]
+    );
+    
+    if (adminResults.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin user not found. Please check your email or contact system administrator.',
+        is_admin: false
+      });
+    }
+    
+    const adminUser = adminResults[0];
+    
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, adminUser.password_hash || '');
+    if (!isValidPassword) {
+      // Log failed attempt
+      await db.promise().query(
+        'UPDATE admin_users SET failed_login_attempts = failed_login_attempts + 1 WHERE id = ?',
+        [adminUser.id]
+      );
+      
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid password. Please check your credentials.',
+        is_admin: false
+      });
+    }
+    
+    // User is verified as admin - return admin info for code validation
+    res.json({
+      success: true,
+      message: 'Admin user verified. You can now enter the admin code.',
+      is_admin: true,
+      admin_info: {
+        id: adminUser.id,
+        email: adminUser.email,
+        name: adminUser.display_name || `${adminUser.first_name} ${adminUser.last_name}`,
+        admin_level: adminUser.admin_level,
+        access_level: adminUser.access_level,
+        department: adminUser.department,
+        job_title: adminUser.job_title,
+        job_role: adminUser.job_role
+      }
+    });
+    
+  } catch (error) {
+    console.error('Admin verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during admin verification',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// =============================================
+// ADMIN STATUS CHECK
+// Checks if current user has admin privileges
+// =============================================
+router.get('/check-admin-status/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+    
+    // Check if user exists in any admin table
+    const [adminResults] = await db.promise().query(
+      'SELECT id, admin_level, access_level, department, is_active FROM admin_users WHERE id = ? AND deleted_at IS NULL',
+      [userId]
+    );
+    
+    if (adminResults.length === 0) {
+      return res.json({
+        success: true,
+        is_admin: false,
+        message: 'User is not an admin'
+      });
+    }
+    
+    const adminUser = adminResults[0];
+    
+    res.json({
+      success: true,
+      is_admin: true,
+      admin_status: {
+        id: adminUser.id,
+        admin_level: adminUser.admin_level,
+        access_level: adminUser.access_level,
+        department: adminUser.department,
+        is_active: adminUser.is_active
+      }
+    });
+    
+  } catch (error) {
+    console.error('Admin status check error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during admin status check',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// =============================================
+// ADMIN CODE VALIDATION WITH USER VERIFICATION
+// Enhanced version that first verifies user, then validates code
+// =============================================
+router.post('/authenticate-enhanced', (req, res) => {
+  const { email, password } = req.body;
+  
+  // Step 1: Verify user exists in admin_users table
+  db.query(
+    `SELECT au.*, 'admin' as role_type,
+     CASE 
+       WHEN au.admin_level = 'super_admin' THEN 'Super Administrator'
+       WHEN au.admin_level = 'admin' THEN 'Administrator' 
+       ELSE 'Moderator'
+     END as job_title,
+     au.admin_level as job_role
+     FROM admin_users au 
+     WHERE au.email = ? AND au.is_active = true AND au.deleted_at IS NULL`,
+    [email],
+    (err, adminResults) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Database error',
+          error: err.message
+        });
+      }
+      
+      if (adminResults.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: 'Admin user not found. You must be a registered admin to access this panel.',
+          step: 'user_not_found',
+          is_admin: false
+        });
+      }
+      
+      const adminUser = adminResults[0];
+      
+      // Step 2: Verify password
+      bcrypt.compare(password, adminUser.password_hash || '', (err, isValidPassword) => {
+        if (err) {
+          console.error('Password compare error:', err);
+          return res.status(500).json({
+            success: false,
+            message: 'Password verification error'
+          });
+        }
+        
+        if (!isValidPassword) {
+          // Log failed attempt
+          db.query(
+            'UPDATE admin_users SET failed_login_attempts = failed_login_attempts + 1 WHERE id = ?',
+            [adminUser.id]
+          );
+          
+          return res.status(401).json({
+            success: false,
+            message: 'Invalid credentials. Admin access denied.',
+            step: 'password_validation_failed',
+            is_admin: false
+          });
+        }
+        
+        // Step 3: Update successful login
+        db.query(
+          'UPDATE admin_users SET last_login_at = NOW(), last_login_ip = ?, failed_login_attempts = 0 WHERE id = ?',
+          [req.ip, adminUser.id]
+        );
+        
+        // Step 4: Log successful admin authentication
+        console.log(`[ADMIN AUTH] Admin user authenticated: ${adminUser.email} (${adminUser.admin_level}) from IP: ${req.ip}`);
+        
+        res.json({
+          success: true,
+          message: 'Admin authentication successful',
+          step: 'authentication_complete',
+          user: {
+            id: adminUser.id,
+            email: adminUser.email,
+            name: adminUser.display_name || `${adminUser.first_name} ${adminUser.last_name}`,
+            primary_role: 'admin',
+            job_title: adminUser.job_title,
+            job_role: adminUser.job_role,
+            admin_level: adminUser.admin_level,
+            access_level: adminUser.access_level,
+            department: adminUser.department,
+            role_type: 'admin'
+          },
+          token: 'admin-session-' + Date.now() + '-' + adminUser.id,
+          authentication_method: 'enhanced_verification'
+        });
+      });
+    }
+  );
+});
+
+// =============================================
+// ADMIN ACTIVITY LOGGING
+// Logs all admin authentication attempts
+// =============================================
+router.post('/log-admin-activity', async (req, res) => {
+  try {
+    const { adminId, activity, ip, success, details } = req.body;
+    
+    if (!adminId || !activity || !ip) {
+      return res.status(400).json({
+        success: false,
+        message: 'Admin ID, activity, and IP are required'
+      });
+    }
+    
+    // Log activity to admin activity table
+    await db.promise().query(
+      `INSERT INTO admin_activity_log (admin_id, activity, ip_address, success, details, timestamp) 
+       VALUES (?, ?, ?, ?, ?, NOW())`,
+      [adminId, activity, ip, success, details || null]
+    );
+    
+    res.json({
+      success: true,
+      message: 'Admin activity logged successfully'
+    });
+    
+  } catch (error) {
+    console.error('Admin activity logging error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to log admin activity',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+module.exports = router;

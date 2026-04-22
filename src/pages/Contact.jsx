@@ -199,7 +199,6 @@ const Contact = () => {
                     >
                       <option value="" disabled hidden>Select a company (optional)</option>
                       <option value="THE GREGGORY FOUNDATION LTD">THE GREGGORY FOUNDATION LTD</option>
-                      <option value="BARAKA HOUSING AGENCY">BARAKA HOUSING AGENCY</option>
                     </select>
                   </div>
 
