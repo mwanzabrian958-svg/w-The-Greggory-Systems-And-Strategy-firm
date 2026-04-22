@@ -3369,6 +3369,43 @@ app.delete('/api/:type/:id', async (req, res) => {
   }
 });
 
+// Images API - Store profile photo temporarily (frontend calls this before registration)
+app.post('/api/images/profile', async (req, res) => {
+  try {
+    const { dataBase64, contentType, fileName } = req.body;
+    
+    if (!dataBase64) {
+      return res.status(400).json({ success: false, message: 'Image data (dataBase64) is required' });
+    }
+    
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(dataBase64, 'base64');
+    
+    // Insert into images table
+    const [result] = await mainDb.query(
+      'INSERT INTO images (data, content_type, file_name, created_at) VALUES (?, ?, ?, NOW())',
+      [imageBuffer, contentType || 'image/jpeg', fileName || 'profile.jpg']
+    );
+    
+    const imageId = result.insertId;
+    
+    console.log(`[IMAGES] Profile photo stored: ID=${imageId}, Size=${imageBuffer.length} bytes`);
+    
+    res.json({ 
+      success: true, 
+      image_id: imageId,
+      message: 'Profile photo uploaded successfully'
+    });
+  } catch (error) {
+    console.error('[IMAGES] Profile photo upload error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to upload profile photo',
+      error: error.message 
+    });
+  }
+});
+
 // Profile photo upload endpoint
 app.post('/api/users/upload-profile-photo', upload.single('profilePhoto'), async (req, res) => {
   try {
@@ -3590,9 +3627,70 @@ app.use((req, res) => {
   }
 });
 
+// Function to list all registered endpoints
+function listEndpoints() {
+  const routes = [];
+  
+  app._router.stack.forEach((middleware) => {
+    if (middleware.route) {
+      // Routes registered directly
+      const path = middleware.route.path;
+      const methods = Object.keys(middleware.route.methods).map(m => m.toUpperCase()).join(', ');
+      routes.push({ method: methods, path });
+    } else if (middleware.name === 'router') {
+      // Router middleware
+      middleware.handle.stack.forEach((handler) => {
+        if (handler.route) {
+          const path = handler.route.path;
+          const methods = Object.keys(handler.route.methods).map(m => m.toUpperCase()).join(', ');
+          routes.push({ method: methods, path });
+        }
+      });
+    }
+  });
+  
+  // Group by method for cleaner output
+  const grouped = routes.reduce((acc, route) => {
+    if (!acc[route.method]) acc[route.method] = [];
+    acc[route.method].push(route.path);
+    return acc;
+  }, {});
+  
+  console.log('\n' + '='.repeat(70));
+  console.log('REGISTERED API ENDPOINTS');
+  console.log('='.repeat(70));
+  
+  const methodOrder = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+  methodOrder.forEach(method => {
+    if (grouped[method]) {
+      console.log(`\n${method}:`);
+      grouped[method].sort().forEach(path => {
+        console.log(`  ${path}`);
+      });
+    }
+  });
+  
+  // Handle multi-method routes
+  Object.keys(grouped).forEach(method => {
+    if (!methodOrder.includes(method)) {
+      console.log(`\n${method}:`);
+      grouped[method].sort().forEach(path => {
+        console.log(`  ${path}`);
+      });
+    }
+  });
+  
+  console.log('\n' + '='.repeat(70));
+  console.log(`TOTAL ENDPOINTS: ${routes.length}`);
+  console.log('='.repeat(70) + '\n');
+}
+
 // Start server
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Connected to MySQL server at ${process.env.DB_HOST || 'localhost'}`);
   console.log(`Access the API at http://localhost:${PORT}/api`);
+  
+  // Print all endpoints
+  listEndpoints();
 });
