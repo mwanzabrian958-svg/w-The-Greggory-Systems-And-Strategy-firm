@@ -459,10 +459,10 @@ app.post('/api/users/login', async (req, res) => {
   }
 });
 
-// Registration endpoint - accepts JSON with optional base64 profile photo
+// Registration endpoint - accepts JSON with optional profile photo
 app.post('/api/users/register', async (req, res) => {
   try {
-    const { email, password, first_name, last_name, display_name, phone, profile_photo_base64, profile_photo_mime_type, profile_photo_file_name, userRole } = req.body;
+    const { email, password, first_name, last_name, display_name, phone, profile_photo_base64, profile_photo_mime_type, profile_photo_file_name, profile_image_id, userRole } = req.body;
 
     // Validate required fields
     if (!email || !password || !first_name || !last_name) {
@@ -489,23 +489,42 @@ app.post('/api/users/register', async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcryptjs.hash(password, saltRounds);
 
-    // Convert base64 photo to buffer if provided
+    // Handle profile photo - either from base64 direct upload or from images table
     let profilePhotoBlob = null;
+    let photoMimeType = profile_photo_mime_type || null;
+    let photoFileName = profile_photo_file_name || null;
+    
     if (profile_photo_base64) {
+      // Direct base64 upload
       try {
-        // Remove data URI prefix if present (e.g., "data:image/jpeg;base64,")
         const base64Data = profile_photo_base64.replace(/^data:image\/\w+;base64,/, '');
         profilePhotoBlob = Buffer.from(base64Data, 'base64');
-        console.log(`[USER REGISTER] Profile photo converted: ${profilePhotoBlob.length} bytes`);
+        console.log(`[USER REGISTER] Profile photo from base64: ${profilePhotoBlob.length} bytes`);
       } catch (e) {
         console.error('[USER REGISTER] Failed to decode base64 photo:', e.message);
+      }
+    } else if (profile_image_id) {
+      // Fetch from images table (frontend uploaded to /api/images/profile first)
+      try {
+        const [images] = await mainDb.query(
+          'SELECT data, content_type, file_name FROM images WHERE id = ?',
+          [profile_image_id]
+        );
+        if (images.length > 0) {
+          profilePhotoBlob = images[0].data;
+          photoMimeType = images[0].content_type;
+          photoFileName = images[0].file_name;
+          console.log(`[USER REGISTER] Profile photo from images table: ${profilePhotoBlob.length} bytes (ID: ${profile_image_id})`);
+        }
+      } catch (e) {
+        console.error('[USER REGISTER] Failed to fetch image from table:', e.message);
       }
     }
 
     // Create new user with profile photo BLOB if provided
     const [result] = await mainDb.query(
-      'INSERT INTO users (email, password_hash, first_name, last_name, display_name, phone, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [email, hashedPassword, first_name, last_name, display_name, phone || null, profilePhotoBlob, profile_photo_mime_type || null, profile_photo_file_name || null]
+      'INSERT INTO users (email, password_hash, first_name, last_name, display_name, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [email, hashedPassword, first_name, last_name, display_name, profilePhotoBlob, photoMimeType, photoFileName]
     );
     
     const userId = result.insertId;
