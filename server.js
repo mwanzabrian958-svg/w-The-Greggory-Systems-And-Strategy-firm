@@ -3691,6 +3691,8 @@ app.listen(PORT, async () => {
   console.log(`Connected to MySQL server at ${process.env.DB_HOST || 'localhost'}`);
   console.log(`Access the API at http://localhost:${PORT}/api`);
   
-  // Print all endpoints
-  listEndpoints();
+  // Print all endpoints after a small delay to ensure routes are registered
+  setTimeout(() => {
+    listEndpoints();
+  }, 100);
 });
