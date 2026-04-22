@@ -138,45 +138,29 @@ export default function AuthPlatformModal({
     setIsSubmitting(true)
     
     try {
-      let profileImageId = null
+      // Prepare registration data
+      const registerData = {
+        first_name: regData.first_name,
+        last_name: regData.last_name,
+        email: regData.email,
+        password: regData.password,
+        role: regRole
+      }
       
-      // Upload profile photo first if selected
+      // Add profile photo directly as base64 if selected
       if (profilePhoto) {
-        console.log('[REGISTER] Uploading profile photo...')
-        const photoData = profilePhotoPreview.split(',')[1] // Get base64 data after comma
-        const contentType = profilePhoto.type || 'image/jpeg'
-        
-        const imageResponse = await fetch('/api/images/profile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dataBase64: photoData,
-            contentType: contentType,
-            fileName: profilePhoto.name || 'profile.jpg'
-          })
-        })
-        
-        if (!imageResponse.ok) {
-          throw new Error('Failed to upload profile photo')
-        }
-        
-        const imageData = await imageResponse.json()
-        profileImageId = imageData.image_id
-        console.log('[REGISTER] Profile photo uploaded, image_id:', profileImageId)
+        console.log('[REGISTER] Adding profile photo to registration...')
+        registerData.profile_photo_base64 = profilePhotoPreview
+        registerData.profile_photo_mime_type = profilePhoto.type || 'image/jpeg'
+        registerData.profile_photo_file_name = profilePhoto.name || 'profile.jpg'
+        console.log('[REGISTER] Photo ready for direct upload to', regRole, 'table')
       }
       
       // Register with role - 'admin' or 'developer'
       const response = await fetch('/api/admin-verification/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          first_name: regData.first_name,
-          last_name: regData.last_name,
-          email: regData.email,
-          password: regData.password,
-          role: regRole, // 'admin' or 'developer' - tells backend which table to use
-          profile_image_id: profileImageId
-        })
+        body: JSON.stringify(registerData)
       })
       
       // Get response text first to check if it's HTML or JSON
