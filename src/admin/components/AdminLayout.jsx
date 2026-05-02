@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, FileText, FolderKanban, 
   ClipboardList, DollarSign, Code2, Activity, Settings,
-  LogOut, Menu, X, Shield, Code, User
+  LogOut, Menu, X, Shield, Code
 } from 'lucide-react';
 import { usePermissions } from '../hooks/usePermissions';
 
@@ -21,35 +21,9 @@ const iconMap = {
 
 export function AdminLayout({ user, onLogout, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { getNavigation, isAdmin, isDeveloper, isSuperAdmin } = usePermissions(user);
-
-  // Fetch profile photo on mount
-  useEffect(() => {
-    const fetchProfilePhoto = async () => {
-      if (!user?.id || !user?.role) return;
-      
-      try {
-        // Determine role for API endpoint
-        const role = user.role === 'developer' ? 'developer' : 'admin';
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const response = await fetch(`${apiUrl}/api/admin/profile-photo/${role}/${user.id}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.photo_url) {
-            setProfilePhotoUrl(data.photo_url);
-          }
-        }
-      } catch (error) {
-        console.log('Failed to fetch profile photo:', error);
-      }
-    };
-
-    fetchProfilePhoto();
-  }, [user?.id, user?.role]);
 
   const navigation = getNavigation();
 
@@ -141,25 +115,21 @@ export function AdminLayout({ user, onLogout, children }) {
               {/* User Info Box - Compact */}
               <div className="flex items-center space-x-2 bg-slate-800 rounded-lg px-2 py-1.5">
                 {/* Avatar with Profile Photo or Initial */}
-                {profilePhotoUrl ? (
+                {user?.profilePhotoData ? (
                   <img 
-                    src={profilePhotoUrl}
-                    alt={user?.name || user?.email}
-                    className="w-7 h-7 rounded-full object-cover border border-gray-600"
+                    src={user.profilePhotoData}
+                    alt={user?.display_name || `${user?.first_name} ${user?.last_name}` || user?.email}
+                    className="w-7 h-7 rounded-full object-cover"
                   />
-                ) : user?.profile_photo ? (
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold border border-gray-600">
-                    <User className="w-4 h-4" />
-                  </div>
                 ) : (
-                  <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold border border-gray-600">
-                    {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || '?'}
+                  <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    {(user?.display_name?.charAt(0) || user?.first_name?.charAt(0) || user?.email?.charAt(0))?.toUpperCase() || '?'}
                   </div>
                 )}
                 
                 {/* User Name & Role */}
                 <div className="hidden sm:block text-left leading-tight">
-                  <p className="text-xs font-medium text-white truncate max-w-[100px]">{user?.name || user?.email}</p>
+                  <p className="text-xs font-medium text-white truncate max-w-[100px]">{user?.display_name || `${user?.first_name} ${user?.last_name}` || user?.email}</p>
                   <p className="text-[10px] text-gray-400">{getRoleLabel()}</p>
                 </div>
 

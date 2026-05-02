@@ -11,7 +11,6 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [companiesDropdownOpen, setCompaniesDropdownOpen] = useState(false)
   const [adminLoginModalOpen, setAdminLoginModalOpen] = useState(false)
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState(null)
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, logout, user } = useAuth()
@@ -23,33 +22,6 @@ const Navbar = () => {
     window.addEventListener('gf-admin-session-changed', sync)
     return () => window.removeEventListener('gf-admin-session-changed', sync)
   }, [])
-
-  // Fetch user profile photo
-  useEffect(() => {
-    const fetchProfilePhoto = async () => {
-      if (!isAuthenticated || !user?.id) return;
-      
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const response = await fetch(`${apiUrl}/api/users/profile-photo/${user.id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token') || ''}`
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.photo_url) {
-            setProfilePhotoUrl(data.photo_url);
-          }
-        }
-      } catch (error) {
-        console.log('Failed to fetch profile photo:', error);
-      }
-    };
-
-    fetchProfilePhoto();
-  }, [isAuthenticated, user?.id]);
 
   const navigation = [
     { name: 'Home', path: '/' },
