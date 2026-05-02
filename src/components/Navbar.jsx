@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, LogIn, ChevronDown, Briefcase } from 'lucide-react'
+import { Menu, X, LogIn, ChevronDown, Briefcase, User } from 'lucide-react'
 import BrandHeader from './BrandHeader'
 import { useAuth } from '../context/AuthContext'
 import AuthPlatformModal from './AuthPlatformModal'
@@ -11,6 +11,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [companiesDropdownOpen, setCompaniesDropdownOpen] = useState(false)
   const [adminLoginModalOpen, setAdminLoginModalOpen] = useState(false)
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState(null)
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, logout, user } = useAuth()
@@ -22,6 +23,33 @@ const Navbar = () => {
     window.addEventListener('gf-admin-session-changed', sync)
     return () => window.removeEventListener('gf-admin-session-changed', sync)
   }, [])
+
+  // Fetch user profile photo
+  useEffect(() => {
+    const fetchProfilePhoto = async () => {
+      if (!isAuthenticated || !user?.id) return;
+      
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const response = await fetch(`${apiUrl}/api/users/profile-photo/${user.id}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token') || ''}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.photo_url) {
+            setProfilePhotoUrl(data.photo_url);
+          }
+        }
+      } catch (error) {
+        console.log('Failed to fetch profile photo:', error);
+      }
+    };
+
+    fetchProfilePhoto();
+  }, [isAuthenticated, user?.id]);
 
   const navigation = [
     { name: 'Home', path: '/' },
@@ -172,14 +200,18 @@ const Navbar = () => {
             <div className="flex items-center space-x-3 bg-gray-100 px-3 py-2 rounded-lg border border-gray-200">
               {isAuthenticated && user ? (
                 <>
-                  {user.profilePhotoData ? (
+                  {profilePhotoUrl ? (
                     <img 
-                      src={user.profilePhotoData}
+                      src={profilePhotoUrl}
                       alt={user.display_name || user.name || `${user.first_name} ${user.last_name}`}
-                      className="h-8 w-8 rounded-full object-cover"
+                      className="h-8 w-8 rounded-full object-cover border border-gray-300"
                     />
+                  ) : user?.profile_photo || user?.profilePhoto ? (
+                    <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium border border-gray-300">
+                      <User className="w-4 h-4" />
+                    </div>
                   ) : (
-                    <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium">
+                    <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium border border-gray-300">
                       {user.first_name && user.last_name 
                         ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
                         : user.first_name 
@@ -223,14 +255,18 @@ const Navbar = () => {
             <div className="flex items-center space-x-3 bg-gray-100 px-3 py-2 rounded-lg border border-gray-200 mb-4">
               {isAuthenticated && user ? (
                 <>
-                  {user.profilePhotoData ? (
+                  {profilePhotoUrl ? (
                     <img 
-                      src={user.profilePhotoData}
+                      src={profilePhotoUrl}
                       alt={user.display_name || user.name || `${user.first_name} ${user.last_name}`}
-                      className="h-8 w-8 rounded-full object-cover"
+                      className="h-8 w-8 rounded-full object-cover border border-gray-300"
                     />
+                  ) : user?.profile_photo || user?.profilePhoto ? (
+                    <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium border border-gray-300">
+                      <User className="w-4 h-4" />
+                    </div>
                   ) : (
-                    <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium">
+                    <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium border border-gray-300">
                       {user.first_name && user.last_name 
                         ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
                         : user.first_name 
