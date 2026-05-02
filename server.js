@@ -2695,6 +2695,19 @@ app.post('/api/currencies/convert', async (req, res) => {
       success: true,
       original_amount: amount,
       from_currency: from_currency.toUpperCase(),
+      to_currency: to_currency.toUpperCase(),
+      converted_amount: convertedAmount
+    });
+  } catch (error) {
+    console.error('Error converting currency:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to convert currency',
+      error: error.message
+    });
+  }
+});
+
 // Admin Authentication handler - shared logic
 async function handleAdminAuth(req, res) {
   try {
