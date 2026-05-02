@@ -2623,41 +2623,6 @@ app.post('/api/currencies/:id/set-default', async (req, res) => {
   }
 });
 
-// Exchange Rate Update API
-app.post('/api/currencies/update-exchange-rates', async (req, res) => {
-  try {
-    const { rates } = req.body; // Expected format: [{ code: 'USD', rate: 0.0065 }, ...]
-
-    if (!Array.isArray(rates)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Rates must be an array'
-      });
-    }
-
-    const updatePromises = rates.map(async ({ code, rate }) => {
-      await db.execute(
-        'UPDATE currencies SET exchange_rate = ?, updated_at = NOW() WHERE code = ?',
-        [rate, code.toUpperCase()]
-      );
-    });
-
-    await Promise.all(updatePromises);
-
-    res.json({
-      success: true,
-      message: 'Exchange rates updated successfully'
-    });
-  } catch (error) {
-    console.error('Error updating exchange rates:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update exchange rates',
-      error: error.message
-    });
-  }
-});
-
 // Currency Conversion API
 app.post('/api/currencies/convert', async (req, res) => {
   try {
