@@ -2673,137 +2673,67 @@ app.post('/api/currencies/convert', async (req, res) => {
   }
 });
 
-// Admin Authentication handler - shared logic
+// Admin Authentication handler - EXACTLY like developer auth
 async function handleAdminAuth(req, res) {
-  console.log('[ADMIN AUTH] ========== FUNCTION START ==========');
   try {
     const { email, password } = req.body;
-    console.log('[ADMIN AUTH] Request received:', { email, hasPassword: !!password });
-    
-    // IP RESTRICTION
     const clientIP = getClientIpForAdmin(req);
-    console.log('[ADMIN AUTH] Client IP:', clientIP);
-    
-    if (!isLocalAdminIp(clientIP)) {
-      console.log('[ADMIN AUTH] IP blocked:', clientIP);
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied from this location'
-      });
-    }
-    console.log('[ADMIN AUTH] IP allowed');
-    
-    if (!isLocalAdminIp(clientIP)) {
-      console.log(`[SECURITY] Unauthorized admin access attempt from IP: ${clientIP}`);
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied from this location'
-      });
-    }
-
-    // RATE LIMITING - Check recent attempts from this IP
-    const rateLimitKey = `admin_login_attempts_${clientIP}`;
-    let recentAttempts = 0;
-    if (redis) {
-      recentAttempts = await redis.get(rateLimitKey) || 0;
-    } else {
-      const rateData = memoryStore.get(rateLimitKey) || { count: 0, expires: 0 };
-      recentAttempts = rateData.expires > Date.now() ? rateData.count : 0;
-    }
-    
-    if (recentAttempts > 5) {
-      console.log(`[SECURITY] Rate limit exceeded for IP: ${clientIP}`);
-      return res.status(429).json({
-        success: false,
-        message: 'Too many login attempts. Please try again later.'
-      });
-    }
-
-    // FAILED LOGIN TRACKING - Check if account is locked
-    const lockoutKey = `admin_account_locked_${email}`;
-    let isLocked = false;
-    if (redis) {
-      isLocked = await redis.get(lockoutKey);
-    } else {
-      const lockData = memoryStore.get(lockoutKey) || { locked: false, expires: 0 };
-      isLocked = lockData.expires > Date.now() && lockData.locked;
-    }
-    if (isLocked) {
-      console.log(`[SECURITY] Locked account login attempt: ${email}`);
-      return res.status(423).json({
-        success: false,
-        message: 'Account temporarily locked due to failed attempts'
-      });
-    }
-
-    // Validate required fields
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
-
-    // Find admin user by email from admin_users table
     console.log(`[ADMIN LOGIN] Querying admin_users table for: ${email}`);
     const [admins] = await mainDb.query(
-      'SELECT * FROM admin_users WHERE email = ? AND is_active = 1 AND deleted_at IS NULL',
+      'SELECT * FROM admin_users WHERE email = ? AND is_active = TRUE AND deleted_at IS NULL',
       [email]
     );
     console.log(`[ADMIN LOGIN] Query result: ${admins.length} admin(s) found`);
 
     if (admins.length === 0) {
-      await trackFailedLogin(email, clientIP);
-      console.log(`[SECURITY] Admin not found attempt: ${email} from IP: ${clientIP}`);
+      console.log(`[SECURITY] Admin not found: ${email}`);
       return res.status(401).json({
         success: false,
         message: 'Admin account not found'
       });
     }
 
-    const user = admins[0];
-    console.log(`[ADMIN LOGIN] Found admin: ${user.email}, ID: ${user.id}, checking password...`);
+    const admin = admins[0];
+    console.log(`[ADMIN LOGIN] Found admin: ${admin.email}, ID: ${admin.id}, checking password...`);
 
-    const isPasswordValid = await bcryptjs.compare(password, user.password_hash);
+    // Verify password
+    const isPasswordValid = await bcryptjs.compare(password, admin.password_hash);
     console.log(`[ADMIN LOGIN] Password validation: ${isPasswordValid ? 'VALID' : 'INVALID'}`);
-
+    
     if (!isPasswordValid) {
-      await trackFailedLogin(email, clientIP);
-      console.log(`[SECURITY] Invalid password attempt: ${email} from IP: ${clientIP}`);
+      console.log(`[SECURITY] Invalid admin password: ${email}`);
       return res.status(401).json({
         success: false,
         message: 'Invalid password'
       });
     }
 
-    // Clear failed attempts on successful login
-    await clearFailedAttempts(email, clientIP);
-
-    // Update last login for admin
+    // Update last login
     await mainDb.query(
       'UPDATE admin_users SET last_login_at = NOW(), last_login_ip = ? WHERE id = ?',
-      [clientIP, user.id]
+      [clientIP, admin.id]
     );
 
-    console.log(`[SECURITY] Successful admin login: ${email} from IP: ${clientIP}`);
+    console.log(`[SECURITY] Successful admin login: ${email}`);
 
-    const token = signAdminSessionToken(user.id);
+    const token = signAdminSessionToken(admin.id);
 
     res.json({
       success: true,
-      message: 'Authentication successful',
+      message: 'Admin authentication successful',
       token,
       user: {
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        phone: user.phone_number,
+        id: admin.id,
+        first_name: admin.first_name,
+        last_name: admin.last_name,
+        display_name: admin.display_name,
+        email: admin.email,
+        phone: admin.phone_number,
         role: 'admin',
-        admin_level: user.admin_level,
-        access_level: user.access_level,
-        department: user.department,
-        profile_photo: user.profile_photo_blob ? true : false,
+        department: admin.department,
+        position: admin.position,
+        profile_photo: admin.profile_photo_blob ? true : false,
+        profile_photo_id: admin.profile_photo_id,
         last_login: new Date().toISOString()
       }
     });
@@ -2838,7 +2768,7 @@ async function handleAdminAuth(req, res) {
   }
 }
 
-// Admin Authentication API with Security Lockdown
+// Admin Authentication API
 app.post('/api/admin/authenticate', handleAdminAuth);
 
 // Frontend-compatible endpoint
