@@ -260,6 +260,7 @@ app.use(limiter);
 // Create a connection pool for the main database
 const mainDb = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5000,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'greggory_foundation_db_main',
@@ -489,6 +490,9 @@ app.post('/api/users/register', async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcryptjs.hash(password, saltRounds);
 
+    // Set default display_name if not provided
+    const finalDisplayName = display_name || `${first_name} ${last_name}`;
+
     // Handle profile photo - either from base64 direct upload or from images table
     let profilePhotoBlob = null;
     let photoMimeType = profile_photo_mime_type || null;
@@ -523,8 +527,8 @@ app.post('/api/users/register', async (req, res) => {
 
     // Create new user with profile photo BLOB if provided
     const [result] = await mainDb.query(
-      'INSERT INTO users (email, password_hash, first_name, last_name, display_name, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [email, hashedPassword, first_name, last_name, display_name, profilePhotoBlob, photoMimeType, photoFileName]
+      'INSERT INTO users (email, password_hash, first_name, last_name, display_name, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name, is_active, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)',
+      [email, hashedPassword, first_name, last_name, finalDisplayName, profilePhotoBlob, photoMimeType, photoFileName]
     );
     
     const userId = result.insertId;
@@ -555,10 +559,13 @@ app.post('/api/users/register', async (req, res) => {
     });
   } catch (error) {
     console.error('[USER REGISTER] Error:', error);
+    console.error('[USER REGISTER] Error code:', error.code);
+    console.error('[USER REGISTER] Error SQL:', error.sql);
+    console.error('[USER REGISTER] Error stack:', error.stack);
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ success: false, message: 'User with this email already exists' });
     }
-    res.status(500).json({ success: false, message: 'Registration failed', error: error.message });
+    res.status(500).json({ success: false, message: 'Registration failed', error: error.message, errorCode: error.code });
   }
 });
 
@@ -3026,7 +3033,7 @@ app.post('/api/admin-verification/register', async (req, res) => {
           email, password_hash, first_name, last_name, 
           admin_level, access_level, is_active, email_verified, 
           profile_photo_blob, profile_photo_mime_type, profile_photo_file_name
-        ) VALUES (?, ?, ?, ?, ?, 'full', TRUE, TRUE, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, 'full', 1, 1, ?, ?, ?)`,
         [email, hashedPassword, first_name, last_name, 'admin', profilePhotoBlob, photoMimeType, photoFileName]
       );
       userId = result.insertId;
@@ -3051,7 +3058,7 @@ app.post('/api/admin-verification/register', async (req, res) => {
           email, password_hash, first_name, last_name,
           developer_level, is_active, email_verified,
           profile_photo_blob, profile_photo_mime_type, profile_photo_file_name
-        ) VALUES (?, ?, ?, ?, ?, TRUE, TRUE, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, 1, 1, ?, ?, ?)`,
         [email, hashedPassword, first_name, last_name, 'mid', profilePhotoBlob, photoMimeType, photoFileName]
       );
       userId = result.insertId;
