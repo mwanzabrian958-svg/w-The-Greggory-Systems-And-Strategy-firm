@@ -526,9 +526,10 @@ app.post('/api/users/register', async (req, res) => {
     }
 
     // Create new user with profile photo BLOB if provided
+    // NOTE: display_name is GENERATED column in SQL, don't insert into it
     const [result] = await mainDb.query(
-      'INSERT INTO users (email, password_hash, first_name, last_name, display_name, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name, is_active, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)',
-      [email, hashedPassword, first_name, last_name, finalDisplayName, profilePhotoBlob, photoMimeType, photoFileName]
+      'INSERT INTO users (email, password_hash, first_name, last_name, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name, is_active, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1)',
+      [email, hashedPassword, first_name, last_name, profilePhotoBlob, photoMimeType, photoFileName]
     );
     
     const userId = result.insertId;
