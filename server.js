@@ -639,17 +639,6 @@ app.post('/api/users/google-auth', async (req, res) => {
         first_name,
         last_name,
         role: 'user'
-      },
-      message: 'Account created successfully'
-    });
-    
-  } catch (error) {
-    console.error('Google auth error:', error);
-    res.status(500).json({ success: false, message: 'Authentication failed', error: error.message });
-  }
-});
-
-// Admin/Staff user creation endpoint - creates users in separate tables based on role
 app.post('/api/users/admin-create', async (req, res) => {
   try {
     const { first_name, last_name, email, password, role = 'user', admin_level = 'admin', developer_level = 'mid' } = req.body;
