@@ -2675,14 +2675,23 @@ app.post('/api/currencies/convert', async (req, res) => {
 
 // Admin Authentication handler - shared logic
 async function handleAdminAuth(req, res) {
+  console.log('[ADMIN AUTH] ========== FUNCTION START ==========');
   try {
     const { email, password } = req.body;
+    console.log('[ADMIN AUTH] Request received:', { email, hasPassword: !!password });
     
-    console.log(`[ADMIN LOGIN] Login attempt received:`, { email, hasPassword: !!password });
-
-    // IP RESTRICTION — admin auth only from this PC (loopback). Handles ::ffff:127.0.0.1 etc.
+    // IP RESTRICTION
     const clientIP = getClientIpForAdmin(req);
-    console.log(`[ADMIN LOGIN] Client IP: ${clientIP}`);
+    console.log('[ADMIN AUTH] Client IP:', clientIP);
+    
+    if (!isLocalAdminIp(clientIP)) {
+      console.log('[ADMIN AUTH] IP blocked:', clientIP);
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied from this location'
+      });
+    }
+    console.log('[ADMIN AUTH] IP allowed');
     
     if (!isLocalAdminIp(clientIP)) {
       console.log(`[SECURITY] Unauthorized admin access attempt from IP: ${clientIP}`);
@@ -2835,34 +2844,17 @@ app.post('/api/admin/authenticate', handleAdminAuth);
 // Frontend-compatible endpoint
 app.post('/api/admin-verification/authenticate-enhanced', handleAdminAuth);
 
-// Developer Authentication handler - shared logic
+// Developer Authentication API
+app.post('/api/developer/authenticate', handleDeveloperAuth);
+
+// Frontend-compatible endpoint  
+app.post('/api/developer-verification/authenticate', handleDeveloperAuth);
+
+// Developer Authentication handler
 async function handleDeveloperAuth(req, res) {
   try {
     const { email, password } = req.body;
-    
-    console.log(`[DEV LOGIN] Login attempt received:`, { email, hasPassword: !!password });
-
-    // IP RESTRICTION
     const clientIP = getClientIpForAdmin(req);
-    console.log(`[DEV LOGIN] Client IP: ${clientIP}`);
-    
-    if (!isLocalAdminIp(clientIP)) {
-      console.log(`[SECURITY] Unauthorized developer access attempt from IP: ${clientIP}`);
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied from this location'
-      });
-    }
-
-    // Validate required fields
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
-
-    // Find developer by email
     console.log(`[DEV LOGIN] Querying developer_users table for: ${email}`);
     const [developers] = await mainDb.query(
       'SELECT * FROM developer_users WHERE email = ? AND is_active = TRUE AND deleted_at IS NULL',
