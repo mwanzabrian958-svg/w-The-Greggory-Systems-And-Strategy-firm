@@ -645,6 +645,15 @@ app.post('/api/users/google-auth', async (req, res) => {
         first_name,
         last_name,
         role: 'user'
+      }
+    });
+  } catch (error) {
+    console.error('[USER REGISTER] Error:', error);
+    res.status(500).json({ success: false, message: 'Registration failed: ' + error.message });
+  }
+});
+
+// Admin create user endpoint
 app.post('/api/users/admin-create', async (req, res) => {
   try {
     const { first_name, last_name, email, password, role = 'user', admin_level = 'admin', developer_level = 'mid' } = req.body;
