@@ -30,6 +30,7 @@ import Pricing from './pages/Pricing'
 
 // Admin Module
 import { AdminRouter } from './admin/AdminRouter'
+import { Developer } from './admin/pages/Developer'
 
 
 
@@ -38,6 +39,7 @@ function Layout() {
   const authPages = ['/login', '/signup', '/forgot-password']
   const isAuthPage = authPages.includes(location.pathname)
   const isAdminPage = location.pathname.startsWith('/admin')
+  const isDeveloperPage = location.pathname === '/developer'
 
 
 
@@ -45,7 +47,7 @@ function Layout() {
 
     <div className="flex flex-col min-h-screen">
 
-      {!isAuthPage && !isAdminPage && (
+      {!isAuthPage && !isAdminPage && !isDeveloperPage && (
         <>
           <Navbar />
           <SiteTagline />
@@ -107,6 +109,9 @@ function Layout() {
           {/* Admin Routes - Using new modular admin system */}
           <Route path="/admin/*" element={<AdminRouter />} />
 
+          {/* Developer Platform - Standalone page */}
+          <Route path="/developer" element={<Developer />} />
+
           <Route 
             path="/client-portal" 
             element={
@@ -122,8 +127,8 @@ function Layout() {
 
       </main>
 
-      {!isAuthPage && !isAdminPage && <Footer />}
-      {!isAdminPage && <FloatingWhatsApp />}
+      {!isAuthPage && !isAdminPage && !isDeveloperPage && <Footer />}
+      {!isAdminPage && !isDeveloperPage && <FloatingWhatsApp />}
     </div>
 
   )
