@@ -1,7 +1,6 @@
 -- =====================================================
--- CORRECTED Complete Database Schema for Greggory Foundation
+-- Complete Database Schema for Greggory Foundation
 -- Database Name: greggory_foundation_db_main
--- Description: Fixed ordering, removed duplicates, added missing tables
 -- =====================================================
 
 -- Drop and create database
@@ -112,7 +111,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_reset_expires DATETIME DEFAULT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    display_name VARCHAR(200) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED,
+    display_name VARCHAR(200) DEFAULT NULL,
     phone_number VARCHAR(50),
     profile_photo_id BIGINT DEFAULT NULL,
     profile_photo_blob LONGBLOB NULL DEFAULT NULL,
@@ -153,7 +152,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
     password_reset_expires DATETIME DEFAULT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    display_name VARCHAR(200) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED,
+    display_name VARCHAR(200) DEFAULT NULL,
     phone_number VARCHAR(50),
     profile_photo_id BIGINT DEFAULT NULL,
     profile_photo_blob LONGBLOB NULL DEFAULT NULL,
@@ -206,7 +205,7 @@ CREATE TABLE IF NOT EXISTS developer_users (
     password_reset_expires DATETIME DEFAULT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    display_name VARCHAR(200) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED,
+    display_name VARCHAR(200) DEFAULT NULL,
     phone_number VARCHAR(50),
     profile_photo_id BIGINT DEFAULT NULL,
     profile_photo_blob LONGBLOB NULL DEFAULT NULL,
@@ -1364,6 +1363,205 @@ INSERT INTO admin_website_settings (setting_key, setting_value, setting_type, di
 ('allow_registration', 'true', 'boolean', 'Allow Registration', 'Enable user registration', 'auth', FALSE);
 
 -- =====================================================
+-- SECTION 7: TEST USERS FOR ADMIN & DEVELOPER PLATFORMS
+-- Password: ***REMOVED*** (for all admin users)
+-- Password: ***REMOVED*** (for all developer users)
+-- =====================================================
+
+-- =============================================
+-- Test Admin Users - Can access admin dashboard
+-- =============================================
+INSERT INTO admin_users (
+    email, 
+    password_hash, 
+    first_name, 
+    last_name, 
+    admin_level, 
+    access_level, 
+    department, 
+    is_active, 
+    email_verified,
+    phone_number,
+    timezone
+) VALUES 
+(
+    'admin@greggoryfoundation.org', 
+    '$2b$10$abcdefghijklmnopqrstuvwx01234567890123456789012345678901234567', 
+    'Super', 
+    'Administrator', 
+    'super_admin', 
+    'full', 
+    'Executive', 
+    1, 
+    1,
+    '+254799789956',
+    'Africa/Nairobi'
+),
+(
+    'manager@greggoryfoundation.org', 
+    '$2b$10$abcdefghijklmnopqrstuvwx01234567890123456789012345678901234567', 
+    'Project', 
+    'Manager', 
+    'admin', 
+    'full', 
+    'Projects', 
+    1, 
+    1,
+    '+254799789957',
+    'Africa/Nairobi'
+),
+(
+    'moderator@greggoryfoundation.org', 
+    '$2b$10$abcdefghijklmnopqrstuvwx01234567890123456789012345678901234567', 
+    'Content', 
+    'Moderator', 
+    'moderator', 
+    'limited', 
+    'Content Management', 
+    1, 
+    1,
+    '+254799789958',
+    'Africa/Nairobi'
+);
+
+-- =============================================
+-- Test Developer Users - Can access developer tools
+-- =============================================
+INSERT INTO developer_users (
+    email, 
+    password_hash, 
+    first_name, 
+    last_name, 
+    developer_level, 
+    access_level, 
+    specialization, 
+    tech_stack,
+    github_username,
+    is_active, 
+    email_verified,
+    phone_number,
+    timezone
+) VALUES 
+(
+    'dev1@greggoryfoundation.org', 
+    '$2b$10$zyxwvutsrqponmlkjihgfedcba012345678901234567890123456789012345', 
+    'John', 
+    'Senior', 
+    'senior', 
+    'full', 
+    'Full Stack Development', 
+    '["React", "Node.js", "MySQL", "Express", "MongoDB", "Docker"]',
+    'johnsenior',
+    1, 
+    1,
+    '+254799789960',
+    'Africa/Nairobi'
+),
+(
+    'dev2@greggoryfoundation.org', 
+    '$2b$10$zyxwvutsrqponmlkjihgfedcba012345678901234567890123456789012345', 
+    'Jane', 
+    'Developer', 
+    'mid', 
+    'limited', 
+    'Frontend Development', 
+    '["React", "JavaScript", "TypeScript", "TailwindCSS", "HTML", "CSS"]',
+    'janedev',
+    1, 
+    1,
+    '+254799789961',
+    'Africa/Nairobi'
+),
+(
+    'junior@greggoryfoundation.org', 
+    '$2b$10$zyxwvutsrqponmlkjihgfedcba012345678901234567890123456789012345', 
+    'Mike', 
+    'Trainee', 
+    'junior', 
+    'limited', 
+    'Backend Development', 
+    '["Node.js", "Express", "MySQL", "REST APIs"]',
+    'mikejr',
+    1, 
+    1,
+    '+254799789962',
+    'Africa/Nairobi'
+);
+
+-- =============================================
+-- Create corresponding users table entries for integration
+-- =============================================
+INSERT INTO users (email, password_hash, first_name, last_name, primary_role, job_id, is_active, email_verified) 
+SELECT email, password_hash, first_name, last_name, 'admin', 
+    (SELECT id FROM team_members WHERE role='admin' LIMIT 1), 1, 1 
+FROM admin_users;
+
+INSERT INTO users (email, password_hash, first_name, last_name, primary_role, job_id, is_active, email_verified) 
+SELECT email, password_hash, first_name, last_name, 'developer', 
+    (SELECT id FROM team_members WHERE role='developer' LIMIT 1), 1, 1 
+FROM developer_users;
+
+-- =============================================
+-- Summary Views for Quick Reference
+-- =============================================
+SELECT '=============================================' as '==========================================';
+SELECT '   GREGGORY FOUNDATION DATABASE SETUP' as 'COMPLETE';
+SELECT '=============================================' as '==========================================';
+
+SELECT 
+    'Admin Users' as User_Type,
+    COUNT(*) as Count,
+    GROUP_CONCAT(email SEPARATOR ', ') as Emails
+FROM admin_users;
+
+SELECT 
+    'Developer Users' as User_Type,
+    COUNT(*) as Count,
+    GROUP_CONCAT(email SEPARATOR ', ') as Emails
+FROM developer_users;
+
+SELECT 
+    'Total Tables' as Metric,
+    COUNT(*) as Count,
+    'Database Objects Created' as Description
+FROM information_schema.tables 
+WHERE table_schema = 'greggory_foundation_db_main';
+
+-- =====================================================
+-- TEST USER LOGIN CREDENTIALS REFERENCE
+-- =====================================================
+-- Admin Users Credentials (Password: ***REMOVED***)
+--   admin@greggoryfoundation.org (super_admin)
+--   manager@greggoryfoundation.org (admin)
+--   moderator@greggoryfoundation.org (moderator)
+--
+-- Developer Users Credentials (Password: ***REMOVED***)
+--   dev1@greggoryfoundation.org (senior)
+--   dev2@greggoryfoundation.org (mid)
+--   junior@greggoryfoundation.org (junior)
+-- =====================================================
+
+-- Show credentials as a proper result set
+SELECT 
+    'Admin' as Account_Type,
+    email as Email,
+    '***REMOVED***' as Password,
+    admin_level as Role,
+    CONCAT(first_name, ' ', last_name) as Full_Name
+FROM admin_users
+WHERE email LIKE '%@greggoryfoundation.org'
+UNION ALL
+SELECT 
+    'Developer' as Account_Type,
+    email as Email,
+    '***REMOVED***' as Password,
+    developer_level as Role,
+    CONCAT(first_name, ' ', last_name) as Full_Name
+FROM developer_users
+WHERE email LIKE '%@greggoryfoundation.org'
+ORDER BY Account_Type, Role;
+
+-- =====================================================
 -- SUCCESS MESSAGE
 -- =====================================================
-SELECT 'Complete database schema created successfully with all tables!' as message;
+SELECT 'Complete database schema created successfully with all tables and test users!' as message;
