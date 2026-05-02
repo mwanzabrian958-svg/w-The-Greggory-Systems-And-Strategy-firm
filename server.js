@@ -2947,12 +2947,14 @@ async function handleDeveloperAuth(req, res) {
         id: user.id,
         first_name: user.first_name,
         last_name: user.last_name,
+        display_name: user.display_name,
         email: user.email,
         phone: user.phone_number,
         role: 'developer',
         developer_level: user.developer_level,
         tech_stack: user.tech_stack,
         profile_photo: user.profile_photo_blob ? true : false,
+        profile_photo_id: user.profile_photo_id,
         last_login: new Date().toISOString()
       }
     });
