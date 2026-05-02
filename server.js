@@ -2695,20 +2695,6 @@ app.post('/api/currencies/convert', async (req, res) => {
       success: true,
       original_amount: amount,
       from_currency: from_currency.toUpperCase(),
-      to_currency: to_currency.toUpperCase(),
-      converted_amount: convertedAmount,
-      exchange_rate_used: toCurrency[0].exchange_rate / fromCurrency[0].exchange_rate
-    });
-  } catch (error) {
-    console.error('Error converting currency:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to convert currency',
-      error: error.message
-    });
-  }
-});
-
 // Admin Authentication handler - shared logic
 async function handleAdminAuth(req, res) {
   try {
@@ -2774,7 +2760,7 @@ async function handleAdminAuth(req, res) {
     // Find admin user by email from admin_users table
     console.log(`[ADMIN LOGIN] Querying admin_users table for: ${email}`);
     const [admins] = await mainDb.query(
-      'SELECT * FROM admin_users WHERE email = ? AND is_active = TRUE AND deleted_at IS NULL',
+      'SELECT * FROM admin_users WHERE email = ? AND is_active = 1 AND deleted_at IS NULL',
       [email]
     );
     console.log(`[ADMIN LOGIN] Query result: ${admins.length} admin(s) found`);
