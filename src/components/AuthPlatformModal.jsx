@@ -86,8 +86,15 @@ export default function AuthPlatformModal({
   }
 
   const handleCredentialsSuccess = () => {
-    onAdminSuccess?.()
-    handleClose()
+    // Keep platforms completely separate - no collision
+    if (loginRole === 'developer') {
+      // Developer goes to white blank page - completely separate from user/admin
+      window.location.href = '/developer'
+    } else if (loginRole === 'admin') {
+      // Admin uses callback
+      onAdminSuccess?.()
+      handleClose()
+    }
   }
 
   // Admin/Developer registration handlers - NOT shown to regular users
