@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Users, FileText, FolderKanban, 
   ClipboardList, DollarSign, Code2, Activity, Settings,
-  LogOut, Menu, X, Shield, Code
+  LogOut, Menu, X, Shield, Code, Plus, Edit2, Trash2
 } from 'lucide-react';
 import { usePermissions } from '../hooks/usePermissions';
 
@@ -102,12 +102,42 @@ export function AdminLayout({ user, onLogout, children }) {
               })}
             </nav>
 
-            {/* Right Side - User Info Box (No Dropdown) */}
-            <div className="flex items-center shrink-0 ml-2">
+            {/* Right Side - Content Management + User Info */}
+            <div className="flex items-center shrink-0 ml-2 space-x-2">
+              {/* Content Management Buttons */}
+              <div className="hidden md:flex items-center space-x-1 bg-slate-800 rounded-lg px-2 py-1.5">
+                <button
+                  onClick={() => navigate('/admin/content/new')}
+                  className="flex items-center px-2 py-1.5 text-xs font-medium text-green-400 hover:text-green-300 hover:bg-slate-700 rounded transition-colors"
+                  title="Add New Content"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add
+                </button>
+                <div className="w-px h-4 bg-slate-600 mx-1"></div>
+                <button
+                  onClick={() => navigate('/admin/content')}
+                  className="flex items-center px-2 py-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 hover:bg-slate-700 rounded transition-colors"
+                  title="Update Content"
+                >
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  Update
+                </button>
+                <div className="w-px h-4 bg-slate-600 mx-1"></div>
+                <button
+                  onClick={() => navigate('/admin/content')}
+                  className="flex items-center px-2 py-1.5 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-slate-700 rounded transition-colors"
+                  title="Delete Content"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Delete
+                </button>
+              </div>
+
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-1.5 rounded-md text-gray-300 hover:text-white hover:bg-slate-800 mr-2"
+                className="lg:hidden p-1.5 rounded-md text-gray-300 hover:text-white hover:bg-slate-800"
               >
                 {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
