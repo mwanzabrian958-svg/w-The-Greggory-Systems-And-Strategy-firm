@@ -270,9 +270,15 @@ export default function AuthPlatformModal({
         }
       }
 
-      // Store session using proper token key for adminSession.js compatibility
+      // Store session for admin platform compatibility
+      const session = {
+        token: data.token,
+        user: data.user,
+        expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+      }
+      sessionStorage.setItem('gf_admin_session', JSON.stringify(session))
+      // Also store individual keys for compatibility
       sessionStorage.setItem('gf_admin_session_token', data.token)
-      // Also store full user data for reference
       sessionStorage.setItem('gf_admin_user', JSON.stringify(data.user))
       window.dispatchEvent(new Event('gf-admin-session-changed'))
       
