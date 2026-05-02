@@ -464,16 +464,26 @@ app.post('/api/users/login', async (req, res) => {
 app.post('/api/users/register', async (req, res) => {
   try {
     const { email, password, first_name, last_name, display_name, phone, profile_photo_base64, profile_photo_mime_type, profile_photo_file_name, profile_image_id, userRole } = req.body;
+    
+    console.log('[USER REGISTER] Request received:', { email, first_name, last_name, userRole });
 
     // Validate required fields
     if (!email || !password || !first_name || !last_name) {
+      console.log('[USER REGISTER] Validation failed:', { email: !!email, password: !!password, first_name: !!first_name, last_name: !!last_name });
       return res.status(400).json({
         success: false,
         message: 'Email, password, first name, and last name are required'
       });
     }
 
+    // Check database connection
+    if (!mainDb) {
+      console.error('[USER REGISTER] Database connection not available');
+      return res.status(500).json({ success: false, message: 'Database connection not available' });
+    }
+
     // Check if user already exists
+    console.log('[USER REGISTER] Checking if user exists:', email);
     const [existingUsers] = await mainDb.query(
       'SELECT id FROM users WHERE email = ? AND deleted_at IS NULL',
       [email]
@@ -566,7 +576,13 @@ app.post('/api/users/register', async (req, res) => {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ success: false, message: 'User with this email already exists' });
     }
-    res.status(500).json({ success: false, message: 'Registration failed', error: error.message, errorCode: error.code });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Registration failed: ' + error.message, 
+      error: error.message, 
+      errorCode: error.code,
+      sql: error.sql 
+    });
   }
 });
 
