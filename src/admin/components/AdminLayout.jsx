@@ -13,17 +13,94 @@ const NAV_ITEMS = [
   { id: 'services', label: 'Our Services', icon: Briefcase, section: 'content' },
   { id: 'case-studies', label: 'Case Studies', icon: FolderKanban, section: 'content' },
   { id: 'blog', label: 'Blog', icon: BookOpen, section: 'content' },
-  { id: 'documentation', label: 'Documentation', icon: FileText, section: 'content' },
-  { id: 'accounting', label: 'Accounting', icon: DollarSign, section: 'finance' },
-  { id: 'transactions', label: 'M-pesa', icon: Wallet, section: 'finance' },
-  { id: 'bank', label: 'Bank Records', icon: CreditCard, section: 'finance' },
-  { id: 'tracking', label: 'Project Tracking', icon: TrendingUp, section: 'projects' },
+  { id: 'projects', label: 'Projects', icon: FolderKanban, section: 'projects', hasSubmenu: true },
+];
+
+// Sub-items for Projects section
+const PROJECT_SUB_ITEMS = [
+  { id: 'documentation', label: 'Documentation', icon: FileText },
+  { id: 'accounting', label: 'Accounting', icon: DollarSign },
+  { id: 'transactions', label: 'M-pesa', icon: Wallet },
+  { id: 'bank', label: 'Bank Records', icon: CreditCard },
+  { id: 'tracking', label: 'Project Tracking', icon: TrendingUp },
+];
+
+// Hard-coded blog posts data
+const BLOG_POSTS = [
+  {
+    id: 1,
+    title: 'Latest Tech Trends 2024',
+    category: 'Technology',
+    author: 'John Doe',
+    date: 'Dec 15, 2024',
+    image: '/images/blog/tech-trends.jpg',
+    fallbackImage: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&h=300&fit=crop',
+    excerpt: 'Exploring the cutting-edge technologies shaping our future in web development and AI.',
+    content: 'In this comprehensive article, we dive deep into the latest technology trends that are transforming the digital landscape in 2024. From artificial intelligence and machine learning to advanced web frameworks and cloud computing, discover how these innovations are reshaping how we build and interact with technology. We explore practical applications, emerging tools, and provide insights on how businesses can leverage these trends to stay competitive in the rapidly evolving tech ecosystem.'
+  },
+  {
+    id: 2,
+    title: 'Business Strategy Essentials',
+    category: 'Business',
+    author: 'Jane Smith',
+    date: 'Dec 10, 2024',
+    image: '/images/business-strategy.jpg',
+    fallbackImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
+    excerpt: 'Key strategies for growing your business in the Kenyan market and beyond.',
+    content: 'Building a successful business requires more than just a great idea. In this detailed guide, we cover the essential strategies that entrepreneurs and business leaders need to master. From market analysis and competitive positioning to financial planning and team building, learn the proven frameworks that have helped countless businesses thrive. Special focus is given to the unique opportunities and challenges present in the East African market, with actionable insights for both startups and established enterprises.'
+  },
+  {
+    id: 3,
+    title: 'Modern Web Development',
+    category: 'Tutorial',
+    author: 'Mike Johnson',
+    date: 'Dec 5, 2024',
+    image: '/images/web-development.jpg',
+    fallbackImage: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=300&fit=crop',
+    excerpt: 'A comprehensive guide to building responsive websites with React and Tailwind.',
+    content: 'This step-by-step tutorial takes you through modern web development practices using the latest technologies. Learn how to build fast, responsive, and accessible websites using React, Tailwind CSS, and modern JavaScript. We cover everything from setting up your development environment to deploying your application. Includes practical examples, best practices for component design, state management techniques, and tips for optimizing performance. Perfect for developers looking to upgrade their skills or transition to modern web development.'
+  },
+  {
+    id: 4,
+    title: 'Digital Marketing Tips',
+    category: 'Marketing',
+    author: 'Sarah Williams',
+    date: 'Nov 28, 2024',
+    image: '/images/digital-marketing.jpg',
+    fallbackImage: 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=300&fit=crop',
+    excerpt: 'Effective strategies for reaching your target audience online in Kenya.',
+    content: 'Digital marketing continues to evolve, and staying ahead requires understanding both global best practices and local market nuances. This article explores effective strategies specifically tailored for the Kenyan market, including social media marketing, search engine optimization, content marketing, and paid advertising. Learn how to identify your target audience, create engaging content, and measure your success with meaningful metrics. Real case studies demonstrate how businesses have successfully grown their online presence and increased revenue through strategic digital marketing.'
+  },
+  {
+    id: 5,
+    title: 'Mobile App Development',
+    category: 'Technology',
+    author: 'David Brown',
+    date: 'Nov 20, 2024',
+    image: '/images/mobile-apps.jpg',
+    fallbackImage: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=300&fit=crop',
+    excerpt: 'Building cross-platform mobile applications that users love.',
+    content: 'Mobile applications have become essential for businesses looking to engage with customers on-the-go. This comprehensive guide covers the entire mobile app development lifecycle, from ideation and wireframing to development and deployment. We explore both native and cross-platform development approaches, helping you choose the right technology stack for your project. Learn about user experience design principles, performance optimization, app store optimization, and strategies for maintaining and updating your app post-launch.'
+  },
+  {
+    id: 6,
+    title: 'E-Commerce Success',
+    category: 'Business',
+    author: 'Emily Chen',
+    date: 'Nov 15, 2024',
+    image: '/images/ecommerce.jpg',
+    fallbackImage: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&h=300&fit=crop',
+    excerpt: 'How to set up and grow your online store in the Kenyan market.',
+    content: 'The e-commerce landscape in Kenya is rapidly growing, presenting enormous opportunities for entrepreneurs and established businesses alike. This detailed guide walks you through every aspect of building a successful online store, from choosing the right platform and payment gateways to inventory management and customer service. We cover logistics challenges specific to the Kenyan market, strategies for building trust with online shoppers, and techniques for driving traffic and converting visitors into customers. Includes a checklist for launching your e-commerce business.'
+  }
 ];
 
 export function AdminLayout({ user, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeItem, setActiveItem] = useState('home');
+  const [activeProjectSubItem, setActiveProjectSubItem] = useState('documentation');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBlog, setSelectedBlog] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -79,8 +156,29 @@ export function AdminLayout({ user, onLogout }) {
     }
   };
 
+  const handleBlogClick = (blog) => {
+    setSelectedBlog(blog);
+  };
+
+  const handleBackToList = () => {
+    setSelectedBlog(null);
+  };
+
+  const handleItemClick = (itemId) => {
+    setActiveItem(itemId);
+    setSelectedBlog(null);
+    // Reset project sub-item when switching main items
+    if (itemId !== 'projects') {
+      setActiveProjectSubItem('documentation');
+    }
+  };
+
   const getActiveItemLabel = () => {
     const item = NAV_ITEMS.find(i => i.id === activeItem);
+    if (activeItem === 'projects') {
+      const subItem = PROJECT_SUB_ITEMS.find(i => i.id === activeProjectSubItem);
+      return subItem ? subItem.label : 'Projects';
+    }
     return item ? item.label : 'Home';
   };
 
@@ -100,7 +198,7 @@ export function AdminLayout({ user, onLogout }) {
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveItem(item.id)}
+                    onClick={() => handleItemClick(item.id)}
                     className={`flex items-center px-3 lg:px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm whitespace-nowrap ${
                       isActive 
                         ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 ring-offset-1 ring-offset-slate-900' 
@@ -195,6 +293,33 @@ export function AdminLayout({ user, onLogout }) {
               </button>
             </div>
           </div>
+
+          {/* Projects Sub-Menu Buttons - Show when Projects is selected */}
+          {activeItem === 'projects' && (
+            <div className="mb-6 bg-slate-100 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Project Management Options:</h3>
+              <div className="flex flex-wrap gap-3">
+                {PROJECT_SUB_ITEMS.map((subItem) => {
+                  const Icon = subItem.icon;
+                  const isSubActive = activeProjectSubItem === subItem.id;
+                  return (
+                    <button
+                      key={subItem.id}
+                      onClick={() => setActiveProjectSubItem(subItem.id)}
+                      className={`flex items-center px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm ${
+                        isSubActive
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'bg-white text-slate-700 hover:bg-blue-50 hover:text-blue-600 border border-slate-300'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 mr-2 ${isSubActive ? 'text-white' : 'text-slate-500'}`} />
+                      {subItem.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Sample Form for Database Input - Unique per item */}
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 mb-6">
@@ -325,6 +450,10 @@ export function AdminLayout({ user, onLogout }) {
                     <option>Opinion</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Publish Date</label>
+                  <input type="date" name="publishDate" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-600 mb-1">Article Content</label>
                   <textarea name="content" placeholder="Write your blog post..." rows="4" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
@@ -349,7 +478,7 @@ export function AdminLayout({ user, onLogout }) {
             )}
 
             {/* DOCUMENTATION - Doc Form */}
-            {activeItem === 'documentation' && (
+            {activeItem === 'projects' && activeProjectSubItem === 'documentation' && (
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">Document Title</label>
@@ -381,7 +510,7 @@ export function AdminLayout({ user, onLogout }) {
             )}
 
             {/* ACCOUNTING - Financial Record Form */}
-            {activeItem === 'accounting' && (
+            {activeItem === 'projects' && activeProjectSubItem === 'accounting' && (
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">Account Name</label>
@@ -413,7 +542,7 @@ export function AdminLayout({ user, onLogout }) {
             )}
 
             {/* M-PESA - Mobile Money Form */}
-            {activeItem === 'transactions' && (
+            {activeItem === 'projects' && activeProjectSubItem === 'transactions' && (
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">Transaction Type</label>
@@ -449,7 +578,7 @@ export function AdminLayout({ user, onLogout }) {
             )}
 
             {/* BANK RECORDS - Bank Transaction Form */}
-            {activeItem === 'bank' && (
+            {activeItem === 'projects' && activeProjectSubItem === 'bank' && (
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
@@ -485,7 +614,7 @@ export function AdminLayout({ user, onLogout }) {
             )}
 
             {/* PROJECT TRACKING - Project Status Form */}
-            {activeItem === 'tracking' && (
+            {activeItem === 'projects' && activeProjectSubItem === 'tracking' && (
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">Project Name</label>
@@ -529,169 +658,124 @@ export function AdminLayout({ user, onLogout }) {
           <div className="bg-gray-50 rounded-lg border border-gray-200 min-h-[200px] p-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">{getActiveItemLabel()} List</h3>
             
-            {/* Blog Posts List with Images */}
-            {activeItem === 'blog' && (
+            {/* Blog Posts List with Images - Clickable Cards */}
+            {activeItem === 'blog' && !selectedBlog && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* Hard-coded Blog Post 1 */}
-                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="h-48 bg-gray-200 flex items-center justify-center">
-                    <img 
-                      src="/images/blog/tech-trends.jpg" 
-                      alt="Tech Trends"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&h=300&fit=crop';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded mb-2">Technology</span>
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">Latest Tech Trends 2024</h4>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">Exploring the cutting-edge technologies shaping our future in web development and AI.</p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>By John Doe</span>
-                      <span>Dec 15, 2024</span>
+                {BLOG_POSTS.map((blog) => (
+                  <div 
+                    key={blog.id}
+                    onClick={() => handleBlogClick(blog)}
+                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all cursor-pointer transform hover:scale-105"
+                  >
+                    <div className="h-48 bg-gray-200 flex items-center justify-center">
+                      <img 
+                        src={blog.image} 
+                        alt={blog.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = blog.fallbackImage;
+                        }}
+                      />
+                    </div>
+                    <div className="p-4">
+                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded mb-2 ${
+                        blog.category === 'Technology' ? 'bg-blue-100 text-blue-800' :
+                        blog.category === 'Business' ? 'bg-green-100 text-green-800' :
+                        blog.category === 'Tutorial' ? 'bg-purple-100 text-purple-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {blog.category}
+                      </span>
+                      <h4 className="text-lg font-bold text-gray-900 mb-2">{blog.title}</h4>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{blog.excerpt}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>By {blog.author}</span>
+                        <span>{blog.date}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
+              </div>
+            )}
 
-                {/* Hard-coded Blog Post 2 */}
-                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="h-48 bg-gray-200 flex items-center justify-center">
-                    <img 
-                      src="/images/business-strategy.jpg" 
-                      alt="Business Strategy"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded mb-2">Business</span>
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">Business Strategy Essentials</h4>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">Key strategies for growing your business in the Kenyan market and beyond.</p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>By Jane Smith</span>
-                      <span>Dec 10, 2024</span>
-                    </div>
-                  </div>
+            {/* Detailed Blog View */}
+            {activeItem === 'blog' && selectedBlog && (
+              <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                {/* Back Button */}
+                <div className="p-4 border-b border-gray-200">
+                  <button 
+                    onClick={handleBackToList}
+                    className="flex items-center text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back to Blog List
+                  </button>
                 </div>
-
-                {/* Hard-coded Blog Post 3 */}
-                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="h-48 bg-gray-200 flex items-center justify-center">
-                    <img 
-                      src="/images/web-development.jpg" 
-                      alt="Web Development"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=300&fit=crop';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded mb-2">Tutorial</span>
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">Modern Web Development</h4>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">A comprehensive guide to building responsive websites with React and Tailwind.</p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>By Mike Johnson</span>
-                      <span>Dec 5, 2024</span>
-                    </div>
-                  </div>
+                
+                {/* Blog Header Image */}
+                <div className="h-64 md:h-96 bg-gray-200">
+                  <img 
+                    src={selectedBlog.image} 
+                    alt={selectedBlog.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = selectedBlog.fallbackImage;
+                    }}
+                  />
                 </div>
-
-                {/* Hard-coded Blog Post 4 */}
-                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="h-48 bg-gray-200 flex items-center justify-center">
-                    <img 
-                      src="/images/digital-marketing.jpg" 
-                      alt="Digital Marketing"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=300&fit=crop';
-                      }}
-                    />
+                
+                {/* Blog Content */}
+                <div className="p-6 md:p-8">
+                  <span className={`inline-block px-3 py-1 text-sm font-semibold rounded mb-4 ${
+                    selectedBlog.category === 'Technology' ? 'bg-blue-100 text-blue-800' :
+                    selectedBlog.category === 'Business' ? 'bg-green-100 text-green-800' :
+                    selectedBlog.category === 'Tutorial' ? 'bg-purple-100 text-purple-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {selectedBlog.category}
+                  </span>
+                  
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">{selectedBlog.title}</h1>
+                  
+                  <div className="flex items-center text-sm text-gray-500 mb-6">
+                    <span className="font-medium">By {selectedBlog.author}</span>
+                    <span className="mx-2">•</span>
+                    <span>{selectedBlog.date}</span>
                   </div>
-                  <div className="p-4">
-                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded mb-2">Marketing</span>
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">Digital Marketing Tips</h4>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">Effective strategies for reaching your target audience online in Kenya.</p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>By Sarah Williams</span>
-                      <span>Nov 28, 2024</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Hard-coded Blog Post 5 */}
-                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="h-48 bg-gray-200 flex items-center justify-center">
-                    <img 
-                      src="/images/mobile-apps.jpg" 
-                      alt="Mobile Apps"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=300&fit=crop';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded mb-2">Technology</span>
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">Mobile App Development</h4>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">Building cross-platform mobile applications that users love.</p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>By David Brown</span>
-                      <span>Nov 20, 2024</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Hard-coded Blog Post 6 */}
-                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="h-48 bg-gray-200 flex items-center justify-center">
-                    <img 
-                      src="/images/ecommerce.jpg" 
-                      alt="E-Commerce"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&h=300&fit=crop';
-                      }}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded mb-2">Business</span>
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">E-Commerce Success</h4>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">How to set up and grow your online store in the Kenyan market.</p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>By Emily Chen</span>
-                      <span>Nov 15, 2024</span>
-                    </div>
+                  
+                  <div className="prose max-w-none">
+                    <p className="text-lg text-gray-700 leading-relaxed">{selectedBlog.content}</p>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Other Items - Placeholder Text */}
-            {activeItem !== 'blog' && (
+            {activeItem !== 'blog' && activeItem !== 'projects' && (
               <p className="text-gray-500 text-center">
-                {activeItem === 'search' && 'Project search results will appear here...'}
                 {activeItem === 'home' && 'Home page content items will be listed here...'}
                 {activeItem === 'about' && 'About Us content will be listed here...'}
                 {activeItem === 'services' && 'Our Services content will be listed here...'}
                 {activeItem === 'case-studies' && 'Case Studies will be listed here...'}
-                {activeItem === 'documentation' && 'Documentation items will be listed here...'}
-                {activeItem === 'accounting' && 'Accounting records will be listed here...'}
-                {activeItem === 'transactions' && 'M-pesa Transaction records will be listed here...'}
-                {activeItem === 'bank' && 'Bank Records will be listed here...'}
-                {activeItem === 'tracking' && 'Project Tracking data will be listed here...'}
               </p>
+            )}
+            
+            {/* Projects Sub-item Content */}
+            {activeItem === 'projects' && (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 min-h-[200px] p-6">
+                <h3 className="text-lg font-semibold text-gray-700 mb-4">{getActiveItemLabel()} Records</h3>
+                <p className="text-gray-500 text-center">
+                  {activeProjectSubItem === 'documentation' && 'Documentation items will be listed here...'}
+                  {activeProjectSubItem === 'accounting' && 'Accounting records will be listed here...'}
+                  {activeProjectSubItem === 'transactions' && 'M-pesa Transaction records will be listed here...'}
+                  {activeProjectSubItem === 'bank' && 'Bank Records will be listed here...'}
+                  {activeProjectSubItem === 'tracking' && 'Project Tracking data will be listed here...'}
+                </p>
+              </div>
             )}
           </div>
         </div>
