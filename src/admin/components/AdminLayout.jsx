@@ -149,6 +149,7 @@ export function AdminLayout({ user, onLogout }) {
     category: '',
     status: 'active'
   });
+  const [showAddForm, setShowAddForm] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -337,9 +338,16 @@ export function AdminLayout({ user, onLogout }) {
           <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
             <h2 className="text-2xl font-bold text-slate-900">{getActiveItemLabel()}</h2>
             <div className="flex items-center space-x-2">
-              <button className="flex items-center px-4 py-2 text-sm font-semibold bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+              <button 
+                onClick={() => setShowAddForm(!showAddForm)}
+                className={`flex items-center px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
+                  showAddForm 
+                    ? 'bg-green-700 text-white shadow-inner' 
+                    : 'bg-green-500 text-white hover:bg-green-600'
+                }`}
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                Add
+                {showAddForm ? 'Hide Form' : 'Add'}
               </button>
               <button className="flex items-center px-4 py-2 text-sm font-semibold bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
                 <Edit2 className="w-4 h-4 mr-2" />
@@ -387,7 +395,8 @@ export function AdminLayout({ user, onLogout }) {
             </div>
           )}
 
-          {/* Sample Form for Database Input - Unique per item */}
+          {/* Sample Form for Database Input - Unique per item - Only visible when Add clicked */}
+          {showAddForm && (
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Add New {getActiveItemLabel()} Item</h3>
             
@@ -542,6 +551,7 @@ export function AdminLayout({ user, onLogout }) {
                 </div>
               </form>
             )}
+          )}
 
             {/* DOCUMENTATION - Doc Form */}
             {activeItem === 'projects' && activeProjectSubItem === 'documentation' && (
