@@ -551,7 +551,6 @@ export function AdminLayout({ user, onLogout }) {
                 </div>
               </form>
             )}
-          )}
 
             {/* DOCUMENTATION - Doc Form */}
             {activeItem === 'projects' && activeProjectSubItem === 'documentation' && (
@@ -729,6 +728,7 @@ export function AdminLayout({ user, onLogout }) {
               </form>
             )}
           </div>
+          )}
 
           {/* Content Display Area */}
           <div className="bg-gray-50 rounded-lg border border-gray-200 min-h-[200px] p-6">
