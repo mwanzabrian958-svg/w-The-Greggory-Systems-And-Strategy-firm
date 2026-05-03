@@ -1,213 +1,164 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, Users, FileText, FolderKanban, 
-  ClipboardList, DollarSign, Code2, Activity, Settings,
-  LogOut, Menu, X, Shield, Code, Plus, Edit2, Trash2
+  Home, Info, Briefcase, FolderKanban, BookOpen, FileText, 
+  DollarSign, Wallet, CreditCard, TrendingUp, LogOut, Menu, X, 
+  Search, Plus, Edit2, Trash2, User
 } from 'lucide-react';
-import { usePermissions } from '../hooks/usePermissions';
 
-const iconMap = {
-  LayoutDashboard,
-  Users,
-  FileText,
-  FolderKanban,
-  ClipboardList,
-  DollarSign,
-  Code2,
-  Activity,
-  Settings
-};
+// Navigation items with their sections
+const NAV_ITEMS = [
+  { id: 'search', label: 'Project Search', icon: Search, section: 'projects' },
+  { id: 'home', label: 'Home', icon: Home, section: 'content' },
+  { id: 'about', label: 'About Us', icon: Info, section: 'content' },
+  { id: 'services', label: 'Our Services', icon: Briefcase, section: 'content' },
+  { id: 'case-studies', label: 'Case Studies', icon: FolderKanban, section: 'content' },
+  { id: 'blog', label: 'Blog', icon: BookOpen, section: 'content' },
+  { id: 'documentation', label: 'Documentation', icon: FileText, section: 'content' },
+  { id: 'accounting', label: 'Accounting', icon: DollarSign, section: 'finance' },
+  { id: 'transactions', label: 'Pesa Transactions', icon: Wallet, section: 'finance' },
+  { id: 'bank', label: 'Bank Records', icon: CreditCard, section: 'finance' },
+  { id: 'tracking', label: 'Project Tracking', icon: TrendingUp, section: 'projects' },
+];
 
-export function AdminLayout({ user, onLogout, children }) {
+export function AdminLayout({ user, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
+  const [activeItem, setActiveItem] = useState('home');
   const navigate = useNavigate();
-  const { getNavigation, isAdmin, isDeveloper, isSuperAdmin } = usePermissions(user);
 
-  const navigation = getNavigation();
-
-  // Show blank white page for developer role users
-  if (user?.role === 'developer') {
-    return <div className="min-h-screen bg-white"></div>;
-  }
-  
   const handleLogout = () => {
     onLogout();
     navigate('/login');
   };
 
-  const getRoleLabel = () => {
-    if (isSuperAdmin()) return 'Super Admin';
-    if (isAdmin()) return user?.admin_level === 'moderator' ? 'Moderator' : 'Admin';
-    if (isDeveloper()) return user?.developer_level === 'senior' ? 'Senior Dev' : user?.developer_level === 'mid' ? 'Developer' : 'Junior Dev';
-    return '';
+  const handleAdd = () => {
+    console.log(`Add ${activeItem}`);
+    // TODO: Open add modal/form for activeItem
   };
 
-  const getRoleBadge = () => {
-    if (isSuperAdmin()) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-          <Shield className="w-3 h-3 mr-1" />
-          Super Admin
-        </span>
-      );
-    }
-    if (isAdmin()) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-          <Shield className="w-3 h-3 mr-1" />
-          {user?.admin_level === 'moderator' ? 'Moderator' : 'Admin'}
-        </span>
-      );
-    }
-    if (isDeveloper()) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-          <Code className="w-3 h-3 mr-1" />
-          {user?.developer_level === 'senior' ? 'Senior Dev' : 
-           user?.developer_level === 'mid' ? 'Developer' : 'Junior Dev'}
-        </span>
-      );
-    }
-    return null;
+  const handleUpdate = () => {
+    console.log(`Update ${activeItem}`);
+    // TODO: Open update modal/form for activeItem
+  };
+
+  const handleDelete = () => {
+    console.log(`Delete ${activeItem}`);
+    // TODO: Open delete confirmation for activeItem
+  };
+
+  const getActiveItemLabel = () => {
+    const item = NAV_ITEMS.find(i => i.id === activeItem);
+    return item ? item.label : 'Home';
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Full-width Navigation Bar */}
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Navigation Bar - Two Rows */}
       <header className="bg-slate-900 text-white shadow-lg">
-        <div className="w-full px-2 lg:px-4">
-          <div className="flex items-center justify-between h-14">
-            {/* Navigation Items - Full width with Settings */}
-            <nav className="flex items-center space-x-0.5 overflow-x-auto flex-1">
-              {navigation.map((item) => {
-                const Icon = iconMap[item.icon] || LayoutDashboard;
-                const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+        {/* Row 1: Navigation Items + User Info */}
+        <div className="w-full px-2 lg:px-4 border-b border-slate-800">
+          <div className="flex items-center justify-between h-12">
+            {/* Left: Navigation Items */}
+            <nav className="flex items-center space-x-1 overflow-x-auto flex-1">
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeItem === item.id;
                 
                 return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`flex items-center px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium transition-colors whitespace-nowrap ${
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveItem(item.id)}
+                    className={`flex items-center px-2 lg:px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
                       isActive 
                         ? 'bg-blue-600 text-white' 
                         : 'text-gray-300 hover:bg-slate-800 hover:text-white'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 mr-1 lg:mr-1.5 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                    <Icon className={`w-3 h-3 mr-1 ${isActive ? 'text-white' : 'text-gray-400'}`} />
                     {item.label}
-                  </Link>
+                  </button>
                 );
               })}
             </nav>
 
-            {/* Right Side - Content Management + User Info */}
+            {/* Right: User Info + Logout */}
             <div className="flex items-center shrink-0 ml-2 space-x-2">
-              {/* Content Management Buttons */}
-              <div className="hidden md:flex items-center space-x-1 bg-slate-800 rounded-lg px-2 py-1.5">
-                <button
-                  onClick={() => navigate('/admin/content/new')}
-                  className="flex items-center px-2 py-1.5 text-xs font-medium text-green-400 hover:text-green-300 hover:bg-slate-700 rounded transition-colors"
-                  title="Add New Content"
-                >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Add
-                </button>
-                <div className="w-px h-4 bg-slate-600 mx-1"></div>
-                <button
-                  onClick={() => navigate('/admin/content')}
-                  className="flex items-center px-2 py-1.5 text-xs font-medium text-blue-400 hover:text-blue-300 hover:bg-slate-700 rounded transition-colors"
-                  title="Update Content"
-                >
-                  <Edit2 className="w-4 h-4 mr-1" />
-                  Update
-                </button>
-                <div className="w-px h-4 bg-slate-600 mx-1"></div>
-                <button
-                  onClick={() => navigate('/admin/content')}
-                  className="flex items-center px-2 py-1.5 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-slate-700 rounded transition-colors"
-                  title="Delete Content"
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Delete
-                </button>
-              </div>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-1.5 rounded-md text-gray-300 hover:text-white hover:bg-slate-800"
-              >
-                {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-
               {/* User Info Box - Compact */}
-              <div className="flex items-center space-x-2 bg-slate-800 rounded-lg px-2 py-1.5">
-                {/* Avatar with Profile Photo or Initial */}
-                {user?.profilePhotoData ? (
-                  <img 
-                    src={user.profilePhotoData}
-                    alt={user?.display_name || `${user?.first_name} ${user?.last_name}` || user?.email}
-                    className="w-7 h-7 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                    {(user?.display_name?.charAt(0) || user?.first_name?.charAt(0) || user?.email?.charAt(0))?.toUpperCase() || '?'}
-                  </div>
-                )}
+              <div className="flex items-center space-x-2 bg-slate-800 rounded-lg px-2 py-1">
+                {/* Avatar */}
+                <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                  {(user?.display_name?.charAt(0) || user?.first_name?.charAt(0) || user?.email?.charAt(0))?.toUpperCase() || '?'}
+                </div>
                 
-                {/* User Name & Role */}
+                {/* User Name */}
                 <div className="hidden sm:block text-left leading-tight">
-                  <p className="text-xs font-medium text-white truncate max-w-[100px]">{user?.display_name || `${user?.first_name} ${user?.last_name}` || user?.email}</p>
-                  <p className="text-[10px] text-gray-400">{getRoleLabel()}</p>
+                  <p className="text-xs font-medium text-white truncate max-w-[80px]">{user?.display_name || `${user?.first_name} ${user?.last_name}` || user?.email}</p>
                 </div>
 
                 {/* Log Out Button */}
                 <button
                   onClick={handleLogout}
-                  className="ml-1 p-1.5 text-gray-400 hover:text-red-400 hover:bg-slate-700 rounded-md transition-colors"
+                  className="ml-1 p-1 text-gray-400 hover:text-red-400 hover:bg-slate-700 rounded transition-colors"
                   title="Sign Out"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3 h-3" />
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mobile Navigation Menu */}
-        {sidebarOpen && (
-          <div className="lg:hidden border-t border-slate-800">
-            <nav className="px-3 py-2 space-y-1">
-              {navigation.map((item) => {
-                const Icon = iconMap[item.icon] || LayoutDashboard;
-                const isActive = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
-                
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      isActive 
-                        ? 'bg-blue-600 text-white' 
-                        : 'text-gray-300 hover:bg-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-white' : 'text-gray-400'}`} />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
+        {/* Row 2: CRUD Buttons for Active Item */}
+        <div className="w-full px-2 lg:px-4 py-2">
+          <div className="flex items-center justify-between">
+            {/* Active Item Label */}
+            <div className="flex items-center text-sm text-gray-400 mr-4">
+              <span className="text-gray-500">Managing:</span>
+              <span className="ml-2 text-white font-medium">{getActiveItemLabel()}</span>
+            </div>
+
+            {/* CRUD Buttons */}
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleAdd}
+                className="flex items-center px-3 py-1.5 text-xs font-medium bg-green-600 text-white hover:bg-green-700 rounded transition-colors"
+                title={`Add ${getActiveItemLabel()}`}
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add
+              </button>
+              
+              <button
+                onClick={handleUpdate}
+                className="flex items-center px-3 py-1.5 text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 rounded transition-colors"
+                title={`Update ${getActiveItemLabel()}`}
+              >
+                <Edit2 className="w-3 h-3 mr-1" />
+                Update
+              </button>
+              
+              <button
+                onClick={handleDelete}
+                className="flex items-center px-3 py-1.5 text-xs font-medium bg-red-600 text-white hover:bg-red-700 rounded transition-colors"
+                title={`Delete ${getActiveItemLabel()}`}
+              >
+                <Trash2 className="w-3 h-3 mr-1" />
+                Delete
+              </button>
+            </div>
           </div>
-        )}
+        </div>
       </header>
 
-      {/* Main content - Full width */}
-      <main className="flex-1 p-4 lg:p-6 overflow-auto">
-        {children}
+      {/* Main Content Area - White Screen */}
+      <main className="flex-1 overflow-auto">
+        <div className="h-full bg-white p-6">
+          {/* Content will be displayed here based on active item */}
+          <div className="text-center text-gray-400 mt-20">
+            <p className="text-lg">Select an action above to manage {getActiveItemLabel()}</p>
+            <p className="text-sm mt-2">Click Add, Update, or Delete to interact with the database</p>
+          </div>
+        </div>
       </main>
     </div>
   );
