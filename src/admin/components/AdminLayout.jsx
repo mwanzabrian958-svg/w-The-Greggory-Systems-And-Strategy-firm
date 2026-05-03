@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Home, Info, Briefcase, FolderKanban, BookOpen, FileText, 
   DollarSign, Wallet, CreditCard, TrendingUp, LogOut, Menu, X, 
-  Search, User
+  Search, Plus, Edit2, Trash2, User
 } from 'lucide-react';
 
 // Navigation items with their sections (Project Search removed - now in search box)
@@ -124,13 +124,43 @@ export function AdminLayout({ user, onLogout }) {
         </div>
       </header>
 
-      {/* Main Content Area - White Screen */}
-      <main className="flex-1 overflow-auto">
-        <div className="h-full bg-white p-6">
-          {/* Content will be displayed here based on active item */}
-          <div className="text-center text-gray-400 mt-20">
-            <p className="text-lg">Select an action above to manage {getActiveItemLabel()}</p>
-            <p className="text-sm mt-2">Click Add, Update, or Delete to interact with the database</p>
+      {/* Main Content Area - Display content for selected item */}
+      <main className="flex-1 overflow-auto bg-white">
+        <div className="h-full p-6">
+          {/* Content Header */}
+          <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
+            <h2 className="text-2xl font-bold text-slate-900">{getActiveItemLabel()}</h2>
+            <div className="flex items-center space-x-2">
+              <button className="flex items-center px-4 py-2 text-sm font-semibold bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                <Plus className="w-4 h-4 mr-2" />
+                Add
+              </button>
+              <button className="flex items-center px-4 py-2 text-sm font-semibold bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <Edit2 className="w-4 h-4 mr-2" />
+                Update
+              </button>
+              <button className="flex items-center px-4 py-2 text-sm font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </button>
+            </div>
+          </div>
+
+          {/* Content Display Area */}
+          <div className="bg-gray-50 rounded-lg border border-gray-200 min-h-[400px] p-6">
+            <p className="text-gray-500 text-center">
+              {activeItem === 'search' && 'Project search results will appear here...'}
+              {activeItem === 'home' && 'Home page content items will be listed here...'}
+              {activeItem === 'about' && 'About Us content will be listed here...'}
+              {activeItem === 'services' && 'Our Services content will be listed here...'}
+              {activeItem === 'case-studies' && 'Case Studies will be listed here...'}
+              {activeItem === 'blog' && 'Blog posts will be listed here...'}
+              {activeItem === 'documentation' && 'Documentation items will be listed here...'}
+              {activeItem === 'accounting' && 'Accounting records will be listed here...'}
+              {activeItem === 'transactions' && 'Pesa Transaction records will be listed here...'}
+              {activeItem === 'bank' && 'Bank Records will be listed here...'}
+              {activeItem === 'tracking' && 'Project Tracking data will be listed here...'}
+            </p>
           </div>
         </div>
       </main>
