@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { id: 'blog', label: 'Blog', icon: BookOpen, section: 'content' },
   { id: 'documentation', label: 'Documentation', icon: FileText, section: 'content' },
   { id: 'accounting', label: 'Accounting', icon: DollarSign, section: 'finance' },
-  { id: 'transactions', label: 'Pesa Transactions', icon: Wallet, section: 'finance' },
+  { id: 'transactions', label: 'M-pesa', icon: Wallet, section: 'finance' },
   { id: 'bank', label: 'Bank Records', icon: CreditCard, section: 'finance' },
   { id: 'tracking', label: 'Project Tracking', icon: TrendingUp, section: 'projects' },
 ];
@@ -196,58 +196,325 @@ export function AdminLayout({ user, onLogout }) {
             </div>
           </div>
 
-          {/* Sample Form for Database Input */}
+          {/* Sample Form for Database Input - Unique per item */}
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">Add New {getActiveItemLabel()} Item</h3>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Title</label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  placeholder="Enter title..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Category</label>
-                <input
-                  type="text"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  placeholder="Enter category..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Enter description..."
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="pending">Pending</option>
-                  <option value="archived">Archived</option>
-                </select>
-              </div>
-            </form>
+            
+            {/* HOME - Hero Banner Form */}
+            {activeItem === 'home' && (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Hero Title</label>
+                  <input type="text" name="heroTitle" placeholder="Enter hero banner title..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Hero Subtitle</label>
+                  <input type="text" name="heroSubtitle" placeholder="Enter subtitle..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Banner Image URL</label>
+                  <input type="text" name="bannerImage" placeholder="Image URL..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Display Order</label>
+                  <input type="number" name="displayOrder" placeholder="1, 2, 3..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+              </form>
+            )}
+
+            {/* ABOUT US - Company Info Form */}
+            {activeItem === 'about' && (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Section Title</label>
+                  <input type="text" name="sectionTitle" placeholder="e.g., Our Mission, Our Vision..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Section Type</label>
+                  <select name="sectionType" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option>Mission</option>
+                    <option>Vision</option>
+                    <option>Values</option>
+                    <option>History</option>
+                    <option>Team</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Content</label>
+                  <textarea name="content" placeholder="Enter about us content..." rows="3" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+              </form>
+            )}
+
+            {/* SERVICES - Service Offering Form */}
+            {activeItem === 'services' && (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Service Name</label>
+                  <input type="text" name="serviceName" placeholder="e.g., Web Development..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Price (KES)</label>
+                  <input type="number" name="price" placeholder="Enter price..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Service Description</label>
+                  <textarea name="description" placeholder="Describe the service..." rows="3" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Duration</label>
+                  <input type="text" name="duration" placeholder="e.g., 2 weeks, 1 month..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Icon/Logo URL</label>
+                  <input type="text" name="iconUrl" placeholder="Service icon URL..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+              </form>
+            )}
+
+            {/* CASE STUDIES - Project Form */}
+            {activeItem === 'case-studies' && (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Project Title</label>
+                  <input type="text" name="projectTitle" placeholder="Enter project name..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Client Name</label>
+                  <input type="text" name="clientName" placeholder="Client company..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Project Summary</label>
+                  <textarea name="summary" placeholder="Brief project overview..." rows="2" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Industry</label>
+                  <select name="industry" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option>Technology</option>
+                    <option>Healthcare</option>
+                    <option>Finance</option>
+                    <option>Education</option>
+                    <option>Retail</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Completion Date</label>
+                  <input type="date" name="completionDate" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+              </form>
+            )}
+
+            {/* BLOG - Article Form */}
+            {activeItem === 'blog' && (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Article Title</label>
+                  <input type="text" name="articleTitle" placeholder="Enter blog post title..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Author</label>
+                  <input type="text" name="author" placeholder="Author name..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Category</label>
+                  <select name="category" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option>Technology</option>
+                    <option>Business</option>
+                    <option>Tutorial</option>
+                    <option>News</option>
+                    <option>Opinion</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Article Content</label>
+                  <textarea name="content" placeholder="Write your blog post..." rows="4" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Featured Image URL</label>
+                  <input type="text" name="featuredImage" placeholder="Image URL..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Tags (comma separated)</label>
+                  <input type="text" name="tags" placeholder="tech, coding, web..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+              </form>
+            )}
+
+            {/* DOCUMENTATION - Doc Form */}
+            {activeItem === 'documentation' && (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Document Title</label>
+                  <input type="text" name="docTitle" placeholder="e.g., API Reference..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Doc Type</label>
+                  <select name="docType" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option>API Documentation</option>
+                    <option>User Guide</option>
+                    <option>Setup Guide</option>
+                    <option>FAQ</option>
+                    <option>Changelog</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Version</label>
+                  <input type="text" name="version" placeholder="e.g., v1.0.0..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">File URL (PDF/DOC)</label>
+                  <input type="text" name="fileUrl" placeholder="Document file URL..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Document Content/Summary</label>
+                  <textarea name="docContent" placeholder="Document content or summary..." rows="3" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+              </form>
+            )}
+
+            {/* ACCOUNTING - Financial Record Form */}
+            {activeItem === 'accounting' && (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Account Name</label>
+                  <input type="text" name="accountName" placeholder="e.g., Operating Expenses..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Account Type</label>
+                  <select name="accountType" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option>Asset</option>
+                    <option>Liability</option>
+                    <option>Equity</option>
+                    <option>Revenue</option>
+                    <option>Expense</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Amount (KES)</label>
+                  <input type="number" name="amount" placeholder="0.00" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Transaction Date</label>
+                  <input type="date" name="transactionDate" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Description/Narrative</label>
+                  <textarea name="description" placeholder="Transaction details..." rows="2" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+              </form>
+            )}
+
+            {/* M-PESA - Mobile Money Form */}
+            {activeItem === 'transactions' && (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Transaction Type</label>
+                  <select name="transactionType" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option>PayBill</option>
+                    <option>Buy Goods</option>
+                    <option>Send Money</option>
+                    <option>Receive Money</option>
+                    <option>Withdraw</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Phone Number</label>
+                  <input type="tel" name="phoneNumber" placeholder="2547XX XXX XXX" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Amount (KES)</label>
+                  <input type="number" name="amount" placeholder="0.00" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Transaction Code</label>
+                  <input type="text" name="transactionCode" placeholder="e.g., QK7X8Y9Z..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Recipient/Business</label>
+                  <input type="text" name="recipient" placeholder="Recipient name or business..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Transaction Date</label>
+                  <input type="datetime-local" name="transactionDate" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+              </form>
+            )}
+
+            {/* BANK RECORDS - Bank Transaction Form */}
+            {activeItem === 'bank' && (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Bank Name</label>
+                  <input type="text" name="bankName" placeholder="e.g., Equity Bank..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Account Number</label>
+                  <input type="text" name="accountNumber" placeholder="Enter account number..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Transaction Type</label>
+                  <select name="bankTransactionType" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option>Deposit</option>
+                    <option>Withdrawal</option>
+                    <option>Transfer</option>
+                    <option>Payment</option>
+                    <option>Check</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Amount (KES)</label>
+                  <input type="number" name="amount" placeholder="0.00" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Reference Number</label>
+                  <input type="text" name="reference" placeholder="Transaction reference..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Transaction Date</label>
+                  <input type="date" name="transactionDate" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+              </form>
+            )}
+
+            {/* PROJECT TRACKING - Project Status Form */}
+            {activeItem === 'tracking' && (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Project Name</label>
+                  <input type="text" name="projectName" placeholder="Enter project name..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Project Manager</label>
+                  <input type="text" name="projectManager" placeholder="Manager name..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
+                  <select name="projectStatus" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option>Planning</option>
+                    <option>In Progress</option>
+                    <option>On Hold</option>
+                    <option>Completed</option>
+                    <option>Cancelled</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Progress %</label>
+                  <input type="number" name="progress" min="0" max="100" placeholder="0-100" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Start Date</label>
+                  <input type="date" name="startDate" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Due Date</label>
+                  <input type="date" name="dueDate" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Project Notes</label>
+                  <textarea name="notes" placeholder="Latest updates and notes..." rows="2" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                </div>
+              </form>
+            )}
           </div>
 
           {/* Content Display Area */}
