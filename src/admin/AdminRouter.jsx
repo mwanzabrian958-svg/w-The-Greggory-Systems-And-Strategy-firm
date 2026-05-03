@@ -99,7 +99,7 @@ export function AdminRouter() {
 
                 {/* Users - Requires VIEW_USERS permission */}
                 <Route 
-                  path="/users" 
+                  path="users" 
                   element={
                     <AdminRoute
                       user={user}
@@ -111,9 +111,9 @@ export function AdminRouter() {
                   } 
                 />
 
-                {/* Content - Requires VIEW_CONTENT permission */}
+                {/* Content Management - Requires VIEW_CONTENT permission */}
                 <Route 
-                  path="/content" 
+                  path="content" 
                   element={
                     <AdminRoute
                       user={user}
@@ -127,7 +127,7 @@ export function AdminRouter() {
 
                 {/* Projects - Requires VIEW_PROJECTS permission */}
                 <Route 
-                  path="/projects" 
+                  path="projects" 
                   element={
                     <AdminRoute
                       user={user}
@@ -143,7 +143,7 @@ export function AdminRouter() {
 
                 {/* Applications - Requires VIEW_APPLICATIONS permission */}
                 <Route 
-                  path="/applications" 
+                  path="applications" 
                   element={
                     <AdminRoute
                       user={user}
@@ -157,7 +157,7 @@ export function AdminRouter() {
 
                 {/* Financial - Requires VIEW_FINANCIAL permission */}
                 <Route 
-                  path="/financial" 
+                  path="financial" 
                   element={
                     <AdminRoute
                       user={user}
@@ -174,30 +174,14 @@ export function AdminRouter() {
                   } 
                 />
 
-                {/* Developer Tools - Requires ACCESS_API_DOCS permission */}
+                {/* Activity Logs - Requires VIEW_LOGS permission */}
                 <Route 
-                  path="/developer" 
+                  path="activity" 
                   element={
                     <AdminRoute
                       user={user}
                       isAuthenticated={isAuthenticated}
-                      requiredPermission={PERMISSIONS.ACCESS_API_DOCS}
-                      allowAdmins={true}
-                      allowDevelopers={true}
-                    >
-                      <Developer user={user} />
-                    </AdminRoute>
-                  } 
-                />
-
-                {/* Activity Logs - Requires VIEW_ACTIVITY_LOGS permission */}
-                <Route 
-                  path="/activity" 
-                  element={
-                    <AdminRoute
-                      user={user}
-                      isAuthenticated={isAuthenticated}
-                      requiredPermission={PERMISSIONS.VIEW_ACTIVITY_LOGS}
+                      requiredPermission={PERMISSIONS.VIEW_LOGS}
                     >
                       <ActivityLogs user={user} />
                     </AdminRoute>
@@ -206,7 +190,7 @@ export function AdminRouter() {
 
                 {/* Settings - Requires VIEW_SETTINGS permission */}
                 <Route 
-                  path="/settings" 
+                  path="settings" 
                   element={
                     <AdminRoute
                       user={user}
