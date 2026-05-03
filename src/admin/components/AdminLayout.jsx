@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Home, Info, Briefcase, FolderKanban, BookOpen, FileText, 
   DollarSign, Wallet, CreditCard, TrendingUp, LogOut, Menu, X, 
-  Search, Plus, Edit2, Trash2, User
+  Search, Plus, Edit2, Trash2, User, Save
 } from 'lucide-react';
 
 // Navigation items with their sections (Project Search removed - now in search box)
@@ -24,6 +24,12 @@ export function AdminLayout({ user, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeItem, setActiveItem] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    status: 'active'
+  });
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -35,6 +41,42 @@ export function AdminLayout({ user, onLogout }) {
     e.preventDefault();
     console.log('Searching for:', searchQuery);
     // TODO: Implement project search functionality
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log('Submitting to database:', formData);
+    
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiUrl}/api/admin/${activeItem}/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('gf_admin_session_token') || ''}`
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Successfully created:', result);
+        alert('Successfully added to database!');
+        // Clear form
+        setFormData({ title: '', description: '', category: '', status: 'active' });
+      } else {
+        console.error('Failed to create:', await response.text());
+        alert('Failed to add to database. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting:', error);
+      alert('Error connecting to database. Please check your connection.');
+    }
   };
 
   const getActiveItemLabel = () => {
@@ -127,7 +169,7 @@ export function AdminLayout({ user, onLogout }) {
       {/* Main Content Area - Display content for selected item */}
       <main className="flex-1 overflow-auto bg-white">
         <div className="h-full p-6">
-          {/* Content Header */}
+          {/* Content Header with Buttons */}
           <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
             <h2 className="text-2xl font-bold text-slate-900">{getActiveItemLabel()}</h2>
             <div className="flex items-center space-x-2">
@@ -139,6 +181,14 @@ export function AdminLayout({ user, onLogout }) {
                 <Edit2 className="w-4 h-4 mr-2" />
                 Update
               </button>
+              {/* Submit Button - Between Update and Delete */}
+              <button 
+                onClick={handleSubmit}
+                className="flex items-center px-4 py-2 text-sm font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-colors shadow-md"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Submit
+              </button>
               <button className="flex items-center px-4 py-2 text-sm font-semibold bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
@@ -146,8 +196,63 @@ export function AdminLayout({ user, onLogout }) {
             </div>
           </div>
 
+          {/* Sample Form for Database Input */}
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">Add New {getActiveItemLabel()} Item</h3>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Title</label>
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  placeholder="Enter title..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Category</label>
+                <input
+                  type="text"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  placeholder="Enter category..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Enter description..."
+                  rows="3"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="pending">Pending</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+            </form>
+          </div>
+
           {/* Content Display Area */}
-          <div className="bg-gray-50 rounded-lg border border-gray-200 min-h-[400px] p-6">
+          <div className="bg-gray-50 rounded-lg border border-gray-200 min-h-[200px] p-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-4">{getActiveItemLabel()} List</h3>
             <p className="text-gray-500 text-center">
               {activeItem === 'search' && 'Project search results will appear here...'}
               {activeItem === 'home' && 'Home page content items will be listed here...'}
