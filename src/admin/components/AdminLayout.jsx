@@ -57,9 +57,9 @@ export function AdminLayout({ user, onLogout }) {
       <header className="bg-slate-900 text-white shadow-lg">
         {/* Row 1: Navigation Items + User Info */}
         <div className="w-full px-2 lg:px-4 border-b border-slate-800">
-          <div className="flex items-center justify-between h-12">
+          <div className="flex items-center justify-between h-14">
             {/* Left: Navigation Items */}
-            <nav className="flex items-center space-x-1 overflow-x-auto flex-1">
+            <nav className="flex items-center space-x-2 overflow-x-auto flex-1">
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeItem === item.id;
@@ -68,13 +68,13 @@ export function AdminLayout({ user, onLogout }) {
                   <button
                     key={item.id}
                     onClick={() => setActiveItem(item.id)}
-                    className={`flex items-center px-2 lg:px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
+                    className={`flex items-center px-3 lg:px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm whitespace-nowrap ${
                       isActive 
-                        ? 'bg-blue-600 text-white' 
-                        : 'text-gray-300 hover:bg-slate-800 hover:text-white'
+                        ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400 ring-offset-1 ring-offset-slate-900' 
+                        : 'bg-slate-800 text-gray-200 hover:bg-slate-700 hover:text-white hover:shadow-md'
                     }`}
                   >
-                    <Icon className={`w-3 h-3 mr-1 ${isActive ? 'text-white' : 'text-gray-400'}`} />
+                    <Icon className={`w-4 h-4 mr-2 ${isActive ? 'text-white' : 'text-gray-400'}`} />
                     {item.label}
                   </button>
                 );
@@ -82,26 +82,26 @@ export function AdminLayout({ user, onLogout }) {
             </nav>
 
             {/* Right: User Info + Logout */}
-            <div className="flex items-center shrink-0 ml-2 space-x-2">
+            <div className="flex items-center shrink-0 ml-3 space-x-3">
               {/* User Info Box - Compact */}
-              <div className="flex items-center space-x-2 bg-slate-800 rounded-lg px-2 py-1">
+              <div className="flex items-center space-x-3 bg-slate-800 rounded-lg px-3 py-2 shadow-md">
                 {/* Avatar */}
-                <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg">
                   {(user?.display_name?.charAt(0) || user?.first_name?.charAt(0) || user?.email?.charAt(0))?.toUpperCase() || '?'}
                 </div>
                 
                 {/* User Name */}
                 <div className="hidden sm:block text-left leading-tight">
-                  <p className="text-xs font-medium text-white truncate max-w-[80px]">{user?.display_name || `${user?.first_name} ${user?.last_name}` || user?.email}</p>
+                  <p className="text-sm font-semibold text-white truncate max-w-[100px]">{user?.display_name || `${user?.first_name} ${user?.last_name}` || user?.email}</p>
                 </div>
 
                 {/* Log Out Button */}
                 <button
                   onClick={handleLogout}
-                  className="ml-1 p-1 text-gray-400 hover:text-red-400 hover:bg-slate-700 rounded transition-colors"
+                  className="p-2 bg-slate-700 text-gray-300 hover:text-red-400 hover:bg-slate-600 rounded-lg transition-all shadow-sm"
                   title="Sign Out"
                 >
-                  <LogOut className="w-3 h-3" />
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -109,40 +109,40 @@ export function AdminLayout({ user, onLogout }) {
         </div>
 
         {/* Row 2: CRUD Buttons for Active Item */}
-        <div className="w-full px-2 lg:px-4 py-2">
+        <div className="w-full px-3 lg:px-6 py-3 bg-slate-800">
           <div className="flex items-center justify-between">
             {/* Active Item Label */}
-            <div className="flex items-center text-sm text-gray-400 mr-4">
-              <span className="text-gray-500">Managing:</span>
-              <span className="ml-2 text-white font-medium">{getActiveItemLabel()}</span>
+            <div className="flex items-center text-base">
+              <span className="text-gray-400 font-medium">Managing:</span>
+              <span className="ml-2 text-white font-bold text-lg">{getActiveItemLabel()}</span>
             </div>
 
             {/* CRUD Buttons */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
               <button
                 onClick={handleAdd}
-                className="flex items-center px-3 py-1.5 text-xs font-medium bg-green-600 text-white hover:bg-green-700 rounded transition-colors"
+                className="flex items-center px-5 py-2.5 text-sm font-bold bg-green-500 text-white hover:bg-green-400 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
                 title={`Add ${getActiveItemLabel()}`}
               >
-                <Plus className="w-3 h-3 mr-1" />
+                <Plus className="w-5 h-5 mr-2" />
                 Add
               </button>
               
               <button
                 onClick={handleUpdate}
-                className="flex items-center px-3 py-1.5 text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 rounded transition-colors"
+                className="flex items-center px-5 py-2.5 text-sm font-bold bg-blue-500 text-white hover:bg-blue-400 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
                 title={`Update ${getActiveItemLabel()}`}
               >
-                <Edit2 className="w-3 h-3 mr-1" />
+                <Edit2 className="w-5 h-5 mr-2" />
                 Update
               </button>
               
               <button
                 onClick={handleDelete}
-                className="flex items-center px-3 py-1.5 text-xs font-medium bg-red-600 text-white hover:bg-red-700 rounded transition-colors"
+                className="flex items-center px-5 py-2.5 text-sm font-bold bg-red-500 text-white hover:bg-red-400 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
                 title={`Delete ${getActiveItemLabel()}`}
               >
-                <Trash2 className="w-3 h-3 mr-1" />
+                <Trash2 className="w-5 h-5 mr-2" />
                 Delete
               </button>
             </div>
