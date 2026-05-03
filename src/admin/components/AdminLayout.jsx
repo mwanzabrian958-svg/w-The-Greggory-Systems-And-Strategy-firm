@@ -25,6 +25,47 @@ const PROJECT_SUB_ITEMS = [
   { id: 'tracking', label: 'Project Tracking', icon: TrendingUp },
 ];
 
+// Sample data for Projects sub-items
+const DOCUMENTATION_DATA = [
+  { id: 1, title: 'API Reference v1.0', type: 'API Documentation', version: 'v1.0.0', date: '2024-12-01', status: 'Active', project: 'Website Redesign' },
+  { id: 2, title: 'User Setup Guide', type: 'User Guide', version: 'v2.1.0', date: '2024-11-15', status: 'Active', project: 'Mobile App' },
+  { id: 3, title: 'Database Schema', type: 'Technical Doc', version: 'v1.5.0', date: '2024-10-20', status: 'Archived', project: 'E-Commerce Platform' },
+  { id: 4, title: 'Security Protocols', type: 'Policy', version: 'v3.0.0', date: '2024-12-10', status: 'Active', project: 'Banking System' },
+  { id: 5, title: 'Deployment Guide', type: 'Setup Guide', version: 'v1.2.0', date: '2024-09-05', status: 'Active', project: 'Cloud Migration' },
+];
+
+const ACCOUNTING_DATA = [
+  { id: 1, account: 'Operating Expenses', type: 'Expense', amount: 45000, date: '2024-12-01', project: 'Website Redesign' },
+  { id: 2, account: 'Software Licenses', type: 'Asset', amount: 120000, date: '2024-11-20', project: 'Mobile App' },
+  { id: 3, account: 'Client Payment', type: 'Revenue', amount: 350000, date: '2024-11-15', project: 'E-Commerce Platform' },
+  { id: 4, account: 'Server Costs', type: 'Expense', amount: 28000, date: '2024-10-30', project: 'Cloud Migration' },
+  { id: 5, account: 'Consulting Fees', type: 'Expense', amount: 75000, date: '2024-12-05', project: 'Banking System' },
+];
+
+const MPESA_DATA = [
+  { id: 1, type: 'PayBill', phone: '254712345678', amount: 5000, code: 'QK7X8Y9Z', recipient: 'Safaricom', date: '2024-12-01 10:30', project: 'Website Redesign' },
+  { id: 2, type: 'Send Money', phone: '254723456789', amount: 15000, code: 'AB3CD4EF', recipient: 'John Doe', date: '2024-11-28 14:15', project: 'Mobile App' },
+  { id: 3, type: 'Buy Goods', phone: '254734567890', amount: 8500, code: 'GH5IJ6KL', recipient: 'Supermarket', date: '2024-11-25 09:45', project: 'E-Commerce Platform' },
+  { id: 4, type: 'Receive Money', phone: '254745678901', amount: 25000, code: 'MN7OP8QR', recipient: 'Client A', date: '2024-11-20 16:20', project: 'Banking System' },
+  { id: 5, type: 'PayBill', phone: '254756789012', amount: 12000, code: 'ST9UV0WX', recipient: 'KPLC', date: '2024-11-18 11:00', project: 'Cloud Migration' },
+];
+
+const BANK_DATA = [
+  { id: 1, bank: 'Equity Bank', account: '1234567890', type: 'Deposit', amount: 500000, reference: 'EQ001234', date: '2024-12-01', project: 'E-Commerce Platform' },
+  { id: 2, bank: 'KCB Bank', account: '0987654321', type: 'Withdrawal', amount: 75000, reference: 'KCB005678', date: '2024-11-25', project: 'Mobile App' },
+  { id: 3, bank: 'Co-operative Bank', account: '1122334455', type: 'Transfer', amount: 200000, reference: 'COOP009012', date: '2024-11-20', project: 'Banking System' },
+  { id: 4, bank: 'Stanbic Bank', account: '5566778899', type: 'Payment', amount: 125000, reference: 'STAN003456', date: '2024-11-15', project: 'Website Redesign' },
+  { id: 5, bank: 'Absa Bank', account: '9988776655', type: 'Deposit', amount: 300000, reference: 'ABSA007890', date: '2024-11-10', project: 'Cloud Migration' },
+];
+
+const TRACKING_DATA = [
+  { id: 1, name: 'Website Redesign', manager: 'Alice Johnson', status: 'In Progress', progress: 65, start: '2024-09-01', due: '2024-12-31' },
+  { id: 2, name: 'Mobile App', manager: 'Bob Smith', status: 'Planning', progress: 25, start: '2024-11-01', due: '2025-03-15' },
+  { id: 3, name: 'E-Commerce Platform', manager: 'Carol Williams', status: 'Completed', progress: 100, start: '2024-06-01', due: '2024-10-30' },
+  { id: 4, name: 'Banking System', manager: 'David Brown', status: 'In Progress', progress: 45, start: '2024-10-15', due: '2025-02-28' },
+  { id: 5, name: 'Cloud Migration', manager: 'Emma Davis', status: 'On Hold', progress: 30, start: '2024-08-01', due: '2025-01-15' },
+];
+
 // Hard-coded blog posts data
 const BLOG_POSTS = [
   {
@@ -101,6 +142,7 @@ export function AdminLayout({ user, onLogout }) {
   const [activeProjectSubItem, setActiveProjectSubItem] = useState('documentation');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBlog, setSelectedBlog] = useState(null);
+  const [filteredProject, setFilteredProject] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -117,7 +159,30 @@ export function AdminLayout({ user, onLogout }) {
   const handleSearch = (e) => {
     e.preventDefault();
     console.log('Searching for:', searchQuery);
-    // TODO: Implement project search functionality
+    
+    // Filter projects based on search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      // Check if any project name matches
+      const allProjects = [...new Set([
+        ...DOCUMENTATION_DATA.map(d => d.project),
+        ...ACCOUNTING_DATA.map(d => d.project),
+        ...MPESA_DATA.map(d => d.project),
+        ...BANK_DATA.map(d => d.project),
+        ...TRACKING_DATA.map(d => d.name)
+      ])];
+      
+      const matchedProject = allProjects.find(p => p.toLowerCase().includes(query));
+      setFilteredProject(matchedProject || null);
+      
+      if (matchedProject) {
+        console.log('Found project:', matchedProject);
+      } else {
+        console.log('No project found matching:', searchQuery);
+      }
+    } else {
+      setFilteredProject(null);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -167,6 +232,7 @@ export function AdminLayout({ user, onLogout }) {
   const handleItemClick = (itemId) => {
     setActiveItem(itemId);
     setSelectedBlog(null);
+    setFilteredProject(null);
     // Reset project sub-item when switching main items
     if (itemId !== 'projects') {
       setActiveProjectSubItem('documentation');
@@ -764,17 +830,221 @@ export function AdminLayout({ user, onLogout }) {
               </p>
             )}
             
-            {/* Projects Sub-item Content */}
+            {/* Projects Sub-item Content - Searchable Data Tables */}
             {activeItem === 'projects' && (
               <div className="bg-gray-50 rounded-lg border border-gray-200 min-h-[200px] p-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">{getActiveItemLabel()} Records</h3>
-                <p className="text-gray-500 text-center">
-                  {activeProjectSubItem === 'documentation' && 'Documentation items will be listed here...'}
-                  {activeProjectSubItem === 'accounting' && 'Accounting records will be listed here...'}
-                  {activeProjectSubItem === 'transactions' && 'M-pesa Transaction records will be listed here...'}
-                  {activeProjectSubItem === 'bank' && 'Bank Records will be listed here...'}
-                  {activeProjectSubItem === 'tracking' && 'Project Tracking data will be listed here...'}
-                </p>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-700">{getActiveItemLabel()} Records</h3>
+                  {filteredProject && (
+                    <span className="text-sm text-blue-600 font-medium">
+                      Showing results for: {filteredProject}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Documentation List */}
+                {activeProjectSubItem === 'documentation' && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Version</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {DOCUMENTATION_DATA
+                          .filter(item => !filteredProject || item.project === filteredProject)
+                          .map((item) => (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2 text-sm text-gray-900">{item.title}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.type}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.version}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.date}</td>
+                            <td className="px-4 py-2 text-sm">
+                              <span className={`px-2 py-1 text-xs rounded ${item.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                {item.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.project}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {filteredProject && DOCUMENTATION_DATA.filter(item => item.project === filteredProject).length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No documentation found for {filteredProject}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Accounting List */}
+                {activeProjectSubItem === 'accounting' && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Amount (KES)</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {ACCOUNTING_DATA
+                          .filter(item => !filteredProject || item.project === filteredProject)
+                          .map((item) => (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2 text-sm text-gray-900">{item.account}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.type}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900 font-medium">{item.amount.toLocaleString()}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.date}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.project}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {filteredProject && ACCOUNTING_DATA.filter(item => item.project === filteredProject).length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No accounting records found for {filteredProject}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* M-Pesa List */}
+                {activeProjectSubItem === 'transactions' && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Recipient</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {MPESA_DATA
+                          .filter(item => !filteredProject || item.project === filteredProject)
+                          .map((item) => (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2 text-sm text-gray-900">{item.type}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.phone}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900 font-medium">KES {item.amount.toLocaleString()}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.code}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.recipient}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.date}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.project}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {filteredProject && MPESA_DATA.filter(item => item.project === filteredProject).length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No M-pesa transactions found for {filteredProject}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Bank Records List */}
+                {activeProjectSubItem === 'bank' && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Bank</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {BANK_DATA
+                          .filter(item => !filteredProject || item.project === filteredProject)
+                          .map((item) => (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2 text-sm text-gray-900">{item.bank}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.account}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.type}</td>
+                            <td className="px-4 py-2 text-sm text-gray-900 font-medium">KES {item.amount.toLocaleString()}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.reference}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.date}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.project}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {filteredProject && BANK_DATA.filter(item => item.project === filteredProject).length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No bank records found for {filteredProject}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Project Tracking List */}
+                {activeProjectSubItem === 'tracking' && (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Project Name</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Manager</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Progress</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Start Date</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {TRACKING_DATA
+                          .filter(item => !filteredProject || item.name === filteredProject)
+                          .map((item) => (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2 text-sm text-gray-900 font-medium">{item.name}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.manager}</td>
+                            <td className="px-4 py-2 text-sm">
+                              <span className={`px-2 py-1 text-xs rounded ${
+                                item.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                item.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                item.status === 'Planning' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {item.status}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2 text-sm text-gray-900">
+                              <div className="flex items-center">
+                                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                  <div 
+                                    className={`h-2 rounded-full ${
+                                      item.progress === 100 ? 'bg-green-500' :
+                                      item.progress >= 50 ? 'bg-blue-500' :
+                                      'bg-yellow-500'
+                                    }`}
+                                    style={{ width: `${item.progress}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs">{item.progress}%</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.start}</td>
+                            <td className="px-4 py-2 text-sm text-gray-600">{item.due}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {filteredProject && TRACKING_DATA.filter(item => item.name === filteredProject).length === 0 && (
+                      <p className="text-gray-500 text-center py-4">No tracking data found for {filteredProject}</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
