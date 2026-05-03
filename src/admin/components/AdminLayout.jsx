@@ -329,11 +329,19 @@ export function AdminLayout({ user, onLogout }) {
                   <label className="block text-sm font-medium text-gray-600 mb-1">Article Content</label>
                   <textarea name="content" placeholder="Write your blog post..." rows="4" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Featured Image URL</label>
-                  <input type="text" name="featuredImage" placeholder="Image URL..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-600 mb-1">Featured Image (Upload from Local Storage)</label>
+                  <div className="flex items-center space-x-3">
+                    <input 
+                      type="file" 
+                      name="featuredImage" 
+                      accept="image/*"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" 
+                    />
+                    <span className="text-xs text-gray-500">Max 5MB (JPG, PNG, GIF)</span>
+                  </div>
                 </div>
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-600 mb-1">Tags (comma separated)</label>
                   <input type="text" name="tags" placeholder="tech, coding, web..." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" />
                 </div>
