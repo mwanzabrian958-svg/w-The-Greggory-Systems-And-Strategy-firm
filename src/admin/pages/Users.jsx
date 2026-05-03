@@ -13,6 +13,7 @@ export function Users({ user }) {
   const { can, isSuperAdmin } = usePermissions(user);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -27,18 +28,29 @@ export function Users({ user }) {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      setError(null);
+      const token = sessionStorage.getItem('gf_admin_session')?.token;
+      
+      if (!token) {
+        setError('No authentication token found. Please log in again.');
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/users`, {
         headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('gf_admin_session')?.token}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const data = await response.json();
+      setUsers(data || []);
     } catch (error) {
       console.error('Fetch users error:', error);
+      setError(error.message || 'Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -129,6 +141,17 @@ export function Users({ user }) {
 
   return (
     <div>
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+          <AlertCircle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-red-700 font-medium">Error loading users</p>
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
