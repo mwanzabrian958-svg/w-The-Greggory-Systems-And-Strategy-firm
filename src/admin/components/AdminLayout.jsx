@@ -528,19 +528,171 @@ export function AdminLayout({ user, onLogout }) {
           {/* Content Display Area */}
           <div className="bg-gray-50 rounded-lg border border-gray-200 min-h-[200px] p-6">
             <h3 className="text-lg font-semibold text-gray-700 mb-4">{getActiveItemLabel()} List</h3>
-            <p className="text-gray-500 text-center">
-              {activeItem === 'search' && 'Project search results will appear here...'}
-              {activeItem === 'home' && 'Home page content items will be listed here...'}
-              {activeItem === 'about' && 'About Us content will be listed here...'}
-              {activeItem === 'services' && 'Our Services content will be listed here...'}
-              {activeItem === 'case-studies' && 'Case Studies will be listed here...'}
-              {activeItem === 'blog' && 'Blog posts will be listed here...'}
-              {activeItem === 'documentation' && 'Documentation items will be listed here...'}
-              {activeItem === 'accounting' && 'Accounting records will be listed here...'}
-              {activeItem === 'transactions' && 'Pesa Transaction records will be listed here...'}
-              {activeItem === 'bank' && 'Bank Records will be listed here...'}
-              {activeItem === 'tracking' && 'Project Tracking data will be listed here...'}
-            </p>
+            
+            {/* Blog Posts List with Images */}
+            {activeItem === 'blog' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Hard-coded Blog Post 1 */}
+                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="h-48 bg-gray-200 flex items-center justify-center">
+                    <img 
+                      src="/images/blog/tech-trends.jpg" 
+                      alt="Tech Trends"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&h=300&fit=crop';
+                      }}
+                    />
+                  </div>
+                  <div className="p-4">
+                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded mb-2">Technology</span>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">Latest Tech Trends 2024</h4>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">Exploring the cutting-edge technologies shaping our future in web development and AI.</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>By John Doe</span>
+                      <span>Dec 15, 2024</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hard-coded Blog Post 2 */}
+                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="h-48 bg-gray-200 flex items-center justify-center">
+                    <img 
+                      src="/images/business-strategy.jpg" 
+                      alt="Business Strategy"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop';
+                      }}
+                    />
+                  </div>
+                  <div className="p-4">
+                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded mb-2">Business</span>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">Business Strategy Essentials</h4>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">Key strategies for growing your business in the Kenyan market and beyond.</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>By Jane Smith</span>
+                      <span>Dec 10, 2024</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hard-coded Blog Post 3 */}
+                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="h-48 bg-gray-200 flex items-center justify-center">
+                    <img 
+                      src="/images/web-development.jpg" 
+                      alt="Web Development"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=400&h=300&fit=crop';
+                      }}
+                    />
+                  </div>
+                  <div className="p-4">
+                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-purple-100 text-purple-800 rounded mb-2">Tutorial</span>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">Modern Web Development</h4>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">A comprehensive guide to building responsive websites with React and Tailwind.</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>By Mike Johnson</span>
+                      <span>Dec 5, 2024</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hard-coded Blog Post 4 */}
+                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="h-48 bg-gray-200 flex items-center justify-center">
+                    <img 
+                      src="/images/digital-marketing.jpg" 
+                      alt="Digital Marketing"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=300&fit=crop';
+                      }}
+                    />
+                  </div>
+                  <div className="p-4">
+                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded mb-2">Marketing</span>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">Digital Marketing Tips</h4>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">Effective strategies for reaching your target audience online in Kenya.</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>By Sarah Williams</span>
+                      <span>Nov 28, 2024</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hard-coded Blog Post 5 */}
+                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="h-48 bg-gray-200 flex items-center justify-center">
+                    <img 
+                      src="/images/mobile-apps.jpg" 
+                      alt="Mobile Apps"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=300&fit=crop';
+                      }}
+                    />
+                  </div>
+                  <div className="p-4">
+                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 rounded mb-2">Technology</span>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">Mobile App Development</h4>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">Building cross-platform mobile applications that users love.</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>By David Brown</span>
+                      <span>Nov 20, 2024</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hard-coded Blog Post 6 */}
+                <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="h-48 bg-gray-200 flex items-center justify-center">
+                    <img 
+                      src="/images/ecommerce.jpg" 
+                      alt="E-Commerce"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&h=300&fit=crop';
+                      }}
+                    />
+                  </div>
+                  <div className="p-4">
+                    <span className="inline-block px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded mb-2">Business</span>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">E-Commerce Success</h4>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">How to set up and grow your online store in the Kenyan market.</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>By Emily Chen</span>
+                      <span>Nov 15, 2024</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Other Items - Placeholder Text */}
+            {activeItem !== 'blog' && (
+              <p className="text-gray-500 text-center">
+                {activeItem === 'search' && 'Project search results will appear here...'}
+                {activeItem === 'home' && 'Home page content items will be listed here...'}
+                {activeItem === 'about' && 'About Us content will be listed here...'}
+                {activeItem === 'services' && 'Our Services content will be listed here...'}
+                {activeItem === 'case-studies' && 'Case Studies will be listed here...'}
+                {activeItem === 'documentation' && 'Documentation items will be listed here...'}
+                {activeItem === 'accounting' && 'Accounting records will be listed here...'}
+                {activeItem === 'transactions' && 'M-pesa Transaction records will be listed here...'}
+                {activeItem === 'bank' && 'Bank Records will be listed here...'}
+                {activeItem === 'tracking' && 'Project Tracking data will be listed here...'}
+              </p>
+            )}
           </div>
         </div>
       </main>
