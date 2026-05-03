@@ -3,12 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Home, Info, Briefcase, FolderKanban, BookOpen, FileText, 
   DollarSign, Wallet, CreditCard, TrendingUp, LogOut, Menu, X, 
-  Search, Plus, Edit2, Trash2, User
+  Search, User
 } from 'lucide-react';
 
-// Navigation items with their sections
+// Navigation items with their sections (Project Search removed - now in search box)
 const NAV_ITEMS = [
-  { id: 'search', label: 'Project Search', icon: Search, section: 'projects' },
   { id: 'home', label: 'Home', icon: Home, section: 'content' },
   { id: 'about', label: 'About Us', icon: Info, section: 'content' },
   { id: 'services', label: 'Our Services', icon: Briefcase, section: 'content' },
@@ -24,6 +23,7 @@ const NAV_ITEMS = [
 export function AdminLayout({ user, onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeItem, setActiveItem] = useState('home');
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -31,19 +31,10 @@ export function AdminLayout({ user, onLogout }) {
     navigate('/login');
   };
 
-  const handleAdd = () => {
-    console.log(`Add ${activeItem}`);
-    // TODO: Open add modal/form for activeItem
-  };
-
-  const handleUpdate = () => {
-    console.log(`Update ${activeItem}`);
-    // TODO: Open update modal/form for activeItem
-  };
-
-  const handleDelete = () => {
-    console.log(`Delete ${activeItem}`);
-    // TODO: Open delete confirmation for activeItem
+  const handleSearch = (e) => {
+    e.preventDefault();
+    console.log('Searching for:', searchQuery);
+    // TODO: Implement project search functionality
   };
 
   const getActiveItemLabel = () => {
@@ -108,44 +99,27 @@ export function AdminLayout({ user, onLogout }) {
           </div>
         </div>
 
-        {/* Row 2: CRUD Buttons for Active Item */}
+        {/* Row 2: Project Search Box */}
         <div className="w-full px-3 lg:px-6 py-3 bg-slate-800">
-          <div className="flex items-center justify-between">
-            {/* Active Item Label */}
-            <div className="flex items-center text-base">
-              <span className="text-gray-400 font-medium">Managing:</span>
-              <span className="ml-2 text-white font-bold text-lg">{getActiveItemLabel()}</span>
-            </div>
-
-            {/* CRUD Buttons */}
-            <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center">
+            <form onSubmit={handleSearch} className="flex items-center w-full max-w-2xl">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search projects..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-700 text-white placeholder-gray-400 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                />
+              </div>
               <button
-                onClick={handleAdd}
-                className="flex items-center px-5 py-2.5 text-sm font-bold bg-green-500 text-white hover:bg-green-400 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-                title={`Add ${getActiveItemLabel()}`}
+                type="submit"
+                className="ml-3 px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-500 transition-colors shadow-lg"
               >
-                <Plus className="w-5 h-5 mr-2" />
-                Add
+                Search
               </button>
-              
-              <button
-                onClick={handleUpdate}
-                className="flex items-center px-5 py-2.5 text-sm font-bold bg-blue-500 text-white hover:bg-blue-400 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-                title={`Update ${getActiveItemLabel()}`}
-              >
-                <Edit2 className="w-5 h-5 mr-2" />
-                Update
-              </button>
-              
-              <button
-                onClick={handleDelete}
-                className="flex items-center px-5 py-2.5 text-sm font-bold bg-red-500 text-white hover:bg-red-400 rounded-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
-                title={`Delete ${getActiveItemLabel()}`}
-              >
-                <Trash2 className="w-5 h-5 mr-2" />
-                Delete
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       </header>
