@@ -27,6 +27,7 @@ const ClientPortal = () => {
   const [invoices, setInvoices] = useState([])
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -40,6 +41,7 @@ const ClientPortal = () => {
 
   const loadClientData = async () => {
     try {
+      setError(null)
       // Mock data - replace with actual API calls
       setProjects([
         {
@@ -101,8 +103,9 @@ const ClientPortal = () => {
           unread: false
         }
       ])
-    } catch (error) {
-      console.error('Error loading client data:', error)
+    } catch (err) {
+      console.error('Error loading client data:', err)
+      setError(err.message || 'Failed to load dashboard data')
     } finally {
       setLoading(false)
     }
@@ -191,6 +194,19 @@ const ClientPortal = () => {
           </nav>
         </div>
       </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+            <AlertCircle className="w-5 h-5 text-red-500 mr-3 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-red-700 font-medium">Error loading dashboard</p>
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
