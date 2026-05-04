@@ -119,7 +119,8 @@ const Login = () => {
       // Update auth context with user info
       login(userInfo);
       
-      const from = location.state && location.state.from ? location.state.from : '/'
+      // Redirect to client portal for regular users
+      const from = location.state?.from || '/client-portal'
       navigate(from, { replace: true })
     } catch (err) {
       console.error('Login failed:', err)
