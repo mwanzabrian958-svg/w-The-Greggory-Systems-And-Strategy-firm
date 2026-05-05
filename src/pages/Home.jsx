@@ -1,16 +1,8 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award } from 'lucide-react'
 import BrandHeader from '../components/BrandHeader'
-import { useAuth } from '../context/AuthContext'
-import ClientPortal from './ClientPortal'
 
 const Home = () => {
-  const { isAuthenticated } = useAuth()
-
-  // If user is logged in, show the Client Portal instead of homepage
-  if (isAuthenticated) {
-    return <ClientPortal />
-  }
   const services = [
     {
       icon: <Target className="w-12 h-12 text-teal-600" />,

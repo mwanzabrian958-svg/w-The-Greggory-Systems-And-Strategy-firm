@@ -119,8 +119,8 @@ const Login = () => {
       // Update auth context with user info
       login(userInfo);
       
-      // Redirect to home page (client portal for logged-in users)
-      const from = location.state?.from || '/'
+      // Redirect to client portal after login
+      const from = location.state?.from || '/client-portal'
       navigate(from, { replace: true })
     } catch (err) {
       console.error('Login failed:', err)
