@@ -30,14 +30,9 @@ const ClientPortal = () => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login')
-      return
-    }
-    
-    // Load client data
+    // Load client data (auth is already checked by PrivateRoute)
     loadClientData()
-  }, [isAuthenticated, navigate])
+  }, [])
 
   const loadClientData = async () => {
     try {
