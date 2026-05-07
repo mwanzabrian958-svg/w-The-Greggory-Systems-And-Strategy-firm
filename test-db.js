@@ -1,49 +1,85 @@
+// Test database connection and registration
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+const bcrypt = require('bcryptjs');
 
-async function testConnection() {
-  const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'greggory_foundation_db',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-  });
-
+async function testRegistration() {
+  console.log('=== Testing Database Connection ===\n');
+  
+  let connection;
   try {
-    console.log('🔍 Attempting to connect to the database...');
-    const connection = await pool.getConnection();
-    console.log('✅ Successfully connected to the database!');
+    // Create connection
+    connection = await mysql.createConnection({
+      host: 'localhost',
+      port: 5000,
+      user: 'root',
+      password: '',
+      database: 'greggory_foundation_db_main'
+    });
     
-    // Test a simple query
-    const [rows] = await connection.query('SELECT 1 as test');
-    console.log('📊 Test query result:', rows);
+    console.log('✓ Database connected successfully\n');
     
     // Check if users table exists
-    const [tables] = await connection.query(
+    const [tables] = await connection.execute(
       "SHOW TABLES LIKE 'users'"
     );
     
-    if (tables.length > 0) {
-      console.log('✅ Users table exists');
-      const [users] = await connection.query('SELECT COUNT(*) as count FROM users');
-      console.log(`👥 Total users: ${users[0].count}`);
-    } else {
-      console.log('❌ Users table does not exist');
+    if (tables.length === 0) {
+      console.log('✗ ERROR: users table does not exist!');
+      return;
+    }
+    console.log('✓ users table exists\n');
+    
+    // Check table structure
+    const [columns] = await connection.execute('DESCRIBE users');
+    console.log('Table columns:');
+    columns.forEach(col => {
+      console.log(`  - ${col.Field}: ${col.Type} ${col.Null === 'NO' ? '(required)' : '(optional)'}`);
+    });
+    console.log('');
+    
+    // Test INSERT
+    console.log('=== Testing User Registration ===\n');
+    
+    const testEmail = 'test' + Date.now() + '@example.com';
+    const password = '***REMOVED***';
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    console.log('Test data:');
+    console.log('  Email:', testEmail);
+    console.log('  Password hash length:', hashedPassword.length);
+    console.log('  First name: Test');
+    console.log('  Last name: User');
+    console.log('  Display name: Test User\n');
+    
+    try {
+      const [result] = await connection.execute(
+        'INSERT INTO users (email, password_hash, first_name, last_name, display_name, is_active, email_verified) VALUES (?, ?, ?, ?, ?, 1, 1)',
+        [testEmail, hashedPassword, 'Test', 'User', 'Test User']
+      );
+      
+      console.log('✓ INSERT successful!');
+      console.log('  Insert ID:', result.insertId);
+      
+      // Clean up - delete test user
+      await connection.execute('DELETE FROM users WHERE id = ?', [result.insertId]);
+      console.log('  Test user cleaned up\n');
+      
+    } catch (insertError) {
+      console.log('✗ INSERT failed!');
+      console.log('  Error:', insertError.message);
+      console.log('  Error code:', insertError.code);
+      console.log('  SQL:', insertError.sql);
     }
     
-    connection.release();
-    return true;
   } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-    return false;
+    console.log('✗ ERROR:', error.message);
+    console.log('  Stack:', error.stack);
   } finally {
-    await pool.end();
+    if (connection) {
+      await connection.end();
+      console.log('\n=== Connection closed ===');
+    }
   }
 }
 
-testConnection().then(success => {
-  process.exit(success ? 0 : 1);
-});
+testRegistration();

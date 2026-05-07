@@ -58,3 +58,156 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #0f766e;
 }
+
+/* =====================================================
+   PAGE TRANSITION ANIMATIONS
+   For: Registration → Login → Dashboard flow
+   ===================================================== */
+
+/* Page Fade In */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Page Slide In from Right */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Page Slide In from Left */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scale Up Animation */
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Loading Spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Success Checkmark */
+@keyframes checkmark {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Pulse Animation for loading */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Apply animations to components */
+.page-enter {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.page-enter-slide {
+  animation: slideInRight 0.4s ease-out forwards;
+}
+
+.page-enter-scale {
+  animation: scaleUp 0.4s ease-out forwards;
+}
+
+/* Loading spinner class */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Success animation class */
+.success-animation {
+  animation: checkmark 0.5s ease-out forwards;
+}
+
+/* Auth transition overlay */
+.auth-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Developer blank page styling */
+.developer-blank-page {
+  width: 100%;
+  height: 100vh;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Transition loading indicator */
+.transition-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.transition-loading .spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #0d9488;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.transition-loading p {
+  color: #6b7280;
+  font-size: 1.1rem;
+}

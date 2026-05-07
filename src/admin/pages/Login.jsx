@@ -53,8 +53,12 @@ export function Login({ onLoginSuccess }) {
       // Notify parent of successful login
       onLoginSuccess(data.user);
       
-      // Redirect to originally requested page or admin dashboard
-      navigate(from, { replace: true });
+      // Redirect based on user role
+      if (data.user.role === 'developer') {
+        navigate('/developer', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
       
     } catch (err) {
       console.error('Login error:', err);
