@@ -14,6 +14,7 @@ const Navbar = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, logout, user } = useAuth()
+  const profilePhotoUrl = user?.profile_photo_url || user?.profilePhotoData || null
 
   const [hasAdminSessionToken, setHasAdminSessionToken] = useState(() => hasAdminToken())
 
