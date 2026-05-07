@@ -6,7 +6,9 @@ import {
   FileText, 
   MessageSquare, 
   Phone,
-  Bell
+  Bell,
+  ChevronRight,
+  DollarSign
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
@@ -28,7 +30,7 @@ const ClientPortal = () => {
       setError(null)
       setLoading(true)
       
-      // Mock data - replace with actual API calls
+      // Hard-coded mock data
       setProjects([
         {
           id: 1,
@@ -45,17 +47,29 @@ const ClientPortal = () => {
           progress: 15,
           deadline: '2024-08-30',
           manager: 'Michael Chen'
+        },
+        {
+          id: 3,
+          name: 'Cloud Migration Project',
+          status: 'completed',
+          progress: 100,
+          deadline: '2024-03-20',
+          manager: 'Emily Davis'
         }
       ])
 
       setInvoices([
-        { id: 'INV-2024-001', project: 'Business Process Optimization', amount: 15000, status: 'paid' },
-        { id: 'INV-2024-002', project: 'Business Process Optimization', amount: 14250, status: 'pending' }
+        { id: 'INV-2024-001', project: 'Business Process Optimization', amount: 15000, status: 'paid', date: '2024-01-15' },
+        { id: 'INV-2024-002', project: 'Business Process Optimization', amount: 14250, status: 'pending', date: '2024-02-28' },
+        { id: 'INV-2024-003', project: 'Digital Transformation Strategy', amount: 8500, status: 'paid', date: '2024-03-10' },
+        { id: 'INV-2024-004', project: 'Cloud Migration Project', amount: 22000, status: 'paid', date: '2024-03-25' }
       ])
 
       setMessages([
-        { id: 1, sender: 'Sarah Johnson', subject: 'Project milestone update', unread: true },
-        { id: 2, sender: 'Michael Chen', subject: 'Strategy document review', unread: false }
+        { id: 1, sender: 'Sarah Johnson', subject: 'Project milestone update - Phase 1 complete', unread: true, time: '2 hours ago' },
+        { id: 2, sender: 'Michael Chen', subject: 'Strategy document review requested', unread: false, time: '5 hours ago' },
+        { id: 3, sender: 'Emily Davis', subject: 'Cloud migration final report', unread: true, time: '1 day ago' },
+        { id: 4, sender: 'Support Team', subject: 'Your ticket #1234 has been resolved', unread: false, time: '2 days ago' }
       ])
     } catch (err) {
       console.error('Error loading client data:', err)
@@ -105,8 +119,9 @@ const ClientPortal = () => {
               <h1 className="text-xl font-bold text-gray-900">Client Portal</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-400 hover:text-gray-600">
+              <button className="p-2 text-gray-400 hover:text-gray-600 relative">
                 <Bell className="w-6 h-6" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
@@ -149,10 +164,10 @@ const ClientPortal = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-3 rounded-lg bg-green-100">
-                <FileText className="h-6 w-6 text-green-600" />
+                <DollarSign className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Invoices</p>
+                <p className="text-sm font-medium text-gray-600">Total Invoices</p>
                 <p className="text-2xl font-bold text-gray-900">{invoices.length}</p>
               </div>
             </div>
@@ -178,7 +193,7 @@ const ClientPortal = () => {
                 <Calendar className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Meetings</p>
+                <p className="text-sm font-medium text-gray-600">Upcoming</p>
                 <p className="text-2xl font-bold text-gray-900">3</p>
               </div>
             </div>
@@ -187,113 +202,111 @@ const ClientPortal = () => {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Projects List */}
+          {/* Left Column - Projects and Invoices */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Projects List */}
             <div className="bg-white rounded-lg shadow">
               <div className="p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">Your Projects</h3>
               </div>
               <div className="p-6">
-                {projects.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No projects found.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {projects.map((project) => (
-                      <div key={project.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-medium text-gray-900">{project.name}</h4>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            project.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            project.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {project.status}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm text-gray-600">
-                          <span>Manager: {project.manager}</span>
-                          <span>{project.progress}% complete</span>
-                        </div>
-                        <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-teal-600 h-2 rounded-full transition-all"
-                            style={{ width: `${project.progress}%` }}
-                          ></div>
-                        </div>
+                <div className="space-y-4">
+                  {projects.map((project) => (
+                    <div key={project.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-gray-900">{project.name}</h4>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          project.status === 'completed' ? 'bg-green-100 text-green-800' :
+                          project.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {project.status}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <div className="flex items-center justify-between text-sm text-gray-600">
+                        <span>Manager: {project.manager}</span>
+                        <span>{project.progress}% complete</span>
+                      </div>
+                      <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-teal-600 h-2 rounded-full transition-all"
+                          style={{ width: `${project.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Invoices Section */}
             <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Recent Invoices</h3>
+                <button className="text-teal-600 text-sm font-medium hover:text-teal-700">View All</button>
               </div>
               <div className="p-6">
-                {invoices.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">No invoices found.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {invoices.map((invoice) => (
+                        <tr key={invoice.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{invoice.id}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{invoice.project}</td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${invoice.amount.toLocaleString()}</td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+                              invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {invoice.status}
+                            </span>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {invoices.map((invoice) => (
-                          <tr key={invoice.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{invoice.id}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{invoice.project}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${invoice.amount.toLocaleString()}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                                invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-red-100 text-red-800'
-                              }`}>
-                                {invoice.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Sidebar */}
+          {/* Right Column - Messages and Quick Actions */}
           <div className="space-y-6">
             {/* Recent Messages */}
             <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Recent Messages</h3>
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                  {messages.filter(m => m.unread).length}
+                </span>
               </div>
               <div className="p-6">
-                {messages.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No new messages.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {messages.slice(0, 3).map((msg) => (
-                      <div key={msg.id} className="flex items-start space-x-3">
-                        <div className={`w-2 h-2 rounded-full mt-2 ${msg.unread ? 'bg-teal-600' : 'bg-gray-300'}`}></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{msg.sender}</p>
-                          <p className="text-sm text-gray-600 truncate">{msg.subject}</p>
-                        </div>
+                <div className="space-y-4">
+                  {messages.slice(0, 4).map((msg) => (
+                    <div key={msg.id} className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-0">
+                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${msg.unread ? 'bg-teal-600' : 'bg-gray-300'}`}></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{msg.sender}</p>
+                        <p className="text-sm text-gray-600 line-clamp-2">{msg.subject}</p>
+                        <p className="text-xs text-gray-400 mt-1">{msg.time}</p>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  ))}
+                </div>
+                <button className="w-full mt-4 text-teal-600 text-sm font-medium hover:text-teal-700 flex items-center justify-center">
+                  View All Messages
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </button>
               </div>
             </div>
 
@@ -310,6 +323,10 @@ const ClientPortal = () => {
                 <button className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Send Message
+                </button>
+                <button className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                  <FileText className="w-4 h-4 mr-2" />
+                  View Documents
                 </button>
                 <button className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                   <Phone className="w-4 h-4 mr-2" />
