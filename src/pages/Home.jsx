@@ -1,8 +1,15 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { ArrowRight, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award } from 'lucide-react'
 import BrandHeader from '../components/BrandHeader'
+import { useAuth } from '../context/AuthContext'
 
 const Home = () => {
+  const { isAuthenticated } = useAuth()
+  
+  // Redirect logged-in users to client portal
+  if (isAuthenticated) {
+    return <Navigate to="/client-portal" replace />
+  }
   const services = [
     {
       icon: <Target className="w-12 h-12 text-teal-600" />,
