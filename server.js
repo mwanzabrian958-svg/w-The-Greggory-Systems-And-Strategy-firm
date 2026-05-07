@@ -396,7 +396,7 @@ app.get('/api/db/:database/table/:table', async (req, res) => {
 app.get('/api/users', async (req, res) => {
   try {
     const [users] = await mainDb.query(
-      'SELECT id, email, first_name, last_name, display_name, role, created_at FROM users WHERE deleted_at IS NULL'
+      'SELECT id, email, first_name, last_name, display_name, primary_role AS role, created_at FROM users WHERE deleted_at IS NULL'
     );
     res.json({ success: true, users });
   } catch (error) {
@@ -410,7 +410,7 @@ app.post('/api/users', async (req, res) => {
     const { email, password, first_name, last_name, display_name, role = 'user' } = req.body;
     
     const [result] = await mainDb.query(
-      'INSERT INTO users (email, password_hash, first_name, last_name, display_name, role) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO users (email, password_hash, first_name, last_name, display_name, primary_role) VALUES (?, ?, ?, ?, ?, ?)',
       [email, password, first_name, last_name, display_name, role]
     );
     
@@ -731,7 +731,7 @@ app.post('/api/users/admin-create', async (req, res) => {
       
     } else {
       tableUsed = 'users';
-      // Regular user - insert into users table with role
+      // Regular user - insert into users table with primary role
       // Check if email already exists
       const [existing] = await mainDb.query(
         'SELECT id FROM users WHERE email = ? AND deleted_at IS NULL',
@@ -746,7 +746,7 @@ app.post('/api/users/admin-create', async (req, res) => {
       
       // Insert into users table
       [result] = await mainDb.query(
-        'INSERT INTO users (email, password_hash, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO users (email, password_hash, first_name, last_name, primary_role) VALUES (?, ?, ?, ?, ?)',
         [email, hashedPassword, first_name, last_name, role]
       );
       userId = result.insertId;
