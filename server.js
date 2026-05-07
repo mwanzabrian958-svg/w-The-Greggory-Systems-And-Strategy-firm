@@ -425,14 +425,16 @@ app.post('/api/users', async (req, res) => {
 app.post('/api/users/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const normalizedPassword = String(password || '');
     
-    if (!email || !password) {
+    if (!normalizedEmail || !normalizedPassword) {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
     
     const [users] = await mainDb.query(
-      'SELECT id, email, first_name, last_name, display_name, password_hash, profile_photo_blob IS NOT NULL AS has_photo FROM users WHERE email = ? AND deleted_at IS NULL',
-      [email]
+      'SELECT id, email, first_name, last_name, display_name, password_hash, profile_photo_blob IS NOT NULL AS has_photo FROM users WHERE LOWER(email) = ? AND deleted_at IS NULL',
+      [normalizedEmail]
     );
     
     if (users.length === 0) {
@@ -441,8 +443,19 @@ app.post('/api/users/login', async (req, res) => {
     
     const user = users[0];
     
-    // Verify password using bcrypt
-    const isPasswordValid = await bcryptjs.compare(password, user.password_hash);
+    // Verify password using bcrypt when possible.
+    // Compatibility fallback supports older plain-text records and upgrades them to bcrypt.
+    let isPasswordValid = false;
+    const storedPassword = user.password_hash || '';
+    if (storedPassword.startsWith('$2a$') || storedPassword.startsWith('$2b$') || storedPassword.startsWith('$2y$')) {
+      isPasswordValid = await bcryptjs.compare(normalizedPassword, storedPassword);
+    } else {
+      isPasswordValid = normalizedPassword === storedPassword;
+      if (isPasswordValid) {
+        const upgradedHash = await bcryptjs.hash(normalizedPassword, 10);
+        await mainDb.query('UPDATE users SET password_hash = ? WHERE id = ?', [upgradedHash, user.id]);
+      }
+    }
     
     if (!isPasswordValid) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
