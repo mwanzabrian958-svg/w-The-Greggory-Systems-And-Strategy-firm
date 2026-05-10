@@ -41,8 +41,6 @@ function Layout() {
   const isAdminPage = location.pathname.startsWith('/admin')
   const isDeveloperPage = location.pathname === '/developer'
 
-
-
   return (
 
     <div className="flex flex-col min-h-screen">

@@ -23,10 +23,13 @@ dist-ssr
 *.sln
 *.sw?
 
-# Env files
+# Env files (keep .env.example)
 .env
 .env.*
+!.env.example
+
+# Database backups (keep these for GitHub safety)
+# backups/ directory is tracked for disaster recovery
 
 # Local Netlify folder
-.netlify
-".env" 
+.netlify 

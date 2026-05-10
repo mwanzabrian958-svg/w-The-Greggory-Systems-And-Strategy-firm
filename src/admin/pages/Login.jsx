@@ -1,68 +1,72 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import { API_BASE_URL } from "../../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || API_BASE_URL;
 
 export function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loginRole, setLoginRole] = useState('admin'); // 'admin' or 'developer'
+  const [loginRole, setLoginRole] = useState("admin"); // 'admin' or 'developer'
 
-  const from = location.state?.from?.pathname || '/admin';
+  const from = location.state?.from?.pathname || "/admin";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
       // Use correct endpoint based on role
-      const endpoint = loginRole === 'developer'
-        ? `${API_URL}/developer-verification/authenticate`
-        : `${API_URL}/admin-verification/authenticate-enhanced`
-      
-      console.log('[LOGIN] Logging in as', loginRole, 'using', endpoint)
-      
+      const endpoint =
+        loginRole === "developer"
+          ? `${API_URL}/developer-verification/authenticate`
+          : `${API_URL}/admin-verification/authenticate-enhanced`;
+
+      console.log("[LOGIN] Logging in as", loginRole, "using", endpoint);
+
       const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Authentication failed');
+        throw new Error(data.message || "Authentication failed");
       }
 
       // Store session
       const session = {
         user: data.user,
         token: data.token,
-        expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       };
-      
-      sessionStorage.setItem('gf_admin_session', JSON.stringify(session));
-      
+
+      sessionStorage.setItem("gf_admin_session", JSON.stringify(session));
+
       // Notify parent of successful login
       onLoginSuccess(data.user);
-      
+
       // Redirect based on user role
-      if (data.user.role === 'developer') {
-        navigate('/developer', { replace: true });
+      if (data.user.role === "developer") {
+        navigate("/developer", { replace: true });
       } else {
         navigate(from, { replace: true });
       }
-      
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'Failed to connect to server. Check console for details.');
+      console.error("Login error:", err);
+      setError(
+        err.message ||
+          "Failed to connect to server. Check console for details.",
+      );
     } finally {
       setLoading(false);
     }
@@ -76,8 +80,12 @@ export function Login({ onLoginSuccess }) {
           <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Shield className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Admin & Developer Access</h1>
-          <p className="text-gray-400 mt-2">Sign in to access the admin or developer panel</p>
+          <h1 className="text-2xl font-bold text-white">
+            Admin & Developer Access
+          </h1>
+          <p className="text-gray-400 mt-2">
+            Sign in to access the admin or developer panel
+          </p>
         </div>
 
         {/* Error Message */}
@@ -89,7 +97,10 @@ export function Login({ onLoginSuccess }) {
         )}
 
         {/* Login Form */}
-        <form onSubmit={handleSubmit} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 shadow-2xl">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 shadow-2xl"
+        >
           {/* Role Selector */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -100,8 +111,12 @@ export function Login({ onLoginSuccess }) {
               onChange={(e) => setLoginRole(e.target.value)}
               className="w-full bg-slate-800/50 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             >
-              <option value="admin" className="bg-slate-800">Administrator</option>
-              <option value="developer" className="bg-slate-800">Developer</option>
+              <option value="admin" className="bg-slate-800">
+                Administrator
+              </option>
+              <option value="developer" className="bg-slate-800">
+                Developer
+              </option>
             </select>
           </div>
 
@@ -131,7 +146,7 @@ export function Login({ onLoginSuccess }) {
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -143,7 +158,11 @@ export function Login({ onLoginSuccess }) {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
               </button>
             </div>
           </div>
@@ -160,7 +179,7 @@ export function Login({ onLoginSuccess }) {
                 Signing in...
               </>
             ) : (
-              'Sign In'
+              "Sign In"
             )}
           </button>
         </form>

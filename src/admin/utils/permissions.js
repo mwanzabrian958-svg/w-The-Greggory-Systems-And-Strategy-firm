@@ -44,6 +44,9 @@ export const PERMISSIONS = {
   VIEW_SETTINGS: 'view_settings',
   EDIT_SETTINGS: 'edit_settings',
   
+  // Developer Portal
+  VIEW_DEVELOPER: 'view_developer',
+  
   // Admin Management (Super Admin only)
   MANAGE_ADMINS: 'manage_admins',
   VIEW_ACTIVITY_LOGS: 'view_activity_logs',

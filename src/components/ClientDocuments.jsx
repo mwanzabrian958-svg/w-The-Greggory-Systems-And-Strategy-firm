@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react'
-import { 
-  FileText, 
-  Download, 
-  Eye, 
-  Mail, 
-  Calendar, 
-  User, 
+import React, { useState, useEffect } from "react";
+import { getApiUrl } from "../services/api";
+import {
+  FileText,
+  Download,
+  Eye,
+  Mail,
+  Calendar,
+  User,
   DollarSign,
   Clock,
   CheckCircle,
@@ -18,179 +19,192 @@ import {
   Edit,
   Trash2,
   Share2,
-  Printer
-} from 'lucide-react'
+  Printer,
+} from "lucide-react";
 
-const ClientDocuments = ({ 
-  invoices, 
-  quotes, 
-  mpesaTransactions, 
-  projects, 
+const ClientDocuments = ({
+  invoices,
+  quotes,
+  mpesaTransactions,
+  projects,
   users,
   onGenerateDocument,
   onSendDocument,
-  onRefresh 
+  onRefresh,
 }) => {
-  const [activeTab, setActiveTab] = useState('invoices')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState('all')
-  const [filterClient, setFilterClient] = useState('all')
-  const [selectedDocument, setSelectedDocument] = useState(null)
-  const [showDocumentModal, setShowDocumentModal] = useState(false)
-  const [showSendModal, setShowSendModal] = useState(false)
+  const [activeTab, setActiveTab] = useState("invoices");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterClient, setFilterClient] = useState("all");
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
   const [sendForm, setSendForm] = useState({
-    email: '',
-    subject: '',
-    message: ''
-  })
+    email: "",
+    subject: "",
+    message: "",
+  });
 
   const tabs = [
-    { id: 'invoices', label: 'Invoices', icon: FileText },
-    { id: 'quotes', label: 'Quotes', icon: FileText },
-    { id: 'receipts', label: 'Payment Receipts', icon: CheckCircle },
-    { id: 'statements', label: 'Account Statements', icon: DollarSign }
-  ]
+    { id: "invoices", label: "Invoices", icon: FileText },
+    { id: "quotes", label: "Quotes", icon: FileText },
+    { id: "receipts", label: "Payment Receipts", icon: CheckCircle },
+    { id: "statements", label: "Account Statements", icon: DollarSign },
+  ];
 
   // Filter documents based on search and filters
   const getFilteredDocuments = () => {
-    let documents = []
-    
-    if (activeTab === 'invoices') {
-      documents = invoices || []
-    } else if (activeTab === 'quotes') {
-      documents = quotes || []
-    } else if (activeTab === 'receipts') {
-      documents = mpesaTransactions?.filter(tx => tx.status === 'completed') || []
-    } else if (activeTab === 'statements') {
+    let documents = [];
+
+    if (activeTab === "invoices") {
+      documents = invoices || [];
+    } else if (activeTab === "quotes") {
+      documents = quotes || [];
+    } else if (activeTab === "receipts") {
+      documents =
+        mpesaTransactions?.filter((tx) => tx.status === "completed") || [];
+    } else if (activeTab === "statements") {
       // Generate account statements from accounting entries
-      documents = []
+      documents = [];
     }
 
     // Apply filters
     if (searchTerm) {
-      documents = documents.filter(doc => 
-        (doc.invoice_number || doc.quote_number || doc.transaction_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (doc.client_name || '').toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      documents = documents.filter(
+        (doc) =>
+          (doc.invoice_number || doc.quote_number || doc.transaction_id || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          (doc.client_name || "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()),
+      );
     }
 
-    if (filterStatus !== 'all') {
-      documents = documents.filter(doc => doc.status === filterStatus)
+    if (filterStatus !== "all") {
+      documents = documents.filter((doc) => doc.status === filterStatus);
     }
 
-    if (filterClient !== 'all') {
-      documents = documents.filter(doc => doc.client_id === parseInt(filterClient))
+    if (filterClient !== "all") {
+      documents = documents.filter(
+        (doc) => doc.client_id === parseInt(filterClient),
+      );
     }
 
-    return documents
-  }
+    return documents;
+  };
 
   const handleSendDocument = (document) => {
-    setSelectedDocument(document)
+    setSelectedDocument(document);
     setSendForm({
-      email: document.client_email || '',
-      subject: `Your ${activeTab === 'invoices' ? 'Invoice' : 'Quote'} - ${document.invoice_number || document.quote_number}`,
-      message: `Dear ${document.client_name},\n\nPlease find attached your ${activeTab === 'invoices' ? 'invoice' : 'quote'}.\n\nThank you for your business.`
-    })
-    setShowSendModal(true)
-  }
+      email: document.client_email || "",
+      subject: `Your ${activeTab === "invoices" ? "Invoice" : "Quote"} - ${document.invoice_number || document.quote_number}`,
+      message: `Dear ${document.client_name},\n\nPlease find attached your ${activeTab === "invoices" ? "invoice" : "quote"}.\n\nThank you for your business.`,
+    });
+    setShowSendModal(true);
+  };
 
   const handleSendEmail = async () => {
-    if (!selectedDocument || !sendForm.email) return
-    
+    if (!selectedDocument || !sendForm.email) return;
+
     try {
       // Call the send document API
-      const response = await fetch('/api/documents/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch(getApiUrl("/api/documents/send"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           documentId: selectedDocument.id,
           documentType: activeTab,
           email: sendForm.email,
           subject: sendForm.subject,
-          message: sendForm.message
-        })
-      })
+          message: sendForm.message,
+        }),
+      });
 
       if (response.ok) {
-        alert('Document sent successfully!')
-        setShowSendModal(false)
-        onRefresh()
+        alert("Document sent successfully!");
+        setShowSendModal(false);
+        onRefresh();
       } else {
-        alert('Failed to send document')
+        alert("Failed to send document");
       }
     } catch (error) {
-      console.error('Error sending document:', error)
-      alert('Error sending document')
+      console.error("Error sending document:", error);
+      alert("Error sending document");
     }
-  }
+  };
 
   const handleGeneratePDF = async (document) => {
     try {
-      const response = await fetch(`/api/documents/generate/${activeTab}/${document.id}`, {
-        method: 'POST'
-      })
+      const response = await fetch(
+        getApiUrl(`/api/documents/generate/${activeTab}/${document.id}`),
+        {
+          method: "POST",
+        },
+      );
 
       if (response.ok) {
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `${activeTab}-${document.invoice_number || document.quote_number || document.transaction_id}.pdf`
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${activeTab}-${document.invoice_number || document.quote_number || document.transaction_id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
       } else {
-        alert('Failed to generate PDF')
+        alert("Failed to generate PDF");
       }
     } catch (error) {
-      console.error('Error generating PDF:', error)
-      alert('Error generating PDF')
+      console.error("Error generating PDF:", error);
+      alert("Error generating PDF");
     }
-  }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'paid':
-      case 'accepted':
-      case 'completed':
-        return 'bg-green-100 text-green-800'
-      case 'pending':
-      case 'sent':
-      case 'viewed':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'overdue':
-      case 'expired':
-      case 'rejected':
-      case 'failed':
-        return 'bg-red-100 text-red-800'
+      case "paid":
+      case "accepted":
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "pending":
+      case "sent":
+      case "viewed":
+        return "bg-yellow-100 text-yellow-800";
+      case "overdue":
+      case "expired":
+      case "rejected":
+      case "failed":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800'
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const getDocumentIcon = (type) => {
     switch (type) {
-      case 'invoices':
-        return FileText
-      case 'quotes':
-        return FileText
-      case 'receipts':
-        return CheckCircle
-      case 'statements':
-        return DollarSign
+      case "invoices":
+        return FileText;
+      case "quotes":
+        return FileText;
+      case "receipts":
+        return CheckCircle;
+      case "statements":
+        return DollarSign;
       default:
-        return FileText
+        return FileText;
     }
-  }
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm">
       {/* Header */}
       <div className="p-6 border-b">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Client Document Management</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Client Document Management
+          </h3>
           <div className="flex items-center gap-3">
             <button
               onClick={() => onGenerateDocument(activeTab)}
@@ -219,8 +233,8 @@ const ClientDocuments = ({
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 py-4 px-1 border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-teal-600 text-teal-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? "border-teal-600 text-teal-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -245,7 +259,7 @@ const ClientDocuments = ({
               />
             </div>
           </div>
-          
+
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
@@ -304,28 +318,39 @@ const ClientDocuments = ({
               {getFilteredDocuments().map((document) => (
                 <tr key={document.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {document.invoice_number || document.quote_number || document.transaction_id}
+                    {document.invoice_number ||
+                      document.quote_number ||
+                      document.transaction_id}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="flex items-center">
                       <User className="w-4 h-4 text-gray-400 mr-2" />
                       <div>
                         <p className="font-medium">{document.client_name}</p>
-                        <p className="text-xs text-gray-500">{document.client_email}</p>
+                        <p className="text-xs text-gray-500">
+                          {document.client_email}
+                        </p>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    KES {parseFloat(document.total_amount_kes || document.amount || 0).toLocaleString()}
+                    KES{" "}
+                    {parseFloat(
+                      document.total_amount_kes || document.amount || 0,
+                    ).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                      {document.issue_date || document.transaction_date || document.created_at}
+                      {document.issue_date ||
+                        document.transaction_date ||
+                        document.created_at}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(document.status)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(document.status)}`}
+                    >
                       {document.status}
                     </span>
                   </td>
@@ -333,8 +358,8 @@ const ClientDocuments = ({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
-                          setSelectedDocument(document)
-                          setShowDocumentModal(true)
+                          setSelectedDocument(document);
+                          setShowDocumentModal(true);
                         }}
                         className="text-teal-600 hover:text-teal-800"
                         title="View Details"
@@ -395,74 +420,106 @@ const ClientDocuments = ({
           <div className="bg-white rounded-lg w-full max-w-3xl max-h-screen overflow-y-auto m-4">
             <div className="p-6 border-b">
               <h3 className="text-lg font-semibold text-gray-900">
-                {activeTab === 'invoices' ? 'Invoice' : activeTab === 'quotes' ? 'Quote' : 'Document'} Details
+                {activeTab === "invoices"
+                  ? "Invoice"
+                  : activeTab === "quotes"
+                    ? "Quote"
+                    : "Document"}{" "}
+                Details
               </h3>
             </div>
-            
+
             <div className="p-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-4">Document Information</h4>
+                  <h4 className="font-medium text-gray-900 mb-4">
+                    Document Information
+                  </h4>
                   <div className="space-y-3">
                     <div>
                       <p className="text-sm text-gray-500">Document Number</p>
                       <p className="font-medium">
-                        {selectedDocument.invoice_number || selectedDocument.quote_number || selectedDocument.transaction_id}
+                        {selectedDocument.invoice_number ||
+                          selectedDocument.quote_number ||
+                          selectedDocument.transaction_id}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Client Name</p>
-                      <p className="font-medium">{selectedDocument.client_name}</p>
+                      <p className="font-medium">
+                        {selectedDocument.client_name}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Email</p>
-                      <p className="font-medium">{selectedDocument.client_email}</p>
+                      <p className="font-medium">
+                        {selectedDocument.client_email}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Phone</p>
-                      <p className="font-medium">{selectedDocument.client_phone}</p>
+                      <p className="font-medium">
+                        {selectedDocument.client_phone}
+                      </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-4">Financial Details</h4>
+                  <h4 className="font-medium text-gray-900 mb-4">
+                    Financial Details
+                  </h4>
                   <div className="space-y-3">
                     <div>
                       <p className="text-sm text-gray-500">Amount</p>
                       <p className="font-medium text-lg">
-                        KES {parseFloat(selectedDocument.total_amount_kes || selectedDocument.amount || 0).toLocaleString()}
+                        KES{" "}
+                        {parseFloat(
+                          selectedDocument.total_amount_kes ||
+                            selectedDocument.amount ||
+                            0,
+                        ).toLocaleString()}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Status</p>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedDocument.status)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedDocument.status)}`}
+                      >
                         {selectedDocument.status}
                       </span>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Issue Date</p>
                       <p className="font-medium">
-                        {selectedDocument.issue_date || selectedDocument.transaction_date || selectedDocument.created_at}
+                        {selectedDocument.issue_date ||
+                          selectedDocument.transaction_date ||
+                          selectedDocument.created_at}
                       </p>
                     </div>
                     {selectedDocument.due_date && (
                       <div>
                         <p className="text-sm text-gray-500">Due Date</p>
-                        <p className="font-medium">{selectedDocument.due_date}</p>
+                        <p className="font-medium">
+                          {selectedDocument.due_date}
+                        </p>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-              
+
               {selectedDocument.description && (
                 <div className="mt-6">
-                  <h4 className="font-medium text-gray-900 mb-2">Description</h4>
-                  <p className="text-gray-600">{selectedDocument.description}</p>
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    Description
+                  </h4>
+                  <p className="text-gray-600">
+                    {selectedDocument.description}
+                  </p>
                 </div>
               )}
-              
+
               {selectedDocument.notes && (
                 <div className="mt-6">
                   <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
@@ -470,7 +527,7 @@ const ClientDocuments = ({
                 </div>
               )}
             </div>
-            
+
             <div className="p-6 border-t flex justify-end gap-3">
               <button
                 onClick={() => setShowDocumentModal(false)}
@@ -494,47 +551,63 @@ const ClientDocuments = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-md max-h-screen overflow-y-auto m-4">
             <div className="p-6 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">Send Document</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Send Document
+              </h3>
               <p className="text-sm text-gray-600 mt-1">
-                {selectedDocument?.invoice_number || selectedDocument?.quote_number || selectedDocument?.transaction_id}
+                {selectedDocument?.invoice_number ||
+                  selectedDocument?.quote_number ||
+                  selectedDocument?.transaction_id}
               </p>
             </div>
-            
+
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Recipient Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Recipient Email
+                </label>
                 <input
                   type="email"
                   value={sendForm.email}
-                  onChange={(e) => setSendForm({...sendForm, email: e.target.value})}
+                  onChange={(e) =>
+                    setSendForm({ ...sendForm, email: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   placeholder="client@example.com"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subject
+                </label>
                 <input
                   type="text"
                   value={sendForm.subject}
-                  onChange={(e) => setSendForm({...sendForm, subject: e.target.value})}
+                  onChange={(e) =>
+                    setSendForm({ ...sendForm, subject: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   placeholder="Email subject"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Message
+                </label>
                 <textarea
                   value={sendForm.message}
-                  onChange={(e) => setSendForm({...sendForm, message: e.target.value})}
+                  onChange={(e) =>
+                    setSendForm({ ...sendForm, message: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                   rows={4}
                   placeholder="Email message"
                 />
               </div>
             </div>
-            
+
             <div className="p-6 border-t flex justify-end gap-3">
               <button
                 onClick={() => setShowSendModal(false)}
@@ -554,7 +627,7 @@ const ClientDocuments = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default ClientDocuments
+export default ClientDocuments;

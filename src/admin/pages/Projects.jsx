@@ -1,21 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  FolderKanban, Plus, Search, Edit2, Trash2, Eye,
-  Calendar, User, CheckCircle, Clock, XCircle,
-  ChevronLeft, ChevronRight, MoreVertical, Filter,
-  DollarSign, Users
-} from 'lucide-react';
-import { usePermissions } from '../hooks/usePermissions';
-import { PERMISSIONS } from '../utils/permissions';
+import React, { useState, useEffect } from "react";
+import {
+  FolderKanban,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  Eye,
+  Calendar,
+  User,
+  CheckCircle,
+  Clock,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+  Filter,
+  DollarSign,
+  Users,
+} from "lucide-react";
+import { usePermissions } from "../hooks/usePermissions";
+import { PERMISSIONS } from "../utils/permissions";
+import { API_BASE_URL } from "../../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || API_BASE_URL;
 
 export function Projects({ user }) {
   const { can } = usePermissions(user);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -28,16 +42,16 @@ export function Projects({ user }) {
       setLoading(true);
       const response = await fetch(`${API_URL}/projects`, {
         headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('gf_admin_session')?.token}`
-        }
+          Authorization: `Bearer ${sessionStorage.getItem("gf_admin_session")?.token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setProjects(data);
       }
     } catch (error) {
-      console.error('Fetch projects error:', error);
+      console.error("Fetch projects error:", error);
     } finally {
       setLoading(false);
     }
@@ -45,35 +59,35 @@ export function Projects({ user }) {
 
   const handleDelete = async (id) => {
     if (!can(PERMISSIONS.DELETE_PROJECTS)) {
-      alert('You do not have permission to delete projects');
+      alert("You do not have permission to delete projects");
       return;
     }
-    
-    if (!confirm('Are you sure you want to delete this project?')) return;
-    
+
+    if (!confirm("Are you sure you want to delete this project?")) return;
+
     try {
       const response = await fetch(`${API_URL}/projects/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('gf_admin_session')?.token}`
-        }
+          Authorization: `Bearer ${sessionStorage.getItem("gf_admin_session")?.token}`,
+        },
       });
-      
+
       if (response.ok) {
-        setProjects(projects.filter(p => p.id !== id));
+        setProjects(projects.filter((p) => p.id !== id));
       }
     } catch (error) {
-      console.error('Delete project error:', error);
+      console.error("Delete project error:", error);
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed':
+      case "completed":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'in_progress':
+      case "in_progress":
         return <Clock className="w-4 h-4 text-blue-600" />;
-      case 'on_hold':
+      case "on_hold":
         return <XCircle className="w-4 h-4 text-yellow-600" />;
       default:
         return <Clock className="w-4 h-4 text-gray-600" />;
@@ -82,25 +96,25 @@ export function Projects({ user }) {
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'on_hold':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "in_progress":
+        return "bg-blue-100 text-blue-800";
+      case "on_hold":
+        return "bg-yellow-100 text-yellow-800";
+      case "cancelled":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  const filteredProjects = projects.filter(p => {
-    const matchesSearch = 
+  const filteredProjects = projects.filter((p) => {
+    const matchesSearch =
       p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.client_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || p.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -108,7 +122,7 @@ export function Projects({ user }) {
   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
   const paginatedProjects = filteredProjects.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   if (!can(PERMISSIONS.VIEW_PROJECTS)) {
@@ -117,7 +131,9 @@ export function Projects({ user }) {
         <div className="text-center">
           <FolderKanban className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <h2 className="text-lg font-medium text-gray-900">Access Denied</h2>
-          <p className="text-gray-500">You don't have permission to view projects.</p>
+          <p className="text-gray-500">
+            You don't have permission to view projects.
+          </p>
         </div>
       </div>
     );
@@ -130,10 +146,12 @@ export function Projects({ user }) {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
-            <p className="text-gray-600 mt-1">Manage organization projects and track progress</p>
+            <p className="text-gray-600 mt-1">
+              Manage organization projects and track progress
+            </p>
           </div>
           {can(PERMISSIONS.CREATE_PROJECTS) && (
-            <button 
+            <button
               onClick={() => setShowCreateModal(true)}
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
@@ -182,13 +200,20 @@ export function Projects({ user }) {
       ) : paginatedProjects.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
           <FolderKanban className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-gray-900">No projects found</h3>
-          <p className="text-gray-500 mt-1">Get started by creating a new project</p>
+          <h3 className="text-lg font-medium text-gray-900">
+            No projects found
+          </h3>
+          <p className="text-gray-500 mt-1">
+            Get started by creating a new project
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {paginatedProjects.map((project) => (
-            <div key={project.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+            <div
+              key={project.id}
+              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+            >
               <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-2">
@@ -196,47 +221,67 @@ export function Projects({ user }) {
                       <FolderKanban className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{project.title}</h3>
-                      <p className="text-sm text-gray-500">{project.client_name || 'No client'}</p>
+                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                        {project.title}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {project.client_name || "No client"}
+                      </p>
                     </div>
                   </div>
-                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusBadgeClass(project.status)}`}>
+                  <span
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusBadgeClass(project.status)}`}
+                  >
                     {getStatusIcon(project.status)}
-                    <span className="ml-1">{project.status?.replace('_', ' ')}</span>
+                    <span className="ml-1">
+                      {project.status?.replace("_", " ")}
+                    </span>
                   </span>
                 </div>
 
                 <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                  {project.description || 'No description provided'}
+                  {project.description || "No description provided"}
                 </p>
 
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-1" />
-                    {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'No start date'}
+                    {project.start_date
+                      ? new Date(project.start_date).toLocaleDateString()
+                      : "No start date"}
                   </div>
                   <div className="flex items-center">
                     <DollarSign className="w-4 h-4 mr-1" />
-                    {project.budget ? `$${project.budget.toLocaleString()}` : 'No budget'}
+                    {project.budget
+                      ? `$${project.budget.toLocaleString()}`
+                      : "No budget"}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                   <div className="flex items-center">
                     <Users className="w-4 h-4 text-gray-400 mr-1" />
-                    <span className="text-sm text-gray-600">{project.team_size || 0} members</span>
+                    <span className="text-sm text-gray-600">
+                      {project.team_size || 0} members
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <button className="text-gray-400 hover:text-gray-600" title="View">
+                    <button
+                      className="text-gray-400 hover:text-gray-600"
+                      title="View"
+                    >
                       <Eye className="w-4 h-4" />
                     </button>
                     {can(PERMISSIONS.EDIT_PROJECTS) && (
-                      <button className="text-blue-600 hover:text-blue-900" title="Edit">
+                      <button
+                        className="text-blue-600 hover:text-blue-900"
+                        title="Edit"
+                      >
                         <Edit2 className="w-4 h-4" />
                       </button>
                     )}
                     {can(PERMISSIONS.DELETE_PROJECTS) && (
-                      <button 
+                      <button
                         onClick={() => handleDelete(project.id)}
                         className="text-red-600 hover:text-red-900"
                         title="Delete"
@@ -257,27 +302,27 @@ export function Projects({ user }) {
         <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 px-4 py-3 flex items-center justify-center">
           <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
             <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
               className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                   page === currentPage
-                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                    : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                 }`}
               >
                 {page}
               </button>
             ))}
             <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
               className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
             >

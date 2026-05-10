@@ -8,6 +8,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
+const { authEndpointValidator } = require('../middleware/authEndpointValidator');
+
+// Apply endpoint validation middleware to developer routes
+router.use(authEndpointValidator('developer', 'developer_users'));
 
 // Developer Authentication - LOGIN
 router.post('/authenticate', (req, res) => {

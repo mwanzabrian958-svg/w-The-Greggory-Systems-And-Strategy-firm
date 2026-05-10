@@ -16,13 +16,26 @@ connection.query('SELECT 1 as test', (err, results) => {
     console.log('Result:', results);
     
     // Test if users table exists
-    connection.query('SHOW TABLES LIKE "users"', (err2, results2) => {
+    connection.query('SHOW TABLES', (err2, results2) => {
       if (err2) {
         console.error('❌ Error checking tables:', err2.message);
-      } else if (results2.length === 0) {
-        console.error('❌ users table does NOT exist!');
       } else {
-        console.log('✅ users table exists!');
+        console.log('\n📋 Available tables in database:');
+        results2.forEach(row => {
+          const tableName = Object.values(row)[0];
+          console.log(`  - ${tableName}`);
+        });
+        
+        const hasUsersTable = results2.some(row => {
+          const tableName = Object.values(row)[0].toLowerCase();
+          return tableName === 'users';
+        });
+        
+        if (hasUsersTable) {
+          console.log('\n✅ users table exists!');
+        } else {
+          console.error('\n❌ users table does NOT exist!');
+        }
       }
       connection.end();
       process.exit(0);

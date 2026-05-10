@@ -1,28 +1,38 @@
 // API service for connecting to backend
 // Connected to database: greggory_foundation_db_main
 
-export const API_BASE_URL = 'http://localhost:5000/api';
+// All API calls use relative paths so Vite's dev-server proxy forwards them
+// to the backend (localhost:8080) — this works whether the browser is on
+// localhost:5173 OR the network IP (192.168.x.x:5173) because the proxy
+// runs server-side on your machine, not in the client browser.
+export const API_BASE_URL = '/api';
+
+// Helper to build a full relative URL from a path like '/api/users/login'.
+// Keep this as a simple pass-through — the Vite proxy does the rest.
+export const getApiUrl = (path) => path;
 
 // Generic API helper
 const apiCall = async (endpoint, options = {}) => {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
       ...options,
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
-      throw new Error(data.message || data.error || `API Error: ${response.status}`);
+      throw new Error(
+        data.message || data.error || `API Error: ${response.status}`,
+      );
     }
 
     return data;
   } catch (error) {
-    console.error('API call failed:', error);
+    console.error("API call failed:", error);
     throw error;
   }
 };
@@ -34,20 +44,22 @@ export const propertiesAPI = {
     const params = new URLSearchParams(filters);
     return apiCall(`/properties?${params}`);
   },
-  
+
   // Get property by ID
   getById: (id) => apiCall(`/properties/${id}`),
-  
+
   // Create new property
-  create: (propertyData) => apiCall('/properties', {
-    method: 'POST',
-    body: JSON.stringify(propertyData),
-  }),
-  
+  create: (propertyData) =>
+    apiCall("/properties", {
+      method: "POST",
+      body: JSON.stringify(propertyData),
+    }),
+
   // Delete property
-  delete: (id) => apiCall(`/properties/${id}`, {
-    method: 'DELETE',
-  }),
+  delete: (id) =>
+    apiCall(`/properties/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // Companies API
@@ -57,20 +69,22 @@ export const companiesAPI = {
     const params = new URLSearchParams(filters);
     return apiCall(`/companies?${params}`);
   },
-  
+
   // Get company by ID
   getById: (id) => apiCall(`/companies/${id}`),
-  
+
   // Create new company
-  create: (companyData) => apiCall('/companies', {
-    method: 'POST',
-    body: JSON.stringify(companyData),
-  }),
-  
+  create: (companyData) =>
+    apiCall("/companies", {
+      method: "POST",
+      body: JSON.stringify(companyData),
+    }),
+
   // Delete company
-  delete: (id) => apiCall(`/companies/${id}`, {
-    method: 'DELETE',
-  }),
+  delete: (id) =>
+    apiCall(`/companies/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // Videos API
@@ -80,20 +94,22 @@ export const videosAPI = {
     const params = new URLSearchParams(filters);
     return apiCall(`/videos?${params}`);
   },
-  
+
   // Get video by ID
   getById: (id) => apiCall(`/videos/${id}`),
-  
+
   // Create new video
-  create: (videoData) => apiCall('/videos', {
-    method: 'POST',
-    body: JSON.stringify(videoData),
-  }),
-  
+  create: (videoData) =>
+    apiCall("/videos", {
+      method: "POST",
+      body: JSON.stringify(videoData),
+    }),
+
   // Delete video
-  delete: (id) => apiCall(`/videos/${id}`, {
-    method: 'DELETE',
-  }),
+  delete: (id) =>
+    apiCall(`/videos/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // Contact Forms API
@@ -103,88 +119,97 @@ export const contactFormsAPI = {
     const params = new URLSearchParams(filters);
     return apiCall(`/contact-forms?${params}`);
   },
-  
+
   // Get contact form by ID
   getById: (id) => apiCall(`/contact-forms/${id}`),
-  
+
   // Create new contact form
-  create: (formData) => apiCall('/contact-forms', {
-    method: 'POST',
-    body: JSON.stringify(formData),
-  }),
-  
+  create: (formData) =>
+    apiCall("/contact-forms", {
+      method: "POST",
+      body: JSON.stringify(formData),
+    }),
+
   // Delete contact form
-  delete: (id) => apiCall(`/contact-forms/${id}`, {
-    method: 'DELETE',
-  }),
+  delete: (id) =>
+    apiCall(`/contact-forms/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // Management API
 export const managementAPI = {
   // Get management info by company
   getByCompany: (companyId) => apiCall(`/management/${companyId}`),
-  
+
   // Update management info
-  update: (companyId, data) => apiCall(`/management/${companyId}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
+  update: (companyId, data) =>
+    apiCall(`/management/${companyId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 };
 
 // Users API
 export const usersAPI = {
   // Login
-  login: (credentials) => apiCall('/users/login', {
-    method: 'POST',
-    body: JSON.stringify(credentials),
-  }),
-  
+  login: (credentials) =>
+    apiCall("/users/login", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+    }),
+
   // Registration - ALWAYS sends JSON to users table
-  register: (userData) => apiCall('/users/register', {
-    method: 'POST',
-    body: JSON.stringify(userData),
-  }),
-  
+  register: (userData) =>
+    apiCall("/users/register", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    }),
+
   // Google Authentication
-  googleAuth: (data) => apiCall('/users/google-auth', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  
+  googleAuth: (data) =>
+    apiCall("/users/google-auth", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   // Get all users (admin)
-  getAll: () => apiCall('/users'),
-  
+  getAll: () => apiCall("/users"),
+
   // Get user by ID
   getById: (id) => apiCall(`/users/${id}`),
-  
+
   // Create new user (admin)
-  create: (userData) => apiCall('/users', {
-    method: 'POST',
-    body: JSON.stringify(userData),
-  }),
+  create: (userData) =>
+    apiCall("/users", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    }),
 };
 
 // Images API (profile photos, etc.)
 export const imagesAPI = {
   // Upload a profile image (returns { image_id })
-  uploadProfile: (payload) => apiCall('/images/profile', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  }),
-  
+  uploadProfile: (payload) =>
+    apiCall("/images/profile", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
   // Delete image (admin only)
-  delete: (id) => apiCall(`/images/${id}`, {
-    method: 'DELETE',
-  }),
+  delete: (id) =>
+    apiCall(`/images/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // Content API (requires admin key header)
 const contentApiCall = async (endpoint, options = {}) => {
-  const adminKey = localStorage.getItem('admin_key') || '';
+  const adminKey = localStorage.getItem("admin_key") || "";
   return apiCall(endpoint, {
     ...options,
     headers: {
-      'x-admin-key': adminKey,
+      "x-admin-key": adminKey,
       ...options.headers,
     },
   });
@@ -197,31 +222,35 @@ export const contentAPI = {
     return apiCall(`/blog-articles?${params}`);
   },
   getBlogArticle: (id) => apiCall(`/blog-articles/${id}`),
-  createBlogArticle: (data) => apiCall('/blog-articles', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  updateBlogArticle: (id, data) => apiCall(`/blog-articles/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  deleteBlogArticle: (id) => apiCall(`/blog-articles/${id}`, {
-    method: 'DELETE',
-  }),
-  
+  createBlogArticle: (data) =>
+    apiCall("/blog-articles", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateBlogArticle: (id, data) =>
+    apiCall(`/blog-articles/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteBlogArticle: (id) =>
+    apiCall(`/blog-articles/${id}`, {
+      method: "DELETE",
+    }),
+
   // Contact forms
   getContactForms: (filters = {}) => {
     const params = new URLSearchParams(filters);
     return apiCall(`/contact-forms?${params}`);
   },
   getContactForm: (id) => apiCall(`/contact-forms/${id}`),
-  deleteContactForm: (id) => apiCall(`/contact-forms/${id}`, {
-    method: 'DELETE',
-  }),
+  deleteContactForm: (id) =>
+    apiCall(`/contact-forms/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // Health check
-export const healthCheck = () => apiCall('/health');
+export const healthCheck = () => apiCall("/health");
 
 export default {
   properties: propertiesAPI,

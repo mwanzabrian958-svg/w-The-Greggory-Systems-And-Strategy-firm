@@ -12,7 +12,7 @@ const Login = () => {
     password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState({ email: '', password: '' })
+  const [errors, setErrors] = useState({ email: '', password: '', submit: '' })
   const navigate = useNavigate()
   const location = useLocation()
   const { login, user } = useAuth()
@@ -64,7 +64,7 @@ const Login = () => {
     // Basic validation
     const nextErrors = { email: '', password: '' }
     const value = formData.email.trim()
-    
+
     if (!value) {
       nextErrors.email = 'Please enter your email or phone number.'
     } else if (value.includes('@')) {
@@ -73,37 +73,35 @@ const Login = () => {
         nextErrors.email = 'Please enter a valid email address.'
       }
     }
-    
+
     if (!formData.password) {
       nextErrors.password = 'Please enter your password.'
     } else if (formData.password.length < 6) {
       nextErrors.password = 'Password must be at least 6 characters.'
     }
-    
+
     setErrors(nextErrors)
     if (Object.values(nextErrors).some(error => error)) return
 
+    setErrors({ email: '', password: '', submit: '' })
     setIsLoading(true)
     try {
-      // Call backend to update last_login and validate user
+      // Call backend to validate user
       const response = await usersAPI.login({
         email: formData.email.trim(),
         password: formData.password
       })
-      
+
       console.log('Login response:', response);
-      
-      // Ensure loading state lasts for full 4 seconds
-      await new Promise(resolve => setTimeout(resolve, 4000));
-      
+
       setIsLoading(false)
-      
+
       // Store user information in auth context
       const userData = response.user || response;
       const userInfo = {
         role: 'user',
-        name: userData.display_name || (userData.first_name && userData.last_name 
-          ? `${userData.first_name} ${userData.last_name}` 
+        name: userData.display_name || (userData.first_name && userData.last_name
+          ? `${userData.first_name} ${userData.last_name}`
           : formData.email.split('@')[0]),
         email: userData.email || formData.email,
         userId: userData.id || userData.userId,
@@ -111,21 +109,27 @@ const Login = () => {
         first_name: userData.first_name,
         last_name: userData.last_name,
         display_name: userData.display_name,
-        has_photo: userData.has_photo || false,
+        // has_photo tells the Navbar whether to build the photo URL from the id.
+        // The Navbar always reconstructs the URL dynamically — nothing is stored.
+        has_photo: !!userData.has_photo,
         profilePhotoData: userData.profilePhotoData || null,
         profile_image_id: userData.profile_image_id || null
       };
-      
+
       // Update auth context with user info
       login(userInfo);
-      
-      // Redirect to client portal after login
-      const from = location.state?.from || '/client-portal'
+
+      // Redirect to home page after login
+      const from = location.state?.from || '/'
       navigate(from, { replace: true })
     } catch (err) {
       console.error('Login failed:', err)
       setIsLoading(false)
-      alert('Login failed. Please check your credentials and try again.')
+      // Show the actual server message (e.g. "Invalid credentials") not a generic alert
+      setErrors(prev => ({
+        ...prev,
+        submit: err.message || 'Login failed. Please check your credentials and try again.'
+      }))
     }
   }
 
@@ -173,9 +177,9 @@ const Login = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-6">
-          <img 
-            src="/brand-header.png/sja.PNG" 
-            alt="SJA" 
+          <img
+            src="/brand-header.png/sja.PNG"
+            alt="SJA"
             className="h-24 w-auto object-contain"
             onError={(e) => {
               console.error('Failed to load sja image:', e.target.src);
@@ -259,7 +263,13 @@ const Login = () => {
               </p>
             </div>
 
-            
+
+            {errors.submit && (
+              <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700 text-center">
+                {errors.submit}
+              </div>
+            )}
+
             <div>
               <button
                 type="submit"

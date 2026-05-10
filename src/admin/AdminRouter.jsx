@@ -97,6 +97,20 @@ export function AdminRouter() {
                   element={<Dashboard user={user} />} 
                 />
 
+                {/* Developer Portal - Requires VIEW_DEVELOPER permission */}
+                <Route 
+                  path="developer" 
+                  element={
+                    <AdminRoute
+                      user={user}
+                      isAuthenticated={isAuthenticated}
+                      requiredPermission={PERMISSIONS.VIEW_DEVELOPER}
+                    >
+                      <Developer user={user} />
+                    </AdminRoute>
+                  } 
+                />
+
                 {/* Users - Requires VIEW_USERS permission */}
                 <Route 
                   path="users" 

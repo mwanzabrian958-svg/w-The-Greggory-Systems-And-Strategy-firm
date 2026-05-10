@@ -541,4 +541,96 @@ router.get('/dashboard', async (req, res) => {
   }
 });
 
+// =============================================
+// GET DEVELOPER DASHBOARD DATA
+// =============================================
+router.get('/developer-dashboard', async (req, res) => {
+  try {
+    // Get developer-specific data
+    const [taskStats] = await db.promise().query(`
+      SELECT 
+        COUNT(*) as total_tasks,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
+        SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_tasks,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_tasks
+      FROM project_tasks
+      WHERE deleted_at IS NULL
+    `);
+
+    const [recentCommits] = await db.promise().query(`
+      SELECT 
+        pt.id,
+        pt.task_name,
+        pt.status,
+        pt.updated_at,
+        p.project_name
+      FROM project_tasks pt
+      LEFT JOIN user_projects p ON pt.project_id = p.id
+      WHERE pt.deleted_at IS NULL
+      ORDER BY pt.updated_at DESC
+      LIMIT 10
+    `);
+
+    const [systemHealth] = await db.promise().query(`
+      SELECT 
+        'database' as component,
+        'operational' as status,
+        NOW() as last_check
+      UNION ALL
+      SELECT 
+        'api' as component,
+        'operational' as status,
+        NOW() as last_check
+      UNION ALL
+      SELECT 
+        'messaging' as component,
+        'operational' as status,
+        NOW() as last_check
+    `);
+
+    res.json({
+      success: true,
+      dashboard: {
+        tasks: {
+          total: taskStats[0]?.total_tasks || 0,
+          completed: taskStats[0]?.completed_tasks || 0,
+          inProgress: taskStats[0]?.in_progress_tasks || 0,
+          pending: taskStats[0]?.pending_tasks || 0
+        },
+        recentActivity: recentCommits,
+        systemHealth: systemHealth,
+        notifications: [
+          {
+            id: 1,
+            title: 'Code review ready',
+            description: 'Review the latest client portal merge request.',
+            type: 'review'
+          },
+          {
+            id: 2,
+            title: 'Deployment scheduled',
+            description: 'Staging deploy scheduled for tomorrow at 09:00.',
+            type: 'deployment'
+          },
+          {
+            id: 3,
+            title: 'Security audit',
+            description: 'Confirm the new access control rules for admin routes.',
+            type: 'security'
+          }
+        ],
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching developer dashboard data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch developer dashboard data',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

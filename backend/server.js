@@ -46,7 +46,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Handle preflight OPTIONS requests
-app.options('*', cors());
+// app.options('*', cors()); // Removed - cors is already applied via app.use(cors())
 
 // Request logging
 app.use((req, res, next) => {
@@ -94,8 +94,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler - catch all unmatched routes
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: 'API endpoint not found',

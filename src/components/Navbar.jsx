@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import AuthPlatformModal from './AuthPlatformModal'
 import companies from '../data/companies'
 import { hasAdminToken } from '../utils/adminSession'
+import { getApiUrl } from '../services/api'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -14,7 +15,11 @@ const Navbar = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, logout, user } = useAuth()
-  const profilePhotoUrl = user?.profile_photo_url || user?.profilePhotoData || null
+  // Use a relative path so the Vite proxy forwards it to the backend.
+  // Works on both localhost:5173 and network IP (192.168.x.x:5173).
+  const profilePhotoUrl = user?.has_photo && (user?.id || user?.userId)
+    ? `/api/users/profile-photo/${user.id || user.userId}`
+    : null
 
   const [hasAdminSessionToken, setHasAdminSessionToken] = useState(() => hasAdminToken())
 
@@ -26,8 +31,8 @@ const Navbar = () => {
 
   const navigation = [
     { name: 'Home', path: '/' },
-    { 
-      name: 'Our Companies', 
+    {
+      name: 'Our Companies',
       path: '#',
       dropdown: companies
     },
@@ -63,7 +68,7 @@ const Navbar = () => {
   const openAdminFromDirect = () => {
     // Silently block regular users from accessing admin
     if (isAuthenticated) return
-    
+
     if (hasAdminSessionToken) {
       navigate('/admin')
     } else {
@@ -78,11 +83,11 @@ const Navbar = () => {
           <div className="flex justify-between items-center h-[160px]">
             {/* Brand Header with Logo */}
             <div className="flex items-center flex-shrink-0" style={{ marginLeft: '-16px' }}>
-              <img 
-                src="/brand-header.png/sja.PNG" 
-                alt="SJA" 
+              <img
+                src="/brand-header.png/sja.PNG"
+                alt="SJA"
                 className="h-30 w-auto object-contain"
-                style={{ 
+                style={{
                   display: 'block',
                   marginLeft: '-16px',
                   position: 'relative',
@@ -103,7 +108,7 @@ const Navbar = () => {
                 <div key={item.path} className="relative group whitespace-nowrap flex items-start">
                   {item.dropdown ? (
                     <>
-                      <button 
+                      <button
                         className="flex items-center text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors duration-200 px-1 py-1"
                         onClick={() => setCompaniesDropdownOpen(!companiesDropdownOpen)}
                       >
@@ -112,7 +117,7 @@ const Navbar = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </button>
-                      <div 
+                      <div
                         className={`absolute left-0 mt-2 w-80 bg-gradient-to-br from-blue-500/90 to-blue-600/90 backdrop-blur-lg rounded-lg shadow-xl py-3 z-50 border border-blue-400/30 ${
                           companiesDropdownOpen ? 'block' : 'hidden'
                         }`}
@@ -153,7 +158,7 @@ const Navbar = () => {
                               Logout
                             </button>
                           ) : (
-                            <Link 
+                            <Link
                               to="/login"
                               className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-1"
                             >
@@ -174,7 +179,7 @@ const Navbar = () => {
               {isAuthenticated && user ? (
                 <>
                   {profilePhotoUrl ? (
-                    <img 
+                    <img
                       src={profilePhotoUrl}
                       alt={user.display_name || user.name || `${user.first_name} ${user.last_name}`}
                       className="h-8 w-8 rounded-full object-cover border border-gray-300"
@@ -185,9 +190,9 @@ const Navbar = () => {
                     </div>
                   ) : (
                     <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium border border-gray-300">
-                      {user.first_name && user.last_name 
+                      {user.first_name && user.last_name
                         ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
-                        : user.first_name 
+                        : user.first_name
                         ? user.first_name[0].toUpperCase()
                         : user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
                         : 'U'
@@ -229,7 +234,7 @@ const Navbar = () => {
               {isAuthenticated && user ? (
                 <>
                   {profilePhotoUrl ? (
-                    <img 
+                    <img
                       src={profilePhotoUrl}
                       alt={user.display_name || user.name || `${user.first_name} ${user.last_name}`}
                       className="h-8 w-8 rounded-full object-cover border border-gray-300"
@@ -240,9 +245,9 @@ const Navbar = () => {
                     </div>
                   ) : (
                     <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium border border-gray-300">
-                      {user.first_name && user.last_name 
+                      {user.first_name && user.last_name
                         ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
-                        : user.first_name 
+                        : user.first_name
                         ? user.first_name[0].toUpperCase()
                         : user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
                         : 'U'
@@ -294,7 +299,7 @@ const Navbar = () => {
                              Logout
                            </button>
                          ) : (
-                           <Link 
+                           <Link
                              to="/login"
                              onClick={() => setIsOpen(false)}
                              className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
@@ -308,7 +313,7 @@ const Navbar = () => {
                    </div>
                  )
                ))}
-                
+
                 {/* Admin + account shortcuts in mobile drawer */}
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -318,7 +323,7 @@ const Navbar = () => {
                     onClick={() => {
                       // Silently block regular users from accessing admin
                       if (isAuthenticated) return
-                      
+
                       if (hasAdminSessionToken) {
                         navigate('/admin');
                         setIsOpen(false);

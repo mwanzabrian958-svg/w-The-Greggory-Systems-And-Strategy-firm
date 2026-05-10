@@ -8,7 +8,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
+const { authEndpointValidator } = require('../middleware/authEndpointValidator');
 
+// Apply endpoint validation middleware to admin routes
+router.use(authEndpointValidator('admin', 'admin_users'));
 
 // Admin Authentication - LOGIN
 router.post('/authenticate-enhanced', (req, res) => {

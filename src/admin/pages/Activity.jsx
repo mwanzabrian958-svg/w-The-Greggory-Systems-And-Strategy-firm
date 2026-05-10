@@ -1,20 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Activity, User, Shield, Code, Calendar, 
-  CheckCircle, XCircle, Filter, Search,
-  ChevronLeft, ChevronRight, Clock
-} from 'lucide-react';
-import { usePermissions } from '../hooks/usePermissions';
-import { PERMISSIONS } from '../utils/permissions';
+import React, { useState, useEffect } from "react";
+import {
+  Activity,
+  User,
+  Shield,
+  Code,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  Filter,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+} from "lucide-react";
+import { usePermissions } from "../hooks/usePermissions";
+import { PERMISSIONS } from "../utils/permissions";
+import { API_BASE_URL } from "../../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || API_BASE_URL;
 
 export function ActivityLogs({ user }) {
   const { can } = usePermissions(user);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -26,16 +36,16 @@ export function ActivityLogs({ user }) {
       setLoading(true);
       const response = await fetch(`${API_URL}/admin/activity-logs`, {
         headers: {
-          'Authorization': `Bearer ${sessionStorage.getItem('gf_admin_session')?.token}`
-        }
+          Authorization: `Bearer ${sessionStorage.getItem("gf_admin_session")?.token}`,
+        },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         setActivities(data);
       }
     } catch (error) {
-      console.error('Fetch activities error:', error);
+      console.error("Fetch activities error:", error);
     } finally {
       setLoading(false);
     }
@@ -43,24 +53,33 @@ export function ActivityLogs({ user }) {
 
   const getActivityIcon = (activity) => {
     const activityLower = activity.toLowerCase();
-    if (activityLower.includes('login') || activityLower.includes('auth')) {
+    if (activityLower.includes("login") || activityLower.includes("auth")) {
       return <Shield className="w-4 h-4 text-blue-600" />;
     }
-    if (activityLower.includes('user') || activityLower.includes('delete') || activityLower.includes('create')) {
+    if (
+      activityLower.includes("user") ||
+      activityLower.includes("delete") ||
+      activityLower.includes("create")
+    ) {
       return <User className="w-4 h-4 text-green-600" />;
     }
-    if (activityLower.includes('content') || activityLower.includes('project') || activityLower.includes('edit')) {
+    if (
+      activityLower.includes("content") ||
+      activityLower.includes("project") ||
+      activityLower.includes("edit")
+    ) {
       return <Code className="w-4 h-4 text-purple-600" />;
     }
     return <Activity className="w-4 h-4 text-gray-600" />;
   };
 
-  const filteredActivities = activities.filter(a => {
-    const matchesSearch = 
+  const filteredActivities = activities.filter((a) => {
+    const matchesSearch =
       a.activity?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.admin_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       a.admin_email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === 'all' || a.activity?.toLowerCase().includes(typeFilter);
+    const matchesType =
+      typeFilter === "all" || a.activity?.toLowerCase().includes(typeFilter);
     return matchesSearch && matchesType;
   });
 
@@ -68,7 +87,7 @@ export function ActivityLogs({ user }) {
   const totalPages = Math.ceil(filteredActivities.length / itemsPerPage);
   const paginatedActivities = filteredActivities.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   if (!can(PERMISSIONS.VIEW_ACTIVITY_LOGS)) {
@@ -77,7 +96,9 @@ export function ActivityLogs({ user }) {
         <div className="text-center">
           <Activity className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <h2 className="text-lg font-medium text-gray-900">Access Denied</h2>
-          <p className="text-gray-500">You don't have permission to view activity logs.</p>
+          <p className="text-gray-500">
+            You don't have permission to view activity logs.
+          </p>
         </div>
       </div>
     );
@@ -100,7 +121,9 @@ export function ActivityLogs({ user }) {
             </div>
             <div className="ml-3">
               <p className="text-sm text-gray-500">Total Activities</p>
-              <p className="text-xl font-bold text-gray-900">{activities.length}</p>
+              <p className="text-xl font-bold text-gray-900">
+                {activities.length}
+              </p>
             </div>
           </div>
         </div>
@@ -112,7 +135,7 @@ export function ActivityLogs({ user }) {
             <div className="ml-3">
               <p className="text-sm text-gray-500">Successful</p>
               <p className="text-xl font-bold text-gray-900">
-                {activities.filter(a => a.success).length}
+                {activities.filter((a) => a.success).length}
               </p>
             </div>
           </div>
@@ -125,7 +148,7 @@ export function ActivityLogs({ user }) {
             <div className="ml-3">
               <p className="text-sm text-gray-500">Failed</p>
               <p className="text-xl font-bold text-gray-900">
-                {activities.filter(a => !a.success).length}
+                {activities.filter((a) => !a.success).length}
               </p>
             </div>
           </div>
@@ -138,10 +161,12 @@ export function ActivityLogs({ user }) {
             <div className="ml-3">
               <p className="text-sm text-gray-500">Today</p>
               <p className="text-xl font-bold text-gray-900">
-                {activities.filter(a => {
-                  const today = new Date().toDateString();
-                  return new Date(a.timestamp).toDateString() === today;
-                }).length}
+                {
+                  activities.filter((a) => {
+                    const today = new Date().toDateString();
+                    return new Date(a.timestamp).toDateString() === today;
+                  }).length
+                }
               </p>
             </div>
           </div>
@@ -210,7 +235,10 @@ export function ActivityLogs({ user }) {
                 </tr>
               ) : paginatedActivities.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                  <td
+                    colSpan="5"
+                    className="px-6 py-8 text-center text-gray-500"
+                  >
                     No activities found
                   </td>
                 </tr>
@@ -223,9 +251,13 @@ export function ActivityLogs({ user }) {
                           {getActivityIcon(activity.activity)}
                         </div>
                         <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">{activity.activity}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {activity.activity}
+                          </div>
                           {activity.details && (
-                            <div className="text-xs text-gray-500">{activity.details}</div>
+                            <div className="text-xs text-gray-500">
+                              {activity.details}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -234,28 +266,40 @@ export function ActivityLogs({ user }) {
                       <div className="flex items-center">
                         <User className="w-4 h-4 text-gray-400 mr-2" />
                         <span className="text-sm text-gray-900">
-                          {activity.admin_name || activity.admin_email || 'Unknown'}
+                          {activity.admin_name ||
+                            activity.admin_email ||
+                            "Unknown"}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {activity.ip_address || 'N/A'}
+                      {activity.ip_address || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        activity.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          activity.success
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
                         {activity.success ? (
-                          <><CheckCircle className="w-3 h-3 mr-1" /> Success</>
+                          <>
+                            <CheckCircle className="w-3 h-3 mr-1" /> Success
+                          </>
                         ) : (
-                          <><XCircle className="w-3 h-3 mr-1" /> Failed</>
+                          <>
+                            <XCircle className="w-3 h-3 mr-1" /> Failed
+                          </>
                         )}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center">
                         <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                        {activity.timestamp ? new Date(activity.timestamp).toLocaleString() : 'N/A'}
+                        {activity.timestamp
+                          ? new Date(activity.timestamp).toLocaleString()
+                          : "N/A"}
                       </div>
                     </td>
                   </tr>
@@ -271,35 +315,52 @@ export function ActivityLogs({ user }) {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                  <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredActivities.length)}</span> of{' '}
-                  <span className="font-medium">{filteredActivities.length}</span> results
+                  Showing{" "}
+                  <span className="font-medium">
+                    {(currentPage - 1) * itemsPerPage + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-medium">
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      filteredActivities.length,
+                    )}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-medium">
+                    {filteredActivities.length}
+                  </span>{" "}
+                  results
                 </p>
               </div>
               <div>
                 <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
                   <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                        page === currentPage
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          page === currentPage
+                            ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                            : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ),
+                  )}
                   <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
                     disabled={currentPage === totalPages}
                     className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
                   >
