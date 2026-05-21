@@ -1,21 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AdminRoute } from './components/AdminRoute';
-import { AdminLayout } from './components/AdminLayout';
+import AdminLayout from './components/AdminLayout';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
+import { AdvancedDashboard } from './pages/AdvancedDashboard';
 import { Users } from './pages/Users';
 import { Content } from './pages/Content';
 import { Projects } from './pages/Projects';
 import { Applications } from './pages/Applications';
 import { Developer } from './pages/Developer';
 import { ActivityLogs } from './pages/Activity';
-import { SettingsPage } from './pages/Settings';
+import { Settings } from './pages/Settings';
+import { CRM } from './pages/CRM';
+import { Tasks } from './pages/Tasks';
+import { Communication } from './pages/Communication';
+import { Support } from './pages/Support';
+import { Security } from './pages/Security';
+import { Reports } from './pages/Reports';
+import { Financial } from './pages/Financial';
 import { PERMISSIONS } from './utils/permissions';
 
 /**
  * AdminRouter - Main routing component for the admin panel
- * Handles authentication state and route protection
+ * UPDATED: Admins now have full access to all routes without permission restrictions
  */
 export function AdminRouter() {
   const [user, setUser] = useState(null);
@@ -97,7 +105,7 @@ export function AdminRouter() {
                   element={<Dashboard user={user} />} 
                 />
 
-                {/* Developer Portal - Requires VIEW_DEVELOPER permission */}
+                {/* Developer Portal - Requires VIEW_DEVELOPER permission (but admins bypass) */}
                 <Route 
                   path="developer" 
                   element={
@@ -105,13 +113,14 @@ export function AdminRouter() {
                       user={user}
                       isAuthenticated={isAuthenticated}
                       requiredPermission={PERMISSIONS.VIEW_DEVELOPER}
+                      allowAdmins={true}
                     >
                       <Developer user={user} />
                     </AdminRoute>
                   } 
                 />
 
-                {/* Users - Requires VIEW_USERS permission */}
+                {/* Users - Admins have full access, others need VIEW_USERS permission */}
                 <Route 
                   path="users" 
                   element={
@@ -119,13 +128,14 @@ export function AdminRouter() {
                       user={user}
                       isAuthenticated={isAuthenticated}
                       requiredPermission={PERMISSIONS.VIEW_USERS}
+                      allowAdmins={true}
                     >
                       <Users user={user} />
                     </AdminRoute>
                   } 
                 />
 
-                {/* Content Management - Requires VIEW_CONTENT permission */}
+                {/* Content Management - Admins have full access */}
                 <Route 
                   path="content" 
                   element={
@@ -133,13 +143,14 @@ export function AdminRouter() {
                       user={user}
                       isAuthenticated={isAuthenticated}
                       requiredPermission={PERMISSIONS.VIEW_CONTENT}
+                      allowAdmins={true}
                     >
                       <Content user={user} />
                     </AdminRoute>
                   } 
                 />
 
-                {/* Projects - Requires VIEW_PROJECTS permission */}
+                {/* Projects - Admins and developers have access */}
                 <Route 
                   path="projects" 
                   element={
@@ -155,7 +166,7 @@ export function AdminRouter() {
                   } 
                 />
 
-                {/* Applications - Requires VIEW_APPLICATIONS permission */}
+                {/* Applications - Admins have full access */}
                 <Route 
                   path="applications" 
                   element={
@@ -163,13 +174,14 @@ export function AdminRouter() {
                       user={user}
                       isAuthenticated={isAuthenticated}
                       requiredPermission={PERMISSIONS.VIEW_APPLICATIONS}
+                      allowAdmins={true}
                     >
                       <Applications user={user} />
                     </AdminRoute>
                   } 
                 />
 
-                {/* Financial - Requires VIEW_FINANCIAL permission */}
+                {/* Financial - Admins have full access */}
                 <Route 
                   path="financial" 
                   element={
@@ -177,46 +189,156 @@ export function AdminRouter() {
                       user={user}
                       isAuthenticated={isAuthenticated}
                       requiredPermission={PERMISSIONS.VIEW_FINANCIAL}
+                      allowAdmins={true}
                     >
-                      <div className="flex items-center justify-center h-64">
-                        <div className="text-center">
-                          <h2 className="text-lg font-medium text-gray-900">Financial Management</h2>
-                          <p className="text-gray-500 mt-1">Financial module coming soon.</p>
-                        </div>
-                      </div>
+                      <Financial user={user} />
                     </AdminRoute>
                   } 
                 />
 
-                {/* Activity Logs - Requires VIEW_LOGS permission */}
+                {/* CRM - Admins have full access */}
+                <Route 
+                  path="crm" 
+                  element={
+                    <AdminRoute
+                      user={user}
+                      isAuthenticated={isAuthenticated}
+                      requiredPermissions={[PERMISSIONS.VIEW_CRM, PERMISSIONS.MANAGE_CLIENTS]}
+                      requireAny={true}
+                      allowAdmins={true}
+                    >
+                      <CRM user={user} />
+                    </AdminRoute>
+                  } 
+                />
+
+                {/* Tasks - Admins have full access */}
+                <Route 
+                  path="tasks" 
+                  element={
+                    <AdminRoute
+                      user={user}
+                      isAuthenticated={isAuthenticated}
+                      requiredPermissions={[PERMISSIONS.VIEW_TASKS, PERMISSIONS.MANAGE_PROJECTS]}
+                      requireAny={true}
+                      allowAdmins={true}
+                    >
+                      <Tasks user={user} />
+                    </AdminRoute>
+                  } 
+                />
+
+                {/* Communication - Admins have full access */}
+                <Route 
+                  path="communication" 
+                  element={
+                    <AdminRoute
+                      user={user}
+                      isAuthenticated={isAuthenticated}
+                      requiredPermissions={[PERMISSIONS.VIEW_COMMUNICATION, PERMISSIONS.SEND_MESSAGES]}
+                      requireAny={true}
+                      allowAdmins={true}
+                    >
+                      <Communication user={user} />
+                    </AdminRoute>
+                  } 
+                />
+
+                {/* Support - Admins have full access */}
+                <Route 
+                  path="support" 
+                  element={
+                    <AdminRoute
+                      user={user}
+                      isAuthenticated={isAuthenticated}
+                      requiredPermissions={[PERMISSIONS.VIEW_SUPPORT, PERMISSIONS.MANAGE_TICKETS]}
+                      requireAny={true}
+                      allowAdmins={true}
+                    >
+                      <Support user={user} />
+                    </AdminRoute>
+                  } 
+                />
+
+                {/* Security - Admins have full access */}
+                <Route 
+                  path="security" 
+                  element={
+                    <AdminRoute
+                      user={user}
+                      isAuthenticated={isAuthenticated}
+                      requiredPermissions={[PERMISSIONS.VIEW_SECURITY, PERMISSIONS.AUDIT_LOGS]}
+                      requireAny={true}
+                      allowAdmins={true}
+                    >
+                      <Security user={user} />
+                    </AdminRoute>
+                  } 
+                />
+
+                {/* Reports - Admins have full access */}
+                <Route 
+                  path="reports" 
+                  element={
+                    <AdminRoute
+                      user={user}
+                      isAuthenticated={isAuthenticated}
+                      requiredPermissions={[PERMISSIONS.VIEW_REPORTS, PERMISSIONS.EXPORT_DATA]}
+                      requireAny={true}
+                      allowAdmins={true}
+                    >
+                      <Reports user={user} />
+                    </AdminRoute>
+                  } 
+                />
+
+                {/* Activity Logs - Admins have full access */}
                 <Route 
                   path="activity" 
                   element={
                     <AdminRoute
                       user={user}
                       isAuthenticated={isAuthenticated}
-                      requiredPermission={PERMISSIONS.VIEW_LOGS}
+                      requiredPermission={PERMISSIONS.VIEW_ACTIVITY_LOGS}
+                      allowAdmins={true}
                     >
                       <ActivityLogs user={user} />
                     </AdminRoute>
                   } 
                 />
 
-                {/* Settings - Requires VIEW_SETTINGS permission */}
+                {/* Settings - Admins have full access */}
                 <Route 
                   path="settings" 
                   element={
                     <AdminRoute
                       user={user}
                       isAuthenticated={isAuthenticated}
-                      requiredPermission={PERMISSIONS.VIEW_SETTINGS}
+                      requiredPermissions={[PERMISSIONS.VIEW_SETTINGS, PERMISSIONS.EDIT_SETTINGS]}
+                      requireAny={true}
+                      allowAdmins={true}
                     >
-                      <SettingsPage user={user} />
+                      <Settings user={user} />
                     </AdminRoute>
                   } 
                 />
 
-                {/* 404 - Catch all */}
+                {/* Analytics - Admins have full access */}
+                <Route 
+                  path="analytics" 
+                  element={
+                    <AdminRoute
+                      user={user}
+                      isAuthenticated={isAuthenticated}
+                      requiredPermission={PERMISSIONS.VIEW_REPORTS}
+                      allowAdmins={true}
+                    >
+                      <Reports user={user} />
+                    </AdminRoute>
+                  } 
+                />
+
+                {/* 404 Page */}
                 <Route 
                   path="*" 
                   element={
@@ -238,5 +360,3 @@ export function AdminRouter() {
     </Routes>
   );
 }
-
-export default AdminRouter;

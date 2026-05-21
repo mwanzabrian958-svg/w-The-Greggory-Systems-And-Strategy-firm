@@ -125,10 +125,16 @@ const Login = () => {
     } catch (err) {
       console.error('Login failed:', err)
       setIsLoading(false)
-      // Show the actual server message (e.g. "Invalid credentials") not a generic alert
+      // Distinguish between server offline vs wrong credentials
+      const isNetworkError = err.message === 'Failed to fetch' ||
+        err.message?.includes('NetworkError') ||
+        err.message?.includes('fetch') ||
+        err.name === 'TypeError'
       setErrors(prev => ({
         ...prev,
-        submit: err.message || 'Login failed. Please check your credentials and try again.'
+        submit: isNetworkError
+          ? 'Cannot reach the server. Please make sure the app is running (npm run dev) and try again.'
+          : err.message || 'Login failed. Please check your credentials and try again.'
       }))
     }
   }

@@ -86,7 +86,7 @@ const Navbar = () => {
               <img
                 src="/brand-header.png/sja.PNG"
                 alt="SJA"
-                className="h-30 w-auto object-contain"
+                className="h-[110px] sm:h-30 w-auto object-contain max-w-[210px] sm:max-w-none"
                 style={{
                   display: 'block',
                   marginLeft: '-16px',

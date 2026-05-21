@@ -15,18 +15,31 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     // Allow any localhost origin
     if (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:')) {
       return callback(null, true);
     }
-    
+
+    // Allow local network IP addresses (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+    if (origin.startsWith('http://192.168.') || origin.startsWith('https://192.168.')) {
+      return callback(null, true);
+    }
+    if (origin.startsWith('http://10.') || origin.startsWith('https://10.')) {
+      return callback(null, true);
+    }
+    if (origin.startsWith('http://172.1') || origin.startsWith('https://172.1') ||
+        origin.startsWith('http://172.2') || origin.startsWith('https://172.2') ||
+        origin.startsWith('http://172.3') || origin.startsWith('https://172.3')) {
+      return callback(null, true);
+    }
+
     // Allow specific origins
-    const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'http://localhost:8080', 'http://localhost:4173'];
+    const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'http://localhost:8080', 'http://localhost:4173', 'http://192.168.43.197:5173'];
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    
+
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
@@ -104,6 +117,6 @@ app.use((req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT} (accessible from all network interfaces)`);
 });

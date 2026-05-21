@@ -364,6 +364,7 @@ CREATE TABLE IF NOT EXISTS user_projects (
     end_date DATE,
     estimated_budget DECIMAL(12,2),
     actual_budget DECIMAL(12,2),
+    client_id BIGINT,
     client_name VARCHAR(255),
     client_email VARCHAR(255),
     client_phone VARCHAR(50),
@@ -382,10 +383,12 @@ CREATE TABLE IF NOT EXISTS user_projects (
     deleted_at TIMESTAMP NULL DEFAULT NULL,
     deleted_by BIGINT DEFAULT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (project_manager_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_user_projects_user (user_id, status),
+    INDEX idx_user_projects_client_id (client_id),
     INDEX idx_user_projects_client (client_name),
     INDEX idx_user_projects_status (status, priority),
     INDEX idx_user_projects_dates (start_date, end_date),
@@ -546,6 +549,7 @@ CREATE TABLE IF NOT EXISTS mpesa_transactions (
     payment_method ENUM('paybill', 'till_number', 'buy_goods') DEFAULT 'paybill',
     business_number VARCHAR(20) DEFAULT '174379',
     account_reference VARCHAR(255),
+    client_id BIGINT,
     client_name VARCHAR(255),
     client_email VARCHAR(255),
     reconciled BOOLEAN DEFAULT FALSE,
@@ -561,6 +565,7 @@ CREATE TABLE IF NOT EXISTS mpesa_transactions (
     updated_by BIGINT,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
     deleted_by BIGINT DEFAULT NULL,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (deleted_by) REFERENCES users(id) ON DELETE SET NULL,
@@ -568,6 +573,7 @@ CREATE TABLE IF NOT EXISTS mpesa_transactions (
     INDEX idx_mpesa_transaction_id (transaction_id),
     INDEX idx_mpesa_status (status),
     INDEX idx_mpesa_phone (phone_number),
+    INDEX idx_mpesa_client (client_id),
     INDEX idx_mpesa_date (transaction_date),
     INDEX idx_mpesa_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -748,6 +754,7 @@ CREATE TABLE IF NOT EXISTS projects (
     start_date DATE NOT NULL,
     expected_completion DATE NOT NULL,
     actual_completion DATE NULL,
+    client_id BIGINT,
     client_name VARCHAR(255) NOT NULL,
     client_contact VARCHAR(255),
     location VARCHAR(500),
@@ -774,10 +781,12 @@ CREATE TABLE IF NOT EXISTS projects (
     deleted_at TIMESTAMP NULL DEFAULT NULL,
     deleted_by BIGINT DEFAULT NULL,
     INDEX idx_projects_status (status),
+    INDEX idx_projects_client_id (client_id),
     INDEX idx_projects_client (client_name),
     INDEX idx_projects_manager (project_manager_id),
     INDEX idx_projects_dates (start_date, expected_completion),
     INDEX idx_projects_created (created_at),
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (project_manager_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (team_lead_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
@@ -885,6 +894,7 @@ CREATE TABLE IF NOT EXISTS project_expenses (
 CREATE TABLE IF NOT EXISTS project_invoices (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     project_id BIGINT NOT NULL,
+    client_id BIGINT,
     invoice_number VARCHAR(100) NOT NULL UNIQUE,
     client_name VARCHAR(255) NOT NULL,
     amount DECIMAL(12,2) NOT NULL,
@@ -905,10 +915,12 @@ CREATE TABLE IF NOT EXISTS project_invoices (
     created_by BIGINT NOT NULL,
     updated_by BIGINT,
     INDEX idx_project_invoices_project (project_id),
+    INDEX idx_project_invoices_client (client_id),
     INDEX idx_project_invoices_number (invoice_number),
     INDEX idx_project_invoices_status (status),
     INDEX idx_project_invoices_dates (issue_date, due_date),
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1560,6 +1572,665 @@ SELECT
 FROM developer_users
 WHERE email LIKE '%@greggoryfoundation.org'
 ORDER BY Account_Type, Role;
+
+-- =====================================================
+-- SECTION 7: CLIENT PORTAL - PROJECTS & ACTIVITIES
+-- =====================================================
+
+-- =============================================
+-- Table: client_projects
+-- Main projects table for client portal
+-- =============================================
+CREATE TABLE IF NOT EXISTS client_projects (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_code VARCHAR(50) UNIQUE NOT NULL,
+    project_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    client_id BIGINT,
+    project_manager_id BIGINT,
+    start_date DATE,
+    end_date DATE,
+    status ENUM('planning', 'in_progress', 'on_hold', 'completed', 'cancelled') DEFAULT 'planning',
+    priority ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+    progress_percentage DECIMAL(5,2) DEFAULT 0.00,
+    budget_allocated DECIMAL(15,2) DEFAULT 0.00,
+    budget_spent DECIMAL(15,2) DEFAULT 0.00,
+    project_type VARCHAR(100),
+    industry_sector VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_client_projects_code (project_code),
+    INDEX idx_client_projects_client (client_id),
+    INDEX idx_client_projects_manager (project_manager_id),
+    INDEX idx_client_projects_status (status),
+    INDEX idx_client_projects_priority (priority),
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (project_manager_id) REFERENCES team_members(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: project_milestones
+-- Milestone tracking for projects
+-- =============================================
+CREATE TABLE IF NOT EXISTS project_milestones (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    milestone_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    milestone_date DATE NOT NULL,
+    status ENUM('pending', 'in_progress', 'completed', 'delayed', 'cancelled') DEFAULT 'pending',
+    completion_percentage DECIMAL(5,2) DEFAULT 0.00,
+    actual_completion_date DATE,
+    deliverables TEXT,
+    dependencies TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_milestones_project (project_id),
+    INDEX idx_milestones_status (status),
+    INDEX idx_milestones_date (milestone_date),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: project_tasks
+-- Task management for projects
+-- =============================================
+CREATE TABLE IF NOT EXISTS project_tasks (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    task_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    assigned_to BIGINT,
+    task_type VARCHAR(100),
+    priority ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+    status ENUM('to_do', 'in_progress', 'in_review', 'completed', 'cancelled') DEFAULT 'to_do',
+    due_date DATE,
+    start_date DATE,
+    completion_date DATE,
+    estimated_hours DECIMAL(8,2),
+    actual_hours DECIMAL(8,2),
+    parent_task_id BIGINT,
+    progress_percentage DECIMAL(5,2) DEFAULT 0.00,
+    tags VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_tasks_project (project_id),
+    INDEX idx_tasks_assigned (assigned_to),
+    INDEX idx_tasks_status (status),
+    INDEX idx_tasks_priority (priority),
+    INDEX idx_tasks_due_date (due_date),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_to) REFERENCES team_members(id) ON DELETE SET NULL,
+    FOREIGN KEY (parent_task_id) REFERENCES project_tasks(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: project_resources
+-- Resource allocation for projects
+-- =============================================
+CREATE TABLE IF NOT EXISTS project_resources (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    resource_type ENUM('personnel', 'equipment', 'material', 'software', 'other') NOT NULL,
+    resource_name VARCHAR(255) NOT NULL,
+    resource_id BIGINT,
+    allocated_quantity DECIMAL(10,2) DEFAULT 1.00,
+    used_quantity DECIMAL(10,2) DEFAULT 0.00,
+    unit VARCHAR(50),
+    cost_per_unit DECIMAL(10,2) DEFAULT 0.00,
+    total_cost DECIMAL(15,2) DEFAULT 0.00,
+    allocation_date DATE,
+    availability_status ENUM('available', 'in_use', 'unavailable', 'reserved') DEFAULT 'available',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_resources_project (project_id),
+    INDEX idx_resources_type (resource_type),
+    INDEX idx_resources_status (availability_status),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: project_budgets
+-- Budget tracking for projects
+-- =============================================
+CREATE TABLE IF NOT EXISTS project_budgets (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    budget_category VARCHAR(100) NOT NULL,
+    budget_name VARCHAR(255) NOT NULL,
+    allocated_amount DECIMAL(15,2) NOT NULL,
+    spent_amount DECIMAL(15,2) DEFAULT 0.00,
+    remaining_amount DECIMAL(15,2) GENERATED ALWAYS AS (allocated_amount - spent_amount) STORED,
+    fiscal_year INT,
+    quarter ENUM('Q1', 'Q2', 'Q3', 'Q4'),
+    approval_status ENUM('pending', 'approved', 'rejected', 'revised') DEFAULT 'pending',
+    approved_by BIGINT,
+    approval_date DATE,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_budgets_project (project_id),
+    INDEX idx_budgets_category (budget_category),
+    INDEX idx_budgets_status (approval_status),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (approved_by) REFERENCES admin_users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: project_expenses
+-- Expense tracking for projects
+-- =============================================
+CREATE TABLE IF NOT EXISTS project_expenses (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    expense_category VARCHAR(100) NOT NULL,
+    description TEXT,
+    amount DECIMAL(15,2) NOT NULL,
+    expense_date DATE NOT NULL,
+    incurred_by BIGINT,
+    approved_by BIGINT,
+    approval_status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    receipt_image_id BIGINT,
+    invoice_number VARCHAR(100),
+    vendor VARCHAR(255),
+    payment_method VARCHAR(100),
+    is_reimbursable BOOLEAN DEFAULT FALSE,
+    reimbursement_status ENUM('not_applicable', 'pending', 'approved', 'paid') DEFAULT 'not_applicable',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_expenses_project (project_id),
+    INDEX idx_expenses_category (expense_category),
+    INDEX idx_expenses_date (expense_date),
+    INDEX idx_expenses_status (approval_status),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (incurred_by) REFERENCES team_members(id) ON DELETE SET NULL,
+    FOREIGN KEY (approved_by) REFERENCES admin_users(id) ON DELETE SET NULL,
+    FOREIGN KEY (receipt_image_id) REFERENCES images(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: client_invoices
+-- Invoice management for clients
+-- =============================================
+CREATE TABLE IF NOT EXISTS client_invoices (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    invoice_number VARCHAR(50) UNIQUE NOT NULL,
+    project_id BIGINT,
+    client_id BIGINT NOT NULL,
+    invoice_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    subtotal DECIMAL(15,2) NOT NULL,
+    tax_amount DECIMAL(15,2) DEFAULT 0.00,
+    discount_amount DECIMAL(15,2) DEFAULT 0.00,
+    total_amount DECIMAL(15,2) NOT NULL,
+    currency VARCHAR(3) DEFAULT 'USD',
+    status ENUM('draft', 'sent', 'viewed', 'partial', 'paid', 'overdue', 'cancelled') DEFAULT 'draft',
+    payment_terms VARCHAR(255),
+    notes TEXT,
+    sent_date DATE,
+    viewed_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_invoices_number (invoice_number),
+    INDEX idx_invoices_project (project_id),
+    INDEX idx_invoices_client (client_id),
+    INDEX idx_invoices_status (status),
+    INDEX idx_invoices_due_date (due_date),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE SET NULL,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: invoice_line_items
+-- Line items for invoices
+-- =============================================
+CREATE TABLE IF NOT EXISTS invoice_line_items (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    invoice_id BIGINT NOT NULL,
+    item_description TEXT NOT NULL,
+    quantity DECIMAL(10,2) NOT NULL,
+    unit_price DECIMAL(15,2) NOT NULL,
+    discount_percentage DECIMAL(5,2) DEFAULT 0.00,
+    tax_percentage DECIMAL(5,2) DEFAULT 0.00,
+    line_total DECIMAL(15,2) GENERATED ALWAYS AS (quantity * unit_price * (1 - discount_percentage/100) * (1 + tax_percentage/100)) STORED,
+    item_type VARCHAR(100),
+    service_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_line_items_invoice (invoice_id),
+    FOREIGN KEY (invoice_id) REFERENCES client_invoices(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: client_payments
+-- Payment tracking for invoices
+-- =============================================
+CREATE TABLE IF NOT EXISTS client_payments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    invoice_id BIGINT NOT NULL,
+    client_id BIGINT,
+    payment_date DATE NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    payment_method ENUM('bank_transfer', 'credit_card', 'paypal', 'check', 'cash', 'other') NOT NULL,
+    payment_reference VARCHAR(255),
+    status ENUM('pending', 'completed', 'failed', 'refunded', 'partial_refund') DEFAULT 'pending',
+    processed_by BIGINT,
+    notes TEXT,
+    receipt_image_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_payments_invoice (invoice_id),
+    INDEX idx_payments_client (client_id),
+    INDEX idx_payments_date (payment_date),
+    INDEX idx_payments_status (status),
+    FOREIGN KEY (invoice_id) REFERENCES client_invoices(id) ON DELETE CASCADE,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (processed_by) REFERENCES admin_users(id) ON DELETE SET NULL,
+    FOREIGN KEY (receipt_image_id) REFERENCES images(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: client_documents
+-- Document management for clients
+-- =============================================
+CREATE TABLE IF NOT EXISTS client_documents (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT,
+    client_id BIGINT,
+    document_name VARCHAR(255) NOT NULL,
+    document_type ENUM('contract', 'proposal', 'report', 'invoice', 'deliverable', 'legal', 'technical', 'other') NOT NULL,
+    category VARCHAR(100),
+    description TEXT,
+    file_path VARCHAR(512),
+    file_size BIGINT,
+    file_type VARCHAR(100),
+    version_number INT DEFAULT 1,
+    is_current_version BOOLEAN DEFAULT TRUE,
+    parent_document_id BIGINT,
+    status ENUM('draft', 'review', 'approved', 'rejected', 'archived') DEFAULT 'draft',
+    access_level ENUM('public', 'private', 'confidential') DEFAULT 'private',
+    expiry_date DATE,
+    tags VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_documents_project (project_id),
+    INDEX idx_documents_client (client_id),
+    INDEX idx_documents_type (document_type),
+    INDEX idx_documents_status (status),
+    INDEX idx_documents_version (parent_document_id),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE SET NULL,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_document_id) REFERENCES client_documents(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: document_signatures
+-- eSignature tracking for documents
+-- =============================================
+CREATE TABLE IF NOT EXISTS document_signatures (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    document_id BIGINT NOT NULL,
+    signer_id BIGINT NOT NULL,
+    signer_name VARCHAR(255) NOT NULL,
+    signer_email VARCHAR(255) NOT NULL,
+    signature_status ENUM('pending', 'signed', 'declined', 'expired') DEFAULT 'pending',
+    signature_date TIMESTAMP NULL,
+    signature_image_id BIGINT,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    signature_hash VARCHAR(255),
+    expires_at TIMESTAMP NULL,
+    reminder_sent BOOLEAN DEFAULT FALSE,
+    reminder_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_signatures_document (document_id),
+    INDEX idx_signatures_signer (signer_id),
+    INDEX idx_signatures_status (signature_status),
+    FOREIGN KEY (document_id) REFERENCES client_documents(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: client_messages
+-- Communication hub for clients
+-- =============================================
+CREATE TABLE IF NOT EXISTS client_messages (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT,
+    client_id BIGINT NOT NULL,
+    sender_id BIGINT NOT NULL,
+    recipient_id BIGINT NOT NULL,
+    subject VARCHAR(255),
+    message_body TEXT NOT NULL,
+    message_type ENUM('email', 'sms', 'whatsapp', 'in_app', 'other') DEFAULT 'in_app',
+    priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+    status ENUM('draft', 'sent', 'delivered', 'read', 'replied', 'failed') DEFAULT 'draft',
+    is_unread BOOLEAN DEFAULT TRUE,
+    parent_message_id BIGINT,
+    attachments TEXT,
+    sent_at TIMESTAMP NULL,
+    read_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_messages_project (project_id),
+    INDEX idx_messages_client (client_id),
+    INDEX idx_messages_sender (sender_id),
+    INDEX idx_messages_recipient (recipient_id),
+    INDEX idx_messages_status (status),
+    INDEX idx_messages_unread (is_unread),
+    INDEX idx_messages_date (created_at),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE SET NULL,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_message_id) REFERENCES client_messages(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: project_risks
+-- Risk assessment and management
+-- =============================================
+CREATE TABLE IF NOT EXISTS project_risks (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    risk_title VARCHAR(255) NOT NULL,
+    risk_description TEXT,
+    risk_category VARCHAR(100),
+    probability ENUM('very_low', 'low', 'medium', 'high', 'very_high') DEFAULT 'medium',
+    impact ENUM('very_low', 'low', 'medium', 'high', 'very_high') DEFAULT 'medium',
+    risk_score DECIMAL(5,2) GENERATED ALWAYS AS (
+        CASE probability
+            WHEN 'very_low' THEN 1
+            WHEN 'low' THEN 2
+            WHEN 'medium' THEN 3
+            WHEN 'high' THEN 4
+            WHEN 'very_high' THEN 5
+        END *
+        CASE impact
+            WHEN 'very_low' THEN 1
+            WHEN 'low' THEN 2
+            WHEN 'medium' THEN 3
+            WHEN 'high' THEN 4
+            WHEN 'very_high' THEN 5
+        END
+    ) STORED,
+    risk_level ENUM('low', 'medium', 'high', 'critical') GENERATED ALWAYS AS (
+        CASE
+            WHEN risk_score <= 4 THEN 'low'
+            WHEN risk_score <= 9 THEN 'medium'
+            WHEN risk_score <= 16 THEN 'high'
+            ELSE 'critical'
+        END
+    ) STORED,
+    mitigation_strategy TEXT,
+    owner_id BIGINT,
+    status ENUM('open', 'mitigating', 'mitigated', 'closed', 'occurred') DEFAULT 'open',
+    identified_date DATE,
+    target_mitigation_date DATE,
+    actual_mitigation_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_risks_project (project_id),
+    INDEX idx_risks_level (risk_level),
+    INDEX idx_risks_status (status),
+    INDEX idx_risks_owner (owner_id),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (owner_id) REFERENCES team_members(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: quality_assurance
+-- QA checkpoint tracking
+-- =============================================
+CREATE TABLE IF NOT EXISTS quality_assurance (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    checkpoint_name VARCHAR(255) NOT NULL,
+    checkpoint_type VARCHAR(100),
+    description TEXT,
+    qa_date DATE NOT NULL,
+    status ENUM('pending', 'in_progress', 'passed', 'failed', 'deferred') DEFAULT 'pending',
+    tester_id BIGINT,
+    test_results TEXT,
+    issues_found INT DEFAULT 0,
+    issues_resolved INT DEFAULT 0,
+    pass_rate DECIMAL(5,2),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_qa_project (project_id),
+    INDEX idx_qa_status (status),
+    INDEX idx_qa_date (qa_date),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (tester_id) REFERENCES team_members(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: performance_metrics
+-- KPI and performance tracking
+-- =============================================
+CREATE TABLE IF NOT EXISTS performance_metrics (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT,
+    metric_name VARCHAR(255) NOT NULL,
+    metric_category VARCHAR(100),
+    metric_type ENUM('numeric', 'percentage', 'currency', 'boolean', 'text') DEFAULT 'numeric',
+    value DECIMAL(20,4),
+    target_value DECIMAL(20,4),
+    unit VARCHAR(50),
+    measurement_date DATE NOT NULL,
+    frequency ENUM('daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'one_time') DEFAULT 'monthly',
+    status ENUM('on_track', 'at_risk', 'behind', 'ahead') DEFAULT 'on_track',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_metrics_project (project_id),
+    INDEX idx_metrics_category (metric_category),
+    INDEX idx_metrics_date (measurement_date),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: audit_logs
+-- Comprehensive activity tracking
+-- =============================================
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT,
+    user_type ENUM('admin', 'developer', 'user', 'system') NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    entity_type VARCHAR(100),
+    entity_id BIGINT,
+    old_values TEXT,
+    new_values TEXT,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    session_id VARCHAR(255),
+    request_method VARCHAR(10),
+    request_url TEXT,
+    status ENUM('success', 'failure', 'warning') DEFAULT 'success',
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_audit_user (user_id),
+    INDEX idx_audit_action (action),
+    INDEX idx_audit_entity (entity_type, entity_id),
+    INDEX idx_audit_date (created_at),
+    INDEX idx_audit_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: client_feedback
+-- Client feedback and surveys
+-- =============================================
+CREATE TABLE IF NOT EXISTS client_feedback (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT,
+    client_id BIGINT NOT NULL,
+    feedback_type ENUM('satisfaction', 'bug_report', 'feature_request', 'complaint', 'compliment', 'other') NOT NULL,
+    subject VARCHAR(255),
+    feedback_body TEXT NOT NULL,
+    rating INT CHECK (rating >= 1 AND rating <= 5),
+    priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+    status ENUM('received', 'in_review', 'addressed', 'resolved', 'closed') DEFAULT 'received',
+    assigned_to BIGINT,
+    response_text TEXT,
+    response_date TIMESTAMP NULL,
+    response_time_hours DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_feedback_project (project_id),
+    INDEX idx_feedback_client (client_id),
+    INDEX idx_feedback_type (feedback_type),
+    INDEX idx_feedback_status (status),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE SET NULL,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_to) REFERENCES team_members(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: project_timeline
+-- Gantt chart and timeline data
+-- =============================================
+CREATE TABLE IF NOT EXISTS project_timeline (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    task_id BIGINT,
+    milestone_id BIGINT,
+    item_name VARCHAR(255) NOT NULL,
+    item_type ENUM('task', 'milestone', 'phase', 'deliverable') NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    duration_days INT,
+    progress_percentage DECIMAL(5,2) DEFAULT 0.00,
+    dependencies TEXT,
+    color VARCHAR(7),
+    is_critical BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_timeline_project (project_id),
+    INDEX idx_timeline_task (task_id),
+    INDEX idx_timeline_milestone (milestone_id),
+    INDEX idx_timeline_dates (start_date, end_date),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (task_id) REFERENCES project_tasks(id) ON DELETE SET NULL,
+    FOREIGN KEY (milestone_id) REFERENCES project_milestones(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: notifications
+-- Notification system for clients
+-- =============================================
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    notification_type ENUM('project_update', 'task_assigned', 'milestone_complete', 'invoice_sent', 'payment_received', 'message', 'risk_alert', 'qa_result', 'system') NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+    status ENUM('unread', 'read', 'archived') DEFAULT 'unread',
+    action_url VARCHAR(512),
+    related_entity_type VARCHAR(100),
+    related_entity_id BIGINT,
+    sent_via_email BOOLEAN DEFAULT FALSE,
+    sent_via_sms BOOLEAN DEFAULT FALSE,
+    sent_via_push BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    read_at TIMESTAMP NULL,
+    expires_at TIMESTAMP NULL,
+    INDEX idx_notifications_user (user_id),
+    INDEX idx_notifications_type (notification_type),
+    INDEX idx_notifications_status (status),
+    INDEX idx_notifications_date (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: change_requests
+-- Change order management
+-- =============================================
+CREATE TABLE IF NOT EXISTS change_requests (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    request_number VARCHAR(50) UNIQUE NOT NULL,
+    requested_by BIGINT NOT NULL,
+    change_description TEXT NOT NULL,
+    reason_for_change TEXT,
+    impact_assessment TEXT,
+    estimated_cost_impact DECIMAL(15,2) DEFAULT 0.00,
+    estimated_time_impact_days INT DEFAULT 0,
+    status ENUM('draft', 'submitted', 'under_review', 'approved', 'rejected', 'implemented', 'cancelled') DEFAULT 'draft',
+    reviewed_by BIGINT,
+    review_date DATE,
+    approval_date DATE,
+    implementation_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_by BIGINT DEFAULT NULL,
+    INDEX idx_change_requests_project (project_id),
+    INDEX idx_change_requests_number (request_number),
+    INDEX idx_change_requests_status (status),
+    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (reviewed_by) REFERENCES admin_users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
 -- SUCCESS MESSAGE

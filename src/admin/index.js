@@ -15,6 +15,13 @@ export { Developer } from './pages/Developer';
 export { ActivityLogs } from './pages/Activity';
 export { SettingsPage } from './pages/Settings';
 export { Login } from './pages/Login';
+export { CRM } from './pages/CRM';
+export { Tasks } from './pages/Tasks';
+export { Communication } from './pages/Communication';
+export { Support } from './pages/Support';
+export { Security } from './pages/Security';
+export { Reports } from './pages/Reports';
+export { Financial } from './pages/Financial';
 
 // Hooks
 export { useAuth } from './hooks/useAuth';

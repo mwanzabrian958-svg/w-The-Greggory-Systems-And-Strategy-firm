@@ -633,4 +633,481 @@ router.get('/developer-dashboard', async (req, res) => {
   }
 });
 
+// =============================================
+// GET BUDGET OVERVIEW
+// =============================================
+router.get('/budget-overview', async (req, res) => {
+  try {
+    // Calculate budget overview from projects and financial data
+    const [budgetData] = await db.promise().query(`
+      SELECT 
+        COALESCE(SUM(CASE WHEN p.budget IS NOT NULL THEN p.budget ELSE 0 END), 0) as planned,
+        COALESCE(SUM(CASE WHEN p.actual_spent IS NOT NULL THEN p.actual_spent ELSE 0 END), 0) as spent,
+        COALESCE(SUM(CASE WHEN p.forecast IS NOT NULL THEN p.forecast ELSE 0 END), 0) as forecast
+      FROM client_projects p
+      WHERE p.deleted_at IS NULL
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        planned: budgetData[0]?.planned || 0,
+        spent: budgetData[0]?.spent || 0,
+        forecast: budgetData[0]?.forecast || 0
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching budget overview:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch budget overview',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET PENDING APPROVALS
+// =============================================
+router.get('/pending-approvals', async (req, res) => {
+  try {
+    // Get pending approvals from various sources
+    const [approvals] = await db.promise().query(`
+      SELECT 
+        'project' as type,
+        p.project_name as name,
+        p.created_at as date,
+        CASE 
+          WHEN p.priority = 'high' THEN 'High'
+          WHEN p.priority = 'medium' THEN 'Medium'
+          ELSE 'Low'
+        END as priority,
+        p.id
+      FROM client_projects p
+      WHERE p.status = 'pending' AND p.deleted_at IS NULL
+      ORDER BY p.created_at DESC
+      LIMIT 5
+    `);
+
+    res.json({
+      success: true,
+      data: approvals.map(a => ({
+        id: a.id,
+        type: a.type,
+        name: a.name,
+        priority: a.priority,
+        date: a.date
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching pending approvals:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pending approvals',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET PENDING INVOICES
+// =============================================
+router.get('/pending-invoices', async (req, res) => {
+  try {
+    // Get pending invoices from applications or financial records
+    const [invoices] = await db.promise().query(`
+      SELECT 
+        a.id,
+        a.application_id as project,
+        COALESCE(a.estimated_budget, 0) as amount,
+        a.created_at as date
+      FROM applications a
+      WHERE a.status = 'pending' AND a.deleted_at IS NULL
+      ORDER BY a.created_at DESC
+      LIMIT 5
+    `);
+
+    res.json({
+      success: true,
+      data: invoices.map(inv => ({
+        id: inv.id,
+        project: inv.project || 'Application',
+        amount: inv.amount,
+        date: inv.date
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching pending invoices:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pending invoices',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET CLIENT FEEDBACK
+// =============================================
+router.get('/client-feedback', async (req, res) => {
+  try {
+    // Get client feedback from contact forms or feedback tables
+    const [feedback] = await db.promise().query(`
+      SELECT 
+        cf.id,
+        cf.name as type,
+        COALESCE(cf.rating, 5) as rating,
+        cf.created_at as date
+      FROM contact_forms cf
+      WHERE cf.deleted_at IS NULL
+      ORDER BY cf.created_at DESC
+      LIMIT 5
+    `);
+
+    res.json({
+      success: true,
+      data: feedback.map(f => ({
+        id: f.id,
+        type: f.type || 'Client',
+        rating: f.rating,
+        date: f.date
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching client feedback:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch client feedback',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET RISK ALERTS
+// =============================================
+router.get('/risk-alerts', async (req, res) => {
+  try {
+    // Get risk alerts based on various system indicators
+    const [risks] = await db.promise().query(`
+      SELECT 
+        'Budget overage' as title,
+        'Project spending exceeds 90% of allocated budget' as description,
+        CASE 
+          WHEN (SELECT COUNT(*) FROM client_projects WHERE actual_spent > budget * 0.9) > 0 THEN 'high'
+          ELSE 'medium'
+        END as level,
+        1 as id
+      UNION ALL
+      SELECT 
+        'Pending approvals' as title,
+        'Multiple items awaiting admin approval' as description,
+        CASE 
+          WHEN (SELECT COUNT(*) FROM client_projects WHERE status = 'pending') > 5 THEN 'critical'
+          WHEN (SELECT COUNT(*) FROM client_projects WHERE status = 'pending') > 2 THEN 'high'
+          ELSE 'medium'
+        END as level,
+        2 as id
+      UNION ALL
+      SELECT 
+        'System load' as title,
+        'High system resource usage detected' as description,
+        'low' as level,
+        3 as id
+    `);
+
+    res.json({
+      success: true,
+      data: risks.map(r => ({
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        level: r.level
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching risk alerts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch risk alerts',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET ASSIGNED TASKS (DEVELOPER DASHBOARD)
+// =============================================
+router.get('/assigned-tasks', async (req, res) => {
+  try {
+    const [tasks] = await db.promise().query(`
+      SELECT 
+        pt.id,
+        pt.task_name as title,
+        pt.project_id as project,
+        pt.assigned_to as assignee,
+        pt.priority,
+        pt.status,
+        pt.progress_percentage as progress
+      FROM project_tasks pt
+      WHERE pt.deleted_at IS NULL
+      ORDER BY pt.created_at DESC
+      LIMIT 5
+    `);
+
+    res.json({
+      success: true,
+      data: tasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        project: t.project || 'Project',
+        assignee: t.assignee || 'Developer',
+        priority: t.priority || 'Medium',
+        status: t.status || 'pending',
+        progress: t.progress || 0
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching assigned tasks:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch assigned tasks',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET MILESTONES (DEVELOPER DASHBOARD)
+// =============================================
+router.get('/milestones', async (req, res) => {
+  try {
+    const [milestones] = await db.promise().query(`
+      SELECT 
+        pm.id,
+        pm.milestone_name as name,
+        pm.due_date,
+        pm.status,
+        pm.completion_percentage as progress
+      FROM project_milestones pm
+      WHERE pm.deleted_at IS NULL
+      ORDER BY pm.due_date ASC
+      LIMIT 5
+    `);
+
+    res.json({
+      success: true,
+      data: milestones.map(m => ({
+        id: m.id,
+        name: m.name,
+        dueDate: m.due_date,
+        status: m.status || 'pending',
+        progress: m.progress || 0
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching milestones:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch milestones',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET RESOURCE ALLOCATIONS (DEVELOPER DASHBOARD)
+// =============================================
+router.get('/resource-allocations', async (req, res) => {
+  try {
+    const [resources] = await db.promise().query(`
+      SELECT 
+        pr.id,
+        pr.resource_name as name,
+        pr.role,
+        pr.allocated_quantity,
+        pr.used_quantity,
+        pr.availability_status as availability
+      FROM project_resources pr
+      WHERE pr.deleted_at IS NULL
+      LIMIT 5
+    `);
+
+    res.json({
+      success: true,
+      data: resources.map(r => ({
+        id: r.id,
+        name: r.name,
+        role: r.role || 'Team Member',
+        availability: r.availability || 'Available',
+        utilization: r.allocated_quantity > 0 ? Math.round((r.used_quantity / r.allocated_quantity) * 100) : 0
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching resource allocations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch resource allocations',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET QA CHECKPOINTS (DEVELOPER DASHBOARD)
+// =============================================
+router.get('/qa-checkpoints', async (req, res) => {
+  try {
+    const [qaData] = await db.promise().query(`
+      SELECT 
+        qa.id,
+        qa.checkpoint_name as name,
+        qa.status,
+        qa.issues_found as issuesFound,
+        qa.issues_resolved as issuesResolved
+      FROM quality_assurance qa
+      WHERE qa.deleted_at IS NULL
+      ORDER BY qa.created_at DESC
+      LIMIT 5
+    `);
+
+    res.json({
+      success: true,
+      data: qaData.map(q => ({
+        id: q.id,
+        name: q.name,
+        status: q.status || 'pending',
+        issuesFound: q.issuesFound || 0,
+        issuesResolved: q.issuesResolved || 0
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching QA checkpoints:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch QA checkpoints',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET DOCUMENT SUMMARY (DEVELOPER DASHBOARD)
+// =============================================
+router.get('/document-summary', async (req, res) => {
+  try {
+    const [docs] = await db.promise().query(`
+      SELECT 
+        cd.id,
+        cd.document_name as name,
+        cd.document_type as type,
+        cd.created_at
+      FROM client_documents cd
+      WHERE cd.deleted_at IS NULL
+      ORDER BY cd.created_at DESC
+      LIMIT 5
+    `);
+
+    res.json({
+      success: true,
+      data: docs.map(d => ({
+        id: d.id,
+        name: d.name,
+        type: d.type || 'Document'
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching document summary:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch document summary',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET KPI METRICS (DEVELOPER DASHBOARD)
+// =============================================
+router.get('/kpi-metrics', async (req, res) => {
+  try {
+    const [metrics] = await db.promise().query(`
+      SELECT 
+        'Code Quality' as name,
+        COALESCE(pm.value, 85) as value,
+        'up' as trend
+      FROM performance_metrics pm
+      WHERE pm.metric_name = 'code_quality'
+      UNION ALL
+      SELECT 
+        'Task Completion' as name,
+        COALESCE(pm.value, 72) as value,
+        'up' as trend
+      FROM performance_metrics pm
+      WHERE pm.metric_name = 'task_completion'
+      UNION ALL
+      SELECT 
+        'Bug Rate' as name,
+        COALESCE(pm.value, 15) as value,
+        'down' as trend
+      FROM performance_metrics pm
+      WHERE pm.metric_name = 'bug_rate'
+      LIMIT 3
+    `);
+
+    res.json({
+      success: true,
+      data: metrics.map(m => ({
+        id: Math.random(),
+        name: m.name,
+        value: `${m.value}%`,
+        trend: m.trend
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching KPI metrics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch KPI metrics',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
+// GET PROJECT TIMELINE (DEVELOPER DASHBOARD)
+// =============================================
+router.get('/project-timeline', async (req, res) => {
+  try {
+    const [timeline] = await db.promise().query(`
+      SELECT 
+        pt.id,
+        pt.task_name as name,
+        pt.end_date as dueDate,
+        pt.progress_percentage as progress
+      FROM project_tasks pt
+      WHERE pt.deleted_at IS NULL
+      ORDER BY pt.end_date ASC
+      LIMIT 5
+    `);
+
+    res.json({
+      success: true,
+      data: timeline.map(t => ({
+        id: t.id,
+        name: t.name,
+        dueDate: t.dueDate,
+        progress: t.progress || 0
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching project timeline:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch project timeline',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

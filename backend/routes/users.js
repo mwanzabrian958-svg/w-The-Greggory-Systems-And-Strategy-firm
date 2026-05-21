@@ -1001,4 +1001,54 @@ router.put('/projects/:projectId', requireAdmin, async (req, res) => {
   }
 });
 
+// Update user profile
+router.put('/profile', async (req, res) => {
+  try {
+    const userId = req.headers['x-user-id'] || req.body.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User ID is required' });
+    }
+
+    const { display_name, timezone, phone_number } = req.body;
+    
+    const updates = [];
+    const values = [];
+
+    if (display_name) {
+      updates.push('display_name = ?');
+      values.push(display_name);
+    }
+    if (timezone) {
+      updates.push('timezone = ?');
+      values.push(timezone);
+    }
+    if (phone_number) {
+      updates.push('phone_number = ?');
+      values.push(phone_number);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, message: 'No fields to update' });
+    }
+
+    updates.push('updated_at = NOW()');
+    values.push(userId);
+
+    const [result] = await db.promise().query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, message: 'Profile updated successfully' });
+  } catch (error) {
+    console.error('[PROFILE UPDATE] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update profile', error: error.message });
+  }
+});
+
 module.exports = router;
