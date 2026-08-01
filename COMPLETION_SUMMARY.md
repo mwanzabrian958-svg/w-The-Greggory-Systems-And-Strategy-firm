@@ -2,7 +2,7 @@
 
 **Status:** FULLY IMPLEMENTED & LOCKED  
 **Date Completed:** May 10, 2026  
-**System:** Greggory Foundation Ltd  
+**System:** The-Greggory-Systems-And-Strategy-firm  
 **Guarantee:** 100% ENDPOINT CONSISTENCY
 
 ---
@@ -118,7 +118,7 @@ curl -X POST http://localhost:3000/api/developer-verification/authenticate \
 ```
 
 ### 5. Verify in PhpMyAdmin
-Visit: http://localhost/phpmyadmin/index.php?route=/database/structure&db=greggory_foundation_db_main
+Visit: http://localhost/phpmyadmin/index.php?route=/database/structure&db=the_greggory_systems_and_strategy_firm_db_main
 
 Look for:
 - ✅ auth_platform_mapping (3 rows, all locked)
@@ -320,7 +320,7 @@ LIMIT 10;
 
 All files are in the project root:
 ```
-c:\Users\Lydia mwanza\OneDrive\Desktop\Website-for-Greggory-Foundation-Ltd\
+c:\Users\Lydia mwanza\OneDrive\Desktop\Website-for-The-Greggory-Systems-And-Strategy-Firm\
 ├── README_AUTH_ENDPOINTS.md
 ├── AUTH_ENDPOINTS_QUICK_START.md
 ├── LOCKED_AUTH_ENDPOINTS.md

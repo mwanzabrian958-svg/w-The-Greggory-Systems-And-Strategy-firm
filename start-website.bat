@@ -1,6 +1,7 @@
-@echo off
+ @echo off
+cd /d "%~dp0"
 echo ========================================
-echo Starting Greggory Foundation Website
+echo Starting The-Greggory-Systems-And-Strategy-firm Website
 echo ========================================
 echo.
 

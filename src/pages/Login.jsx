@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import AuthLayout from '../components/AuthLayout'
 import { useAuth } from '../context/AuthContext'
 import { usersAPI } from '../services/api'
+import { SITE_NAME } from '../constants/siteBrand'
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -169,166 +170,109 @@ const Login = () => {
   }
 
   return (
-    <div className="page-enter min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      {/* Loading Overlay */}
-      {isLoading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-r-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-700 font-medium">Authenticating...</p>
-            <p className="text-gray-500 text-sm mt-2">Please wait while we verify your credentials</p>
+    <AuthLayout>
+      <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
+        <div className="space-y-1">
+          <label htmlFor="email" className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+            Email or Phone
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Mail className="h-4 w-4 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+            </div>
+            <input
+              id="email"
+              name="email"
+              type="text"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              placeholder="Enter credentials"
+              className="block w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all text-sm font-medium"
+            />
+          </div>
+          {errors.email && (
+            <p className="mt-1 text-[10px] text-red-400 font-bold ml-1">{errors.email}</p>
+          )}
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="password" className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+            Password
+          </label>
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Lock className="h-4 w-4 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+            </div>
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={handleChange}
+              required
+              placeholder="••••••••"
+              className="block w-full pl-10 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all text-sm font-medium"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-amber-500 transition-colors"
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          {errors.password && (
+            <p className="mt-1 text-[10px] text-red-400 font-bold ml-1">{errors.password}</p>
+          )}
+        </div>
+
+        <div className="text-[9px] text-slate-400 text-center leading-relaxed font-bold uppercase tracking-wider px-2">
+          By signing in, you consent to our{' '}
+          <Link to="/terms" className="text-amber-400 hover:text-amber-300">Terms</Link>
+          {' '}&{' '}
+          <Link to="/privacy" className="text-amber-400 hover:text-amber-300">Privacy</Link>
+        </div>
+
+        <div className="space-y-3">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-xl text-sm font-black text-slate-950 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 transition-all transform hover:scale-[1.02] active:scale-[0.98] uppercase tracking-[0.1em]"
+          >
+            {isLoading ? 'Processing...' : 'Secure Access'}
+          </button>
+
+          <div className="flex items-center justify-between px-2">
+            <Link
+              to="/forgot-password"
+              className="text-[10px] font-bold text-slate-500 hover:text-amber-400 transition-colors uppercase tracking-widest"
+            >
+              Forgot?
+            </Link>
+            <Link
+              to="/signup"
+              className="text-[10px] font-black text-amber-500 hover:text-amber-400 transition-colors uppercase tracking-widest"
+            >
+              Sign Up
+            </Link>
           </div>
         </div>
-      )}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        {/* Logo */}
-        <div className="flex justify-center mb-6">
-          <img
-            src="/brand-header.png/sja.PNG"
-            alt="SJA"
-            className="h-24 w-auto object-contain"
-            onError={(e) => {
-              console.error('Failed to load sja image:', e.target.src);
-              e.target.style.display = 'none';
-            }}
-          />
+
+        <div className="relative py-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-white/5"></div>
+          </div>
+          <div className="relative flex justify-center text-[10px] font-black tracking-[0.5em]">
+            <span className="px-4 bg-[#07111f]/50 backdrop-blur-md text-slate-600">OR</span>
+          </div>
         </div>
-        <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
-          Welcome back
-        </h2>
-        <p className="mt-2 text-center text-lg text-gray-600">
-          {user?.name || 'Welcome back'}
-        </p>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Phone number / email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="text"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-xs text-red-600">{errors.email}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1 relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-500" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-500" />
-                  )}
-                </button>
-                {errors.password && (
-                  <p className="mt-1 text-xs text-red-600">{errors.password}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="text-xs text-gray-600 text-center mb-4">
-              <p>By signing up or logging in, you consent to The Greggory Foundation's</p>
-              <p>
-                <Link to="/terms" className="text-blue-600 hover:underline">
-                  Terms of Use
-                </Link>{' '}
-                and{' '}
-                <Link to="/privacy" className="text-blue-600 hover:underline">
-                  Privacy Policy
-                </Link>
-                .
-              </p>
-            </div>
-
-
-            {errors.submit && (
-              <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700 text-center">
-                {errors.submit}
-              </div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Logging in...
-                  </>
-                ) : 'Log in'}
-              </button>
-            </div>
-
-            <div className="text-center">
-              <Link
-                to="/forgot-password"
-                className="text-sm text-blue-600 hover:text-blue-500 hover:underline"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            <div className="text-center text-sm">
-              <span className="text-gray-600">Don't have an account? </span>
-              <Link
-                to="/signup"
-                className="font-medium text-blue-600 hover:text-blue-500 hover:underline"
-              >
-                Sign up
-              </Link>
-            </div>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">OR</span>
-              </div>
-            </div>
-
-            <div className="text-center text-xs text-gray-500 mt-8">
-              &copy; 2024 THE GREGGORY FOUNDATION LTD. All rights reserved.
-            </div>
-          </form>
+        <div className="text-center text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] pt-4">
+          &copy; {new Date().getFullYear()} {SITE_NAME.toUpperCase()}. All Rights Reserved.
         </div>
-      </div>
-    </div>
+      </form>
+    </AuthLayout>
   )
 }
 

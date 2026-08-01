@@ -203,12 +203,12 @@ ADMIN_ALLOWED_IPS=127.0.0.1,::1,localhost
 ### Step 1: Run SQL to Create Table
 ```bash
 # Execute the SQL file
-mysql -u root -p greggory_foundation_db_main < database/access_codes.sql
+mysql -u root -p the_greggory_systems_and_strategy_firm_db_main < database/access_codes.sql
 ```
 
 Or run manually in MySQL:
 ```sql
-USE greggory_foundation_db_main;
+USE the_greggory_systems_and_strategy_firm_db_main;
 SOURCE database/access_codes.sql;
 ```
 

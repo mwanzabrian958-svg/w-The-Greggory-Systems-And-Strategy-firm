@@ -4,7 +4,7 @@ const connection = require('./backend/config/database.js');
 console.log('Testing database connection...');
 console.log('DB_HOST:', process.env.DB_HOST || '127.0.0.1');
 console.log('DB_PORT:', process.env.DB_PORT || 3306);
-console.log('DB_NAME:', process.env.DB_NAME || 'greggory_foundation_db_main');
+console.log('DB_NAME:', process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main');
 
 connection.query('SELECT 1 as test', (err, results) => {
   if (err) {

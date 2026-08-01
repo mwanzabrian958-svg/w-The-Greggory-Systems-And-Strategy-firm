@@ -7,14 +7,39 @@ import AuthPlatformModal from './AuthPlatformModal'
 import companies from '../data/companies'
 import { hasAdminToken } from '../utils/adminSession'
 import { getApiUrl } from '../services/api'
+import { SITE_NAME } from '../constants/siteBrand'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [companiesDropdownOpen, setCompaniesDropdownOpen] = useState(false)
   const [adminLoginModalOpen, setAdminLoginModalOpen] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
+  const scrollTimer = useRef(null)
+
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, logout, user } = useAuth()
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Hide the navbar as soon as scrolling starts
+      setIsVisible(false)
+
+      // Clear existing timer
+      if (scrollTimer.current) clearTimeout(scrollTimer.current)
+
+      // Show navbar again after scrolling stops (wait 200ms)
+      scrollTimer.current = setTimeout(() => {
+        setIsVisible(true)
+      }, 200)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (scrollTimer.current) clearTimeout(scrollTimer.current)
+    }
+  }, [])
   // Use a relative path so the Vite proxy forwards it to the backend.
   // Works on both localhost:5173 and network IP (192.168.x.x:5173).
   const profilePhotoUrl = user?.has_photo && (user?.id || user?.userId)
@@ -41,14 +66,14 @@ const Navbar = () => {
     { name: 'Blog', path: '/blog' },
     { name: 'Contact', path: '/contact' },
     ...(isAuthenticated && user ? [{
-      name: 'Projects & Activities',
+      name: 'Client Portal',
       path: user?.admin_level || user?.developer_level ? '/admin' : '/projects'
     }] : []),
   ]
 
   const clientPortalNav = [
     { name: 'Dashboard', path: '/client-portal' },
-    { name: 'Projects & Activities', path: '/projects' },
+    { name: 'Client Portal', path: '/projects' },
     { name: 'Pricing', path: '/pricing' },
   ]
 
@@ -78,47 +103,35 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="bg-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto pl-0 pr-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-[160px]">
+      <nav className={`bg-[#07111f] border-b border-white/5 sticky top-0 z-50 shadow-2xl transition-transform duration-500 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-[120px] sm:h-[140px]">
             {/* Brand Header with Logo */}
-            <div className="flex items-center flex-shrink-0" style={{ marginLeft: '-16px' }}>
-              <img
-                src="/brand-header.png/sja.PNG"
-                alt="SJA"
-                className="h-[110px] sm:h-30 w-auto object-contain max-w-[210px] sm:max-w-none"
-                style={{
-                  display: 'block',
-                  marginLeft: '-16px',
-                  position: 'relative',
-                  zIndex: 10
-                }}
-                onError={(e) => {
-                  console.error('Failed to load sja image:', e.target.src);
-                }}
-                onLoad={() => {
-                  console.log('SJA image loaded successfully');
-                }}
-              />
+            <div className="flex items-center flex-shrink-0">
+              <Link to="/" className="hover:opacity-90 transition-opacity">
+                <img
+                  src="/brand-header.png/sja.PNG"
+                  alt="Company Brand"
+                  className="h-[120px] sm:h-[150px] w-auto max-w-[320px] object-contain brightness-110 contrast-110"
+                />
+              </Link>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-start space-x-2 flex-nowrap overflow-visible">
+            <div className="hidden md:flex items-center space-x-6">
               {navigation.map((item, index) => (
-                <div key={item.path} className="relative group whitespace-nowrap flex items-start">
+                <div key={item.path} className="relative group flex items-center">
                   {item.dropdown ? (
                     <>
                       <button
-                        className="flex items-center text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors duration-200 px-1 py-1"
+                        className="flex items-center text-base font-bold text-slate-300 hover:text-amber-400 transition-colors duration-300 py-2"
                         onClick={() => setCompaniesDropdownOpen(!companiesDropdownOpen)}
                       >
                         {item.name}
-                        <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
+                        <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-300 ${companiesDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
                       <div
-                        className={`absolute left-0 mt-2 w-80 bg-gradient-to-br from-blue-500/90 to-blue-600/90 backdrop-blur-lg rounded-lg shadow-xl py-3 z-50 border border-blue-400/30 ${
+                        className={`absolute left-0 top-full mt-2 w-80 bg-[#0f1f3d] border border-white/10 rounded-2xl shadow-2xl py-4 z-50 backdrop-blur-xl ${
                           companiesDropdownOpen ? 'block' : 'hidden'
                         }`}
                         onMouseLeave={() => setCompaniesDropdownOpen(false)}
@@ -128,42 +141,41 @@ const Navbar = () => {
                             key={subItem.path}
                             to={subItem.path}
                             onClick={() => setCompaniesDropdownOpen(false)}
-                            className="flex items-center px-4 py-2 text-sm font-medium text-white hover:bg-white/20 rounded-md mx-1 transition-all duration-200"
+                            className="flex items-center px-6 py-3 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-amber-400 transition-all"
                           >
-                            <span className="break-words">{subItem.name}</span>
+                            {subItem.name}
                           </Link>
                         ))}
                       </div>
                     </>
                   ) : (
-                    <div className={item.name === 'Home' ? 'flex flex-col items-start' : 'flex items-center'}>
+                    <div className="flex flex-col items-center">
                       <Link
                         to={item.path}
-                        className={`text-sm font-medium transition-colors duration-200 px-1 py-1 ${
+                        className={`text-base font-bold transition-all duration-300 py-2 ${
                           location.pathname === item.path
-                            ? 'text-teal-600'
-                            : 'text-gray-700 hover:text-teal-600'
+                            ? 'text-amber-400'
+                            : 'text-slate-300 hover:text-amber-400'
                         }`}
                       >
                         {item.name}
                       </Link>
-                      {/* Show Login/Logout button directly under Home link */}
                       {item.name === 'Home' && (
                         <div className="mt-1">
                           {isAuthenticated ? (
                             <button
                               onClick={handleLogout}
-                              className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+                              className="bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full text-xs font-black hover:bg-amber-400 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-amber-500/20"
                             >
-                              Logout
+                              LOGOUT
                             </button>
                           ) : (
                             <Link
                               to="/login"
-                              className="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-1"
+                              className="bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full text-xs font-black hover:bg-amber-400 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-amber-500/20 inline-flex items-center gap-1"
                             >
                               <LogIn size={14} />
-                              Login
+                              LOGIN
                             </Link>
                           )}
                         </div>
@@ -175,40 +187,30 @@ const Navbar = () => {
             </div>
 
             {/* User Profile Display */}
-            <div className="flex items-center space-x-3 bg-gray-100 px-3 py-2 rounded-lg border border-gray-200">
+            <div className="flex items-center space-x-4 bg-white/5 px-4 py-2.5 rounded-2xl border border-white/10 backdrop-blur-md">
               {isAuthenticated && user ? (
                 <>
                   {profilePhotoUrl ? (
                     <img
                       src={profilePhotoUrl}
-                      alt={user.display_name || user.name || `${user.first_name} ${user.last_name}`}
-                      className="h-8 w-8 rounded-full object-cover border border-gray-300"
+                      alt={user.display_name || user.name}
+                      className="h-10 w-10 rounded-full object-cover border-2 border-amber-500/50"
                     />
-                  ) : user?.profile_photo || user?.profilePhoto ? (
-                    <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium border border-gray-300">
-                      <User className="w-4 h-4" />
-                    </div>
                   ) : (
-                    <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium border border-gray-300">
-                      {user.first_name && user.last_name
-                        ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
-                        : user.first_name
-                        ? user.first_name[0].toUpperCase()
-                        : user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                        : 'U'
-                      }
+                    <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
+                      {user.first_name ? user.first_name[0] : (user.name ? user.name[0] : 'U')}
                     </div>
                   )}
-                  <div className="text-sm font-medium text-gray-700">
-                    {user.display_name || user.name || `${user.first_name} ${user.last_name}` || 'User'}
+                  <div className="hidden lg:block text-sm font-black text-white tracking-wide uppercase">
+                    {user.display_name || user.name || 'User'}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
                     JL
                   </div>
-                  <div className="text-sm font-medium text-gray-700">
+                  <div className="hidden lg:block text-sm font-black text-white tracking-wide uppercase">
                     John Lee
                   </div>
                 </>
@@ -228,42 +230,32 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden pb-4">
+          <div className="md:hidden bg-[#07111f] border-t border-white/5 pb-8 px-4 animate-fade-in">
             {/* Mobile User Profile Display */}
-            <div className="flex items-center space-x-3 bg-gray-100 px-3 py-2 rounded-lg border border-gray-200 mb-4">
+            <div className="flex items-center space-x-4 bg-white/5 p-4 rounded-2xl border border-white/10 my-6">
               {isAuthenticated && user ? (
                 <>
                   {profilePhotoUrl ? (
                     <img
                       src={profilePhotoUrl}
-                      alt={user.display_name || user.name || `${user.first_name} ${user.last_name}`}
-                      className="h-8 w-8 rounded-full object-cover border border-gray-300"
+                      alt={user.display_name || user.name}
+                      className="h-10 w-10 rounded-full object-cover border-2 border-amber-500/50"
                     />
-                  ) : user?.profile_photo || user?.profilePhoto ? (
-                    <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium border border-gray-300">
-                      <User className="w-4 h-4" />
-                    </div>
                   ) : (
-                    <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium border border-gray-300">
-                      {user.first_name && user.last_name
-                        ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
-                        : user.first_name
-                        ? user.first_name[0].toUpperCase()
-                        : user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                        : 'U'
-                      }
+                    <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
+                      {user.first_name ? user.first_name[0] : (user.name ? user.name[0] : 'U')}
                     </div>
                   )}
-                  <div className="text-sm font-medium text-gray-700">
-                    {user.display_name || user.name || `${user.first_name} ${user.last_name}` || 'User'}
+                  <div className="text-sm font-black text-white tracking-wide uppercase">
+                    {user.display_name || user.name || 'User'}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="h-8 w-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
                     JL
                   </div>
-                  <div className="text-sm font-medium text-gray-700">
+                  <div className="text-sm font-black text-white tracking-wide uppercase">
                     John Lee
                   </div>
                 </>
@@ -272,7 +264,7 @@ const Navbar = () => {
             <div className="flex flex-col space-y-2">
               {navigation.map((item) => (
                 item.dropdown ? (
-                  <div key={item.path} className="px-3">
+                  <div key={item.path}>
                     <MobileDropdown item={item} closeMenu={() => setIsOpen(false)} />
                   </div>
                  ) : (
@@ -280,21 +272,21 @@ const Navbar = () => {
                      <Link
                        to={item.path}
                        onClick={() => setIsOpen(false)}
-                       className={`px-3 py-2 rounded-md text-sm font-medium ${
-                         isActive(item.path)
-                           ? 'bg-teal-50 text-teal-600'
-                           : 'text-gray-700 hover:bg-gray-100 hover:text-teal-600'
+                       className={`px-4 py-3 rounded-xl text-lg font-bold transition-all ${
+                         location.pathname === item.path
+                           ? 'bg-amber-500 text-slate-950'
+                           : 'text-slate-300 hover:bg-white/5 hover:text-amber-400'
                        }`}
                      >
                        {item.name}
                      </Link>
                      {/* Show Login/Logout button directly under Home link on mobile */}
                      {item.name === 'Home' && (
-                       <div className="ml-3 mt-1">
+                       <div className="px-4 mt-2">
                          {isAuthenticated ? (
                            <button
                              onClick={() => { setIsOpen(false); handleLogout() }}
-                             className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+                             className="w-full bg-white/10 text-white px-4 py-3 rounded-xl text-base font-bold hover:bg-white/20 transition-all border border-white/10"
                            >
                              Logout
                            </button>
@@ -302,9 +294,9 @@ const Navbar = () => {
                            <Link
                              to="/login"
                              onClick={() => setIsOpen(false)}
-                             className="bg-blue-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
+                             className="w-full bg-amber-500 text-slate-950 px-4 py-3 rounded-xl text-base font-bold hover:bg-amber-400 transition-all inline-flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
                            >
-                             <LogIn size={16} />
+                             <LogIn size={18} />
                              Login
                            </Link>
                          )}
@@ -314,33 +306,6 @@ const Navbar = () => {
                  )
                ))}
 
-                {/* Admin + account shortcuts in mobile drawer */}
-                <div className="border-t border-gray-200 pt-2 mt-2">
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Admin
-                  </div>
-                  <button
-                    onClick={() => {
-                      // Silently block regular users from accessing admin
-                      if (isAuthenticated) return
-
-                      if (hasAdminSessionToken) {
-                        navigate('/admin');
-                        setIsOpen(false);
-                      } else {
-                        setAdminLoginModalOpen(true);
-                        setIsOpen(false);
-                      }
-                    }}
-                    className={`block w-full text-left px-3 py-2 rounded-md text-sm font-medium ${
-                      hasAdminSessionToken && isActive('/admin')
-                        ? 'bg-purple-50 text-purple-600'
-                        : 'text-purple-700 hover:bg-purple-100'
-                    }`}
-                  >
-                    Admin Panel
-                  </button>
-                </div>
             </div>
           </div>
         )}
@@ -359,17 +324,23 @@ const Navbar = () => {
 function MobileDropdown({ item, closeMenu }){
   const [open, setOpen] = useState(false)
   return (
-    <div>
-      <button onClick={() => setOpen(!open)} className="w-full text-left flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+    <div className="px-4">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full text-left flex items-center justify-between py-3 rounded-xl text-lg font-bold text-slate-300 hover:text-amber-400"
+      >
         <span>{item.name}</span>
-        <svg className={`ml-2 h-4 w-4 transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDown className={`h-5 w-5 transform transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="mt-2 ml-2 border-l border-gray-200 pl-2">
+        <div className="mt-2 ml-4 border-l-2 border-amber-500/30 pl-4 flex flex-col space-y-2">
           {item.dropdown.map((sub) => (
-            <Link key={sub.path} to={sub.path} onClick={() => { closeMenu(); }} className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-100">
+            <Link
+              key={sub.path}
+              to={sub.path}
+              onClick={() => { closeMenu(); }}
+              className="block py-2 text-base font-semibold text-slate-400 hover:text-amber-400"
+            >
               {sub.name}
             </Link>
           ))}

@@ -1,8 +1,8 @@
-﻿# Website for The Greggory Foundation Ltd
+﻿# Website for The-Greggory-Systems-And-Strategy-firm
 
-[![Build and Deploy](https://github.com/Brianmwanza-bit/Website-for-the-Greggory-Foundation-Ltd/actions/workflows/deploy.yml/badge.svg)](https://github.com/Brianmwanza-bit/Website-for-the-Greggory-Foundation-Ltd/actions/workflows/deploy.yml)
+[![Build and Deploy](https://github.com/Brianmwanza-bit/Website-for-The-Greggory-Systems-And-Strategy-firm/actions/workflows/deploy.yml/badge.svg)](https://github.com/Brianmwanza-bit/Website-for-The-Greggory-Systems-And-Strategy-firm/actions/workflows/deploy.yml)
 
-A modern, professional website for The Greggory Foundation Ltd, a consultancy that uses expert project management principles to drive business management, innovation, improvement, and successful project delivery.
+A modern, professional website for The-Greggory-Systems-And-Strategy-firm, a consultancy that uses expert systems and strategy principles to drive business management, innovation, improvement, and successful project delivery.
 
 ## Features
 
@@ -58,7 +58,7 @@ cp env.example .env
 
 # Import database schema via phpMyAdmin
 # Open: http://localhost/phpmyadmin
-# Import: database/greggory_foundation_db_main.sql
+# Import: database/the-greggory-systems-and-strategy-firm-db-main.sql
 
 # Start development server
 npm run dev
@@ -81,7 +81,7 @@ src/
   index.css         # Global styles
 
 database/           # Database schemas and migrations
-  greggory_foundation_db_main.sql
+  the-greggory-systems-and-strategy-firm-db-main.sql
 
 scripts/            # Utility scripts
   backup-db-github.js    # Backup database to GitHub
@@ -109,7 +109,7 @@ backups/            # Database backups (tracked in GitHub)
 ## Database Management
 
 ### Access phpMyAdmin
-- **URL**: http://localhost/phpmyadmin/index.php?route=/database/structure&db=greggory_foundation_db_main
+- **URL**: http://localhost/phpmyadmin/index.php?route=/database/structure&db=the_greggory_systems_and_strategy_firm_db_main
 - **Username**: root
 - **Password**: (empty by default)
 
@@ -128,7 +128,7 @@ node scripts/restore-db-github.js
 ### Import Initial Schema
 1. Open phpMyAdmin: http://localhost/phpmyadmin
 2. Click "Import" tab
-3. Select file: `database/greggory_foundation_db_main.sql`
+3. Select file: `database/the-greggory-systems-and-strategy-firm-db-main.sql`
 4. Click "Go"
 
 ## Access URLs
@@ -154,4 +154,4 @@ git push
 
 ## License
 
-© 2024 The Greggory Foundation Ltd. All rights reserved.
+© 2024 The-Greggory-Systems-And-Strategy-firm. All rights reserved.

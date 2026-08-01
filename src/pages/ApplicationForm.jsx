@@ -103,7 +103,7 @@ export default function ApplicationForm() {
   const selectedProperty = getPropertyInfo(propertyId);
 
   useEffect(() => {
-    document.title = 'Rental Application Form - Greggory Foundation';
+    document.title = 'Rental Application Form - The-Greggory-Systems-And-Strategy-firm';
   }, []);
 
   const handleFormChange = (e) => {
@@ -318,7 +318,7 @@ export default function ApplicationForm() {
               />
             </div>
             <h1 className="text-3xl font-bold mb-2">Rental Application Form</h1>
-            <p className="text-teal-100 text-lg">THE GREGGORY FOUNDATION LTD</p>
+            <p className="text-teal-100 text-lg">THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM</p>
             <p className="text-teal-200 text-sm mt-1">Strategic Project Development</p>
           </div>
         </div>
@@ -574,7 +574,7 @@ export default function ApplicationForm() {
                     <li>Professional cleaning services if required</li>
                     <li>Replacement of damaged or missing items</li>
                   </ul>
-                  <li><span className="font-semibold">Dispute Resolution:</span> In case of deposit refund disputes, both parties agree to first attempt mediation through THE GREGGORY FOUNDATION LTD before pursuing legal action.</li>
+                  <li><span className="font-semibold">Dispute Resolution:</span> In case of deposit refund disputes, both parties agree to first attempt mediation through THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM before pursuing legal action.</li>
                 </ul>
               </div>
             </div>

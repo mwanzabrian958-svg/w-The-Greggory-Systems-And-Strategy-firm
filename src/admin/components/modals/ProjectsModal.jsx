@@ -7,7 +7,7 @@ export function ProjectsModal({ isOpen, onClose }) {
   const [filterStatus, setFilterStatus] = useState('all');
 
   const [projects, setProjects] = useState([
-    { id: 1, name: 'Website Redesign', client: 'Greggory Foundation', status: 'In Progress', progress: 65, priority: 'High', budget: 150000, spent: 97500, team: ['Alice', 'Bob'], deadline: '2024-06-15', description: 'Complete overhaul of company website with modern design' },
+    { id: 1, name: 'Website Redesign', client: 'The-Greggory-Systems-And-Strategy-firm', status: 'In Progress', progress: 65, priority: 'High', budget: 150000, spent: 97500, team: ['Alice', 'Bob'], deadline: '2024-06-15', description: 'Complete overhaul of company website with modern design' },
     { id: 2, name: 'Mobile App Development', client: 'Ministry of Health', status: 'Planning', progress: 25, priority: 'Medium', budget: 450000, spent: 112500, team: ['Carol', 'David'], deadline: '2024-08-30', description: 'Native mobile application for health services' },
     { id: 3, name: 'E-Commerce Platform', client: 'Retail Kenya Ltd', status: 'Review', progress: 90, priority: 'High', budget: 320000, spent: 288000, team: ['Eve', 'Frank'], deadline: '2024-05-30', description: 'Full-stack e-commerce solution with payment integration' },
     { id: 4, name: 'Banking System', client: 'Central Bank', status: 'Completed', progress: 100, priority: 'High', budget: 890000, spent: 845500, team: ['Grace', 'Henry'], deadline: '2024-04-15', description: 'Secure banking system with transaction processing' },

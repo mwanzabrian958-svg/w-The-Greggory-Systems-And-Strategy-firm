@@ -9,8 +9,8 @@ import { FormInput, EmailInput, Select } from './FormInput';
  */
 export function SettingsForm({ settings, onSave, user }) {
   const [formData, setFormData] = useState(settings || {
-    siteName: 'The Greggory Foundation Ltd.',
-    siteEmail: 'admin@greggoryfoundation.org',
+    siteName: 'The-Greggory-Systems-And-Strategy-firm.',
+    siteEmail: 'admin@thegreggorysystemsandstrategyfirm.org',
     maintenanceMode: false,
     allowRegistration: true,
     emailNotifications: true,

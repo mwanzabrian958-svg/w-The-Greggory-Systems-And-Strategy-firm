@@ -6,7 +6,7 @@
 
 ## Overview
 
-This document defines the LOCKED authentication endpoints for Greggory Foundation Ltd. These mappings are enforced at the database level and cannot be changed without explicit system administrator action.
+This document defines the LOCKED authentication endpoints for The-Greggory-Systems-And-Strategy-firm. These mappings are enforced at the database level and cannot be changed without explicit system administrator action.
 
 Each authentication platform is permanently assigned to ONE database table with NO cross-table referencing.
 

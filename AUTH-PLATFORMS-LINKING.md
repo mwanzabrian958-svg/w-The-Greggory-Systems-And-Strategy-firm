@@ -1,7 +1,7 @@
 # Auth Platforms Complete Linking Guide
 
 ## Overview
-This document links all authentication platforms with their respective database tables, API endpoints, and implementation details for the Greggory Foundation Ltd project.
+This document links all authentication platforms with their respective database tables, API endpoints, and implementation details for the The-Greggory-Systems-And-Strategy-firm project.
 
 ## Three Authentication Platforms
 
@@ -431,7 +431,7 @@ All auth platforms use the same database connection (configured in `.env`):
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
-DB_NAME=greggory_foundation_db_main
+DB_NAME=the_greggory_systems_and_strategy_firm_db_main
 ```
 
 Connection is established in server.js:
@@ -440,7 +440,7 @@ const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'greggory_foundation_db_main',
+  database: process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -546,5 +546,5 @@ UPDATE admin_users SET failed_login_attempts = 0, account_locked_until = NULL WH
 ---
 
 **Last Updated:** 2024
-**Project:** Greggory Foundation Ltd
+**Project:** The-Greggory-Systems-And-Strategy-firm
 **Version:** 2.0 - Separate Auth Tables

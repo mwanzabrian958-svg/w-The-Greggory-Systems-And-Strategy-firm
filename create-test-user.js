@@ -7,7 +7,7 @@ async function createTestUser() {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'greggory_foundation_db',
+    database: process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0

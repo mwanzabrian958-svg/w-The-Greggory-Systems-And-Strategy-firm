@@ -302,7 +302,7 @@ router.get('/api/routes/missing', validateEndpoint, async (req, res) => {
 // =============================================
 router.get('/api/docs', validateEndpoint, (req, res) => {
   const documentation = {
-    title: 'Greggory Foundation API Documentation',
+    title: 'The-Greggory-Systems-And-Strategy-firm API Documentation',
     version: '1.0.0',
     generated: new Date().toISOString(),
     baseUrl: process.env.BASE_URL || 'http://localhost:3001',

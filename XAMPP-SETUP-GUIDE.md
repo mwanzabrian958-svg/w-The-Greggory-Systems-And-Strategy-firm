@@ -1,7 +1,7 @@
-# XAMPP Setup Guide for Greggory Foundation Ltd Project
+# XAMPP Setup Guide for The-Greggory-Systems-And-Strategy-firm Project
 
 ## Overview
-This guide explains how to set up XAMPP (Apache, MySQL, PHP) for the Greggory Foundation Ltd website project and ensure all data is backed up to GitHub for safety.
+This guide explains how to set up XAMPP (Apache, MySQL, PHP) for the The-Greggory-Systems-And-Strategy-firm website project and ensure all data is backed up to GitHub for safety.
 
 ## Prerequisites
 - XAMPP installed (Download from: https://www.apachefriends.org/download.html)
@@ -22,13 +22,13 @@ This guide explains how to set up XAMPP (Apache, MySQL, PHP) for the Greggory Fo
 - Default credentials:
   - Username: `root`
   - Password: (leave empty)
-- Or directly access your database: `http://localhost/phpmyadmin/index.php?route=/database/structure&db=greggory_foundation_db_main`
+- Or directly access your database: `http://localhost/phpmyadmin/index.php?route=/database/structure&db=the_greggory_systems_and_strategy_firm_db_main`
 
 ### 3. Import Database Schema
 1. In phpMyAdmin, click on the **Import** tab
-2. Choose file: `database/greggory_foundation_db_main.sql`
+2. Choose file: `database/the-greggory-systems-and-strategy-firm-db-main.sql`
 3. Click **Go** to import
-4. Database `greggory_foundation_db_main` will be created with all tables
+4. Database `the_greggory_systems_and_strategy_firm_db_main` will be created with all tables
 
 ### 4. Configure Environment Variables
 Create or update `.env` file in project root:
@@ -38,7 +38,7 @@ Create or update `.env` file in project root:
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
-DB_NAME=greggory_foundation_db_main
+DB_NAME=the_greggory_systems_and_strategy_firm_db_main
 
 # App Configuration
 NODE_ENV=development
@@ -106,7 +106,7 @@ This will:
 
 #### Manual Backup via phpMyAdmin
 1. Go to `http://localhost/phpmyadmin`
-2. Select database: `greggory_foundation_db_main`
+2. Select database: `the_greggory_systems_and_strategy_firm_db_main`
 3. Click **Export** tab
 4. Choose **Quick** export method
 5. Format: **SQL**
@@ -122,7 +122,7 @@ node scripts/restore-db-github.js
 
 Or manually via phpMyAdmin:
 1. Go to `http://localhost/phpmyadmin`
-2. Select database: `greggory_foundation_db_main`
+2. Select database: `the_greggory_systems_and_strategy_firm_db_main`
 3. Click **Import** tab
 4. Choose file from `backups/` directory
 5. Click **Go**
@@ -133,13 +133,13 @@ The following XAMPP configuration files are included in this project for easy re
 
 ### Project Structure
 ```
-Website-for-Greggory-Foundation-Ltd/
+Website-for-The-Greggory-Systems-And-Strategy-Firm/
 ├── xampp-config/              # XAMPP configuration backups
 │   ├── my.ini                 # MySQL configuration
 │   ├── php.ini                # PHP configuration
 │   └── httpd.conf             # Apache configuration
 ├── database/                  # Database schemas
-│   └── greggory_foundation_db_main.sql
+│   └── the_greggory_systems_and_strategy_firm_db_main.sql
 ├── backups/                   # Database backups (git tracked)
 │   ├── backup-2024-01-15.sql
 │   └── backup-2024-01-16.sql
@@ -202,8 +202,8 @@ See `ENDPOINTS-GUIDE.md` for complete endpoint documentation.
 
 ### Database Not Found
 1. Open phpMyAdmin: `http://localhost/phpmyadmin`
-2. Import schema: `database/greggory_foundation_db_main.sql`
-3. Verify database name in .env matches: `greggory_foundation_db_main`
+2. Import schema: `database/the_greggory_systems_and_strategy_firm_db_main.sql`
+3. Verify database name in .env matches: `the_greggory_systems_and_strategy_firm_db_main`
 
 ## Security Notes
 
@@ -278,7 +278,7 @@ git push
 ### Restore Everything
 ```bash
 # 1. Clone from GitHub (if needed)
-git clone https://github.com/Brianmwanza-bit/Website-for-Greggory-Foundation-Ltd
+git clone https://github.com/Brianmwanza-bit/Website-for-The-Greggory-Systems-And-Strategy-Firm
 
 # 2. Install dependencies
 npm install
@@ -292,12 +292,12 @@ npm run dev
 
 ## Support
 For issues or questions:
-- GitHub Repository: https://github.com/Brianmwanza-bit/Website-for-Greggory-Foundation-Ltd
+- GitHub Repository: https://github.com/Brianmwanza-bit/Website-for-The-Greggory-Systems-And-Strategy-Firm
 - XAMPP Documentation: https://www.apachefriends.org/index.html
 - phpMyAdmin Documentation: https://docs.phpmyadmin.net/
 
 ---
 
 **Last Updated:** 2024
-**Project:** Greggory Foundation Ltd Website
+**Project:** The-Greggory-Systems-And-Strategy-firm Website
 **Version:** 1.0.0

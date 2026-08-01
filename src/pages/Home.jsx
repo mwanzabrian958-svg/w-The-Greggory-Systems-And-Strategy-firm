@@ -1,28 +1,60 @@
+import { useState, useRef, useEffect } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { ArrowRight, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award } from 'lucide-react'
 import BrandHeader from '../components/BrandHeader'
 import { useAuth } from '../context/AuthContext'
+import { SITE_NAME, SITE_MOTTO } from '../constants/siteBrand'
 
 const Home = () => {
+  const videoRef = useRef(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Attempt to play - browsers may block unmuted autoplay
+            videoRef.current?.play().catch(() => {
+              console.log('Autoplay with sound prevented by browser policy.')
+            })
+          } else {
+            videoRef.current?.pause()
+          }
+        })
+      },
+      { threshold: 0.5 }
+    )
+
+    if (videoRef.current) {
+      observer.observe(videoRef.current)
+    }
+
+    return () => {
+      if (videoRef.current) {
+        observer.unobserve(videoRef.current)
+      }
+    }
+  }, [])
+
   // Show landing page for all users (no redirect)
   const services = [
     {
-      icon: <Target className="w-12 h-12 text-teal-600" />,
-      title: 'Business Management',
-      description: 'Streamline operations and enhance organizational efficiency through strategic project management frameworks.',
-      link: '/services#business'
+      icon: <Target className="w-12 h-12 text-amber-600" />,
+      title: 'Strategic Systems Design',
+      description: 'Design and implement robust systems that drive organizational efficiency and competitive advantage.',
+      link: '/services#systems'
     },
     {
-      icon: <Lightbulb className="w-12 h-12 text-teal-600" />,
-      title: 'Innovation & Improvement',
-      description: 'Systematically foster growth and optimize processes with structured innovation and improvement projects.',
-      link: '/services#innovation'
+      icon: <Lightbulb className="w-12 h-12 text-amber-600" />,
+      title: 'Business Strategy',
+      description: 'Develop comprehensive strategies that align systems with business objectives for sustainable growth.',
+      link: '/services#strategy'
     },
     {
-      icon: <CheckCircle className="w-12 h-12 text-teal-600" />,
-      title: 'Project Management',
-      description: 'Expert leadership for your most critical initiatives from conception to successful completion.',
-      link: '/services#project'
+      icon: <CheckCircle className="w-12 h-12 text-amber-600" />,
+      title: 'Process Optimization',
+      description: 'Transform operations through data-driven process improvements and systematic optimization.',
+      link: '/services#optimization'
     }
   ]
 
@@ -33,115 +65,173 @@ const Home = () => {
   ]
 
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-navy-900 via-navy-800 to-navy-900 text-white py-16 sm:py-20 md:py-32 min-h-[calc(100vh-120px)] md:min-h-[calc(100vh-160px)]">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNiIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIi8+PC9nPjwvc3ZnPg==')] opacity-20"></div>
-        
-        {/* Background Image on Right Side - Hidden on mobile for better performance */}
-        <div 
-          className="hidden sm:block absolute right-0 top-0 h-full w-1/3 md:w-1/2 bg-contain bg-center bg-no-repeat opacity-30"
-          style={{ backgroundImage: "url('/brand-header.png/suti4.PNG')" }}
-        ></div>
-        
-        <div className="w-full pl-0 pr-0 sm:px-6 lg:px-8 relative">
-          <div className="flex justify-start md:justify-start mb-4 sm:mb-6">
-            <BrandHeader
-              size="lg"
-              markOnlyOnMobile={false}
-              responsive={true}
-              wrapperClass="h-[100px] sm:h-[120px] md:h-[144px]"
-            />
-          </div>
-          <div className="w-full">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
-              <span className="block sm:inline">The Greggory Foundation Ltd.</span>
-              <span className="block text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-teal-200 mt-2 sm:mt-0">
-                Your Vision Delivered with Trust
-              </span>
-              <span className="block md:inline md:ml-4 md:pl-4 md:border-l md:border-teal-500 text-teal-200 text-base sm:text-lg md:text-xl lg:text-2xl font-semibold mt-2 sm:mt-0">
-                Strategic Project Development for all clients
-              </span>
-            </h1>
-            <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 text-gray-300">
-              The Greggory Foundation Ltd. – Turning your vision into a successfully managed project.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <Link to="/services" className="btn-primary bg-teal-600 hover:bg-teal-700 justify-center sm:justify-start text-sm sm:text-base py-3 px-6">
-                Our Services
-                <ArrowRight size={16} className="sm:size-20" />
-              </Link>
-              <Link to="/contact" className="btn-secondary bg-transparent border-white text-white hover:bg-white hover:text-navy-900 justify-center sm:justify-start text-sm sm:text-base py-3 px-6">
-                Contact Us Today
-              </Link>
+    <div className="relative">
+      {/* Hero Section - Enlarged and Unified */}
+      <section className="relative min-h-[95vh] w-full flex items-center overflow-hidden bg-[#07111f] text-white">
+        {/* Immersive Integrated Background */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#07111f] via-[#0f1f3d] to-[#172c49]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,_rgba(245,158,11,0.15),_transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,_rgba(45,212,191,0.1),_transparent_50%)]" />
+
+          {/* Subtle pattern to tie the background together */}
+          <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
+               style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }} />
+        </div>
+
+        <div className="relative z-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-12 py-12 lg:py-24">
+          <div className="grid lg:grid-cols-12 gap-8 items-center">
+
+            {/* Unified Content Block (Text + Branding) */}
+            <div className="lg:col-span-7 space-y-10 z-20">
+              <div className="inline-flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 px-5 py-2.5 text-sm font-bold text-amber-200 backdrop-blur-xl shadow-2xl shadow-amber-500/10">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                </span>
+                SYSTEMS • STRATEGY • DELIVERY
+              </div>
+
+              <div className="space-y-6">
+                <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl xl:text-7xl leading-[1.1] lg:-ml-1">
+                  <span className="block text-white drop-shadow-2xl">
+                    {SITE_NAME}
+                  </span>
+                  <span className="mt-4 block text-xl sm:text-2xl lg:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-200 italic tracking-wide">
+                    {SITE_MOTTO}
+                  </span>
+                </h1>
+
+                <p className="max-w-2xl text-lg leading-relaxed text-slate-300 lg:text-xl font-light">
+                  We transform complex organizational challenges into <span className="text-white font-semibold underline decoration-amber-500/40 underline-offset-8">practical systems</span> and clear strategies that build lasting confidence.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-6 pt-6">
+                <Link to="/services" className="group relative inline-flex items-center justify-center gap-4 overflow-hidden rounded-[20px] bg-gradient-to-r from-amber-500 to-yellow-500 px-10 py-5 text-xl font-black text-slate-950 shadow-[0_25px_50px_-12px_rgba(245,158,11,0.4)] transition-all hover:scale-[1.05] hover:shadow-amber-500/60 active:scale-95">
+                  <span className="relative z-10">Our Services</span>
+                  <ArrowRight size={24} className="relative z-10 transition-transform group-hover:translate-x-1.5" />
+                  <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                </Link>
+                <Link to="/contact" className="inline-flex items-center justify-center rounded-[20px] border-2 border-white/10 bg-white/5 px-10 py-5 text-xl font-bold text-white backdrop-blur-xl transition-all hover:bg-white/10 hover:border-white/20 active:scale-95">
+                  Contact Us
+                </Link>
+              </div>
             </div>
+
+            {/* "Free" Floating Hero Image Section - Enlarged to fit Hero area */}
+            <div className="lg:col-span-5 relative flex items-center justify-center lg:justify-end mt-12 lg:mt-0 h-[500px] sm:h-[600px] lg:h-[800px]">
+              <div className="relative w-full lg:w-[130%] h-full flex items-center justify-center lg:translate-x-12">
+
+                {/* Massive Dynamic Atmosphere Glows */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160%] h-[160%] bg-amber-500/15 blur-[180px] rounded-full animate-pulse" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140%] h-[140%] bg-cyan-500/10 blur-[150px] rounded-full" />
+
+                {/* The Free-Floating Subject Image */}
+                <div className="relative z-10 w-full h-full group overflow-visible">
+                  <img
+                    src="/brand-header.png/suti4.PNG"
+                    alt="Strategic Excellence"
+                    className="w-full h-full object-contain transform transition-all duration-1000 group-hover:scale-110 [mask-image:radial-gradient(circle_at_center,black_40%,transparent_95%)]"
+                  />
+
+                  {/* Atmospheric overlay to pull image into the dark void */}
+                  <div className="absolute inset-0 bg-[#07111f]/5 mix-blend-multiply pointer-events-none" />
+                </div>
+
+                {/* Floating Integrated Icon */}
+                <div className="absolute top-1/4 right-0 z-20 bg-gradient-to-br from-amber-400 to-yellow-600 p-6 rounded-full shadow-[0_0_50px_rgba(245,158,11,0.3)] animate-bounce hidden sm:block">
+                   <Lightbulb className="text-slate-950 w-10 h-10" />
+                </div>
+
+                {/* Decorative drifting particles/elements */}
+                <div className="absolute top-20 left-10 w-2 h-2 bg-amber-400 rounded-full animate-ping opacity-40" />
+                <div className="absolute bottom-20 right-20 w-3 h-3 bg-cyan-400 rounded-full animate-pulse opacity-20" />
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* Video Section */}
-      <section className="py-12 sm:py-16 bg-gray-900 text-white">
-        <div className="w-full pl-0 pr-0 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">Featured Video</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-300">
-              Discover our vision and projects through our featured video content
+      {/* Video Section - Compacted */}
+      <section className="py-12 sm:py-16 bg-[#050b14] text-white relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+        <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 max-w-3xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl font-black mb-4 tracking-tight">Featured Insight</h2>
+            <div className="h-1 w-20 bg-amber-500 mx-auto mb-6 rounded-full" />
+            <p className="text-lg sm:text-xl text-slate-400 font-light">
+              Discover our vision and methodologies through our featured strategic content.
             </p>
           </div>
           
-          <div className="w-full sm:max-w-4xl mx-auto">
-            <div className="bg-black rounded-lg overflow-hidden shadow-2xl">
-              <video
-                className="w-full h-auto max-h-64 sm:max-h-96 md:max-h-auto"
-                controls
-                poster="/brand-header.png/sja.PNG"
-              >
-                <source src="/brand-header.png/suti4.PNG" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+          <div className="relative group max-w-5xl mx-auto px-4 sm:px-10 lg:px-20">
+            {/* The Stylized Frame (Enclosure) */}
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-3xl rounded-[60px] border-2 border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.5)] transform -rotate-2 scale-[1.02]" />
+
+            <div className="relative z-10 bg-[#07111f] rounded-[40px] overflow-hidden shadow-2xl border-4 border-white/10 p-2 sm:p-4 lg:p-6 transition-all duration-500 hover:rotate-0 transform rotate-1">
+              <div className="relative">
+                <video
+                  ref={videoRef}
+                  className="w-full h-auto rounded-[30px] shadow-inner"
+                  controls
+                  loop
+                  playsInline
+                  poster="/video-placeholder.jpg"
+                >
+                  <source src="/featured-insight.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+
+                {/* Branding Overlay (Fully covers Animaker watermark at all times) */}
+                <div className="absolute bottom-0 right-0 z-50 pointer-events-none p-2 sm:p-4">
+                  <div className="bg-white p-1 sm:p-2 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.4)] border-2 border-white/50">
+                    <img
+                      src="/score-1.jpg"
+                      alt="Brand Label"
+                      className="h-12 sm:h-20 w-auto rounded-lg object-contain"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            <div className="mt-4 sm:mt-6 text-center">
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">The Greggory Foundation Ltd. - Vision & Projects</h3>
-              <p className="text-sm sm:text-base md:text-lg text-gray-300">
-                Learn about our strategic project development approach and how we deliver excellence across all our business ventures.
-              </p>
-            </div>
+
+            {/* Accent elements to enhance the frame look */}
+            <div className="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-amber-500/10 blur-3xl -z-0" />
+            <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-cyan-500/10 blur-3xl -z-0" />
           </div>
         </div>
       </section>
 
-      {/* Introduction Section */}
-      <section className="py-12 sm:py-16 bg-white">
-        <div className="w-full pl-0 pr-0 sm:px-6 lg:px-8">
-          <div className="max-w-full sm:max-w-3xl mx-auto text-center">
-            <h2 className="section-title text-2xl sm:text-3xl md:text-4xl">Empowering Your Success Through Comprehensive Solutions</h2>
-            <p className="section-subtitle mx-auto mt-4 text-sm sm:text-base md:text-lg">
-              At The Greggory Foundation Ltd., we believe that every business challenge-from project creation to business development-can be delivered with excellence. Through our subsidiary companies and our comprehensive service portfolio, we apply proven frameworks to unlock your organization's full potential and deliver results with trust.
-            </p>
-          </div>
+      {/* Introduction Section - Compacted & Improved */}
+      <section className="py-12 bg-slate-50 border-y border-slate-200">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-widest mb-4">Empowering Your Success</h2>
+          <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-4xl mx-auto">
+            At <span className="text-slate-900 font-bold">{SITE_NAME}</span>, we transform complex organizational challenges into sustainable competitive advantage through proven strategic frameworks and robust systems design.
+          </p>
         </div>
       </section>
 
-      {/* Services Overview */}
-      <section className="py-12 sm:py-16 bg-gray-50">
-        <div className="w-full pl-0 pr-0 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="section-title text-2xl sm:text-3xl md:text-4xl">Our Core Services</h2>
-            <p className="section-subtitle mx-auto mt-4 text-sm sm:text-base md:text-lg">
-              Comprehensive project management solutions tailored to your business needs
-            </p>
+      {/* Services Overview - Modern & Compact */}
+      <section className="py-16 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-black text-slate-900 mb-2">Our Core Services</h2>
+            <div className="h-1 w-16 bg-amber-500 mx-auto rounded-full" />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {services.map((service, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300">
-                <div className="mb-4">{service.icon}</div>
-                <h3 className="text-xl sm:text-2xl font-bold text-navy-900 mb-4">{service.title}</h3>
-                <p className="text-sm sm:text-base text-gray-600 mb-6">{service.description}</p>
-                <Link to={service.link} className="text-teal-600 font-semibold hover:text-teal-700 inline-flex items-center gap-2">
+              <div key={index} className="group p-6 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-2xl hover:shadow-slate-200 transition-all duration-300">
+                <div className="mb-4 transform group-hover:scale-110 transition-transform duration-300">{service.icon}</div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">{service.title}</h3>
+                <p className="text-sm text-slate-600 mb-4 leading-relaxed">{service.description}</p>
+                <Link to={service.link} className="text-amber-600 text-sm font-black hover:text-amber-700 inline-flex items-center gap-2 uppercase tracking-wider">
                   Learn More
-                  <ArrowRight size={14} className="sm:size-16" />
+                  <ArrowRight size={14} />
                 </Link>
               </div>
             ))}
@@ -149,51 +239,49 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-12 sm:py-16 bg-teal-600 text-white">
-        <div className="w-full pl-0 pr-0 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+      {/* Stats Section - Sleek & High Impact */}
+      <section className="py-10 bg-[#07111f] text-white border-y border-white/5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-3 gap-4">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="flex justify-center mb-3 sm:mb-4">
-                  <div className="w-6 h-6 sm:w-8 sm:h-8">{stat.icon}</div>
-                </div>
-                <div className="text-3xl sm:text-4xl font-bold mb-2">{stat.value}</div>
-                <div className="text-teal-100 text-sm sm:text-base">{stat.label}</div>
+                <div className="text-3xl sm:text-4xl font-black text-amber-500 mb-1">{stat.value}</div>
+                <div className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">{stat.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonial Section */}
-      <section className="py-12 sm:py-16 bg-white">
-        <div className="w-full pl-0 pr-0 sm:px-6 lg:px-8 text-center">
-          <div className="bg-gray-50 rounded-lg p-6 sm:p-8 md:p-12">
-            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-teal-600 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-            </svg>
-            <blockquote className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-700 mb-4 sm:mb-6 italic">
-              "At The Greggory Foundation Ltd, we are committed to transforming businesses through expert project management. Our approach helps organizations increase efficiency and deliver projects successfully."
-            </blockquote>
-            <div className="font-semibold text-navy-900 text-sm sm:text-base">Brian Mwanza</div>
-            <div className="text-gray-600 text-xs sm:text-sm">Chief Executive Officer, The Greggory Foundation Ltd</div>
+      {/* Testimonial Section - Compact Quote */}
+      <section className="py-16 bg-white relative overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <svg className="w-10 h-10 text-amber-500/20 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+          </svg>
+          <blockquote className="text-lg sm:text-xl text-slate-700 font-medium mb-6 italic leading-relaxed">
+            "We are committed to transforming businesses through expert systems design. Our approach increases efficiency and delivers sustainable growth through intelligent solutions."
+          </blockquote>
+          <div className="flex flex-col items-center">
+            <div className="h-px w-12 bg-amber-500 mb-4" />
+            <div className="font-black text-slate-900 text-base uppercase tracking-wider">Brian Mwanza</div>
+            <div className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">CEO, {SITE_NAME}</div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-12 sm:py-16 bg-gradient-to-r from-navy-900 to-navy-800 text-white">
-        <div className="w-full pl-0 pr-0 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">
+      {/* CTA Section - Unified Dark Theme */}
+      <section className="py-12 bg-gradient-to-br from-[#07111f] to-[#0f1f3d] text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-2xl sm:text-3xl font-black mb-4 tracking-tight">
             Ready to Manage Your Success?
           </h2>
-          <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-gray-300">
-            Let's discuss how we can help you turn your vision into reality through strategic project management.
+          <p className="text-base text-slate-400 mb-8 max-w-2xl mx-auto">
+            Let's discuss how we can turn your vision into reality through strategic systems management.
           </p>
-          <Link to="/contact" className="btn-primary bg-teal-600 hover:bg-teal-700 inline-flex text-sm sm:text-base py-3 px-6">
+          <Link to="/contact" className="inline-flex items-center justify-center gap-3 rounded-xl bg-amber-500 px-8 py-4 text-sm font-black text-slate-950 shadow-xl shadow-amber-500/20 hover:bg-amber-400 hover:scale-105 transition-all active:scale-95">
             Get in Touch
-            <ArrowRight size={16} className="sm:size-20" />
+            <ArrowRight size={18} />
           </Link>
         </div>
       </section>

@@ -3,10 +3,10 @@
 -- =====================================================
 -- This table locks in the platform-to-table associations
 -- NO changes allowed after initialization
--- Database: greggory_foundation_db_main
+-- Database: the_greggory_systems_and_strategy_firm_db_main
 -- =====================================================
 
-USE greggory_foundation_db_main;
+USE the_greggory_systems_and_strategy_firm_db_main;
 
 -- =============================================
 -- Table: auth_platform_mapping

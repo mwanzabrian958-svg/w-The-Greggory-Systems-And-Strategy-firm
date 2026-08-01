@@ -8,7 +8,7 @@ const DB_CONFIG = {
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'greggory_foundation_db_main',
+  database: process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main',
 };
 
 const BACKUP_DIR = path.join(__dirname, '../backups');

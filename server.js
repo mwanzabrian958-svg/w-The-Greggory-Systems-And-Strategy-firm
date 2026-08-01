@@ -3,6 +3,8 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const mysql = require("mysql2/promise");
+const mongoose = require("mongoose");
+const connectMongoDB = require("./server/config/mongodb");
 const path = require("path");
 const multer = require("multer");
 const crypto = require("crypto");
@@ -315,7 +317,7 @@ const mainDb = mysql.createPool({
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "greggory_foundation_db_main",
+  database: process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -336,6 +338,25 @@ app.get("/api/test-db", async (req, res) => {
       success: false,
       message: "Database connection failed",
       error: error.message,
+    });
+  }
+});
+
+// Test MongoDB connection
+app.get("/api/test-mongodb", async (req, res) => {
+  try {
+    const state = mongoose.connection.readyState;
+    const states = ["disconnected", "connected", "connecting", "disconnecting"];
+    res.json({
+      success: true,
+      message: `MongoDB Status: ${states[state]}`,
+      connectionState: state
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "MongoDB connection test failed",
+      error: error.message
     });
   }
 });
@@ -756,8 +777,195 @@ const handleUserRegister = async (req, res) => {
   }
 };
 
+// Admin-to-client feedback handlers
+const handleClientFeedbackList = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: "User ID is required" });
+    }
+
+    const [feedbackRows] = await mainDb.query(
+      `SELECT id, title, message, feedback_type, status, priority, created_at, admin_response, responded_at
+       FROM user_feedback
+       WHERE user_id = ? AND deleted_at IS NULL AND status != 'closed'
+       ORDER BY created_at DESC
+       LIMIT 12`,
+      [userId],
+    );
+
+    res.json({ success: true, feedback: feedbackRows });
+  } catch (error) {
+    console.error("[CLIENT FEEDBACK] List error:", error);
+    res.status(500).json({ success: false, message: "Failed to load client feedback" });
+  }
+};
+
+const handleClientFeedbackCreate = async (req, res) => {
+  try {
+    const { userId, title, message, priority = "medium" } = req.body;
+
+    if (!userId || !message) {
+      return res.status(400).json({ success: false, message: "Client ID and message are required" });
+    }
+
+    const [result] = await mainDb.query(
+      `INSERT INTO user_feedback (user_id, title, message, feedback_type, status, priority, source, created_by, created_at)
+       VALUES (?, ?, ?, 'service_feedback', 'new', ?, 'website', 1, NOW())`,
+      [userId, title || "Admin update", message, priority],
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Feedback sent to client portal",
+      feedbackId: result.insertId,
+    });
+  } catch (error) {
+    console.error("[CLIENT FEEDBACK] Create error:", error);
+    res.status(500).json({ success: false, message: "Failed to send feedback" });
+  }
+};
+
 // Route handlers for user registration
 app.post("/api/users/register", handleUserRegister);
+app.get("/api/users/client-feedback/:userId", handleClientFeedbackList);
+app.post("/api/users/client-feedback", handleClientFeedbackCreate);
+app.get("/api/users/client-dashboard/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [users] = await mainDb.query(
+      `SELECT id, email, first_name, last_name, display_name, primary_role, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name
+       FROM users
+       WHERE id = ? AND deleted_at IS NULL`,
+      [id],
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const user = users[0];
+
+    const [projectRows] = await mainDb.query(
+      `SELECT id, project_name, project_description, project_type, status, priority, progress_percentage, end_date, estimated_budget, actual_budget
+       FROM user_projects
+       WHERE user_id = ? AND is_active = true AND deleted_at IS NULL
+       ORDER BY updated_at DESC`,
+      [id],
+    );
+
+    const projectIds = projectRows.map((project) => project.id);
+    const placeholders = projectIds.length > 0 ? projectIds.map(() => "?").join(",") : "0";
+
+    const [activityRows] = await mainDb.query(
+      `SELECT pa.id, pa.project_id, pa.activity_type, pa.message, pa.created_at, CONCAT(u.first_name, ' ', u.last_name) AS sender_name
+       FROM project_activities pa
+       LEFT JOIN users u ON u.id = pa.user_id
+       WHERE pa.project_id IN (${placeholders})
+       ORDER BY pa.created_at DESC
+       LIMIT 6`,
+      projectIds.length > 0 ? projectIds : [0],
+    );
+
+    const [feedbackRows] = await mainDb.query(
+      `SELECT id, title, message, feedback_type, status, priority, created_at, admin_response, responded_at
+       FROM user_feedback
+       WHERE user_id = ? AND deleted_at IS NULL AND status != 'closed'
+       ORDER BY created_at DESC
+       LIMIT 8`,
+      [id],
+    );
+
+    const parsedProjects = projectRows.map((project) => ({
+      id: project.id,
+      name: project.project_name,
+      description: project.project_description,
+      type: project.project_type,
+      status: project.status || "planning",
+      priority: project.priority || "medium",
+      progress: project.progress_percentage || 0,
+      deadline: project.end_date,
+      plannedBudget: Number(project.estimated_budget || 0),
+      actualBudget: Number(project.actual_budget || 0),
+    }));
+
+    const parsedMessages = [
+      ...activityRows.map((activity) => ({
+        id: activity.id,
+        sender: activity.sender_name || "Team",
+        subject: (activity.activity_type || "update").replace(/_/g, " "),
+        unread: true,
+        time: activity.created_at,
+        message: activity.message,
+      })),
+      ...feedbackRows.map((feedback) => ({
+        id: `feedback-${feedback.id}`,
+        sender: "Company Admin",
+        subject: feedback.title || "Direct feedback",
+        unread: feedback.status === "new",
+        time: feedback.created_at,
+        message: feedback.message,
+        feedback: true,
+      })),
+    ]
+      .sort((a, b) => new Date(b.time) - new Date(a.time))
+      .slice(0, 8);
+
+    const parsedTasks = [];
+    const parsedResources = [];
+
+    res.json({
+      success: true,
+      dashboard: {
+        user: {
+          id: user.id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          display_name: user.display_name || `${user.first_name} ${user.last_name}`,
+          role: user.primary_role || "user",
+          profilePhotoData: user.profile_photo_blob ? `data:${user.profile_photo_mime_type || "image/jpeg"};base64,${Buffer.from(user.profile_photo_blob).toString("base64")}` : null,
+        },
+        projects: parsedProjects,
+        invoices: [],
+        messages: parsedMessages,
+        tasks: parsedTasks,
+        resourceAllocations: parsedResources,
+        budgetOverview: {
+          planned: parsedProjects.reduce((sum, project) => sum + project.plannedBudget, 0),
+          spent: parsedProjects.reduce((sum, project) => sum + project.actualBudget, 0),
+          forecast: 0,
+          variance: 0,
+        },
+        documentSummary: [
+          { id: 1, label: "Signed Contracts", value: 0 },
+          { id: 2, label: "Deliverables", value: parsedProjects.length },
+          { id: 3, label: "Pending Approvals", value: 0 },
+        ],
+        kpiMetrics: [
+          { id: 1, label: "On-time Delivery", value: "N/A", trend: "up" },
+          { id: 2, label: "Client Satisfaction", value: "4.7/5", trend: "up" },
+          { id: 3, label: "Budget Variance", value: "0%", trend: "up" },
+        ],
+        roleUpdates: {
+          admin: [
+            { title: "Project Oversight", description: "Admin reviews project milestones and status updates directly for you." },
+            { title: "Invoice & Payment Control", description: "Admin manages billing and payment progress for your portal." },
+          ],
+          developer: [
+            { title: "Delivery Updates", description: "Developers share status and implementation updates here." },
+            { title: "Quality Assurance", description: "QA and release milestones appear here as they are completed." },
+          ],
+        },
+      },
+    });
+  } catch (error) {
+    console.error("[CLIENT DASHBOARD] Error:", error);
+    res.status(500).json({ success: false, message: "Could not fetch client dashboard data", error: error.message });
+  }
+});
 app.post("/api/signup", handleUserRegister);
 
 // Google Auth endpoint
@@ -4090,6 +4298,14 @@ app.use((req, res) => {
 // Start server
 app.listen(PORT, "0.0.0.0", async () => {
   console.log(`Server running on port ${PORT}`);
+
+  // Connect to MongoDB Atlas
+  if (process.env.MONGODB_URI) {
+    await connectMongoDB();
+  } else {
+    console.log("MONGODB_URI not found in .env, skipping MongoDB connection.");
+  }
+
   console.log(
     `Connected to MySQL server at ${process.env.DB_HOST || "localhost"}`,
   );

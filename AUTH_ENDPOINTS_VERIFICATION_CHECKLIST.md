@@ -1,7 +1,7 @@
 # 🔒 AUTH ENDPOINTS LOCKDOWN - VERIFICATION CHECKLIST
 
 **Date:** May 10, 2026  
-**Project:** Greggory Foundation Ltd  
+**Project:** The-Greggory-Systems-And-Strategy-firm  
 **Objective:** Verify all authentication endpoints are locked and working 100%
 
 ---
@@ -11,7 +11,7 @@
 ### ✅ Database Connection
 - [ ] XAMPP is running
 - [ ] MySQL service is running
-- [ ] Database `greggory_foundation_db_main` exists
+- [ ] Database `the_greggory_systems_and_strategy_firm_db_main` exists
 - [ ] Can connect via PhpMyAdmin
 - [ ] Node.js connection works
 

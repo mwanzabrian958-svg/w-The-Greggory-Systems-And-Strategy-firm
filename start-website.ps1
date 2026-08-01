@@ -1,5 +1,5 @@
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Starting Greggory Foundation Website" -ForegroundColor Cyan
+Write-Host "Starting The-Greggory-Systems-And-Strategy-firm Website" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

@@ -2,7 +2,7 @@
 
 **Status:** ✅ IMPLEMENTED & LOCKED  
 **Date:** May 10, 2026  
-**System:** Greggory Foundation Ltd Authentication  
+**System:** The-Greggory-Systems-And-Strategy-firm Authentication  
 **Guarantee:** 100% Endpoint Consistency
 
 ---
@@ -27,7 +27,7 @@ DEVELOPER → developer_users table ONLY
 
 ### 1. Run Initialization
 ```bash
-cd c:\Users\Lydia mwanza\OneDrive\Desktop\Website-for-Greggory-Foundation-Ltd
+cd c:\Users\Lydia mwanza\OneDrive\Desktop\Website-for-The-Greggory-Systems-And-Strategy-Firm
 node scripts/init-auth-endpoints-tables.js
 ```
 
@@ -79,7 +79,7 @@ curl -X POST http://localhost:3000/api/developer-verification/authenticate \
 ```
 
 ### 5. Check PhpMyAdmin
-Visit: http://localhost/phpmyadmin/index.php?route=/database/structure&db=greggory_foundation_db_main
+Visit: http://localhost/phpmyadmin/index.php?route=/database/structure&db=the_greggory_systems_and_strategy_firm_db_main
 
 Look for new tables:
 - `auth_platform_mapping` ✓ (3 locked platforms)
@@ -433,7 +433,7 @@ node scripts/init-auth-endpoints-tables.js
 ```sql
 -- Check tables exist
 SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES 
-WHERE TABLE_SCHEMA='greggory_foundation_db_main'
+WHERE TABLE_SCHEMA='the_greggory_systems_and_strategy_firm_db_main'
 AND TABLE_NAME IN ('auth_platform_mapping', 'auth_request_log', 'auth_validation_rules');
 
 -- Check mappings

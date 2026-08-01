@@ -1,110 +1,147 @@
 import { Link } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Database, Eye, Share2, Shield, User, Cookie, ExternalLink, Mail, Phone, MapPin } from 'lucide-react'
 
 const Privacy = () => {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#07111f] text-white">
       {/* Header */}
-      <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link to="/login" className="inline-flex items-center gap-2 text-gray-300 hover:text-white mb-6">
-            <ArrowLeft size={20} />
-            Back to Login
+      <section className="relative overflow-hidden pt-24 pb-16">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#07111f] via-[#0f1f3d] to-[#172c49]" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(45,212,191,0.1),_transparent_50%)]" />
+
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Link to="/signup" className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 font-bold uppercase tracking-widest text-xs mb-8 transition-colors">
+            <ArrowLeft size={16} />
+            Back to Registry
           </Link>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Privacy Policy</h1>
-          <p className="text-gray-300">Last updated: October 19, 2024</p>
+          <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight">Privacy Protocol</h1>
+          <div className="h-1.5 w-24 bg-cyan-500 mb-8 rounded-full" />
+          <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-sm">Deployment: October 20, 2024</p>
         </div>
       </section>
 
       {/* Content */}
-      <section className="py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="prose prose-lg max-w-none">
-            <h2>1. Information We Collect</h2>
-            <p>
-              We collect information that you provide directly to us, including:
-            </p>
-            <ul>
-              <li>Name, email address, and contact information</li>
-              <li>Company name and professional details</li>
-              <li>Account credentials and preferences</li>
-              <li>Communications with us</li>
-              <li>Project-related information you submit</li>
-            </ul>
+      <section className="py-20 relative">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
 
-            <h2>2. How We Use Your Information</h2>
-            <p>
-              We use the information we collect to:
-            </p>
-            <ul>
-              <li>Provide, maintain, and improve our services</li>
-              <li>Process transactions and send related information</li>
-              <li>Send technical notices, updates, and support messages</li>
-              <li>Respond to your comments and questions</li>
-              <li>Develop new services and features</li>
-            </ul>
+            {/* Sidebar Navigation */}
+            <div className="hidden lg:block lg:col-span-3 space-y-4 sticky top-32 h-fit">
+              <p className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em] mb-6">Data Architecture</p>
+              {[
+                { icon: Database, label: 'Collection' },
+                { icon: Eye, label: 'Usage' },
+                { icon: Share2, label: 'Transmission' },
+                { icon: Shield, label: 'Security' },
+                { icon: User, label: 'Rights' },
+                { icon: Cookie, label: 'Cookies' }
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 text-slate-500 hover:text-white transition-colors cursor-pointer group">
+                  <item.icon size={18} className="group-hover:text-cyan-400" />
+                  <span className="text-sm font-bold uppercase tracking-wider">{item.label}</span>
+                </div>
+              ))}
+            </div>
 
-            <h2>3. Information Sharing</h2>
-            <p>
-              We do not share your personal information with third parties except:
-            </p>
-            <ul>
-              <li>With your consent</li>
-              <li>To comply with legal obligations</li>
-              <li>To protect our rights and property</li>
-              <li>With service providers who assist our operations</li>
-            </ul>
+            {/* Main Policy Text */}
+            <div className="lg:col-span-9 space-y-20">
 
-            <h2>4. Data Security</h2>
-            <p>
-              We implement appropriate technical and organizational measures to protect your personal information against unauthorized or unlawful processing, accidental loss, destruction, or damage.
-            </p>
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 text-cyan-500">
+                  <Database size={32} />
+                  <h2 className="text-3xl font-black uppercase tracking-tight">1. Strategic Data Acquisition</h2>
+                </div>
+                <p className="text-lg text-slate-300 leading-relaxed font-light">
+                  Our systems collect information essential for high-performance strategic execution. This data is acquired directly through your interactions with our professional portals:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    'Full Identity & Professional Contact Details',
+                    'Corporate Parameters & Professional Metadata',
+                    'Strategic Access Credentials',
+                    'Project Specifications & Submissions',
+                    'Biometric Profile Identifiers (Optional)'
+                  ].map((text, i) => (
+                    <div key={i} className="bg-white/5 border border-white/5 p-4 rounded-2xl flex items-center gap-4">
+                      <div className="h-2 w-2 rounded-full bg-cyan-500" />
+                      <span className="text-sm font-bold text-slate-400">{text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
-            <h2>5. Your Rights</h2>
-            <p>
-              You have the right to:
-            </p>
-            <ul>
-              <li>Access your personal information</li>
-              <li>Correct inaccurate information</li>
-              <li>Request deletion of your information</li>
-              <li>Object to processing of your information</li>
-              <li>Export your data</li>
-            </ul>
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 text-cyan-500">
+                  <Eye size={32} />
+                  <h2 className="text-3xl font-black uppercase tracking-tight">2. Operational Utilization</h2>
+                </div>
+                <p className="text-lg text-slate-300 leading-relaxed font-light">
+                  The primary objective of data collection is the optimization of your strategic experience. We utilize acquired intelligence to:
+                </p>
+                <ul className="list-none space-y-4 ml-4">
+                  {[
+                    'Maintain and evolve our proprietary strategic systems',
+                    'Execute complex organizational transactions',
+                    'Dispatch critical technical alerts and strategic updates',
+                    'Engineer new frameworks tailored to your business needs',
+                    'Maintain the integrity of the firm\'s professional network'
+                  ].map((text, i) => (
+                    <li key={i} className="flex items-start gap-4">
+                      <div className="mt-2 h-1.5 w-1.5 rounded-full bg-cyan-500 flex-shrink-0" />
+                      <span className="text-slate-400 font-medium">{text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-            <h2>6. Cookies</h2>
-            <p>
-              We use cookies and similar tracking technologies to track activity on our Service and hold certain information. You can instruct your browser to refuse all cookies or to indicate when a cookie is being sent.
-            </p>
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 text-cyan-500">
+                  <Shield size={32} />
+                  <h2 className="text-3xl font-black uppercase tracking-tight">3. Security Infrastructure</h2>
+                </div>
+                <p className="text-lg text-slate-300 leading-relaxed font-light">
+                  We implement Tier-1 technical and organizational protocols to protect your intelligence against unauthorized transmission, accidental destruction, or illicit access. Our architecture utilizes military-grade encryption and isolated data nodes to ensure absolute confidentiality.
+                </p>
+              </div>
 
-            <h2>7. Third-Party Services</h2>
-            <p>
-              Our Service may contain links to third-party websites or services that are not owned or controlled by THE GREGGORY FOUNDATION LTD. We have no control over and assume no responsibility for their privacy policies.
-            </p>
+              <div className="space-y-6 border-t border-white/5 pt-16">
+                <div className="flex items-center gap-4 text-cyan-500">
+                  <Mail size={32} />
+                  <h2 className="text-3xl font-black uppercase tracking-tight">Data Governance</h2>
+                </div>
+                <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-10 border border-white/10 relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-8 opacity-10">
+                      <Shield size={120} />
+                   </div>
+                  <p className="text-slate-400 mb-8 font-medium relative z-10">For data deletion requests or governance inquiries, contact our Strategic Data Office:</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Digital Channel</p>
+                      <p className="text-white font-bold tracking-wider">brianmwanza651@gmail.com</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Voice Command</p>
+                      <p className="text-white font-bold tracking-wider">+254 799 789 956</p>
+                    </div>
+                    <div className="col-span-full space-y-2">
+                      <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Physical Node</p>
+                      <p className="text-white font-bold tracking-wider">Rafiki Kabarak, Nakuru, Kenya</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            <h2>8. Children's Privacy</h2>
-            <p>
-              Our Service does not address anyone under the age of 18. We do not knowingly collect personally identifiable information from anyone under 18.
-            </p>
-
-            <h2>9. Changes to This Policy</h2>
-            <p>
-              We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.
-            </p>
-
-            <h2>10. Contact Us</h2>
-            <p>
-              If you have any questions about this Privacy Policy, please contact us:
-              <br />
-              Email: brianmwanza651@gmail.com
-              <br />
-              Phone: +254799789956
-              <br />
-              Address: rafiki kabarak, kabarak
-            </p>
+            </div>
           </div>
         </div>
       </section>
+
+      {/* Footer Copy */}
+      <footer className="py-12 border-t border-white/5 text-center">
+        <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.5em]">
+          &copy; {new Date().getFullYear()} THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM. DATA INTEGRITY DIVISION.
+        </p>
+      </footer>
     </div>
   )
 }

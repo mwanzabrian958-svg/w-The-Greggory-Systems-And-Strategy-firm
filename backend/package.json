@@ -1,8 +1,8 @@
 {
-  "name": "greggory-foundation-backend",
+  "name": "the-greggory-systems-and-strategy-firm-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "API server for Greggory Foundation Ltd",
+  "description": "API server for The-Greggory-Systems-And-Strategy-firm",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

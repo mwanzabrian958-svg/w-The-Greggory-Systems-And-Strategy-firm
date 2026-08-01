@@ -13,7 +13,7 @@ async function testRegistration() {
       port: 5000,
       user: 'root',
       password: '',
-      database: 'greggory_foundation_db_main'
+      database: 'the_greggory_systems_and_strategy_firm_db_main'
     });
     
     console.log('✓ Database connected successfully\n');

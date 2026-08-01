@@ -4,7 +4,7 @@ SHOW CREATE TABLE users;
 -- Check what columns exist in the users table
 SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_DEFAULT, COLUMN_KEY, EXTRA
 FROM INFORMATION_SCHEMA.COLUMNS 
-WHERE TABLE_SCHEMA = 'greggory_foundation_db' 
+WHERE TABLE_SCHEMA = 'the_greggory_systems_and_strategy_firm_db' 
 AND TABLE_NAME = 'users';
 
 -- View existing users (if any)

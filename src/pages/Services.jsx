@@ -128,7 +128,7 @@ const Services = () => {
         <div className="w-full pl-0 pr-4 sm:px-6 lg:px-8 text-center">
           <h2 className="section-title text-2xl sm:text-3xl md:text-4xl">Comprehensive Solutions as Your Competitive Advantage</h2>
           <p className="section-subtitle mx-auto mt-4 text-sm sm:text-base md:text-lg px-2 sm:px-0">
-            At THE GREGGORY FOUNDATION LTD, we view every aspect of your business through the lens of comprehensive solutions and specialized services. 
+            At THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM, we view every aspect of your business through the lens of comprehensive solutions and specialized services. 
             Whether you're managing daily operations, pursuing innovation, or delivering critical initiatives, 
             we provide the frameworks, expertise, and leadership to ensure success.
           </p>

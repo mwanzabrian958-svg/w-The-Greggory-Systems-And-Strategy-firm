@@ -58,7 +58,7 @@ node scripts/init-auth-endpoints-tables.js
 
 ## Step 2: Verify Locked Endpoints in PhpMyAdmin
 
-Navigate to: `http://localhost/phpmyadmin/index.php?route=/database/structure&db=greggory_foundation_db_main`
+Navigate to: `http://localhost/phpmyadmin/index.php?route=/database/structure&db=the_greggory_systems_and_strategy_firm_db_main`
 
 **Check these new tables:**
 

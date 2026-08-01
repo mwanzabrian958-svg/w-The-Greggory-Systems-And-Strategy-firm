@@ -2,7 +2,7 @@
 
 ## What Has Been Created
 
-A complete **Content Management System (CMS)** for the Greggory Foundation website that allows the webmaster to easily update website content and manage the database through a user-friendly interface.
+A complete **Content Management System (CMS)** for the The-Greggory-Systems-And-Strategy-firm website that allows the webmaster to easily update website content and manage the database through a user-friendly interface.
 
 ## New Features
 

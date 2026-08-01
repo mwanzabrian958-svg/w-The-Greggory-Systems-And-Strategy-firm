@@ -1,6 +1,6 @@
 @echo off
 echo ========================================
-echo Greggory Foundation Website Setup
+echo The-Greggory-Systems-And-Strategy-firm Website Setup
 echo ========================================
 echo.
 

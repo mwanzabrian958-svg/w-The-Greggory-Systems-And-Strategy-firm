@@ -1,5 +1,5 @@
 // API service for connecting to backend
-// Connected to database: greggory_foundation_db_main
+// Connected to database: the_greggory_systems_and_strategy_firm_db_main
 
 // All API calls use relative paths so Vite's dev-server proxy forwards them
 // to the backend (localhost:8080) — this works whether the browser is on
@@ -22,15 +22,24 @@ const apiCall = async (endpoint, options = {}) => {
       ...options,
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data = null;
+
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { message: text };
+      }
+    }
 
     if (!response.ok) {
       throw new Error(
-        data.message || data.error || `API Error: ${response.status}`,
+        data?.message || data?.error || `API Error: ${response.status}`,
       );
     }
 
-    return data;
+    return data || {};
   } catch (error) {
     console.error("API call failed:", error);
     throw error;
@@ -247,6 +256,14 @@ export const contentAPI = {
     apiCall(`/contact-forms/${id}`, {
       method: "DELETE",
     }),
+};
+
+export const projectsAPI = {
+  getAll: () => apiCall('/user-projects'),
+  getById: (id) => apiCall(`/user-projects/${id}`),
+  create: (data) => apiCall('/user-projects', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => apiCall(`/user-projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => apiCall(`/user-projects/${id}`, { method: 'DELETE' })
 };
 
 // Health check

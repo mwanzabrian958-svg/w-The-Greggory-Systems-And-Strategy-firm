@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MessageSquare, Mail, Phone, Send, Plus, Search, Clock } from "lucide-react";
 import { usePermissions } from "../hooks/usePermissions";
 import { PERMISSIONS } from "../utils/permissions";
@@ -18,7 +18,70 @@ const ANNOUNCEMENTS = [
 export function Communication({ user }) {
   const { can } = usePermissions(user);
   const [activeTab, setActiveTab] = useState("messages");
-  const [messageText, setMessageText] = useState("");
+  const [clients, setClients] = useState([]);
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [feedbackTitle, setFeedbackTitle] = useState("");
+  const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [feedbackPriority, setFeedbackPriority] = useState("medium");
+  const [feedbackStatus, setFeedbackStatus] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        const response = await fetch("/api/users");
+        const data = await response.json();
+        if (data.success) {
+          setClients(data.users || []);
+          if (data.users?.length) {
+            setSelectedClientId(String(data.users[0].id));
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load clients", error);
+      }
+    };
+
+    loadClients();
+  }, []);
+
+  const handleSendFeedback = async (event) => {
+    event.preventDefault();
+    if (!selectedClientId || !feedbackMessage.trim()) {
+      setFeedbackStatus({ type: "error", message: "Select a client and write a message before sending." });
+      return;
+    }
+
+    setIsSending(true);
+    setFeedbackStatus(null);
+
+    try {
+      const response = await fetch("/api/users/client-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: selectedClientId,
+          title: feedbackTitle.trim() || "Direct feedback from company admin",
+          message: feedbackMessage.trim(),
+          priority: feedbackPriority,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to send feedback");
+      }
+
+      setFeedbackStatus({ type: "success", message: "Feedback posted to the client portal." });
+      setFeedbackTitle("");
+      setFeedbackMessage("");
+      setFeedbackPriority("medium");
+    } catch (error) {
+      setFeedbackStatus({ type: "error", message: error.message || "Unable to send feedback right now." });
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -155,25 +218,69 @@ export function Communication({ user }) {
           )}
 
           {activeTab === "broadcast" && (
-            <div className="space-y-4">
+            <form onSubmit={handleSendFeedback} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">Broadcast Message</label>
-                <textarea
-                  rows="6"
-                  placeholder="Compose message to all team members..."
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Client</label>
+                <select
+                  value={selectedClientId}
+                  onChange={(event) => setSelectedClientId(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.display_name || `${client.first_name || ""} ${client.last_name || ""}`.trim() || client.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Feedback Title</label>
+                <input
+                  type="text"
+                  value={feedbackTitle}
+                  onChange={(event) => setFeedbackTitle(event.target.value)}
+                  placeholder="Project milestone update"
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Message for Client Portal</label>
+                <textarea
+                  rows="6"
+                  value={feedbackMessage}
+                  onChange={(event) => setFeedbackMessage(event.target.value)}
+                  placeholder="Write a direct update that will appear in the client portal message stream..."
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-2">Priority</label>
+                <select
+                  value={feedbackPriority}
+                  onChange={(event) => setFeedbackPriority(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              {feedbackStatus ? (
+                <div className={`rounded-2xl border px-4 py-3 text-sm ${feedbackStatus.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"}`}>
+                  {feedbackStatus.message}
+                </div>
+              ) : null}
               <div className="flex gap-3">
-                <button className="flex-1 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 flex items-center justify-center gap-2">
+                <button type="submit" disabled={isSending} className="flex-1 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-70">
                   <Send className="h-4 w-4" />
-                  Send Broadcast
+                  {isSending ? "Sending..." : "Send to Client Portal"}
                 </button>
-                <button className="rounded-2xl bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200">
-                  Cancel
+                <button type="button" onClick={() => { setFeedbackTitle(""); setFeedbackMessage(""); setFeedbackPriority("medium"); setFeedbackStatus(null); }} className="rounded-2xl bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-200">
+                  Clear
                 </button>
               </div>
-            </div>
+            </form>
           )}
         </div>
       </div>

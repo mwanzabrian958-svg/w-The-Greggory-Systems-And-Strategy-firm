@@ -110,7 +110,7 @@ export function DeveloperNavbar({ user, onLogout }) {
             </div>
             <div>
               <span className="text-xl font-bold text-white">Developer Portal</span>
-              <p className="text-xs text-slate-400">Greggory Foundation Ltd</p>
+              <p className="text-xs text-slate-400">The-Greggory-Systems-And-Strategy-firm</p>
             </div>
           </div>
 

@@ -90,7 +90,7 @@ DEV_CODE=GF-DEV-2024-SECURE
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=greggory_foundation_db_main
+DB_NAME=the_greggory_systems_and_strategy_firm_db_main
 ```
 
 ### Step 3: Restart Server

@@ -309,7 +309,7 @@ Follow this order for successful setup:
 
 ### Root Directory Files
 ```
-c:\Users\Lydia mwanza\OneDrive\Desktop\Website-for-Greggory-Foundation-Ltd\
+c:\Users\Lydia mwanza\OneDrive\Desktop\Website-for-The-Greggory-Systems-And-Strategy-Firm\
   ├── README_AUTH_ENDPOINTS.md ✓
   ├── AUTH_ENDPOINTS_QUICK_START.md ✓
   ├── LOCKED_AUTH_ENDPOINTS.md ✓
@@ -333,7 +333,7 @@ scripts/
 
 ### Database
 ```
-greggory_foundation_db_main
+the_greggory_systems_and_strategy_firm_db_main
   ├── auth_platform_mapping ✓
   ├── auth_request_log ✓
   ├── auth_validation_rules ✓

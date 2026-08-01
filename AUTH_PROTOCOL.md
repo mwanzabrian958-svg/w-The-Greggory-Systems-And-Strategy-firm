@@ -1,4 +1,4 @@
-# Authentication Protocol - Greggory Foundation
+# Authentication Protocol - The-Greggory-Systems-And-Strategy-firm
 
 ## STRICT RULE: Table Isolation for User Credentials
 

@@ -53,7 +53,7 @@ const ProjectDetails = () => {
         budget: 150000,
         spent: 97500,
         team: ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson'],
-        client: 'Greggory Foundation Ltd',
+        client: 'The-Greggory-Systems-And-Strategy-firm',
         location: 'Nairobi, Kenya',
         
         // Reports section
@@ -122,7 +122,7 @@ const ProjectDetails = () => {
               amount: 25000,
               date: '2024-02-15',
               status: 'paid',
-              client: 'Greggory Foundation Ltd'
+              client: 'The-Greggory-Systems-And-Strategy-firm'
             },
             {
               id: 2,
@@ -130,7 +130,7 @@ const ProjectDetails = () => {
               amount: 30000,
               date: '2024-03-01',
               status: 'pending',
-              client: 'Greggory Foundation Ltd'
+              client: 'The-Greggory-Systems-And-Strategy-firm'
             }
           ]
         },

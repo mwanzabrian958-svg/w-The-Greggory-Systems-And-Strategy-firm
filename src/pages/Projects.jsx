@@ -1970,7 +1970,7 @@ const Projects = () => {
             </button>
             <div>
               <h2 className="text-base font-bold text-slate-800">{currentNav?.label || 'Portal'}</h2>
-              <p className="text-xs text-slate-400 hidden sm:block">Greggory Foundation Ltd · Client Portal</p>
+              <p className="text-xs text-slate-400 hidden sm:block">Greggory Systems And Strategy Firm · Client Portal</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

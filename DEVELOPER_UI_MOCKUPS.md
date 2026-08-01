@@ -1,5 +1,5 @@
 # Developer Portal UI Mockups & Design Specifications
-## Greggory Foundation Ltd - Developer Experience Visual Guide
+## The-Greggory-Systems-And-Strategy-firm - Developer Experience Visual Guide
 
 ---
 
@@ -191,7 +191,7 @@ Borders: Subtle borders with #334155 (Slate 700)
 ┌─────────────────────────────────────────────────────────────────┐
 │  [⚡] Database Browser                     [🔍 Search] [⚙️]     │
 ├──────────┬──────────────────────────────────────────────────────┤
-│          │  📁 greggory_foundation_db                           │
+│          │  📁 the_greggory_systems_and_strategy_firm_db                           │
 │          │  ├── 📁 Tables                                        │
 │          │  │   ├── 👤 users ◀                                  │
 │          │  │   ├── 👨‍💼 admin_users                           │

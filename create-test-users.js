@@ -15,7 +15,7 @@ const dbConfig = {
   host: 'localhost',
   user: 'root',
   password: '',
-  database: 'greggory_foundation_db_main',
+  database: 'the_greggory_systems_and_strategy_firm_db_main',
   port: 5000
 };
 
@@ -23,7 +23,7 @@ const dbConfig = {
 const testUsers = {
   admins: [
     {
-      email: 'admin@greggoryfoundation.org',
+      email: 'admin@thegreggorysystemsandstrategyfirm.org',
       password: '***REMOVED***',
       first_name: 'Super',
       last_name: 'Admin',
@@ -33,7 +33,7 @@ const testUsers = {
       phone_number: '+254799789956'
     },
     {
-      email: 'manager@greggoryfoundation.org',
+      email: 'manager@thegreggorysystemsandstrategyfirm.org',
       password: '***REMOVED***',
       first_name: 'Project',
       last_name: 'Manager',
@@ -43,7 +43,7 @@ const testUsers = {
       phone_number: '+254799789957'
     },
     {
-      email: 'moderator@greggoryfoundation.org',
+      email: 'moderator@thegreggorysystemsandstrategyfirm.org',
       password: '***REMOVED***',
       first_name: 'Content',
       last_name: 'Moderator',
@@ -55,7 +55,7 @@ const testUsers = {
   ],
   developers: [
     {
-      email: 'dev1@greggoryfoundation.org',
+      email: 'dev1@thegreggorysystemsandstrategyfirm.org',
       password: '***REMOVED***',
       first_name: 'John',
       last_name: 'Senior',
@@ -67,7 +67,7 @@ const testUsers = {
       phone_number: '+254799789960'
     },
     {
-      email: 'dev2@greggoryfoundation.org',
+      email: 'dev2@thegreggorysystemsandstrategyfirm.org',
       password: '***REMOVED***',
       first_name: 'Jane',
       last_name: 'Developer',
@@ -79,7 +79,7 @@ const testUsers = {
       phone_number: '+254799789961'
     },
     {
-      email: 'junior@greggoryfoundation.org',
+      email: 'junior@thegreggorysystemsandstrategyfirm.org',
       password: '***REMOVED***',
       first_name: 'Mike',
       last_name: 'Trainee',
@@ -99,9 +99,9 @@ async function hashPassword(password) {
 
 async function clearExistingUsers(connection) {
   console.log('Clearing existing test users...');
-  await connection.execute("DELETE FROM admin_users WHERE email LIKE '%@greggoryfoundation.org'");
-  await connection.execute("DELETE FROM developer_users WHERE email LIKE '%@greggoryfoundation.org'");
-  await connection.execute("DELETE FROM users WHERE email LIKE '%@greggoryfoundation.org'");
+  await connection.execute("DELETE FROM admin_users WHERE email LIKE '%@thegreggorysystemsandstrategyfirm.org'");
+  await connection.execute("DELETE FROM developer_users WHERE email LIKE '%@thegreggorysystemsandstrategyfirm.org'");
+  await connection.execute("DELETE FROM users WHERE email LIKE '%@thegreggorysystemsandstrategyfirm.org'");
   console.log('Existing users cleared.\n');
 }
 
@@ -187,12 +187,12 @@ async function verifyUsers(connection) {
   
   const [adminRows] = await connection.execute(
     'SELECT email, admin_level, first_name, last_name FROM admin_users WHERE email LIKE ?',
-    ['%@greggoryfoundation.org']
+    ['%@thegreggorysystemsandstrategyfirm.org']
   );
   
   const [devRows] = await connection.execute(
     'SELECT email, developer_level, first_name, last_name FROM developer_users WHERE email LIKE ?',
-    ['%@greggoryfoundation.org']
+    ['%@thegreggorysystemsandstrategyfirm.org']
   );
   
   console.log('============================================');
@@ -249,7 +249,7 @@ async function main() {
     console.error('\n✗ Error:', error.message);
     console.error('\nMake sure:');
     console.error('  1. MySQL is running on port 5000');
-    console.error('  2. Database "greggory_foundation_db_main" exists');
+    console.error('  2. Database "the_greggory_systems_and_strategy_firm_db_main" exists');
     console.error('  3. Run: IMPORT_DB.bat first to create the database\n');
     process.exit(1);
   } finally {

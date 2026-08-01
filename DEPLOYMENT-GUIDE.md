@@ -1,4 +1,4 @@
-# 🚀 Deployment Guide - The Greggory Foundation Website
+# 🚀 Deployment Guide - The The-Greggory-Systems-And-Strategy-firm Website
 
 ## Quick Deploy Options
 
@@ -47,7 +47,7 @@ You'll get a URL like: `https://random-name-123.netlify.app`
 
 5. **Custom Domain** (Optional):
    - In Netlify dashboard → Domain Settings
-   - Add your custom domain: `greggoryfoundation.com`
+   - Add your custom domain: `thegreggorysystemsandstrategyfirm.com`
 
 ---
 
@@ -71,7 +71,7 @@ vercel
 
 1. **Create GitHub repository**:
    - Go to github.com
-   - Create new repository: `greggory-foundation-website`
+   - Create new repository: `the-greggory-systems-and-strategy-firm-website`
 
 2. **Install gh-pages**:
 ```powershell
@@ -88,7 +88,7 @@ npm install --save-dev gh-pages
 npm run deploy
 ```
 
-Your site will be at: `https://your-username.github.io/greggory-foundation-website`
+Your site will be at: `https://your-username.github.io/the-greggory-systems-and-strategy-firm-website`
 
 ---
 
@@ -131,9 +131,9 @@ Your site will be at: `https://your-username.github.io/greggory-foundation-websi
    - Update DNS records (instructions provided)
 
 Example domain ideas:
-- `greggoryfoundation.com`
-- `greggoryfoundationltd.com`
-- `thegreggoryfoundation.com`
+- `thegreggorysystemsandstrategyfirm.com`
+- `thegreggorysystemsandstrategyfirmltd.com`
+- `thethegreggorysystemsandstrategyfirm.com`
 
 ---
 

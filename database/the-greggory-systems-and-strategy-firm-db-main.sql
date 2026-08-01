@@ -1,13 +1,13 @@
 -- =====================================================
--- Complete Database Schema for Greggory Foundation
--- Database Name: greggory_foundation_db_main
+-- Complete Database Schema for The-Greggory-Systems-And-Strategy-firm
+-- Database Name: the_greggory_systems_and_strategy_firm_db_main
 -- =====================================================
 
 -- Drop and create database
-DROP DATABASE IF EXISTS greggory_foundation_db_main;
-CREATE DATABASE greggory_foundation_db_main CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+DROP DATABASE IF EXISTS the_greggory_systems_and_strategy_firm_db_main;
+CREATE DATABASE the_greggory_systems_and_strategy_firm_db_main CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE greggory_foundation_db_main;
+USE the_greggory_systems_and_strategy_firm_db_main;
 
 -- Enable strict mode
 SET SQL_MODE = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
@@ -1366,7 +1366,7 @@ INSERT INTO admin_navbar_items (item_name, item_type, display_text, url, sort_or
 
 -- Insert default website settings
 INSERT INTO admin_website_settings (setting_key, setting_value, setting_type, display_name, description, category, is_public) VALUES
-('site_title', 'The Greggory Foundation', 'text', 'Site Title', 'Main title of the website', 'general', TRUE),
+('site_title', 'The The-Greggory-Systems-And-Strategy-firm', 'text', 'Site Title', 'Main title of the website', 'general', TRUE),
 ('site_description', 'Strategic Project Development for all clients. Your Vision Delivered with Trust.', 'textarea', 'Site Description', 'Meta description for SEO', 'general', TRUE),
 ('contact_email', 'brianmwanza651@gmail.com', 'text', 'Contact Email', 'Main contact email address', 'contact', TRUE),
 ('contact_phone', '+254799789956', 'text', 'Contact Phone', 'Main contact phone number', 'contact', TRUE),
@@ -1397,7 +1397,7 @@ INSERT INTO admin_users (
     timezone
 ) VALUES 
 (
-    'admin@greggoryfoundation.org', 
+    'admin@thegreggorysystemsandstrategyfirm.org', 
     '$2b$10$abcdefghijklmnopqrstuvwx01234567890123456789012345678901234567', 
     'Super', 
     'Administrator', 
@@ -1410,7 +1410,7 @@ INSERT INTO admin_users (
     'Africa/Nairobi'
 ),
 (
-    'manager@greggoryfoundation.org', 
+    'manager@thegreggorysystemsandstrategyfirm.org', 
     '$2b$10$abcdefghijklmnopqrstuvwx01234567890123456789012345678901234567', 
     'Project', 
     'Manager', 
@@ -1423,7 +1423,7 @@ INSERT INTO admin_users (
     'Africa/Nairobi'
 ),
 (
-    'moderator@greggoryfoundation.org', 
+    'moderator@thegreggorysystemsandstrategyfirm.org', 
     '$2b$10$abcdefghijklmnopqrstuvwx01234567890123456789012345678901234567', 
     'Content', 
     'Moderator', 
@@ -1455,7 +1455,7 @@ INSERT INTO developer_users (
     timezone
 ) VALUES 
 (
-    'dev1@greggoryfoundation.org', 
+    'dev1@thegreggorysystemsandstrategyfirm.org', 
     '$2b$10$zyxwvutsrqponmlkjihgfedcba012345678901234567890123456789012345', 
     'John', 
     'Senior', 
@@ -1470,7 +1470,7 @@ INSERT INTO developer_users (
     'Africa/Nairobi'
 ),
 (
-    'dev2@greggoryfoundation.org', 
+    'dev2@thegreggorysystemsandstrategyfirm.org', 
     '$2b$10$zyxwvutsrqponmlkjihgfedcba012345678901234567890123456789012345', 
     'Jane', 
     'Developer', 
@@ -1485,7 +1485,7 @@ INSERT INTO developer_users (
     'Africa/Nairobi'
 ),
 (
-    'junior@greggoryfoundation.org', 
+    'junior@thegreggorysystemsandstrategyfirm.org', 
     '$2b$10$zyxwvutsrqponmlkjihgfedcba012345678901234567890123456789012345', 
     'Mike', 
     'Trainee', 
@@ -1517,7 +1517,7 @@ FROM developer_users;
 -- Summary Views for Quick Reference
 -- =============================================
 SELECT '=============================================' as '==========================================';
-SELECT '   GREGGORY FOUNDATION DATABASE SETUP' as 'COMPLETE';
+SELECT '   THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM DATABASE SETUP' as 'COMPLETE';
 SELECT '=============================================' as '==========================================';
 
 SELECT 
@@ -1537,20 +1537,20 @@ SELECT
     COUNT(*) as Count,
     'Database Objects Created' as Description
 FROM information_schema.tables 
-WHERE table_schema = 'greggory_foundation_db_main';
+WHERE table_schema = 'the_greggory_systems_and_strategy_firm_db_main';
 
 -- =====================================================
 -- TEST USER LOGIN CREDENTIALS REFERENCE
 -- =====================================================
 -- Admin Users Credentials (Password: ***REMOVED***)
---   admin@greggoryfoundation.org (super_admin)
---   manager@greggoryfoundation.org (admin)
---   moderator@greggoryfoundation.org (moderator)
+--   admin@thegreggorysystemsandstrategyfirm.org (super_admin)
+--   manager@thegreggorysystemsandstrategyfirm.org (admin)
+--   moderator@thegreggorysystemsandstrategyfirm.org (moderator)
 --
 -- Developer Users Credentials (Password: ***REMOVED***)
---   dev1@greggoryfoundation.org (senior)
---   dev2@greggoryfoundation.org (mid)
---   junior@greggoryfoundation.org (junior)
+--   dev1@thegreggorysystemsandstrategyfirm.org (senior)
+--   dev2@thegreggorysystemsandstrategyfirm.org (mid)
+--   junior@thegreggorysystemsandstrategyfirm.org (junior)
 -- =====================================================
 
 -- Show credentials as a proper result set
@@ -1561,7 +1561,7 @@ SELECT
     admin_level as Role,
     CONCAT(first_name, ' ', last_name) as Full_Name
 FROM admin_users
-WHERE email LIKE '%@greggoryfoundation.org'
+WHERE email LIKE '%@thegreggorysystemsandstrategyfirm.org'
 UNION ALL
 SELECT 
     'Developer' as Account_Type,
@@ -1570,7 +1570,7 @@ SELECT
     developer_level as Role,
     CONCAT(first_name, ' ', last_name) as Full_Name
 FROM developer_users
-WHERE email LIKE '%@greggoryfoundation.org'
+WHERE email LIKE '%@thegreggorysystemsandstrategyfirm.org'
 ORDER BY Account_Type, Role;
 
 -- =====================================================

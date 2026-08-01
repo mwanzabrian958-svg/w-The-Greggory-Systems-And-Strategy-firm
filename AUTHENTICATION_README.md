@@ -1,8 +1,8 @@
-# Authentication System - The Greggory Foundation Ltd.
+# Authentication System - The-Greggory-Systems-And-Strategy-firm.
 
 ## Overview
 
-A complete authentication system has been integrated into The Greggory Foundation website, featuring a modern, professional design inspired by industry-leading platforms.
+A complete authentication system has been integrated into The The-Greggory-Systems-And-Strategy-firm website, featuring a modern, professional design inspired by industry-leading platforms.
 
 ## Features
 
@@ -56,7 +56,7 @@ A complete authentication system has been integrated into The Greggory Foundatio
 
 ### Professional Styling
 - ✨ Clean, modern interface
-- 🎨 Greggory Foundation branding (logo and colors)
+- 🎨 The-Greggory-Systems-And-Strategy-firm branding (logo and colors)
 - 📱 Fully responsive design
 - 🔒 Security-focused UI elements
 - 👁️ Password visibility toggles
@@ -215,7 +215,7 @@ src/
 ## Support
 
 For questions or assistance with backend integration, contact:
-- Email: info@greggoryfoundation.com
+- Email: info@thegreggorysystemsandstrategyfirm.com
 - Phone: +1 (555) 123-4567
 
 ---

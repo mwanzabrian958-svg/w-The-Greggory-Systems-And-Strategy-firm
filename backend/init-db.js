@@ -4,7 +4,7 @@ require('dotenv').config();
 const DB_HOST = process.env.DB_HOST || '127.0.0.1';
 const DB_USER = process.env.DB_USER || 'root';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
-const DB_NAME = process.env.DB_NAME || 'greggory_foundation_db';
+const DB_NAME = process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db';
 
 // Connect without database to create it
 const connection = mysql.createConnection({
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
 
 -- Insert default admin user (password: ***REMOVED***)
 INSERT IGNORE INTO admin_users (email, password_hash, first_name, last_name, display_name, admin_level, access_level, is_active) 
-VALUES ('admin@greggoryfoundation.org', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System', 'Admin', 'Administrator', 'super_admin', 99, true);
+VALUES ('admin@thegreggorysystemsandstrategyfirm.org', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System', 'Admin', 'Administrator', 'super_admin', 99, true);
 
 SELECT 'Database setup complete!' as message;
 SELECT COUNT(*) as admin_count FROM admin_users;
@@ -57,7 +57,7 @@ connection.query(setupSQL, (err, results) => {
     console.log('✓ admin_users table created');
     console.log('✓ Default admin user created');
     console.log('\nLogin credentials:');
-    console.log('  Email: admin@greggoryfoundation.org');
+    console.log('  Email: admin@thegreggorysystemsandstrategyfirm.org');
     console.log('  Password: ***REMOVED***');
     connection.end();
     process.exit(0);

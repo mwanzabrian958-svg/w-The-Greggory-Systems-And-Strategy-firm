@@ -1,5 +1,5 @@
 # Admin Panel Design Research & Requirements
-## Greggory Foundation Ltd - Project Management Consultancy
+## The-Greggory-Systems-And-Strategy-firm - Project Management Consultancy
 
 ---
 

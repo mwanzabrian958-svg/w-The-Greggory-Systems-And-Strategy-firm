@@ -28,7 +28,7 @@ const CaseStudies = () => {
         { icon: <DollarSign />, metric: 'KES 25,000', label: 'Revenue Recovered in Year One' }
       ],
       testimonial: {
-        quote: 'The Greggory Foundation transformed our approach to project management. We now deliver consistently, and our team is happier than ever.',
+        quote: 'The-Greggory-Systems-And-Strategy-firm transformed our approach to systems design and strategic planning. We now deliver consistently, and our team is happier than ever.',
         author: 'Sarah Johnson',
         role: 'CEO, TechInnovate Solutions'
       }
@@ -78,7 +78,7 @@ const CaseStudies = () => {
         { icon: <TrendingUp />, metric: '95%', label: 'User Adoption Rate in 30 Days' }
       ],
       testimonial: {
-        quote: 'This was the most complex project in our organization\'s history. The Greggory Foundation\'s expertise was instrumental in our success.',
+        quote: 'This was the most complex project in our organization\'s history. The The-Greggory-Systems-And-Strategy-firm\'s expertise was instrumental in our success.',
         author: 'Dr. Patricia Martinez',
         role: 'Chief Medical Officer, HealthCare Systems Inc.'
       }

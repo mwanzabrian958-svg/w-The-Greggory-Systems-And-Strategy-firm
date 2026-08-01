@@ -198,7 +198,7 @@ const Contact = () => {
                       placeholder="Select a company (optional)"
                     >
                       <option value="" disabled hidden>Select a company (optional)</option>
-                      <option value="THE GREGGORY FOUNDATION LTD">THE GREGGORY FOUNDATION LTD</option>
+                      <option value="THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM">THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM</option>
                     </select>
                   </div>
 

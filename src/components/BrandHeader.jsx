@@ -1,9 +1,10 @@
 import React from 'react'
+import { SITE_NAME, SITE_TAGLINE } from '../constants/siteBrand'
 
 const BrandMark = ({ className = '' }) => (
   <img
     src="/brand-header.png/b7.PNG"
-    alt="The Greggory Foundation Logo"
+    alt="The-Greggory-Systems-And-Strategy-firm Logo"
     className={`${className} object-contain`}
   />
 )
@@ -11,8 +12,8 @@ const BrandMark = ({ className = '' }) => (
 const BrandHeader = ({
   align = 'left',
   size = 'md',
-  wordmark = 'THE GREGGORY FOUNDATION LTD',
-  tagline = 'Your Vision Delivered with Trust',
+  wordmark = SITE_NAME,
+  tagline = SITE_TAGLINE,
   wrapperClass = '',
   markOnlyOnMobile = false,
   responsive = false,

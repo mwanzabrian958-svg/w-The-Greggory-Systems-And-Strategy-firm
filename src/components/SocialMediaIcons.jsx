@@ -19,7 +19,7 @@ const SocialMediaIcons = ({ className = "", iconSize = 20, iconColor = "text-gra
     {
       name: 'Instagram',
       icon: <Instagram size={iconSize} className={`${iconColor} ${hoverColor} transition-colors`} />,
-      url: 'https://www.instagram.com/greggoryfoundationltd/',
+      url: 'https://www.instagram.com/thegreggorysystemsandstrategyfirmltd/',
       target: '_blank',
       rel: 'noopener noreferrer'
     },

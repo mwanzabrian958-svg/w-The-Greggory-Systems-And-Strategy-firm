@@ -1,6 +1,6 @@
 # Webmaster Guide - Content Management System
 
-This guide explains how to manage and update the Greggory Foundation website content using the Admin Dashboard.
+This guide explains how to manage and update the The-Greggory-Systems-And-Strategy-firm website content using the Admin Dashboard.
 
 ## Accessing the Admin Dashboard
 

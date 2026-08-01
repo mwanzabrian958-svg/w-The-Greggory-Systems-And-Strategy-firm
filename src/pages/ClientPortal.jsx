@@ -791,21 +791,29 @@ const ClientPortal = () => {
                   {messages.slice(0, 4).map((msg) => (
                     <div
                       key={msg.id}
-                      className="flex items-start space-x-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                      className={`flex items-start space-x-4 p-4 rounded-xl transition-colors ${msg.feedback ? "bg-sky-50 border border-sky-200" : "bg-gray-50 hover:bg-gray-100"}`}
                     >
                       <div
                         className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${msg.unread ? "bg-amber-500" : "bg-gray-300"}`}
                       ></div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-bold text-gray-900">
                             {msg.sender}
                           </p>
-                          <p className="text-xs text-gray-400">{msg.time}</p>
+                          {msg.feedback ? (
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-sky-700 bg-sky-100 px-2 py-1 rounded-full">
+                              Direct update
+                            </span>
+                          ) : null}
                         </div>
                         <p className="text-sm text-gray-600 mt-1">
                           {msg.subject}
                         </p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {msg.message}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-2">{msg.time}</p>
                       </div>
                     </div>
                   ))}

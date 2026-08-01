@@ -1,7 +1,7 @@
 #Requires -RunAsAdministrator
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Greggory Foundation - Complete Setup" -ForegroundColor Cyan
+Write-Host "The-Greggory-Systems-And-Strategy-firm - Complete Setup" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

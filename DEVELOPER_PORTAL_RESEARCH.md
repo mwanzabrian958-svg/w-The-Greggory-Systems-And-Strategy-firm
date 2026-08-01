@@ -1,5 +1,5 @@
 # Developer Portal Research & Requirements
-## Greggory Foundation Ltd - Developer Experience Design
+## The-Greggory-Systems-And-Strategy-firm - Developer Experience Design
 
 ---
 

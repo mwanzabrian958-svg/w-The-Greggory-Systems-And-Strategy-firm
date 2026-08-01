@@ -1,5 +1,5 @@
 # Admin Panel Research - Executive Summary
-## Greggory Foundation Ltd
+## The-Greggory-Systems-And-Strategy-firm
 
 ---
 

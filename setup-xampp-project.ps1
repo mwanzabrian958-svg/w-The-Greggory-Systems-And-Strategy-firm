@@ -1,8 +1,8 @@
-# XAMPP Project Setup Script for Greggory Foundation Ltd
+# XAMPP Project Setup Script for The-Greggory-Systems-And-Strategy-firm
 # This script automates the complete setup process
 
 Write-Host "================================================" -ForegroundColor Cyan
-Write-Host "  XAMPP PROJECT SETUP - Greggory Foundation Ltd" -ForegroundColor Cyan
+Write-Host "  XAMPP PROJECT SETUP - The-Greggory-Systems-And-Strategy-firm" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -101,7 +101,7 @@ if (Test-Path "test-db-connection.js") {
         Write-Host ""
         Write-Host "To create the database, open phpMyAdmin:" -ForegroundColor Cyan
         Write-Host "  http://localhost/phpmyadmin" -ForegroundColor Cyan
-        Write-Host "And import: database/greggory_foundation_db_main.sql" -ForegroundColor Cyan
+        Write-Host "And import: database/the-greggory-systems-and-strategy-firm-db-main.sql" -ForegroundColor Cyan
     } else {
         Write-Host "✅ Database connection successful" -ForegroundColor Green
     }

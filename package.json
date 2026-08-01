@@ -1,7 +1,7 @@
 {
-  "name": "greggory-foundation-ltd",
+  "name": "greggory-systems-strategy-firm",
   "version": "1.0.0",
-  "description": "Greggory Foundation Ltd - Project Management Consultancy Website",
+  "description": "The-Greggory-Systems-And-Strategy-firm - Strategic Systems and Business Solutions",
   "private": true,
   "scripts": {
     "dev": "concurrently -n \"XAMPP,PHPMYADMIN,BACKEND,FRONTEND\" -c \"magenta,cyan,blue,green\" \"powershell -ExecutionPolicy Bypass -File scripts/start-xampp.ps1\" \"npm run open:phpmyadmin\" \"npm run server\" \"vite\"",
@@ -13,15 +13,18 @@
     "open:phpmyadmin": "node scripts/open-phpmyadmin.js",
     "build": "vite build",
     "preview": "vite preview",
+    "db:init": "node scripts/initialize-db.js",
     "start": "node server.js",
     "server": "nodemon server.js"
   },
   "dependencies": {
-    "@google-cloud/storage": "^7.18.0",
+    "@google-cloud/storage": "^5.18.3",
+    "@headlessui/react": "^2.2.10",
     "@react-oauth/google": "^0.12.2",
-    "africastalking": "^0.7.9",
+    "africastalking": "^0.7.4",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
+    "daisyui": "^5.6.11",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
@@ -30,6 +33,7 @@
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.284.0",
     "multer": "^2.1.1",
+    "mongoose": "^8.0.0",
     "mysql2": "^3.15.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

@@ -1,7 +1,7 @@
-# API Endpoints Guide - Greggory Foundation Ltd
+# API Endpoints Guide - The-Greggory-Systems-And-Strategy-firm
 
 ## Overview
-This document provides a comprehensive guide to all API endpoints in the Greggory Foundation Ltd project, including their purposes, request/response formats, and how they integrate with XAMPP MySQL database.
+This document provides a comprehensive guide to all API endpoints in the The-Greggory-Systems-And-Strategy-firm project, including their purposes, request/response formats, and how they integrate with XAMPP MySQL database.
 
 ## Base URL
 - **Development**: `http://localhost:8080`
@@ -9,8 +9,8 @@ This document provides a comprehensive guide to all API endpoints in the Greggor
 
 ## Database Connection
 All endpoints connect to XAMPP MySQL database:
-- **Database**: `greggory_foundation_db_main`
-- **phpMyAdmin**: `http://localhost/phpmyadmin/index.php?route=/database/structure&db=greggory_foundation_db_main`
+- **Database**: `the_greggory_systems_and_strategy_firm_db_main`
+- **phpMyAdmin**: `http://localhost/phpmyadmin/index.php?route=/database/structure&db=the_greggory_systems_and_strategy_firm_db_main`
 - **Host**: `localhost`
 - **Port**: `3306` (default XAMPP MySQL port)
 
@@ -553,7 +553,7 @@ Check database connection status.
 {
   "success": true,
   "connected": true,
-  "database": "greggory_foundation_db_main",
+  "database": "the_greggory_systems_and_strategy_firm_db_main",
   "host": "localhost",
   "message": "Database connection successful"
 }
@@ -1132,7 +1132,7 @@ All endpoints interact with the following main tables:
 - `mpesa_transactions` - Payment records
 - `images` - Image storage
 
-Full schema available in: `database/greggory_foundation_db_main.sql`
+Full schema available in: `database/the_greggory_systems_and_strategy_firm_db_main.sql`
 
 ---
 
@@ -1148,5 +1148,5 @@ For endpoint issues:
 ---
 
 **Last Updated:** 2024
-**Project:** Greggory Foundation Ltd Website
+**Project:** The-Greggory-Systems-And-Strategy-firm Website
 **Version:** 1.0.0

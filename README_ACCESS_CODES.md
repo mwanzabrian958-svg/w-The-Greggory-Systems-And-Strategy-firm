@@ -18,12 +18,12 @@ Admin and Developer access codes are now stored in the **database**, not environ
 
 ```bash
 # Run the SQL file
-mysql -u root -p greggory_foundation_db_main < database/access_codes.sql
+mysql -u root -p the_greggory_systems_and_strategy_firm_db_main < database/access_codes.sql
 ```
 
 Or manually in MySQL:
 ```sql
-USE greggory_foundation_db_main;
+USE the_greggory_systems_and_strategy_firm_db_main;
 SOURCE database/access_codes.sql;
 ```
 
@@ -242,7 +242,7 @@ UPDATE access_codes SET is_active = TRUE WHERE code_value = '***REMOVED***';
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
-DB_NAME=greggory_foundation_db_main
+DB_NAME=the_greggory_systems_and_strategy_firm_db_main
 
 ADMIN_SESSION_TIMEOUT=1800
 ADMIN_ALLOWED_IPS=127.0.0.1,::1,localhost

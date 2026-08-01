@@ -1,5 +1,5 @@
 # Admin Panel UI Mockups & Design Specifications
-## Greggory Foundation Ltd - Visual Design Guide
+## The-Greggory-Systems-And-Strategy-firm - Visual Design Guide
 
 ---
 
@@ -184,7 +184,7 @@ Borders: rounded-lg for buttons, rounded-2xl for cards, rounded-3xl for containe
 │ 💼 Services               │                                    │
 │ 📋 Projects              │ [Rich Text Editor]                  │
 │ 📰 Blog                   │ ┌─────────────────────────────────┐ │
-│   ├── Latest Trends       │ │ Welcome to Greggory Foundation! │ │
+│   ├── Latest Trends       │ │ Welcome to The-Greggory-Systems-And-Strategy-firm! │ │
 │   ├── Business Strategy   │ │                                 │ │
 │   └── Tech News           │ │ [B] [I] [U] [🔗] [📷] [📎]      │ │
 │ 📚 Case Studies           │ │                                 │ │
@@ -354,10 +354,10 @@ Borders: rounded-lg for buttons, rounded-2xl for cards, rounded-3xl for containe
 ┌─────────────────────────────────────────────────────────────────┐
 │ 🏢 Company Profile                                                │
 ├─────────────────────────────────────────────────────────────────┤
-│ Company Name: [Greggory Foundation Ltd___________________]        │
+│ Company Name: [The-Greggory-Systems-And-Strategy-firm___________________]        │
 │ Logo: [📷 Upload] [Current Logo]                                  │
 │ Tagline: [Building Excellence________________________]          │
-│ Email: [info@greggoryfoundation.com____________]                 │
+│ Email: [info@thegreggorysystemsandstrategyfirm.com____________]                 │
 │ Phone: [+254 799 789 956________________]                       │
 │ Address: [Nairobi, Kenya__________________________]               │
 │                                                                 │

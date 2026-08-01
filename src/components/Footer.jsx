@@ -5,6 +5,7 @@ import SocialMediaIcons from './SocialMediaIcons'
 import AuthPlatformModal from './AuthPlatformModal'
 import { hasAdminToken } from '../utils/adminSession'
 import { useAuth } from '../context/AuthContext'
+import { SITE_NAME, SITE_TAGLINE } from '../constants/siteBrand'
 
 const Footer = () => {
   const currentYear = new Date().getFullYear()
@@ -64,12 +65,12 @@ const Footer = () => {
             <div className="col-span-1 md:col-span-2">
               <div className="mb-4 sm:mb-6">
                 <Link to="/">
-                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">The Greggory Foundation Ltd.</h2>
-                  <p className="text-sm sm:text-base text-teal-400 font-medium">Project Management Consultancy</p>
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">{SITE_NAME}</h2>
+                  <p className="text-sm sm:text-base text-teal-400 font-medium">{SITE_TAGLINE}</p>
                 </Link>
               </div>
               <p className="text-sm sm:text-base text-gray-300 mb-4">
-                Strategic Project Development for all clients. Your Vision Delivered with Trust.
+                Strategic Systems and Business Solutions for all clients. Excellence through Innovation.
               </p>
               <SocialMediaIcons
                 className="text-gray-300"
@@ -78,40 +79,8 @@ const Footer = () => {
               />
             </div>
 
-            {/* Quick Links */}
-            <div>
-              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Quick Links</h3>
-              <ul className="space-y-1 sm:space-y-2">
-                <li>
-                  <Link to="/" className="text-sm sm:text-base text-gray-300 hover:text-teal-400 transition-colors">
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/about" className="text-sm sm:text-base text-gray-300 hover:text-teal-400 transition-colors">
-                    About Us
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/services" className="text-sm sm:text-base text-gray-300 hover:text-teal-400 transition-colors">
-                    Our Services
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/case-studies" className="text-sm sm:text-base text-gray-300 hover:text-teal-400 transition-colors">
-                    Case Studies
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/blog" className="text-sm sm:text-base text-gray-300 hover:text-teal-400 transition-colors">
-                    Blog
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
             {/* Contact Info */}
-            <div>
+            <div className="col-span-1 md:col-span-1">
               <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Contact Us</h3>
               <ul className="space-y-2 sm:space-y-3">
                 <li className="flex items-start gap-2">
@@ -141,7 +110,7 @@ const Footer = () => {
 
           {/* Bottom Bar — hidden admin entry: three dots under copyright */}
           <div className="border-t border-navy-700 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-gray-400 text-xs sm:text-sm">
-            <p>&copy; {currentYear} The Greggory Foundation Ltd. All rights reserved.</p>
+            <p>&copy; {currentYear} {SITE_NAME}. All rights reserved.</p>
             <button
               type="button"
               onClick={handleFooterAdminTrigger}

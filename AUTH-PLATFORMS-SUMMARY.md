@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    GREGGORY FOUNDATION LTD                      │
+│                    THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM                      │
 │                    AUTHENTICATION SYSTEM                         │
 └─────────────────────────────────────────────────────────────────┘
 
@@ -132,7 +132,7 @@ node test-db-connection.js
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
-DB_NAME=greggory_foundation_db_main
+DB_NAME=the_greggory_systems_and_strategy_firm_db_main
 
 # Access Codes
 ADMIN_CODE=***REMOVED***
@@ -152,8 +152,8 @@ ADMIN_SESSION_SECRET=your_admin_session_secret
 | `AUTHENTICATION_CHANGES.md` | Migration details |
 | `AUTHENTICATION_README.md` | Frontend integration guide |
 | `server.js` | API endpoint implementations |
-| `database/greggory_foundation_db_main.sql` | Database schema |
+| `database/the_greggory_systems_and_strategy_firm_db_main.sql` | Database schema |
 
 ---
 
-**Summary**: Three separate authentication platforms, each with isolated database tables, dedicated API endpoints, and specific security requirements. All linked to XAMPP MySQL database `greggory_foundation_db_main`.
+**Summary**: Three separate authentication platforms, each with isolated database tables, dedicated API endpoints, and specific security requirements. All linked to XAMPP MySQL database `the_greggory_systems_and_strategy_firm_db_main`.

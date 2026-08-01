@@ -1,4 +1,4 @@
-# Quick Start Guide - Greggory Foundation Ltd
+# Quick Start Guide - The-Greggory-Systems-And-Strategy-firm
 
 ## One-Command Startup
 
@@ -20,7 +20,7 @@ Once started, you can access:
 
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8080
-- **phpMyAdmin**: http://localhost/phpmyadmin/index.php?route=/database/structure&db=greggory_foundation_db_main
+- **phpMyAdmin**: http://localhost/phpmyadmin/index.php?route=/database/structure&db=the_greggory_systems_and_strategy_firm_db_main
 
 ## Other Commands
 

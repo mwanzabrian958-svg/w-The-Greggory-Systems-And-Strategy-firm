@@ -175,7 +175,7 @@ export function SupportModal({ isOpen, onClose }) {
               {[
                 { question: 'How do I reset my password?', answer: 'Go to Settings > Security > Change Password. You can also use the "Forgot Password" link on the login page.' },
                 { question: 'What payment methods do you accept?', answer: 'We accept M-Pesa, credit cards (Visa, Mastercard), and bank transfers.' },
-                { question: 'How can I contact support?', answer: 'You can reach us via email at support@greggoryfoundation.org, phone at +254 700 000 000, or through the support portal.' },
+                { question: 'How can I contact support?', answer: 'You can reach us via email at support@thegreggorysystemsandstrategyfirm.org, phone at +254 700 000 000, or through the support portal.' },
                 { question: 'How do I upgrade my account?', answer: 'Contact our sales team or go to Settings > Billing > Upgrade Plan.' },
               ].map((faq, i) => (
                 <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -196,7 +196,7 @@ export function SupportModal({ isOpen, onClose }) {
               
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { method: 'Email', value: 'support@greggoryfoundation.org', icon: Mail, available: '24/7' },
+                  { method: 'Email', value: 'support@thegreggorysystemsandstrategyfirm.org', icon: Mail, available: '24/7' },
                   { method: 'Phone', value: '+254 700 000 000', icon: Phone, available: '8 AM - 6 PM EAT' },
                   { method: 'Live Chat', value: 'Available on website', icon: MessageCircle, available: '24/7' },
                 ].map((contact) => {

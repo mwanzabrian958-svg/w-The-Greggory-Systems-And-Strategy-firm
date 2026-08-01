@@ -1,7 +1,7 @@
 @echo off
-title Greggory Foundation - Starting...
+title The-Greggory-Systems-And-Strategy-firm - Starting...
 echo ========================================
-echo  Greggory Foundation Ltd - Dev Server
+echo  The-Greggory-Systems-And-Strategy-firm - Dev Server
 echo ========================================
 echo.
 echo Starting Backend (port 8080)...

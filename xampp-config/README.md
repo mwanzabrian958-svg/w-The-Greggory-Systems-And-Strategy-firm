@@ -1,6 +1,6 @@
 # XAMPP Configuration Files
 
-This directory contains XAMPP configuration file backups for the Greggory Foundation Ltd project.
+This directory contains XAMPP configuration file backups for the The-Greggory-Systems-And-Strategy-firm project.
 
 ## Purpose
 These configuration files are stored in the GitHub repository to ensure that:
@@ -46,11 +46,11 @@ These configuration files are stored in the GitHub repository to ensure that:
 3. Backup your existing XAMPP configuration files
 4. Copy the files from this directory to their respective XAMPP locations
 5. Restart Apache and MySQL services
-6. Import the database schema from `database/greggory_foundation_db_main.sql`
+6. Import the database schema from `database/the-greggory-systems-and-strategy-firm-db-main.sql`
 
 ### After PC Deletion/Corruption
 1. Install XAMPP on the new/repair system
-2. Clone this repository: `git clone https://github.com/Brianmwanza-bit/Website-for-Greggory-Foundation-Ltd`
+2. Clone this repository: `git clone https://github.com/Brianmwanza-bit/Website-for-The-Greggory-Systems-And-Strategy-Firm`
 3. Copy configuration files from `xampp-config/` to XAMPP directories
 4. Start XAMPP services (Apache + MySQL)
 5. Import database: `node scripts/restore-db-github.js`
@@ -103,4 +103,4 @@ For XAMPP configuration issues:
 ---
 
 **Last Updated:** 2024
-**Project:** Greggory Foundation Ltd Website
+**Project:** The-Greggory-Systems-And-Strategy-firm Website

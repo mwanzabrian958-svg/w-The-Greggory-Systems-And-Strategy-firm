@@ -182,7 +182,7 @@ const ClientPortal = ({ user, onLogout }) => {
             <div className="flex items-center">
               <Building className="w-8 h-8 text-teal-600 mr-3" />
               <h1 className="text-xl font-semibold text-gray-900">
-                Greggory Foundation Client Portal
+                The-Greggory-Systems-And-Strategy-firm Client Portal
               </h1>
             </div>
             <div className="flex items-center gap-4">
