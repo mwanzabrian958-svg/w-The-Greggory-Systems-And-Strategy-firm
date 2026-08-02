@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const { createNotification } = require('../utils/notificationHelper');
 
 router.get('/', async (req, res) => {
   try {
@@ -46,6 +47,10 @@ router.post('/', async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?)`,
       [name, email, phone || null, company || null, subject || null, message]
     );
+
+    // REAL-LIFE NOTIF: Notify admins of a new contact inquiry
+    // For now, we'll notify user with ID 1 (assumed main admin)
+    await createNotification(1, 'system', 'New Inquiry Received', `New message from ${name} (${company || 'Individual'}).`, 'high');
 
     res.status(201).json({ message: 'Contact form submitted successfully', id: result.insertId });
   } catch (error) {

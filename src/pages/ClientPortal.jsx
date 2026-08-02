@@ -79,7 +79,7 @@ const ClientPortal = () => {
         const relayLabel = simulated ? "queued for delivery" : "sent successfully";
         setSmsStatus({
           type: "success",
-          message: `${messageType === "whatsapp" ? "WhatsApp" : "SMS"} message ${relayLabel} to company (+254799789956)!`,
+          message: `${messageType === "whatsapp" ? "WhatsApp" : "SMS"} message ${relayLabel} to company (+254715312251)!`,
         });
         setMessageText("");
         setTimeout(() => {
@@ -934,7 +934,7 @@ const ClientPortal = () => {
                 Send Message
               </h3>
               <p className="text-white/70 mt-2 text-xs font-bold uppercase tracking-widest">
-                Direct Sync to Entity Lead (+254799789956)
+                Direct Sync to Entity Lead (+254715312251)
               </p>
             </div>
             <div className="p-8">
@@ -1013,7 +1013,7 @@ const ClientPortal = () => {
                     : "px-10 py-4 text-slate-950 rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-gold-500 hover:bg-gold-400 font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-gold-500/20"
                 }
               >
-                {sendingSMS ? "Transmitting..." : "Initialize Relay"}
+                {sendingSMS ? "Transmitting..." : "Send"}
               </button>
             </div>
           </div>

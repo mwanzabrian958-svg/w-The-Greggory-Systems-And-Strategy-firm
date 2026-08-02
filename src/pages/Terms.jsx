@@ -182,7 +182,7 @@ const Terms = () => {
            <Mail size={40} className="text-gold-500 mx-auto mb-6" />
            <h2 className="text-2xl font-black uppercase tracking-widest mb-4">Support & Compliance</h2>
            <p className="text-slate-500 font-medium mb-8">For inquiries regarding these strategic terms, contact our administrative center:</p>
-           <p className="text-white font-bold tracking-[0.2em]">brianmwanza651@gmail.com</p>
+           <p className="text-white font-bold tracking-[0.2em]">thegreggorysystemsandstrategyf@gmail.com</p>
         </div>
       </section>
 

@@ -18,7 +18,7 @@ try {
 }
 
 // Company phone number that receives messages
-const COMPANY_PHONE_NUMBER = process.env.COMPANY_PHONE_NUMBER || '+254799789956';
+const COMPANY_PHONE_NUMBER = process.env.COMPANY_PHONE_NUMBER || '+254715312251';
 
 function buildSimulatedResponse(provider, action) {
   return {

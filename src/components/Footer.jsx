@@ -61,65 +61,77 @@ const Footer = () => {
       <footer className="bg-[#0f172a] text-white border-t border-white/5 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-gold-500/20 to-transparent" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 sm:gap-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 sm:gap-10">
             {/* Company Info */}
-            <div className="col-span-1 md:col-span-2 space-y-8">
+            <div className="col-span-1 md:col-span-2 space-y-6">
               <div>
                 <Link to="/" className="group inline-block">
-                  <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight group-hover:text-gold-500 transition-colors">{SITE_NAME}</h2>
-                  <div className="h-1 w-12 bg-gold-500 mt-3 rounded-full group-hover:w-20 transition-all duration-500" />
-                  <p className="text-[10px] sm:text-xs text-gold-500 font-black uppercase tracking-[0.4em] mt-4">{SITE_TAGLINE}</p>
+                  <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight group-hover:text-gold-500 transition-colors">{SITE_NAME}</h2>
+                  <div className="h-1 w-10 bg-gold-500 mt-2 rounded-full group-hover:w-16 transition-all duration-500" />
+                  <p className="text-[9px] sm:text-[10px] text-gold-500 font-black uppercase tracking-[0.4em] mt-3">{SITE_TAGLINE}</p>
                 </Link>
               </div>
-              <p className="text-sm sm:text-base text-slate-400 font-medium leading-relaxed max-w-md uppercase tracking-widest text-xs">
+              <p className="text-xs sm:text-sm text-slate-400 font-medium leading-relaxed max-w-md uppercase tracking-widest">
                 Architecting high-tier strategic systems and tactical business solutions. Excellence through systemic innovation.
               </p>
-              <div className="pt-4">
+              <div className="pt-2">
                 <SocialMediaIcons
                   className="text-slate-500"
                   hoverColor="hover:text-gold-500"
-                  iconSize={20}
+                  iconSize={18}
                 />
               </div>
             </div>
 
             {/* Contact Protocol */}
             <div className="col-span-1 md:col-span-1">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8">Contact Protocol</h3>
-              <ul className="space-y-6">
-                <li className="flex items-start gap-4 group">
-                  <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gold-500 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all">
-                    <Mail size={16} />
+              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-6">Contact Protocol</h3>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3 group">
+                  <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-gold-500 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all">
+                    <Mail size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Secure Relay</p>
+                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Secure Relay</p>
                     <a
-                      href="mailto:brianmwanza651@gmail.com"
-                      className="text-xs sm:text-sm font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-wider"
+                      href="mailto:thegreggorysystemsandstrategyf@gmail.com"
+                      className="text-xs font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-wider"
                     >
-                      brianmwanza651@gmail.com
+                      thegreggorysystemsandstrategyf@gmail.com
                     </a>
                   </div>
                 </li>
-                <li className="flex items-start gap-4 group">
-                   <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gold-500 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all">
-                    <Phone size={16} />
+                <li className="flex items-start gap-3 group">
+                   <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-gold-500 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all">
+                    <Phone size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Direct Uplink</p>
-                    <span className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider">+254 799 789 956</span>
+                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Direct Uplink</p>
+                    <a
+                      href="https://wa.me/254715312251"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-wider"
+                    >
+                      +254 715 312 251
+                    </a>
                   </div>
                 </li>
-                <li className="flex items-start gap-4 group">
-                   <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gold-500 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all">
-                    <MapPin size={16} />
+                <li className="flex items-start gap-3 group">
+                   <div className="p-2 rounded-lg bg-white/5 border border-white/10 text-gold-500 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all">
+                    <MapPin size={14} />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Node Location</p>
-                    <span className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider">
+                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Node Location</p>
+                    <a
+                      href="https://www.google.com/maps/search/?api=1&query=RAFIKI+KABARAK,+KABARAK"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-wider"
+                    >
                       RAFIKI KABARAK, KABARAK
-                    </span>
+                    </a>
                   </div>
                 </li>
               </ul>
@@ -127,14 +139,14 @@ const Footer = () => {
           </div>
 
           {/* Bottom Bar Protocol */}
-          <div className="border-t border-white/5 mt-16 sm:mt-24 pt-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
+          <div className="border-t border-white/5 mt-10 sm:mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">
               &copy; {currentYear} {SITE_NAME}. Mission Synchronized.
             </p>
 
-            <div className="flex items-center gap-8">
-               <Link to="/privacy" className="text-[10px] font-black text-slate-600 hover:text-white uppercase tracking-widest transition-colors">Privacy Protocol</Link>
-               <Link to="/terms" className="text-[10px] font-black text-slate-600 hover:text-white uppercase tracking-widest transition-colors">Terms of Service</Link>
+            <div className="flex items-center gap-6">
+               <Link to="/privacy" className="text-[9px] font-black text-slate-600 hover:text-white uppercase tracking-widest transition-colors">Privacy Protocol</Link>
+               <Link to="/terms" className="text-[9px] font-black text-slate-600 hover:text-white uppercase tracking-widest transition-colors">Terms of Service</Link>
 
                <button
                 type="button"

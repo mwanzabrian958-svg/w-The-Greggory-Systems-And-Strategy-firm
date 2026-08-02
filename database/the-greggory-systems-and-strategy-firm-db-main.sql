@@ -1357,8 +1357,8 @@ INSERT INTO admin_navbar_items (item_name, item_type, display_text, url, sort_or
 INSERT INTO admin_website_settings (setting_key, setting_value, setting_type, display_name, description, category, is_public) VALUES
 ('site_title', 'The The-Greggory-Systems-And-Strategy-firm', 'text', 'Site Title', 'Main title of the website', 'general', TRUE),
 ('site_description', 'Strategic Project Development for all clients. Your Vision Delivered with Trust.', 'textarea', 'Site Description', 'Meta description for SEO', 'general', TRUE),
-('contact_email', 'brianmwanza651@gmail.com', 'text', 'Contact Email', 'Main contact email address', 'contact', TRUE),
-('contact_phone', '+254799789956', 'text', 'Contact Phone', 'Main contact phone number', 'contact', TRUE),
+('contact_email', 'thegreggorysystemsandstrategyf@gmail.com', 'text', 'Contact Email', 'Main contact email address', 'contact', TRUE),
+('contact_phone', '+254715312251', 'text', 'Contact Phone', 'Main contact phone number', 'contact', TRUE),
 ('company_address', 'rafiki kabarak, kabarak', 'textarea', 'Company Address', 'Physical office address', 'contact', TRUE),
 ('maintenance_mode', 'false', 'boolean', 'Maintenance Mode', 'Put site in maintenance mode', 'system', FALSE),
 ('allow_registration', 'true', 'boolean', 'Allow Registration', 'Enable user registration', 'auth', FALSE),

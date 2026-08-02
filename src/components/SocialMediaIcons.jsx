@@ -1,5 +1,5 @@
 import React from 'react';
-import { Instagram, Twitter, Facebook } from 'lucide-react';
+import { Instagram, Facebook } from 'lucide-react';
 
 // TikTok SVG icon (not in lucide-react)
 const TikTokIcon = ({ size = 20 }) => (
@@ -17,23 +17,16 @@ const TikTokIcon = ({ size = 20 }) => (
 const SocialMediaIcons = ({ className = "", iconSize = 20, iconColor = "text-gray-300", hoverColor = "hover:text-teal-400", showLabels = false }) => {
   const socialLinks = [
     {
-      name: 'Instagram',
-      icon: <Instagram size={iconSize} className={`${iconColor} ${hoverColor} transition-colors`} />,
-      url: 'https://www.instagram.com/thegreggorysystemsandstrategyfirmltd/',
-      target: '_blank',
-      rel: 'noopener noreferrer'
-    },
-    {
-      name: 'Twitter',
-      icon: <Twitter size={iconSize} className={`${iconColor} ${hoverColor} transition-colors`} />,
-      url: 'https://x.com/martin_set48712',
-      target: '_blank',
-      rel: 'noopener noreferrer'
-    },
-    {
       name: 'Facebook',
       icon: <Facebook size={iconSize} className={`${iconColor} ${hoverColor} transition-colors`} />,
-      url: 'https://www.facebook.com/profile.php?id=61583677166945',
+      url: 'https://www.facebook.com/profile.php?id=61592873906248',
+      target: '_blank',
+      rel: 'noopener noreferrer'
+    },
+    {
+      name: 'Instagram',
+      icon: <Instagram size={iconSize} className={`${iconColor} ${hoverColor} transition-colors`} />,
+      url: 'https://www.instagram.com/thegfltd?igsh=dGUweWowaWx1eGc3',
       target: '_blank',
       rel: 'noopener noreferrer'
     },
@@ -44,7 +37,7 @@ const SocialMediaIcons = ({ className = "", iconSize = 20, iconColor = "text-gra
           <TikTokIcon size={iconSize} />
         </span>
       ),
-      url: 'https://vm.tiktok.com/ZS9FQhk1WNr1U-sNsyX/',
+      url: 'https://vm.tiktok.com/ZS9hSNrJ1jrSP-RtR7u/',
       target: '_blank',
       rel: 'noopener noreferrer'
     }

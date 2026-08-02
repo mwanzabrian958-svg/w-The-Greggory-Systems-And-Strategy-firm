@@ -117,11 +117,11 @@ const Privacy = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                     <div className="space-y-2">
                       <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Digital Channel</p>
-                      <p className="text-white font-bold tracking-wider">brianmwanza651@gmail.com</p>
+                      <p className="text-white font-bold tracking-wider">thegreggorysystemsandstrategyf@gmail.com</p>
                     </div>
                     <div className="space-y-2">
                       <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Voice Command</p>
-                      <p className="text-white font-bold tracking-wider">+254 799 789 956</p>
+                      <p className="text-white font-bold tracking-wider">+254 715 312 251</p>
                     </div>
                     <div className="col-span-full space-y-2">
                       <p className="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Physical Node</p>
