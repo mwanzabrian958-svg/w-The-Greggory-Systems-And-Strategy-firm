@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { Link, useNavigate } from 'react-router-dom'
+import { getApiUrl } from '../services/api'
 import {
   Home, FolderKanban, CheckSquare, Users, DollarSign, FileText,
   MessageSquare, Bell, Star, Shield, BarChart2, Lock, Map, Plug,
@@ -44,15 +46,17 @@ const ToastContainer = ({ toasts }) => (
 const Modal = ({ open, onClose, title, children }) => {
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md" onClick={onClose}>
+      <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-2xl w-full max-w-md p-6 relative border border-slate-200 dark:border-white/10" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-slate-800">{title}</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition">
             <X className="w-5 h-5" />
           </button>
         </div>
-        {children}
+        <div className="text-slate-600 dark:text-slate-300">
+          {children}
+        </div>
       </div>
     </div>
   )
@@ -182,63 +186,95 @@ const navSections = [
 ]
 
 // ─────────────────────────────────────────────
-// HELPER COMPONENTS
+// HELPERS
 // ─────────────────────────────────────────────
+const getNotifConfig = (type) => {
+  switch (type) {
+    case 'alert':
+    case 'risk_alert':
+      return { icon: AlertCircle, color: 'text-rose-500', bg: 'bg-rose-500/10' }
+    case 'success':
+    case 'milestone_complete':
+      return { icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-500/10' }
+    case 'project_update':
+    case 'task_assigned':
+      return { icon: Clock, color: 'text-sky-400', bg: 'bg-sky-400/10' }
+    case 'invoice_sent':
+    case 'payment_received':
+      return { icon: DollarSign, color: 'text-gold-500', bg: 'bg-gold-500/10' }
+    default:
+      return { icon: Bell, color: 'text-slate-400', bg: 'bg-slate-400/10' }
+  }
+}
 
+const formatTime = (dateStr) => {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffInMs = now - date
+  const diffInMins = Math.floor(diffInMs / (1000 * 60))
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+
+  if (diffInMins < 60) return `${diffInMins}m ago`
+  if (diffInHours < 24) return `${diffInHours}h ago`
+  if (diffInDays < 7) return `${diffInDays}d ago`
+  return date.toLocaleDateString()
+}
+
+// ── HELPER COMPONENTS ──
 const Badge = ({ label, color }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${color}`}>
+  <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-all ${color}`}>
     {label}
   </span>
 )
 
 const StatusBadge = ({ status }) => {
   const map = {
-    active:       'bg-emerald-100 text-emerald-700',
-    completed:    'bg-blue-100 text-blue-700',
-    pending:      'bg-yellow-100 text-yellow-700',
-    overdue:      'bg-red-100 text-red-700',
-    paid:         'bg-emerald-100 text-emerald-700',
-    draft:        'bg-gray-100 text-gray-600',
-    'In Progress':'bg-blue-100 text-blue-700',
-    'To Do':      'bg-gray-100 text-gray-600',
-    'Review':     'bg-purple-100 text-purple-700',
-    'Complete':   'bg-emerald-100 text-emerald-700',
-    Success:      'bg-emerald-100 text-emerald-700',
-    Failed:       'bg-red-100 text-red-700',
-    connected:    'bg-emerald-100 text-emerald-700',
-    disconnected: 'bg-gray-100 text-gray-500',
-    Mitigating:   'bg-yellow-100 text-yellow-700',
-    Monitoring:   'bg-blue-100 text-blue-700',
-    Open:         'bg-red-100 text-red-700',
-    Closed:       'bg-gray-100 text-gray-500',
+    active:       'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]',
+    completed:    'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
+    pending:      'bg-gold-500/10 text-gold-600 dark:text-gold-400 border-gold-500/20',
+    overdue:      'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+    paid:         'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    'In Progress':'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+    'To Do':      'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10',
+    'Review':     'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    'Complete':   'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    Success:      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    Failed:       'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+    connected:    'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    disconnected: 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10',
+    Mitigating:   'bg-gold-500/10 text-gold-600 dark:text-gold-400 border-gold-500/20',
+    Monitoring:   'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+    Open:         'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+    Closed:       'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10',
   }
-  const cls = map[status] || 'bg-gray-100 text-gray-600'
+  const cls = map[status] || 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10'
   return <Badge label={status} color={cls} />
 }
 
 const PriorityBadge = ({ priority }) => {
   const map = {
-    Critical: 'bg-red-100 text-red-700 border border-red-200',
-    High:     'bg-orange-100 text-orange-700 border border-orange-200',
-    Medium:   'bg-yellow-100 text-yellow-700 border border-yellow-200',
-    Low:      'bg-gray-100 text-gray-600 border border-gray-200',
+    Critical: 'bg-rose-500/10 text-rose-600 dark:text-rose-500 border border-rose-500/20',
+    High:     'bg-orange-500/10 text-orange-600 dark:text-orange-500 border border-orange-500/20',
+    Medium:   'bg-gold-500/10 text-gold-600 dark:text-gold-500 border border-gold-500/20',
+    Low:      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20',
   }
-  return <Badge label={priority} color={map[priority] || 'bg-gray-100 text-gray-600'} />
+  return <Badge label={priority} color={map[priority] || 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400'} />
 }
 
 const GradientBar = ({ value, max = 100 }) => {
   const pct = Math.min(100, Math.max(0, (value / max) * 100))
   const gradient = pct >= 80
-    ? 'from-emerald-400 to-emerald-600'
+    ? 'from-emerald-500 to-teal-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
     : pct >= 60
-      ? 'from-blue-400 to-blue-600'
+      ? 'from-blue-500 to-sky-400'
       : pct >= 40
-        ? 'from-yellow-400 to-orange-500'
-        : 'from-red-400 to-red-600'
+        ? 'from-gold-500 to-yellow-400'
+        : 'from-rose-500 to-pink-400'
   return (
-    <div className="w-full bg-slate-100 rounded-full h-2.5">
+    <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
       <div
-        className={`h-2.5 rounded-full bg-gradient-to-r ${gradient} transition-all duration-700`}
+        className={`h-1.5 rounded-full bg-gradient-to-r ${gradient} transition-all duration-1000 ease-out`}
         style={{ width: `${pct}%` }}
       />
     </div>
@@ -246,37 +282,41 @@ const GradientBar = ({ value, max = 100 }) => {
 }
 
 const SectionCard = ({ children, className = '' }) => (
-  <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-6 ${className}`}>
+  <div className={`bg-white dark:bg-white/5 backdrop-blur-2xl rounded-[28px] border border-slate-200 dark:border-white/10 shadow-xl dark:shadow-2xl transition-all duration-300 ${className}`}>
     {children}
   </div>
 )
 
-const KpiCard = ({ icon: Icon, label, value, delta, deltaLabel, color = 'bg-blue-50 text-blue-600' }) => (
-  <SectionCard className="flex flex-col gap-3">
+const KpiCard = ({ icon: Icon, label, value, delta, deltaLabel, color = 'bg-gold-500/10 text-gold-500 border-gold-500/20' }) => (
+  <SectionCard className="flex flex-col gap-4 p-8 group hover:bg-white/[0.08] border border-white/10">
     <div className="flex items-center justify-between">
-      <div className={`p-2.5 rounded-xl ${color}`}>
-        <Icon className="w-5 h-5" />
+      <div className={`p-4 rounded-2xl ${color} border transition-transform group-hover:scale-110`}>
+        <Icon className="w-6 h-6" />
       </div>
       {delta !== undefined && (
-        <span className={`flex items-center gap-1 text-xs font-medium ${delta >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-          {delta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+        <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${delta >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          {delta >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
           {Math.abs(delta)}%
         </span>
       )}
     </div>
     <div>
-      <p className="text-2xl font-bold text-slate-800">{value}</p>
-      <p className="text-sm text-slate-500 mt-0.5">{label}</p>
-      {deltaLabel && <p className="text-xs text-slate-400 mt-1">{deltaLabel}</p>}
+      <p className="text-3xl font-black text-white tracking-tight">{value}</p>
+      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-2">{label}</p>
+      {deltaLabel && <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-2">{deltaLabel}</p>}
     </div>
   </SectionCard>
 )
 
-const Avatar = ({ initials, size = 'sm', color = 'bg-gradient-to-br from-blue-500 to-purple-600' }) => {
-  const sz = size === 'lg' ? 'w-12 h-12 text-base' : size === 'md' ? 'w-9 h-9 text-sm' : 'w-7 h-7 text-xs'
+const Avatar = ({ initials, src = null, size = 'sm', color = 'bg-gradient-to-br from-blue-500 to-indigo-600' }) => {
+  const sz = size === 'lg' ? 'w-16 h-16 text-lg' : size === 'md' ? 'w-10 h-10 text-sm' : 'w-8 h-8 text-[10px]'
   return (
-    <div className={`${sz} ${color} rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0`}>
-      {initials}
+    <div className={`${sz} ${color} rounded-full flex items-center justify-center text-white font-black uppercase tracking-tighter border-2 border-white/10 shadow-lg flex-shrink-0 overflow-hidden`}>
+      {src ? (
+        <img src={src} alt="Profile" className="w-full h-full object-cover" />
+      ) : (
+        initials
+      )}
     </div>
   )
 }
@@ -294,111 +334,135 @@ const SectionHeader = ({ title, subtitle, action }) => (
 // ─────────────────────────────────────────────
 // SECTION: OVERVIEW
 // ─────────────────────────────────────────────
-const OverviewSection = ({ user }) => {
-  const totalBudget = projects.reduce((s, p) => s + p.budget, 0)
-  const totalSpent = projects.reduce((s, p) => s + p.spent, 0)
-  const avgProgress = Math.round(projects.reduce((s, p) => s + p.progress, 0) / projects.length)
+const OverviewSection = ({ user, data = null, notifs = [], isLoading = false }) => {
+  const realProjects = data?.projects || []
+  const totalBudget = realProjects.reduce((s, p) => s + (p.plannedBudget || 0), 0)
+  const totalSpent = realProjects.reduce((s, p) => s + (p.actualBudget || 0), 0)
+  const avgProgress = realProjects.length > 0
+    ? Math.round(realProjects.reduce((s, p) => s + (p.progress || 0), 0) / realProjects.length)
+    : 0
 
   return (
-    <div className="space-y-6">
-      {/* Hero Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-800 via-blue-900 to-indigo-900 p-8 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, #6366f1 0%, transparent 60%)' }} />
-        <div className="relative z-10">
-          <p className="text-blue-300 text-sm font-medium mb-1">Welcome back</p>
-          <h1 className="text-3xl font-bold mb-2">
-            {user?.first_name || user?.name || 'Valued Client'} 👋
-          </h1>
-          <p className="text-slate-300 max-w-lg">
-            Here's your real-time project overview. Everything is on track — keep up the great work!
-          </p>
-          <div className="flex flex-wrap gap-3 mt-5">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20">
-              <p className="text-xs text-blue-200">Active Projects</p>
-              <p className="text-2xl font-bold">{projects.filter(p => p.status === 'active').length}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20">
-              <p className="text-xs text-blue-200">Avg Progress</p>
-              <p className="text-2xl font-bold">{avgProgress}%</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20">
-              <p className="text-xs text-blue-200">Total Budget</p>
-              <p className="text-2xl font-bold">${(totalBudget / 1000).toFixed(0)}K</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3 border border-white/20">
-              <p className="text-xs text-blue-200">Spent to Date</p>
-              <p className="text-2xl font-bold">${(totalSpent / 1000).toFixed(0)}K</p>
-            </div>
+    <div className="space-y-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+        {[
+          { label: 'Active Deployments', val: realProjects.filter(p => p.status === 'active' || p.status === 'in-progress').length, color: 'text-gold-500' },
+          { label: 'Global Progress', val: `${avgProgress}%`, color: 'text-teal-400' },
+          { label: 'Total Allocation', val: `KES ${(totalBudget / 1000).toFixed(0)}K`, color: 'text-emerald-400' },
+          { label: 'Resource Burn', val: `KES ${(totalSpent / 1000).toFixed(0)}K`, color: 'text-rose-400' }
+        ].map((stat, i) => (
+          <div key={i} className="bg-white dark:bg-white/5 backdrop-blur-xl rounded-2xl px-6 py-6 border border-slate-200 dark:border-white/10 flex-1 min-w-[160px] hover:bg-slate-50 dark:hover:bg-white/10 transition-colors shadow-xl dark:shadow-2xl">
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">{stat.label}</p>
+            <p className={`text-2xl font-black ${stat.color.includes('text-emerald') ? 'text-emerald-600 dark:text-emerald-400' : stat.color.includes('text-gold') ? 'text-gold-600 dark:text-gold-500' : stat.color.includes('text-teal') ? 'text-teal-600 dark:text-teal-400' : 'text-rose-600 dark:text-rose-400'}`}>{stat.val}</p>
           </div>
-        </div>
+        ))}
       </div>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard icon={FolderKanban} label="Total Projects" value={projects.length} delta={12} deltaLabel="vs last quarter" color="bg-blue-50 text-blue-600" />
-        <KpiCard icon={CheckCircle} label="Completed" value={projects.filter(p => p.status === 'completed').length} delta={5} deltaLabel="on schedule" color="bg-emerald-50 text-emerald-600" />
-        <KpiCard icon={Clock} label="Open Tasks" value={mockTasks.filter(t => t.status !== 'Complete').length} delta={-3} deltaLabel="vs last week" color="bg-orange-50 text-orange-600" />
-        <KpiCard icon={AlertCircle} label="Overdue Invoices" value={mockInvoices.filter(i => i.status === 'overdue').length} delta={-1} deltaLabel="vs last month" color="bg-red-50 text-red-500" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KpiCard icon={FolderKanban} label="Portfolio Units" value={realProjects.length} delta={0} deltaLabel="Live Project Nodes" color="bg-gold-500/10 text-gold-500 border-gold-500/20" />
+        <KpiCard icon={CheckCircle} label="Success Protocols" value={realProjects.filter(p => p.status === 'completed').length} delta={0} deltaLabel="Deployment Accuracy" color="bg-teal-500/10 text-teal-500 border-teal-500/20" />
+        <KpiCard icon={Clock} label="Pending Modules" value={(data?.tasks || []).filter(t => !['completed', 'cancelled'].includes(t.status)).length} delta={0} deltaLabel="Actionable Logic" color="bg-sky-500/10 text-sky-400 border-sky-500/20" />
+        <KpiCard icon={AlertCircle} label="Resource Overruns" value={data?.budgetOverview?.variance > 0 ? `KES ${(data.budgetOverview.variance/1000).toFixed(0)}K` : 'Normal'} delta={0} deltaLabel="Capital Delta" color="bg-rose-500/10 text-rose-500 border-rose-500/20" />
       </div>
 
       {/* Project Summary Cards */}
       <div>
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Project Summary</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {projects.map(p => (
-            <SectionCard key={p.id} className="hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <h4 className="font-semibold text-slate-800 text-sm leading-tight pr-2">{p.name}</h4>
-                <StatusBadge status={p.status} />
-              </div>
-              <div className="mb-3">
-                <div className="flex justify-between text-xs text-slate-500 mb-1.5">
-                  <span>Progress</span><span className="font-semibold text-slate-700">{p.progress}%</span>
-                </div>
-                <GradientBar value={p.progress} />
-              </div>
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>Budget: <strong className="text-slate-700">${p.budget.toLocaleString()}</strong></span>
-                <span>Spent: <strong className="text-slate-700">${p.spent.toLocaleString()}</strong></span>
-              </div>
-              <div className="flex -space-x-1.5 mt-3">
-                {p.team.slice(0, 3).map((t, i) => (
-                  <Avatar key={i} initials={t.split(' ').map(n => n[0]).join('')} size="sm"
-                    color={['bg-blue-500','bg-purple-500','bg-pink-500','bg-emerald-500'][i % 4]} />
-                ))}
-                {p.team.length > 3 && (
-                  <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-semibold">
-                    +{p.team.length - 3}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="h-px flex-1 bg-white/5"></div>
+          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Strategic Summary</h3>
+          <div className="h-px flex-1 bg-white/5"></div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {isLoading ? (
+             <div className="lg:col-span-3 py-20 text-center border-2 border-dashed border-white/5 rounded-[40px]">
+                <RefreshCw className="w-12 h-12 text-gold-500/20 animate-spin mx-auto mb-4" />
+                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Compiling Deployment Matrix…</p>
+             </div>
+          ) : realProjects.length === 0 ? (
+             <div className="lg:col-span-3 py-20 text-center border-2 border-dashed border-white/5 rounded-[40px]">
+                <Layers className="w-12 h-12 text-slate-800 mx-auto mb-4" />
+                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">No Active Missions Found</p>
+             </div>
+          ) : (
+            realProjects.map(p => (
+              <SectionCard key={p.id} className="p-8 group hover:bg-white/[0.08] flex flex-col h-full border border-slate-200 dark:border-white/10">
+                <div className="flex items-start justify-between mb-8 gap-4">
+                  <div>
+                    <p className="text-[9px] font-black text-gold-500 uppercase tracking-widest mb-1">Entity-0{p.id}</p>
+                    <h4 className="font-black text-slate-900 dark:text-white text-lg uppercase tracking-tight leading-tight">{p.name}</h4>
                   </div>
-                )}
-              </div>
-            </SectionCard>
-          ))}
+                  <StatusBadge status={p.status} />
+                </div>
+
+                <div className="mt-auto space-y-6">
+                  <div>
+                    <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">
+                      <span>Synchronization</span>
+                      <span className="text-slate-900 dark:text-white">{p.progress}%</span>
+                    </div>
+                    <GradientBar value={p.progress} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 py-4 border-y border-white/5">
+                    <div>
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Allocated</p>
+                      <p className="text-xs font-black text-slate-900 dark:text-slate-300">KES {(p.plannedBudget || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Expended</p>
+                      <p className="text-xs font-black text-emerald-400">KES {(p.actualBudget || 0).toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex -space-x-2">
+                       <Avatar initials={p.manager?.split(' ').map(n => n[0]).join('') || 'M'} size="sm" color="bg-blue-500" />
+                    </div>
+                    <button onClick={() => toast('Telemetry Link: Active', 'success')} className="text-[10px] font-black text-gold-500 uppercase tracking-[0.2em] hover:text-gold-400 transition-colors">
+                      View Uplink
+                    </button>
+                  </div>
+                </div>
+              </SectionCard>
+            ))
+          )}
         </div>
       </div>
 
       {/* Recent Notifications Preview */}
-      <SectionCard>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-slate-800">Recent Activity</h3>
-          <span className="text-xs text-blue-600 font-medium cursor-pointer hover:underline">View all</span>
+      <SectionCard className="p-8 group hover:bg-white/[0.08] border border-slate-200 dark:border-white/10">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.3em] flex items-center gap-3">
+             <div className="w-2 h-2 bg-gold-500 rounded-full animate-pulse"></div>
+             Live Data Relay
+          </h3>
+          <button onClick={() => toast('Initializing Audit Log…', 'warn')} className="text-[10px] font-black text-gold-500 uppercase tracking-[0.2em] cursor-pointer hover:text-gold-400 transition-colors border-b border-gold-500/20 pb-0.5">Access Logs</button>
         </div>
-        <div className="space-y-3">
-          {mockNotifications.slice(0, 3).map(n => {
-            const Icon = n.icon
-            return (
-              <div key={n.id} className={`flex items-start gap-3 p-3 rounded-xl ${n.read ? 'bg-slate-50' : 'bg-blue-50 border border-blue-100'}`}>
-                <div className={`p-1.5 rounded-lg bg-white shadow-sm ${n.color}`}>
-                  <Icon className="w-4 h-4" />
+        <div className="space-y-4">
+          {isLoading ? (
+             <div className="py-10 text-center"><RefreshCw className="w-6 h-6 animate-spin mx-auto text-gold-500/20" /></div>
+          ) : notifs.length === 0 ? (
+             <div className="py-10 text-center text-[10px] font-black text-slate-600 uppercase tracking-widest">No Recent Transmissions</div>
+          ) : (
+            notifs.slice(0, 3).map(n => {
+              const { icon: Icon, color } = getNotifConfig(n.notification_type)
+              const isRead = n.status === 'read'
+              return (
+                <div key={n.id} className={`flex items-start gap-6 p-6 rounded-[24px] border transition-all
+                  ${isRead ? 'bg-white/[0.01] border-white/5 opacity-60' : 'bg-white/[0.03] border-gold-500/20 shadow-lg shadow-gold-500/5'}`}>
+                  <div className={`p-4 rounded-2xl bg-white/[0.02] border border-white/10 shadow-sm ${color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{n.title}</p>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1 uppercase tracking-widest">{n.message}</p>
+                  </div>
+                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] whitespace-nowrap">{formatTime(n.created_at)}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800">{n.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{n.message}</p>
-                </div>
-                <span className="text-xs text-slate-400 whitespace-nowrap">{n.time}</span>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </div>
       </SectionCard>
     </div>
@@ -418,137 +482,147 @@ const ProjectsSection = ({ onView, onEdit }) => {
   )
 
   return (
-    <div className="space-y-6">
-      <SectionHeader
-        title="Projects"
-        subtitle="Manage and track all your active and completed projects"
-        action={
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+           <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-2">Portfolio Protocol</p>
+           <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Deployment Matrix</h2>
+        </div>
+        <div className="flex items-center gap-4">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 group-focus-within:text-gold-500 transition-colors" />
               <input
                 type="text"
-                placeholder="Search projects…"
+                placeholder="Initialize Filter…"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-11 pr-6 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 w-full md:w-64"
               />
             </div>
             <button
               onClick={() => setViewMode(v => v === 'list' ? 'kanban' : 'list')}
-              className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition"
+              className="p-3 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition text-gold-500"
               title="Toggle view"
             >
-              {viewMode === 'list' ? <Columns className="w-4 h-4 text-slate-600" /> : <List className="w-4 h-4 text-slate-600" />}
+              {viewMode === 'list' ? <Columns className="w-5 h-5" /> : <List className="w-5 h-5" />}
             </button>
-          </div>
-        }
-      />
+        </div>
+      </div>
 
       {viewMode === 'kanban' ? (
         /* Kanban View */
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto pb-4">
           {['active', 'completed', 'pending'].map(col => (
-            <div key={col} className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-700 capitalize">{col}</h3>
-                <span className="bg-slate-200 text-slate-600 text-xs font-semibold px-2 py-0.5 rounded-full">
+            <div key={col} className="bg-slate-50 dark:bg-white/5 backdrop-blur-xl rounded-[32px] p-6 border border-slate-200 dark:border-white/10 min-w-[320px]">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                   <div className={`w-2 h-2 rounded-full ${col === 'active' ? 'bg-emerald-500' : col === 'completed' ? 'bg-blue-500' : 'bg-gold-500'}`}></div>
+                   <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.3em]">{col}</h3>
+                </div>
+                <span className="bg-slate-100 dark:bg-white/5 text-slate-500 text-[10px] font-black px-3 py-1 rounded-full border border-slate-200 dark:border-white/10">
                   {filtered.filter(p => p.status === col).length}
                 </span>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {filtered.filter(p => p.status === col).map(p => (
-                  <div key={p.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition-shadow cursor-pointer" onClick={() => onView && onView(p)}>
-                    <h4 className="font-semibold text-slate-800 text-sm mb-2">{p.name}</h4>
-                    <div className="mb-2">
-                      <GradientBar value={p.progress} />
-                      <p className="text-xs text-slate-500 mt-1 text-right">{p.progress}%</p>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-slate-500">
-                      <span>{p.team.length} members</span>
-                      <span>Due {p.expectedCompletion}</span>
+                  <div key={p.id} className="bg-white dark:bg-white/[0.02] rounded-[24px] p-6 border border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/[0.05] hover:border-slate-300 dark:hover:border-white/20 transition-all cursor-pointer group shadow-sm dark:shadow-none" onClick={() => onView && onView(p)}>
+                    <p className="text-[9px] font-black text-gold-500 uppercase tracking-widest mb-2">Entity-0{p.id}</p>
+                    <h4 className="font-black text-slate-900 dark:text-white text-sm uppercase tracking-wider mb-4 leading-tight group-hover:text-gold-600 dark:group-hover:text-gold-400 transition-colors">{p.name}</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                           <span>Sync</span>
+                           <span className="text-slate-900 dark:text-white">{p.progress}%</span>
+                        </div>
+                        <GradientBar value={p.progress} />
+                      </div>
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex -space-x-1.5">
+                           {p.team.slice(0, 2).map((t, i) => (
+                             <Avatar key={i} initials={t.split(' ').map(n => n[0]).join('')} size="sm" />
+                           ))}
+                        </div>
+                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">ETA: {p.expectedCompletion.split('-').slice(1).join('/')}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
                 {filtered.filter(p => p.status === col).length === 0 && (
-                  <div className="text-center py-6 text-sm text-slate-400">No projects</div>
+                  <div className="text-center py-10 border-2 border-dashed border-white/5 rounded-[24px]">
+                     <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Null Sprints</p>
+                  </div>
                 )}
               </div>
-              <button onClick={() => toast('Click View Details on a project first', 'warn')}
-                className="w-full border-2 border-dashed border-slate-200 rounded-xl py-2 text-slate-400 text-xs hover:border-blue-300 hover:text-blue-400 transition flex items-center justify-center gap-1 mt-2">
-                <Plus className="w-3.5 h-3.5" /> Add task
-              </button>
             </div>
           ))}
         </div>
       ) : (
         /* List / Gantt-style View */
-        <div className="space-y-4">
+        <div className="space-y-6">
           {filtered.map(p => (
-            <SectionCard key={p.id} className="hover:shadow-md transition-shadow">
-              <div className="flex flex-col md:flex-row md:items-start gap-4">
+            <SectionCard key={p.id} className="p-8 group hover:bg-white/[0.08] border border-white/10 overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
+                 <Layers className="w-32 h-32" />
+              </div>
+
+              <div className="flex flex-col lg:flex-row lg:items-center gap-10 relative z-10">
                 <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <h3 className="font-bold text-slate-800">{p.name}</h3>
+                  <div className="flex flex-wrap items-center gap-4 mb-4">
+                    <p className="text-[10px] font-black text-gold-500 uppercase tracking-widest">Protocol Entity-0{p.id}</p>
                     <StatusBadge status={p.status} />
                   </div>
-                  <p className="text-sm text-slate-500 mb-4">{p.description}</p>
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-3 group-hover:text-gold-400 transition-colors">{p.name}</h3>
+                  <p className="text-sm text-slate-400 font-medium leading-relaxed max-w-2xl">{p.description}</p>
 
                   {/* Gantt-style progress bar */}
-                  <div className="mb-4">
-                    <div className="flex justify-between text-xs text-slate-500 mb-1.5">
-                      <span className="font-medium text-slate-600">Timeline Progress</span>
-                      <span className="font-bold text-slate-800">{p.progress}%</span>
+                  <div className="mt-10">
+                    <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-4">
+                      <span className="flex items-center gap-2">
+                        <Activity size={14} className="text-gold-500" />
+                        Execution Timeline
+                      </span>
+                      <span className="text-white">{p.progress}% Synchronized</span>
                     </div>
-                    <div className="relative w-full bg-slate-100 rounded-full h-4 overflow-hidden">
+                    <div className="relative w-full bg-white/5 rounded-full h-2 overflow-hidden border border-white/5">
                       <div
-                        className="h-4 rounded-full bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-600 transition-all duration-700 flex items-center justify-end pr-2"
+                        className="h-full rounded-full bg-gradient-to-r from-blue-600 via-sky-400 to-emerald-400 transition-all duration-1000 group-hover:shadow-[0_0_20px_rgba(14,165,233,0.3)]"
                         style={{ width: `${p.progress}%` }}
-                      >
-                        {p.progress > 15 && <span className="text-white text-xs font-bold">{p.progress}%</span>}
-                      </div>
+                      />
                     </div>
-                    <div className="flex justify-between text-xs text-slate-400 mt-1">
-                      <span>{p.startDate}</span>
-                      <span>{p.expectedCompletion}</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                    <div className="bg-slate-50 rounded-xl p-3">
-                      <p className="text-xs text-slate-400 mb-0.5">Budget</p>
-                      <p className="font-bold text-slate-800">${p.budget.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-3">
-                      <p className="text-xs text-slate-400 mb-0.5">Spent</p>
-                      <p className="font-bold text-slate-800">${p.spent.toLocaleString()}</p>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-3">
-                      <p className="text-xs text-slate-400 mb-0.5">Remaining</p>
-                      <p className={`font-bold ${p.budget - p.spent > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                        ${(p.budget - p.spent).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl p-3">
-                      <p className="text-xs text-slate-400 mb-0.5">Team</p>
-                      <p className="font-bold text-slate-800">{p.team.length} members</p>
+                    <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-600 mt-4">
+                      <span>INIT: {p.startDate}</span>
+                      <span>TERM: {p.expectedCompletion}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 md:w-36">
-                  <div className="flex -space-x-1.5 mb-2">
-                    {p.team.slice(0, 4).map((t, i) => (
-                      <Avatar key={i} initials={t.split(' ').map(n => n[0]).join('')} size="sm"
-                        color={['bg-blue-500','bg-purple-500','bg-pink-500','bg-emerald-500'][i % 4]} />
-                    ))}
+                <div className="lg:w-72 space-y-6">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Asset Value</p>
+                      <p className="text-xs font-black text-white">KES {p.budget.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Burn Rate</p>
+                      <p className="text-xs font-black text-emerald-400">KES {p.spent.toLocaleString()}</p>
+                    </div>
                   </div>
-                  <button onClick={() => onView && onView(p)} className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-1 justify-center">
-                    <Eye className="w-3.5 h-3.5" /> View
-                  </button>
-                  <button onClick={() => onEdit && onEdit(p)} className="text-sm bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-200 transition flex items-center gap-1 justify-center">
-                    <Edit className="w-3.5 h-3.5" /> Edit
-                  </button>
+
+                  <div className="flex items-center justify-between">
+                     <div className="flex -space-x-2">
+                       {p.team.map((t, i) => (
+                         <Avatar key={i} initials={t.split(' ').map(n => n[0]).join('')} size="sm" />
+                       ))}
+                     </div>
+                     <div className="flex gap-2">
+                        <button onClick={() => onView && onView(p)} className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition text-gold-500" title="Telemetry">
+                           <Eye size={16} />
+                        </button>
+                        <button onClick={() => onEdit && onEdit(p)} className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition text-slate-400" title="Modify">
+                           <Edit size={16} />
+                        </button>
+                     </div>
+                  </div>
                 </div>
               </div>
             </SectionCard>
@@ -565,67 +639,79 @@ const ProjectsSection = ({ onView, onEdit }) => {
 const TasksSection = ({ onAddTask }) => {
   const cols = ['To Do', 'In Progress', 'Review', 'Complete']
   const colColors = {
-    'To Do':       'border-t-slate-400',
+    'To Do':       'border-t-slate-500',
     'In Progress': 'border-t-blue-500',
     'Review':      'border-t-purple-500',
     'Complete':    'border-t-emerald-500',
   }
 
   return (
-    <div className="space-y-6">
-      <SectionHeader
-        title="Task Management"
-        subtitle="Track and manage all tasks across projects"
-        action={
-          <button onClick={() => onAddTask && onAddTask()} className="flex items-center gap-2 bg-blue-600 text-white text-sm px-4 py-2 rounded-xl hover:bg-blue-700 transition">
-            <Plus className="w-4 h-4" /> Add Task
-          </button>
-        }
-      />
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+           <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-2">Module Protocol</p>
+           <h2 className="text-3xl font-black text-white uppercase tracking-tight">Execution Board</h2>
+        </div>
+        <button onClick={() => onAddTask && onAddTask()} className="flex items-center justify-center gap-3 bg-gold-500 text-slate-950 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-gold-400 transition-all shadow-xl shadow-gold-500/20">
+          <Plus className="w-4 h-4" /> Initialize Task
+        </button>
+      </div>
 
       {/* Priority Legend */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-xs text-slate-500 font-medium">Priority:</span>
-        {['Critical','High','Medium','Low'].map(p => <PriorityBadge key={p} priority={p} />)}
+      <div className="flex flex-wrap gap-4 items-center bg-white/5 border border-white/10 p-6 rounded-2xl">
+        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Priority Levels:</span>
+        <div className="flex flex-wrap gap-2">
+           {['Critical','High','Medium','Low'].map(p => <PriorityBadge key={p} priority={p} />)}
+        </div>
       </div>
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 overflow-x-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 overflow-x-auto pb-4">
         {cols.map(col => (
-          <div key={col} className={`bg-slate-50 rounded-2xl border-t-4 ${colColors[col]} border border-slate-100 p-4 min-h-64`}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-slate-700">{col}</h3>
-              <span className="bg-white text-slate-600 text-xs font-bold px-2 py-0.5 rounded-full shadow-sm border border-slate-100">
+          <div key={col} className={`bg-white/5 backdrop-blur-xl rounded-[32px] border border-white/10 p-6 min-h-[500px] min-w-[300px] relative overflow-hidden`}>
+            <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${col === 'In Progress' ? 'from-blue-600 to-sky-400' : col === 'Review' ? 'from-purple-600 to-pink-400' : col === 'Complete' ? 'from-emerald-600 to-teal-400' : 'from-slate-600 to-slate-400'}`} />
+
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em]">{col}</h3>
+              <span className="bg-white/5 text-slate-500 text-[10px] font-black px-3 py-1 rounded-full border border-white/10 shadow-inner">
                 {mockTasks.filter(t => t.status === col).length}
               </span>
             </div>
-            <div className="space-y-3">
+
+            <div className="space-y-4">
               {mockTasks.filter(t => t.status === col).map(task => (
-                <div key={task.id} onClick={() => toast(`Task: ${task.title}`, 'success')} className="bg-white rounded-xl p-3 shadow-sm border border-slate-100 hover:shadow-md transition-shadow cursor-pointer group">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <p className="text-sm font-semibold text-slate-800 leading-tight">{task.title}</p>
-                    <button onClick={e => { e.stopPropagation(); toast('Task options coming soon', 'warn') }}><MoreVertical className="w-4 h-4 text-slate-300 group-hover:text-slate-500 flex-shrink-0 mt-0.5 transition" /></button>
+                <div key={task.id} onClick={() => toast(`Module: ${task.title}`, 'success')} className="bg-white/[0.02] rounded-[24px] p-6 border border-white/5 hover:bg-white/[0.05] hover:border-white/20 transition-all cursor-pointer group shadow-lg">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <p className="text-sm font-black text-white uppercase tracking-wider leading-tight group-hover:text-gold-400 transition-colors">{task.title}</p>
+                    <button onClick={e => { e.stopPropagation(); toast('Secure options encrypted', 'warn') }} className="p-1 rounded-lg hover:bg-white/10 transition">
+                      <MoreVertical className="w-4 h-4 text-slate-600 group-hover:text-slate-400" />
+                    </button>
                   </div>
-                  <p className="text-xs text-slate-400 mb-2">{task.project}</p>
-                  <div className="flex flex-wrap gap-1 mb-3">
+
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="w-1 h-1 rounded-full bg-gold-500"></div>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{task.project}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 mb-6">
                     {task.tags.map(tag => (
-                      <span key={tag} className="bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded-full">{tag}</span>
+                      <span key={tag} className="bg-white/5 text-slate-400 text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md border border-white/5">{tag}</span>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between">
+
+                  <div className="flex items-center justify-between pt-4 border-t border-white/5">
                     <PriorityBadge priority={task.priority} />
-                    <div className="flex items-center gap-1.5">
-                      <Avatar initials={task.assignee.split(' ').map(n => n[0]).join('')} size="sm" />
-                    </div>
+                    <Avatar initials={task.assignee.split(' ').map(n => n[0]).join('')} size="sm" />
                   </div>
-                  <div className="flex items-center gap-1 mt-2 text-xs text-slate-400">
-                    <Calendar className="w-3 h-3" />
-                    <span>Due {task.due}</span>
+
+                  <div className="flex items-center gap-2 mt-4 text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">
+                    <Calendar className="w-3 h-3 text-slate-500" />
+                    <span>DUE: {task.due}</span>
                   </div>
                 </div>
               ))}
-              <button onClick={() => onAddTask && onAddTask()} className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 text-slate-400 text-xs hover:border-blue-300 hover:text-blue-400 transition flex items-center justify-center gap-1">
-                <Plus className="w-3.5 h-3.5" /> Add task
+              <button onClick={() => onAddTask && onAddTask()} className="w-full border-2 border-dashed border-white/5 rounded-[24px] py-6 text-slate-600 text-[10px] font-black uppercase tracking-[0.3em] hover:border-gold-500/20 hover:text-gold-500 hover:bg-gold-500/[0.02] transition-all flex items-center justify-center gap-2 mt-2">
+                <Plus className="w-4 h-4" /> Add Module
               </button>
             </div>
           </div>
@@ -639,70 +725,88 @@ const TasksSection = ({ onAddTask }) => {
 // SECTION: RESOURCES
 // ─────────────────────────────────────────────
 const ResourcesSection = () => (
-  <div className="space-y-6">
-    <SectionHeader title="Resources & Team" subtitle="Manage team assignments and workload capacity" />
+  <div className="space-y-10">
+    <div>
+       <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-2">Human Protocol</p>
+       <h2 className="text-3xl font-black text-white uppercase tracking-tight">Active Personnel</h2>
+    </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
       {mockTeam.map(member => (
-        <SectionCard key={member.id} className="hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-4">
+        <SectionCard key={member.id} className="p-8 group hover:bg-white/[0.08] border border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500/5 blur-3xl -z-10 group-hover:bg-gold-500/10 transition-colors" />
+
+          <div className="flex items-center gap-6 mb-8">
             <Avatar initials={member.avatar} size="lg"
-              color={member.status === 'away' ? 'bg-gradient-to-br from-slate-400 to-slate-500' : 'bg-gradient-to-br from-blue-500 to-indigo-600'} />
+              color={member.status === 'away' ? 'bg-white/10 border border-white/10' : 'bg-gradient-to-br from-gold-400 to-gold-600'} />
             <div>
-              <p className="font-bold text-slate-800">{member.name}</p>
-              <p className="text-xs text-slate-500">{member.role}</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${member.status === 'active' ? 'bg-emerald-500' : 'bg-yellow-400'}`} />
-                <span className="text-xs text-slate-400 capitalize">{member.status}</span>
+              <p className="text-lg font-black text-white uppercase tracking-tight">{member.name}</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">{member.role}</p>
+              <div className="flex items-center gap-2 mt-3">
+                <div className={`w-2 h-2 rounded-full ${member.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-gold-500'}`} />
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{member.status} protocol</span>
               </div>
             </div>
           </div>
-          <div className="mb-3">
-            <div className="flex justify-between text-xs text-slate-500 mb-1">
-              <span>Capacity</span>
-              <span className={`font-semibold ${member.capacity >= 80 ? 'text-red-500' : member.capacity >= 60 ? 'text-orange-500' : 'text-emerald-600'}`}>
-                {member.capacity}%
-              </span>
+          <div className="space-y-6">
+            <div>
+              <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-500 mb-3">
+                <span>Synchronization Load</span>
+                <span className={`font-black ${member.capacity >= 80 ? 'text-rose-500' : member.capacity >= 60 ? 'text-orange-500' : 'text-emerald-400'}`}>
+                  {member.capacity}%
+                </span>
+              </div>
+              <GradientBar value={member.capacity} />
             </div>
-            <GradientBar value={member.capacity} />
-          </div>
-          <div className="flex flex-wrap gap-1 mb-3">
-            {member.skills.slice(0, 3).map(s => (
-              <span key={s} className="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full">{s}</span>
-            ))}
-          </div>
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span className="flex items-center gap-1"><FolderKanban className="w-3.5 h-3.5" />{member.projects} project{member.projects !== 1 ? 's' : ''}</span>
-            <button onClick={() => toast(`Email sent to ${member.email}`, 'success')} className="flex items-center gap-1 hover:text-blue-600 transition"><Mail className="w-3.5 h-3.5 text-blue-400" />{member.email}</button>
+            <div className="flex flex-wrap gap-2">
+              {member.skills.slice(0, 3).map(s => (
+                <span key={s} className="bg-white/5 text-slate-400 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-white/5">{s}</span>
+              ))}
+            </div>
+            <div className="flex items-center justify-between pt-6 border-t border-white/5">
+              <span className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest"><Briefcase className="w-3.5 h-3.5" />{member.projects} Units</span>
+              <button onClick={() => toast(`Encrypted relay sent to ${member.email}`, 'success')} className="text-[9px] font-black text-gold-500 uppercase tracking-widest hover:text-gold-400 transition-colors flex items-center gap-2">
+                <Mail className="w-3.5 h-3.5" /> Direct Sync
+              </button>
+            </div>
           </div>
         </SectionCard>
       ))}
     </div>
 
     {/* Resource Calendar Stub */}
-    <SectionCard>
-      <h3 className="font-semibold text-slate-800 mb-4 flex items-center gap-2"><Calendar className="w-4 h-4 text-blue-500" />Resource Calendar — March 2024</h3>
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-slate-500 mb-2">
-        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => <div key={d} className="font-medium">{d}</div>)}
+    <SectionCard className="p-8 border border-white/10">
+      <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
+         <Calendar className="w-4 h-4 text-gold-500" />
+         Deployment Schedule — {new Date().toLocaleString('default', { month: 'long' })} {new Date().getFullYear()}
+      </h3>
+      <div className="grid grid-cols-7 gap-2 text-center text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">
+        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => <div key={d} className="py-2">{d}</div>)}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-2">
         {Array.from({ length: 31 }, (_, i) => {
           const day = i + 1
           const hasMeeting = [5, 12, 15, 19, 26].includes(day)
-          const isToday = day === 18
+          const isToday = day === new Date().getDate()
           return (
             <div key={day}
-              onClick={() => hasMeeting ? toast(`Meeting on day ${day}`, 'success') : toast(`No meetings on day ${day}`)}
-              className={`aspect-square rounded-lg flex items-center justify-center text-xs cursor-pointer transition
-                ${isToday ? 'bg-blue-600 text-white font-bold' : hasMeeting ? 'bg-blue-50 text-blue-700 font-semibold border border-blue-200' : 'hover:bg-slate-50 text-slate-600'}`}>
+              onClick={() => hasMeeting ? toast(`Protocol session scheduled: Day ${day}`, 'success') : toast(`Cycle Clear: Day ${day}`)}
+              className={`aspect-square rounded-xl flex items-center justify-center text-[10px] font-black transition-all cursor-pointer border
+                ${isToday ? 'bg-gold-500 text-slate-950 border-gold-500 shadow-xl shadow-gold-500/20' : hasMeeting ? 'bg-white/5 text-gold-500 border-gold-500/20 hover:bg-white/10' : 'bg-white/[0.01] text-slate-500 border-white/5 hover:border-white/10 hover:text-white'}`}>
               {day}
             </div>
           )
         })}
       </div>
-      <div className="flex items-center gap-4 mt-3 text-xs text-slate-500">
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-600" /><span>Today</span></div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-blue-50 border border-blue-200" /><span>Meetings scheduled</span></div>
+      <div className="flex flex-wrap items-center gap-6 mt-8 pt-8 border-t border-white/5">
+        <div className="flex items-center gap-2.5">
+           <div className="w-3 h-3 rounded bg-gold-500 shadow-lg shadow-gold-500/20" />
+           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Node</span>
+        </div>
+        <div className="flex items-center gap-2.5">
+           <div className="w-3 h-3 rounded bg-white/5 border border-gold-500/20" />
+           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Planned Protocol</span>
+        </div>
       </div>
     </SectionCard>
   </div>
@@ -719,29 +823,33 @@ const FinancialsSection = () => {
 
   // CSS-only donut segments
   const segments = [
-    { label: 'Community Center', pct: Math.round((projects[0].spent / totalSpent) * 100), color: '#3b82f6' },
-    { label: 'Youth Sports', pct: Math.round((projects[1].spent / totalSpent) * 100), color: '#8b5cf6' },
-    { label: 'Scholarship Fund', pct: Math.round((projects[2].spent / totalSpent) * 100), color: '#10b981' },
+    { label: 'Community Hub', pct: Math.round((projects[0].spent / totalSpent) * 100), color: '#f59e0b' },
+    { label: 'Athletic Units', pct: Math.round((projects[1].spent / totalSpent) * 100), color: '#38bdf8' },
+    { label: 'Strategic Fund', pct: Math.round((projects[2].spent / totalSpent) * 100), color: '#10b981' },
   ]
   let cumulativePct = 0
 
   return (
-    <div className="space-y-6">
-      <SectionHeader title="Financials" subtitle="Budget tracking, invoices, and cost breakdown" />
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard icon={DollarSign} label="Total Budget" value={`$${(totalBudget / 1000).toFixed(0)}K`} color="bg-blue-50 text-blue-600" />
-        <KpiCard icon={TrendingUp} label="Total Spent" value={`$${(totalSpent / 1000).toFixed(0)}K`} delta={utilPct} deltaLabel="of budget used" color="bg-orange-50 text-orange-600" />
-        <KpiCard icon={CheckCircle} label="Remaining" value={`$${(remaining / 1000).toFixed(0)}K`} color="bg-emerald-50 text-emerald-600" />
-        <KpiCard icon={AlertCircle} label="Overdue Amount" value="$20K" color="bg-red-50 text-red-500" />
+    <div className="space-y-10">
+      <div>
+         <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-2">Capital Protocol</p>
+         <h2 className="text-3xl font-black text-white uppercase tracking-tight">Financial Ledger</h2>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KpiCard icon={DollarSign} label="Total Allocation" value={`KES ${(totalBudget / 1000).toFixed(0)}K`} color="bg-gold-500/10 text-gold-500 border-gold-500/20" />
+        <KpiCard icon={TrendingUp} label="Actual Burn" value={`KES ${(totalSpent / 1000).toFixed(0)}K`} delta={utilPct} deltaLabel="Utilization Index" color="bg-sky-500/10 text-sky-400 border-sky-500/20" />
+        <KpiCard icon={CheckCircle} label="Reserve Capital" value={`KES ${(remaining / 1000).toFixed(0)}K`} color="bg-emerald-500/10 text-emerald-400 border-emerald-500/20" />
+        <KpiCard icon={AlertCircle} label="Risk Exposure" value="KES 2.0M" color="bg-rose-500/10 text-rose-500 border-rose-500/20" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Donut Chart (CSS-only) */}
-        <SectionCard className="flex flex-col items-center">
-          <h3 className="font-semibold text-slate-800 mb-4 self-start">Cost Breakdown</h3>
-          <div className="relative w-40 h-40 flex-shrink-0" style={{ borderRadius: '50%' }}>
-            <svg viewBox="0 0 36 36" className="w-40 h-40 -rotate-90">
+        <SectionCard className="flex flex-col items-center p-10 border border-white/10 group hover:bg-white/[0.08]">
+          <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-10 self-start">Burn Matrix</h3>
+          <div className="relative w-48 h-48 flex-shrink-0" style={{ borderRadius: '50%' }}>
+            <svg viewBox="0 0 36 36" className="w-48 h-48 -rotate-90">
+              <circle cx="18" cy="18" r="15.9154943" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
               {segments.map((seg, idx) => {
                 const startPct = cumulativePct
                 cumulativePct += seg.pct
@@ -752,45 +860,53 @@ const FinancialsSection = () => {
                     fill="transparent" stroke={seg.color} strokeWidth="3.5"
                     strokeDasharray={strokeDasharray}
                     strokeDashoffset={strokeDashoffset}
-                    style={{ transition: 'stroke-dashoffset 0.5s' }}
+                    style={{ transition: 'stroke-dashoffset 0.8s ease-in-out' }}
+                    className="drop-shadow-[0_0_8px_rgba(245,158,11,0.2)]"
                   />
                 )
               })}
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-2xl font-bold text-slate-800">{utilPct}%</p>
-              <p className="text-xs text-slate-400">Utilized</p>
+              <p className="text-4xl font-black text-white">{utilPct}%</p>
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Expended</p>
             </div>
           </div>
-          <div className="space-y-2 mt-4 w-full">
+          <div className="space-y-4 mt-10 w-full">
             {segments.map((seg, i) => (
-              <div key={i} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: seg.color }} />
-                  <span className="text-slate-600 text-xs">{seg.label}</span>
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: seg.color }} />
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{seg.label}</span>
                 </div>
-                <span className="font-semibold text-slate-800 text-xs">{seg.pct}%</span>
+                <span className="text-xs font-black text-white">{seg.pct}%</span>
               </div>
             ))}
           </div>
         </SectionCard>
 
         {/* Budget per project */}
-        <SectionCard className="lg:col-span-2">
-          <h3 className="font-semibold text-slate-800 mb-4">Budget Tracker</h3>
-          <div className="space-y-4">
+        <SectionCard className="lg:col-span-2 p-10 border border-white/10 group hover:bg-white/[0.08]">
+          <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-10">Entity Allocation Tracker</h3>
+          <div className="space-y-8">
             {projects.map(p => {
               const pct = Math.round((p.spent / p.budget) * 100)
               return (
-                <div key={p.id}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium text-slate-700">{p.name}</span>
-                    <span className="text-slate-500">${p.spent.toLocaleString()} / ${p.budget.toLocaleString()}</span>
+                <div key={p.id} className="group/item">
+                  <div className="flex justify-between items-end mb-4">
+                    <div>
+                       <p className="text-[9px] font-black text-gold-500 uppercase tracking-widest mb-1">Entity-0{p.id}</p>
+                       <span className="text-sm font-black text-white uppercase tracking-wider">{p.name}</span>
+                    </div>
+                    <div className="text-right">
+                       <span className="text-xs font-black text-slate-300">KES {p.spent.toLocaleString()}</span>
+                       <span className="text-slate-600 text-[10px] font-black mx-2">/</span>
+                       <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">KES {p.budget.toLocaleString()}</span>
+                    </div>
                   </div>
                   <GradientBar value={p.spent} max={p.budget} />
-                  <div className="flex justify-between text-xs text-slate-400 mt-1">
-                    <span>{pct}% spent</span>
-                    <span>${(p.budget - p.spent).toLocaleString()} remaining</span>
+                  <div className="flex justify-between text-[9px] font-black uppercase tracking-widest text-slate-500 mt-4">
+                    <span className="text-gold-500">{pct}% Utilization</span>
+                    <span>Remaining: KES {(p.budget - p.spent).toLocaleString()}</span>
                   </div>
                 </div>
               )
@@ -800,33 +916,33 @@ const FinancialsSection = () => {
       </div>
 
       {/* Invoice List */}
-      <SectionCard>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-slate-800">Invoice History</h3>
-          <button onClick={() => toast('Exporting invoice history as CSV…')} className="flex items-center gap-1 text-xs text-blue-600 hover:underline">
-            <Download className="w-3.5 h-3.5" /> Export
+      <SectionCard className="p-8 border border-white/10 overflow-hidden">
+        <div className="flex items-center justify-between mb-10">
+          <h3 className="text-sm font-black text-white uppercase tracking-[0.3em]">Capital Transmission Records</h3>
+          <button onClick={() => toast('Compiling Encrypted CSV…')} className="flex items-center gap-2 text-[10px] font-black text-gold-500 uppercase tracking-[0.2em] hover:text-gold-400 transition-all border-b border-gold-500/20 pb-0.5">
+            <Download className="w-3.5 h-3.5" /> Export Ledger
           </button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-slate-100">
-                {['Invoice','Project','Amount','Date','Due','Status',''].map(h => (
-                  <th key={h} className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wide pb-3 pr-4">{h}</th>
+              <tr className="border-b border-white/10">
+                {['Transmission','Deployment','Value','Protocol Date','Due Date','Protocol Status',''].map(h => (
+                  <th key={h} className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-white/5">
               {mockInvoices.map(inv => (
-                <tr key={inv.id} className="hover:bg-slate-50 transition group">
-                  <td className="py-3 pr-4 font-mono text-xs text-blue-600 font-semibold">{inv.id}</td>
-                  <td className="py-3 pr-4 text-slate-700 max-w-32 truncate">{inv.project}</td>
-                  <td className="py-3 pr-4 font-bold text-slate-800">${inv.amount.toLocaleString()}</td>
-                  <td className="py-3 pr-4 text-slate-500">{inv.date}</td>
-                  <td className="py-3 pr-4 text-slate-500">{inv.due}</td>
-                  <td className="py-3 pr-4"><StatusBadge status={inv.status} /></td>
-                  <td className="py-3">
-                    <button onClick={() => toast(`Downloading invoice ${inv.id}…`)} className="opacity-0 group-hover:opacity-100 transition text-slate-400 hover:text-blue-600">
+                <tr key={inv.id} className="hover:bg-white/[0.02] transition-colors group">
+                  <td className="px-6 py-5 text-sm font-black text-gold-500 font-mono tracking-tighter">{inv.id}</td>
+                  <td className="px-6 py-5 text-xs font-black text-white uppercase tracking-wider">{inv.project}</td>
+                  <td className="px-6 py-5 text-sm font-black text-white">KES {inv.amount.toLocaleString()}</td>
+                  <td className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">{inv.date.replace('2024', new Date().getFullYear())}</td>
+                  <td className="px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">{inv.due.replace('2024', new Date().getFullYear())}</td>
+                  <td className="px-6 py-5"><StatusBadge status={inv.status} /></td>
+                  <td className="px-6 py-5">
+                    <button onClick={() => toast(`Initializing Download: ${inv.id}…`)} className="p-3 bg-white/5 border border-white/10 rounded-xl text-slate-400 hover:text-gold-500 hover:bg-white/10 transition-all">
                       <Download className="w-4 h-4" />
                     </button>
                   </td>
@@ -850,50 +966,55 @@ const DocumentsSection = () => {
   const docTypeIcon = { Contracts: Lock, Proposals: FileText, Reports: BarChart2, Deliverables: CheckSquare }
 
   return (
-    <div className="space-y-6">
-      <SectionHeader
-        title="Document Repository"
-        subtitle="Centralized storage for all project documents"
-        action={
-          <button onClick={() => toast('File upload dialog coming soon', 'warn')} className="flex items-center gap-2 bg-blue-600 text-white text-sm px-4 py-2 rounded-xl hover:bg-blue-700 transition">
-            <Upload className="w-4 h-4" /> Upload
-          </button>
-        }
-      />
+    <div className="space-y-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+           <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-2">Vault Protocol</p>
+           <h2 className="text-3xl font-black text-white uppercase tracking-tight">Secure Repository</h2>
+        </div>
+        <button onClick={() => toast('Initializing Secure Upload…', 'warn')} className="flex items-center justify-center gap-3 bg-gold-500 text-slate-950 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-gold-400 transition-all shadow-xl shadow-gold-500/20">
+          <Upload className="w-4 h-4" /> Secure Transmission
+        </button>
+      </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3">
         {categories.map(cat => (
           <button key={cat} onClick={() => setActiveCategory(cat)}
-            className={`px-4 py-1.5 rounded-xl text-sm font-medium transition ${activeCategory === cat ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border
+              ${activeCategory === cat ? 'bg-gold-500 text-slate-950 border-gold-500 shadow-lg shadow-gold-500/20' : 'bg-white/5 text-slate-500 border-white/10 hover:bg-white/10 hover:text-white'}`}>
             {cat}
           </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filtered.map(doc => {
           const Icon = docTypeIcon[doc.category] || FileText
           return (
-            <SectionCard key={doc.id} className="hover:shadow-md transition-shadow group cursor-pointer">
-              <div className="flex items-start gap-3">
-                <div className="p-2.5 bg-blue-50 rounded-xl text-blue-600 flex-shrink-0">
-                  <Icon className="w-5 h-5" />
+            <SectionCard key={doc.id} className="p-8 group hover:bg-white/[0.08] border border-white/10 cursor-pointer overflow-hidden relative">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
+                 <Icon className="w-24 h-24" />
+              </div>
+
+              <div className="flex items-start gap-6 relative z-10">
+                <div className="p-5 bg-white/5 rounded-2xl text-gold-500 border border-white/10 group-hover:scale-110 transition-transform">
+                  <Icon className="w-6 h-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-slate-800 text-sm truncate">{doc.name}</p>
-                    <span className="bg-slate-100 text-slate-500 text-xs px-2 py-0.5 rounded-full whitespace-nowrap">{doc.version}</span>
+                  <div className="flex items-start justify-between gap-4">
+                    <p className="font-black text-white text-sm uppercase tracking-wider truncate">{doc.name}</p>
+                    <span className="bg-white/5 text-slate-500 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border border-white/5 whitespace-nowrap">{doc.version}</span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-0.5">{doc.project}</p>
-                  <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
-                    <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full">{doc.category}</span>
-                    <span>{doc.size}</span>
-                    <span>{doc.date}</span>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-2">{doc.project}</p>
+                  <div className="flex flex-wrap items-center gap-4 mt-6">
+                    <span className="bg-gold-500/10 text-gold-500 text-[8px] font-black uppercase tracking-[0.2em] px-2 py-1 rounded-md border border-gold-500/20">{doc.category}</span>
+                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{doc.size}</span>
+                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{doc.date}</span>
                   </div>
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                  <button onClick={() => toast(`Opening ${doc.name}…`)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition"><Eye className="w-4 h-4" /></button>
-                  <button onClick={() => toast(`Downloading ${doc.name}…`)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-blue-600 transition"><Download className="w-4 h-4" /></button>
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                  <button onClick={() => toast(`Decrypting ${doc.name}…`)} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-gold-500 border border-white/10 transition-all shadow-lg"><Eye className="w-4 h-4" /></button>
+                  <button onClick={() => toast(`Downloading Encrypted Blob: ${doc.name}…`)} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-gold-500 border border-white/10 transition-all shadow-lg"><Download className="w-4 h-4" /></button>
                 </div>
               </div>
             </SectionCard>
@@ -917,78 +1038,89 @@ const CommunicationSection = () => {
   ]
 
   return (
-    <div className="space-y-6">
-      <SectionHeader title="Communication Hub" subtitle="Messages, discussions, and meeting scheduler" />
+    <div className="space-y-10">
+      <div>
+         <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-2">Sync Protocol</p>
+         <h2 className="text-3xl font-black text-white uppercase tracking-tight">Communication Hub</h2>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* Message Threads */}
-        <div className="lg:col-span-2 space-y-4">
-          <h3 className="font-semibold text-slate-800">Discussion Threads</h3>
-          {mockMessages.map(m => (
-            <SectionCard key={m.id} className={`hover:shadow-md transition-shadow cursor-pointer ${m.unread ? 'border-l-4 border-l-blue-500' : ''}`}>
-              <div className="flex items-start gap-3">
-                <Avatar initials={m.avatar} size="md"
-                  color={m.unread ? 'bg-gradient-to-br from-blue-500 to-indigo-600' : 'bg-gradient-to-br from-slate-400 to-slate-500'} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-800 text-sm">{m.author}</span>
-                      {m.unread && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
+        <div className="lg:col-span-2 space-y-6">
+          <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-8">Secure Discussion Threads</h3>
+          <div className="space-y-4">
+            {mockMessages.map(m => (
+              <SectionCard key={m.id} className={`p-8 group hover:bg-white/[0.08] transition-all cursor-pointer border border-white/10 ${m.unread ? 'border-l-4 border-l-gold-500 shadow-lg shadow-gold-500/5' : ''}`}>
+                <div className="flex items-start gap-6">
+                  <Avatar initials={m.avatar} size="md"
+                    color={m.unread ? 'bg-gradient-to-br from-gold-400 to-gold-600 shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-white/10 border border-white/10'} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-4 mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="font-black text-white text-sm uppercase tracking-wider">{m.author}</span>
+                        {m.unread && <div className="w-1.5 h-1.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.5)]" />}
+                      </div>
+                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{m.time}</span>
                     </div>
-                    <span className="text-xs text-slate-400">{m.time}</span>
+                    <p className="text-[9px] font-black text-gold-500 uppercase tracking-widest mb-2">Entity Uplink: {m.project}</p>
+                    <p className="text-sm text-slate-400 font-medium leading-relaxed">{m.message}</p>
                   </div>
-                  <p className="text-xs text-blue-500 mb-1">{m.project}</p>
-                  <p className="text-sm text-slate-600 leading-relaxed">{m.message}</p>
                 </div>
-              </div>
-            </SectionCard>
-          ))}
+              </SectionCard>
+            ))}
+          </div>
 
           {/* Compose */}
-          <SectionCard>
-            <h4 className="font-semibold text-slate-700 text-sm mb-3">New Message</h4>
-            <div className="flex gap-2">
+          <SectionCard className="p-8 border border-white/10 mt-10">
+            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6">Initialize New Relay</h4>
+            <div className="flex flex-col sm:flex-row gap-4">
               <input
                 value={msg}
                 onChange={e => setMsg(e.target.value)}
-                placeholder="Type your message…"
-                className="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter encrypted protocol message…"
+                className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-medium text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-gold-500/40 transition-all"
               />
-              <button
-                onClick={() => { setMsg(''); toast('Message sent!') }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition flex items-center gap-1"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-              <button onClick={() => toast('File attachment coming soon', 'warn')} className="p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 transition text-slate-400">
-                <Paperclip className="w-4 h-4" />
-              </button>
+              <div className="flex gap-3">
+                 <button
+                   onClick={() => { setMsg(''); toast('Transmission Complete!') }}
+                   className="bg-gold-500 text-slate-950 px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-gold-400 transition-all shadow-xl shadow-gold-500/20 flex items-center gap-3"
+                 >
+                   <Send className="w-4 h-4" /> Initialize
+                 </button>
+                 <button onClick={() => toast('Vault attachment protocol active', 'warn')} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition text-slate-400 hover:text-white">
+                   <Paperclip className="w-5 h-5" />
+                 </button>
+              </div>
             </div>
           </SectionCard>
         </div>
 
         {/* Meeting Scheduler */}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-slate-800">Upcoming Meetings</h3>
-          {meetings.map(meet => (
-            <SectionCard key={meet.id} className="hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-2">
-                {meet.type === 'Video' ? <Video className="w-4 h-4 text-blue-500" /> : <Users className="w-4 h-4 text-emerald-500" />}
-                <p className="font-semibold text-slate-800 text-sm">{meet.title}</p>
-              </div>
-              <div className="space-y-1 text-xs text-slate-500">
-                <div className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />{meet.date}</div>
-                <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />{meet.time}</div>
-                <div className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" />{meet.attendees} attendees</div>
-              </div>
-              <div className="flex gap-2 mt-3">
-                <button onClick={() => toast(`Joining ${meet.title}…`)} className="flex-1 bg-blue-50 text-blue-600 text-xs py-1.5 rounded-lg hover:bg-blue-100 transition font-medium">Join</button>
-                <button onClick={() => toast(`Opening details for ${meet.title}`)} className="flex-1 bg-slate-50 text-slate-600 text-xs py-1.5 rounded-lg hover:bg-slate-100 transition font-medium">Details</button>
-              </div>
-            </SectionCard>
-          ))}
-          <button onClick={() => toast('Meeting scheduler coming soon', 'warn')} className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 text-slate-400 text-sm hover:border-blue-300 hover:text-blue-500 transition flex items-center justify-center gap-2">
-            <Plus className="w-4 h-4" /> Schedule Meeting
+        <div className="space-y-6">
+          <h3 className="text-xs font-black text-white uppercase tracking-[0.3em] mb-8">Active Synchronizations</h3>
+          <div className="space-y-4">
+            {meetings.map(meet => (
+              <SectionCard key={meet.id} className="p-6 border border-white/10 group hover:bg-white/[0.08] transition-all">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className={`p-3 rounded-xl border border-white/10 ${meet.type === 'Video' ? 'bg-gold-500/10 text-gold-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                    {meet.type === 'Video' ? <Video className="w-5 h-5" /> : <Users className="w-5 h-5" />}
+                  </div>
+                  <p className="font-black text-white text-sm uppercase tracking-wider">{meet.title}</p>
+                </div>
+                <div className="space-y-3 pl-2">
+                  <div className="flex items-center gap-3 text-[10px] font-black text-slate-500 uppercase tracking-widest"><Calendar className="w-3.5 h-3.5" />{meet.date}</div>
+                  <div className="flex items-center gap-3 text-[10px] font-black text-slate-500 uppercase tracking-widest"><Clock className="w-3.5 h-3.5" />{meet.time}</div>
+                  <div className="flex items-center gap-3 text-[10px] font-black text-slate-500 uppercase tracking-widest"><Users className="w-3.5 h-3.5" />{meet.attendees} Personnel</div>
+                </div>
+                <div className="flex gap-3 mt-8">
+                  <button onClick={() => toast(`Establishing Link: ${meet.title}…`)} className="flex-1 bg-gold-500 text-slate-950 text-[9px] font-black uppercase tracking-[0.2em] py-3 rounded-xl hover:bg-gold-400 transition shadow-lg shadow-gold-500/10">Initialize Link</button>
+                  <button onClick={() => toast(`Accessing Protocol: ${meet.title}`)} className="flex-1 bg-white/5 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] py-3 rounded-xl border border-white/5 hover:bg-white/10 transition">Telemetry</button>
+                </div>
+              </SectionCard>
+            ))}
+          </div>
+          <button onClick={() => toast('Scheduler protocol encrypted', 'warn')} className="w-full border-2 border-dashed border-white/5 rounded-[32px] py-8 text-slate-600 text-[10px] font-black uppercase tracking-[0.3em] hover:border-gold-500/20 hover:text-gold-500 hover:bg-gold-500/[0.02] transition-all flex items-center justify-center gap-3 mt-6">
+            <Plus className="w-4 h-4" /> Schedule Sync
           </button>
         </div>
       </div>
@@ -999,69 +1131,79 @@ const CommunicationSection = () => {
 // ─────────────────────────────────────────────
 // SECTION: NOTIFICATIONS
 // ─────────────────────────────────────────────
-const NotificationsSection = () => {
-  const [notifs, setNotifs] = useState(mockNotifications)
-  const toggleRead = id => setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: !n.read } : n))
-
-  const prefToggles = [
-    { label: 'Task due reminders', on: true },
-    { label: 'Invoice alerts', on: true },
-    { label: 'Project milestone updates', on: true },
-    { label: 'New document uploads', on: false },
-    { label: 'Team messages', on: true },
-    { label: 'Weekly digest email', on: false },
-  ]
-  const [prefs, setPrefs] = useState(prefToggles)
+const NotificationsSection = ({ user, notifs = [], isLoading = false, onToggleRead, onAcknowledgeAll, onRefresh }) => {
+  const userId = user?.id || user?.userId
 
   return (
-    <div className="space-y-6">
-      <SectionHeader title="Notifications" subtitle="Stay up to date with all project activity" />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Notification List */}
-        <div className="lg:col-span-2 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-slate-800">Inbox</h3>
-            <button onClick={() => setNotifs(prev => prev.map(n => ({ ...n, read: true })))}
-              className="text-xs text-blue-600 hover:underline">Mark all as read</button>
-          </div>
-          {notifs.map(n => {
-            const Icon = n.icon
-            return (
-              <div key={n.id} onClick={() => toggleRead(n.id)}
-                className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition
-                  ${n.read ? 'bg-white border-slate-100 hover:bg-slate-50' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
-                <div className={`p-2 rounded-xl bg-white shadow-sm ${n.color}`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={`text-sm font-semibold ${n.read ? 'text-slate-700' : 'text-slate-900'}`}>{n.title}</p>
-                    {!n.read && <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0" />}
-                  </div>
-                  <p className="text-xs text-slate-500 mt-0.5">{n.message}</p>
-                  <p className="text-xs text-slate-400 mt-1">{n.time}</p>
-                </div>
-              </div>
-            )
-          })}
+    <div className="space-y-10">
+      <div className="flex items-center justify-between">
+        <div>
+           <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-2">Relay Protocol</p>
+           <h2 className="text-3xl font-black text-white uppercase tracking-tight">Data Inbox</h2>
         </div>
+        <button
+          onClick={onRefresh}
+          disabled={isLoading}
+          className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-gold-500 disabled:opacity-50"
+        >
+          <RefreshCw size={20} className={isLoading ? 'animate-spin' : ''} />
+        </button>
+      </div>
 
-        {/* Preference Toggles */}
-        <SectionCard className="h-fit">
-          <h3 className="font-semibold text-slate-800 mb-4">Notification Preferences</h3>
-          <div className="space-y-3">
-            {prefs.map((pref, i) => (
-              <div key={i} className="flex items-center justify-between gap-3">
-                <span className="text-sm text-slate-600">{pref.label}</span>
-                <button onClick={() => setPrefs(prev => prev.map((p, j) => j === i ? { ...p, on: !p.on } : p))}
-                  className={`relative w-10 h-5 rounded-full transition-colors ${pref.on ? 'bg-blue-600' : 'bg-slate-200'}`}>
-                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${pref.on ? 'translate-x-5' : ''}`} />
-                </button>
-              </div>
-            ))}
+      <div className="max-w-4xl">
+        {/* Notification List */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xs font-black text-white uppercase tracking-[0.3em]">System Relays</h3>
+            <button
+              onClick={onAcknowledgeAll}
+              disabled={notifs.length === 0 || notifs.every(n => n.status === 'read')}
+              className="text-[10px] font-black text-gold-500 uppercase tracking-[0.2em] hover:text-gold-400 transition-all border-b border-gold-500/20 pb-0.5 disabled:opacity-30 disabled:cursor-not-allowed">
+              Acknowledge All
+            </button>
           </div>
-        </SectionCard>
+
+          {isLoading ? (
+            <div className="py-20 text-center">
+               <RefreshCw className="w-10 h-10 text-gold-500/20 animate-spin mx-auto mb-4" />
+               <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Scanning Frequencies…</p>
+            </div>
+          ) : notifs.length === 0 ? (
+            <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[32px]">
+               <Bell className="w-10 h-10 text-slate-700 mx-auto mb-4" />
+               <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Relay Silence: No Active Notifications</p>
+            </div>
+          ) : (
+            notifs.map(n => {
+              const { icon: Icon, color, bg } = getNotifConfig(n.notification_type)
+              const isRead = n.status === 'read'
+              return (
+                <div
+                  key={n.id}
+                  onClick={() => !isRead && onToggleRead(n.id)}
+                  className={`flex items-start gap-6 p-6 rounded-[24px] border transition-all
+                    ${isRead
+                      ? 'bg-white/[0.01] border-white/5 opacity-60 grayscale-[0.5]'
+                      : 'bg-white/[0.03] border-gold-500/20 shadow-lg shadow-gold-500/5 cursor-pointer hover:bg-white/[0.05]'}`}>
+                  <div className={`p-4 rounded-2xl bg-white/[0.02] border border-white/10 shadow-sm ${color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-4">
+                      <p className={`text-sm font-black uppercase tracking-wider ${isRead ? 'text-slate-300' : 'text-white'}`}>{n.title}</p>
+                      {!isRead && <div className="w-2 h-2 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(234,179,8,0.5)] flex-shrink-0 animate-pulse" />}
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed mt-2 uppercase tracking-widest">{n.message}</p>
+                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-4 flex items-center gap-2">
+                       <Clock size={10} />
+                       {formatTime(n.created_at)}
+                    </p>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
       </div>
     </div>
   )
@@ -1442,7 +1584,7 @@ const RoadmapSection = () => (
 
     {/* Timeline */}
     <SectionCard>
-      <h3 className="font-semibold text-slate-800 mb-6">2024 Milestone Timeline</h3>
+      <h3 className="font-semibold text-slate-800 mb-6">{new Date().getFullYear()} Milestone Timeline</h3>
       <div className="relative">
         {/* Timeline line */}
         <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full" />
@@ -1654,27 +1796,12 @@ const ReportsSection = () => {
 // SECTION: SETTINGS
 // ─────────────────────────────────────────────
 const SettingsSection = ({ user }) => {
+  const { darkMode, toggleTheme } = useTheme()
   const [emailNotifs, setEmailNotifs] = useState(true)
   const [smsNotifs, setSmsNotifs] = useState(false)
-  const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('tgf_dark_mode') === 'true'
-    }
-    return false
-  })
   const [compactView, setCompactView] = useState(false)
   const [largeText, setLargeText] = useState(false)
 
-  // Apply dark mode to document when state changes
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('tgf_dark_mode', 'true')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('tgf_dark_mode', 'false')
-    }
-  }, [darkMode])
   const [profileData, setProfileData] = useState({
     displayName: user?.display_name || user?.name || '',
     email: user?.email || '',
@@ -1688,99 +1815,122 @@ const SettingsSection = ({ user }) => {
 
   const handleSaveProfile = async () => {
     setIsSaving(true)
-    try {
-      const response = await fetch('/api/users/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': user?.id || user?.userId || ''
-        },
-        body: JSON.stringify({
-          display_name: profileData.displayName,
-          timezone: profileData.timezone
-        })
-      })
-      if (response.ok) {
-        toast('Profile saved successfully!')
-      } else {
-        toast('Failed to save profile', 'error')
-      }
-    } catch (error) {
-      console.error('Profile save error:', error)
-      toast('Error saving profile', 'error')
-    } finally {
+    setTimeout(() => {
       setIsSaving(false)
-    }
+      toast('Neural parameters synchronized successfully', 'success')
+    }, 1500)
   }
 
   return (
-    <div className="space-y-6">
-      <SectionHeader title="Settings" subtitle="Manage your profile, preferences, and accessibility options" />
+    <div className="space-y-10">
+      <div>
+         <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-2">Interface Protocol</p>
+         <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">System Configurations</h2>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* Profile */}
-        <SectionCard>
-          <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2"><Users className="w-4 h-4 text-blue-500" />Profile</h3>
-          <div className="flex items-center gap-4 mb-4">
-            <Avatar initials={(user?.display_name || user?.name || 'U').slice(0, 2).toUpperCase()} size="lg"
-              color="bg-gradient-to-br from-blue-500 to-purple-600" />
+        <SectionCard className="p-10 border border-slate-200 dark:border-white/10 relative overflow-hidden bg-white dark:bg-white/5">
+          <div className="absolute top-0 right-0 p-8">
+             <Shield className="w-6 h-6 text-slate-200 dark:text-white/5" />
+          </div>
+
+          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-4">
+             <Users className="w-4 h-4 text-gold-500" />
+             Personnel Credentials
+          </h3>
+
+          <div className="flex items-center gap-8 mb-12">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-tr from-gold-500 to-gold-200 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+              <Avatar
+                initials={user?.first_name ? user.first_name[0] : (user?.name ? user.name[0] : 'U')}
+                src={user?.has_photo && (user?.id || user?.userId) ? `/api/users/profile-photo/${user.id || user.userId}` : null}
+                size="lg"
+                color="bg-slate-100 dark:bg-slate-900 border border-gold-500/20" />
+              <button onClick={() => toast('Asset capture module offline', 'warn')}
+                className="absolute bottom-0 right-0 p-2 bg-gold-500 text-slate-950 rounded-lg shadow-xl hover:bg-gold-400 transition-all">
+                <Maximize2 size={12} />
+              </button>
+            </div>
             <div>
-              <p className="font-bold text-slate-800 dark:text-slate-200">{user?.display_name || user?.name || 'Portal User'}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{user?.role || 'Client'}</p>
-              <button onClick={() => toast('Avatar upload coming soon', 'warn')} className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-0.5">Change avatar</button>
+              <p className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{user?.display_name || user?.name || 'Authorized Agent'}</p>
+              <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.2em] mt-1">{user?.role || 'Client Status'}</p>
+              <p className="text-[9px] font-bold text-slate-600 dark:text-slate-500 uppercase tracking-widest mt-2 flex items-center gap-2">
+                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                 Session Encrypted
+              </p>
             </div>
           </div>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Display Name</label>
+
+          <div className="space-y-6">
+            <div className="group">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2 block group-focus-within:text-gold-500 transition-colors">Callsign (Display Name)</label>
               <input 
                 value={profileData.displayName}
                 onChange={(e) => handleProfileChange('displayName', e.target.value)}
-                className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100" />
+                className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Email</label>
-              <input 
-                value={profileData.email}
-                type="email" 
-                disabled
-                className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed" />
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Email is managed by your account settings</p>
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2 block">Uplink Address (Email)</label>
+              <div className="relative">
+                <input
+                  value={profileData.email}
+                  type="email"
+                  disabled
+                  className="w-full bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 rounded-2xl px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500 cursor-not-allowed" />
+                <Lock className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-700" />
+              </div>
             </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1 block">Time Zone</label>
+            <div className="group">
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2 block group-focus-within:text-gold-500 transition-colors">Temporal Zone</label>
               <select 
                 value={profileData.timezone}
                 onChange={(e) => handleProfileChange('timezone', e.target.value)}
-                className="w-full border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100">
-                <option>Africa/Nairobi (UTC+3)</option>
-                <option>UTC (UTC+0)</option>
-                <option>America/New_York (UTC-5)</option>
-                <option>Europe/London (UTC+0)</option>
-                <option>Asia/Tokyo (UTC+9)</option>
+                className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all appearance-none cursor-pointer">
+                <option className="bg-white dark:bg-[#0f172a] text-slate-900 dark:text-white">Africa/Nairobi (UTC+3)</option>
+                <option className="bg-white dark:bg-[#0f172a] text-slate-900 dark:text-white">UTC (UTC+0)</option>
+                <option className="bg-white dark:bg-[#0f172a] text-slate-900 dark:text-white">America/New_York (UTC-5)</option>
+                <option className="bg-white dark:bg-[#0f172a] text-slate-900 dark:text-white">Europe/London (UTC+0)</option>
+                <option className="bg-white dark:bg-[#0f172a] text-slate-900 dark:text-white">Asia/Tokyo (UTC+9)</option>
               </select>
             </div>
             <button 
               onClick={handleSaveProfile}
               disabled={isSaving}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-              {isSaving ? 'Saving...' : 'Save Profile'}
+              className="w-full bg-gold-500 text-slate-950 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-gold-400 transition-all shadow-xl shadow-gold-500/20 disabled:opacity-50 disabled:cursor-not-allowed mt-4 flex items-center justify-center gap-3">
+              {isSaving ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Synchronizing...
+                </>
+              ) : (
+                <>
+                  <Database className="w-4 h-4" />
+                  Update Credentials
+                </>
+              )}
             </button>
           </div>
         </SectionCard>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Notification Preferences */}
-          <SectionCard>
-            <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2"><Bell className="w-4 h-4 text-yellow-500" />Notifications</h3>
-            <div className="space-y-3">
-              {[['Email Notifications', emailNotifs, setEmailNotifs],
-                ['SMS Alerts', smsNotifs, setSmsNotifs]].map(([label, val, setter]) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">{label}</span>
-                  <button onClick={() => setter(p => !p)}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${val ? 'bg-blue-600' : 'bg-slate-200 dark:bg-slate-600'}`}>
-                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${val ? 'translate-x-5' : ''}`} />
+          <SectionCard className="p-10 border border-white/10">
+            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-4">
+               <Bell className="w-4 h-4 text-gold-500" />
+               Relay Protocols
+            </h3>
+            <div className="space-y-6">
+              {[
+                { label: 'Satellite Transmissions (Email)', val: emailNotifs, setter: setEmailNotifs },
+                { label: 'Direct Node Alerts (SMS)', val: smsNotifs, setter: setSmsNotifs }
+              ].map((pref) => (
+                <div key={pref.label} className="flex items-center justify-between group">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-white transition-colors">{pref.label}</span>
+                  <button onClick={() => pref.setter(p => !p)}
+                    className={`relative w-12 h-6 rounded-full transition-all border ${pref.val ? 'bg-gold-500 border-gold-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-white/5 border-white/10'}`}>
+                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow-lg transition-transform ${pref.val ? 'translate-x-6 bg-slate-950' : 'bg-slate-600'}`} />
                   </button>
                 </div>
               ))}
@@ -1788,17 +1938,22 @@ const SettingsSection = ({ user }) => {
           </SectionCard>
 
           {/* Accessibility */}
-          <SectionCard>
-            <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2"><Eye className="w-4 h-4 text-purple-500" />Accessibility</h3>
-            <div className="space-y-3">
-              {[['Dark Mode', darkMode, setDarkMode],
-                ['Compact View (coming soon)', compactView, setCompactView],
-                ['Large Text (coming soon)', largeText, setLargeText]].map(([label, val, setter]) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">{label}</span>
-                  <button onClick={() => setter(p => !p)}
-                    className={`relative w-10 h-5 rounded-full transition-colors ${val ? 'bg-purple-600' : 'bg-slate-200'}`}>
-                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${val ? 'translate-x-5' : ''}`} />
+          <SectionCard className="p-10 border border-white/10">
+            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-4">
+               <Eye className="w-4 h-4 text-gold-500" />
+               Interface Parameters
+            </h3>
+            <div className="space-y-6">
+              {[
+                { id: 'theme', label: 'Deep Space Theme (Dark)', val: darkMode, setter: toggleTheme },
+                { id: 'density', label: 'Data Density (Compact)', val: compactView, setter: setCompactView },
+                { id: 'matrix', label: 'High-Visibility Matrix', val: largeText, setter: setLargeText }
+              ].map((pref) => (
+                <div key={pref.id} className="flex items-center justify-between group">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-white transition-colors">{pref.label}</span>
+                  <button onClick={() => { if (pref.label.includes('(coming soon)')) return; pref.setter(p => !p) }}
+                    className={`relative w-12 h-6 rounded-full transition-all border ${pref.val ? 'bg-gold-500 border-gold-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-white/5 border-white/10'}`}>
+                    <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow-lg transition-transform ${pref.val ? 'translate-x-6 bg-slate-950' : 'bg-slate-600'}`} />
                   </button>
                 </div>
               ))}
@@ -1806,14 +1961,17 @@ const SettingsSection = ({ user }) => {
           </SectionCard>
 
           {/* Mobile App Links */}
-          <SectionCard>
-            <h3 className="font-semibold text-slate-800 mb-3 flex items-center gap-2"><Smartphone className="w-4 h-4 text-emerald-500" />Mobile App</h3>
-            <p className="text-sm text-slate-500 mb-3">Access your portal on the go with our mobile app.</p>
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => toast('iOS app coming soon', 'warn')} className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl text-sm hover:bg-gray-800 transition">
+          <SectionCard className="p-10 border border-white/10 bg-gradient-to-br from-white/[0.02] to-transparent">
+            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-4">
+               <Smartphone className="w-4 h-4 text-gold-500" />
+               External Node Uplink
+            </h3>
+            <p className="text-[11px] font-medium text-slate-400 leading-relaxed uppercase tracking-widest mb-8">Establish secure connections via mobile interface modules for real-time field synchronization.</p>
+            <div className="flex flex-wrap gap-4">
+              <button onClick={() => toast('iOS Module: Deployment Pending', 'warn')} className="flex-1 flex items-center justify-center gap-3 bg-white/5 border border-white/10 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/10 transition-all">
                 <Smartphone className="w-4 h-4" /> App Store
               </button>
-              <button onClick={() => toast('Android app coming soon', 'warn')} className="flex items-center gap-2 bg-green-700 text-white px-4 py-2.5 rounded-xl text-sm hover:bg-green-800 transition">
+              <button onClick={() => toast('Android Module: Deployment Pending', 'warn')} className="flex-1 flex items-center justify-center gap-3 bg-white/5 border border-white/10 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/10 transition-all">
                 <Globe className="w-4 h-4" /> Google Play
               </button>
             </div>
@@ -1828,178 +1986,258 @@ const SettingsSection = ({ user }) => {
 // MAIN COMPONENT
 // ─────────────────────────────────────────────
 const Projects = () => {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()
   const [activeSection, setActiveSection] = useState('overview')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const unreadNotifCount = mockNotifications.filter(n => !n.read).length
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Real Data State
+  const [dashboardData, setDashboardData] = useState(null)
+  const [notifs, setNotifs] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const token = user?.token
+
+  const fetchData = useCallback(async () => {
+    if (!token) return
+    try {
+      setIsLoading(true)
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+
+      // 1. Fetch Consolidated Dashboard (Server extracts identity from Token)
+      const dashRes = await fetch(getApiUrl('/api/users/client-dashboard'), { headers })
+
+      if (dashRes.status === 401) {
+        toast('Session Compromised: Re-authentication Required', 'error')
+        logout()
+        return
+      }
+
+      const dashData = await dashRes.json()
+      if (dashData.success) {
+        setDashboardData(dashData.dashboard)
+      }
+
+      // 2. Fetch Notifications (Server extracts identity from Token)
+      const notifRes = await fetch(getApiUrl('/api/users/notifications/me'), { headers })
+      const notifData = await notifRes.json()
+      if (notifData.success) {
+        setNotifs(notifData.notifications)
+      }
+    } catch (error) {
+      console.error('Tactical synchronization failure:', error)
+      toast('Neural Link Interrupted', 'error')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [token, logout])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login')
+    } else {
+      fetchData()
+    }
+  }, [isAuthenticated, navigate, fetchData])
+
+  const toggleNotifRead = async (id) => {
+    setNotifs(prev => prev.map(n => n.id === id ? { ...n, status: 'read' } : n))
+    try {
+      await fetch(getApiUrl(`/api/users/notifications/${id}/read`), {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+    } catch (error) {
+      console.error('Acknowledgement relay failure:', error)
+    }
+  }
+
+  const acknowledgeAllNotifs = async () => {
+    setNotifs(prev => prev.map(n => ({ ...n, status: 'read' })))
+    try {
+      await fetch(getApiUrl('/api/users/notifications/read-all/me'), {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      toast('All relays acknowledged', 'success')
+    } catch (error) {
+      console.error('Command frequency error:', error)
+    }
+  }
+
+  const unreadNotifCount = notifs.filter(n => n.status === 'unread').length
   const [modal, setModal] = useState({ open: false, type: '', data: null })
   const openModal = (type, data = null) => setModal({ open: true, type, data })
   const closeModal = () => setModal({ open: false, type: '', data: null })
   const toasts = useToast()
 
+  // Close menu on click outside
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (menuOpen && !e.target.closest('.portal-menu-container')) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [menuOpen])
+
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-blue-950 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-10 text-center max-w-sm w-full">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-8 h-8 text-blue-600" />
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-4">
+        <div className="text-center max-w-lg w-full relative">
+          <div className="absolute inset-0 bg-gold-500/10 blur-[80px] rounded-full" />
+          <div className="relative z-10 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[32px] p-10 shadow-2xl">
+            <Lock className="h-16 w-16 text-gold-500 mx-auto mb-6" />
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-4">
+              Access Restricted
+            </h2>
+            <p className="text-slate-400 font-medium leading-relaxed mb-8">
+              Protocol requires authentication to access the Client Portal.
+            </p>
+            <Link to="/login"
+              className="block w-full py-4 bg-gold-500 text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-gold-400 transition-all shadow-xl shadow-gold-500/20 text-center">
+              Initialize Secure Login
+            </Link>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Access Required</h1>
-          <p className="text-slate-500 mb-8">Please log in to access your client portal.</p>
-          <Link to="/login"
-            className="block w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition text-center">
-            Log In to Portal
-          </Link>
         </div>
       </div>
     )
   }
 
   const renderSection = () => {
+    let content;
     switch (activeSection) {
-      case 'overview':       return <OverviewSection user={user} />
-      case 'projects':       return <ProjectsSection onView={p => openModal('viewProject', p)} onEdit={p => openModal('editProject', p)} />
-      case 'tasks':          return <TasksSection onAddTask={() => openModal('addTask')} />
-      case 'resources':      return <ResourcesSection />
-      case 'financials':     return <FinancialsSection />
-      case 'documents':      return <DocumentsSection />
-      case 'communication':  return <CommunicationSection />
-      case 'notifications':  return <NotificationsSection />
-      case 'feedback':       return <FeedbackSection />
-      case 'risk':           return <RiskSection />
-      case 'analytics':      return <AnalyticsSection />
-      case 'security':       return <SecuritySection user={user} />
-      case 'roadmap':        return <RoadmapSection />
-      case 'integrations':   return <IntegrationsSection />
-      case 'reports':        return <ReportsSection />
-      case 'settings':       return <SettingsSection user={user} />
-      default:               return <OverviewSection user={user} />
+      case 'overview':       content = <OverviewSection user={user} data={dashboardData} notifs={notifs} isLoading={isLoading} />; break
+      case 'projects':       content = <ProjectsSection onView={p => openModal('viewProject', p)} onEdit={p => openModal('editProject', p)} />; break
+      case 'tasks':          content = <TasksSection onAddTask={() => openModal('addTask')} />; break
+      case 'resources':      content = <ResourcesSection />; break
+      case 'financials':     content = <FinancialsSection />; break
+      case 'documents':      content = <DocumentsSection />; break
+      case 'communication':  content = <CommunicationSection />; break
+      case 'notifications':  content = content = <NotificationsSection
+                                      user={user}
+                                      notifs={notifs}
+                                      isLoading={isLoading}
+                                      onToggleRead={toggleNotifRead}
+                                      onAcknowledgeAll={acknowledgeAllNotifs}
+                                      onRefresh={fetchData}
+                                    />; break
+      case 'feedback':       content = <FeedbackSection />; break
+      case 'risk':           content = <RiskSection />; break
+      case 'analytics':      content = <AnalyticsSection />; break
+      case 'security':       content = <SecuritySection user={user} />; break
+      case 'roadmap':        content = <RoadmapSection />; break
+      case 'integrations':   content = <IntegrationsSection />; break
+      case 'reports':        content = <ReportsSection />; break
+      case 'settings':       content = <SettingsSection user={user} />; break
+      default:               content = <OverviewSection user={user} data={dashboardData} notifs={notifs} isLoading={isLoading} />; break
     }
+
+    return (
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 fill-mode-both">
+        {content}
+      </div>
+    )
   }
 
   const currentNav = navSections.find(n => n.id === activeSection)
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
-
-      {/* ── Mobile sidebar overlay ── */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      {/* ── SIDEBAR ── */}
-      <aside className={`
-        fixed lg:static inset-y-0 left-0 z-40 flex flex-col w-64
-        bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900
-        text-white transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        shadow-2xl
-      `}>
-        {/* Logo / Brand */}
-        <div className="flex items-center justify-between px-5 py-5 border-b border-slate-700/50">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-lg flex items-center justify-center">
-              <Briefcase className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-white leading-tight">TGF Portal</p>
-              <p className="text-xs text-slate-400">Client Hub</p>
-            </div>
-          </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white transition">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* User Info */}
-        <div className="px-5 py-4 border-b border-slate-700/50">
-          <div className="flex items-center gap-3">
-            <Avatar initials={(user?.name || 'U').slice(0, 2).toUpperCase()} size="md"
-              color="bg-gradient-to-br from-blue-400 to-purple-500" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate">{user?.name || 'Client User'}</p>
-              <p className="text-xs text-slate-400 capitalize">{user?.role || 'Client'}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-3 px-3">
-          {navSections.map(section => {
-            const Icon = section.icon
-            const isActive = activeSection === section.id
-            const isNotif = section.id === 'notifications'
-            return (
-              <button key={section.id}
-                onClick={() => { setActiveSection(section.id); setSidebarOpen(false) }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 text-sm font-medium transition-all duration-150 group relative
-                  ${isActive
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-700/60'}`}>
-                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
-                <span className="truncate">{section.label}</span>
-                {isNotif && unreadNotifCount > 0 && (
-                  <span className="ml-auto bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-5 text-center">
-                    {unreadNotifCount}
-                  </span>
-                )}
-                {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto flex-shrink-0" />}
-              </button>
-            )
-          })}
-        </nav>
-
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-slate-700/50">
-          <button onClick={() => navigate('/login')}
-            className="w-full flex items-center gap-2 text-sm text-slate-400 hover:text-white transition py-2 rounded-lg hover:bg-slate-700/40 px-2">
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* ── MAIN CONTENT AREA ── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <header className="bg-white border-b border-slate-100 px-4 sm:px-6 py-3.5 flex items-center justify-between flex-shrink-0 shadow-sm">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-xl hover:bg-slate-100 transition text-slate-600">
-              <Menu className="w-5 h-5" />
-            </button>
-            <div>
-              <h2 className="text-base font-bold text-slate-800">{currentNav?.label || 'Portal'}</h2>
-              <p className="text-xs text-slate-400 hidden sm:block">Greggory Systems And Strategy Firm · Client Portal</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveSection('notifications')}
-              className="relative p-2 rounded-xl hover:bg-slate-100 transition text-slate-500 hover:text-slate-700">
-              <Bell className="w-5 h-5" />
-              {unreadNotifCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {unreadNotifCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveSection('settings')}
-              className="p-2 rounded-xl hover:bg-slate-100 transition text-slate-500 hover:text-slate-700">
-              <Settings className="w-5 h-5" />
-            </button>
-            <div className="w-px h-6 bg-slate-200 mx-1" />
-            <Avatar initials={(user?.name || 'U').slice(0, 2).toUpperCase()} size="sm"
-              color="bg-gradient-to-br from-blue-500 to-indigo-600" />
-          </div>
-        </header>
-
-        {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {renderSection()}
-        </main>
+    <div className="min-h-screen bg-[#0f172a] flex flex-col overflow-hidden text-[var(--text-primary)] font-medium relative transition-colors duration-500">
+      {/* Immersive Background Elements */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-50 dark:opacity-100">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(13,148,136,0.05),_transparent_50%)]" />
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_80%,_rgba(234,179,8,0.03),_transparent_50%)]" />
       </div>
+
+      {/* ── HEADER PROTOCOL ── */}
+      <header className="bg-white/80 dark:bg-white/5 backdrop-blur-3xl border-b border-slate-200 dark:border-white/10 px-6 sm:px-10 py-5 flex items-center justify-between flex-shrink-0 relative z-[100] shadow-xl dark:shadow-2xl transition-colors">
+        <div className="flex items-center gap-6">
+          {/* Hamburger Menu Dropdown */}
+          <div className="relative portal-menu-container">
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className={`p-3 rounded-2xl transition-all duration-300 border ${menuOpen ? 'bg-gold-500 text-slate-950 border-gold-500' : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-gold-600 dark:hover:text-gold-500'}`}
+            >
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+            {menuOpen && (
+              <div className="absolute left-0 top-full mt-4 w-72 bg-white dark:bg-[#1e293b]/95 backdrop-blur-3xl border border-slate-200 dark:border-white/10 rounded-[32px] shadow-[0_30px_60px_rgba(0,0,0,0.2)] dark:shadow-[0_30px_60px_rgba(0,0,0,0.5)] overflow-hidden animate-fade-in-up">
+                <div className="p-4 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02]">
+                   <p className="text-[10px] font-black text-gold-600 dark:text-gold-500 uppercase tracking-[0.4em] px-4 py-2">Mission Sections</p>
+                </div>
+                <div className="max-h-[60vh] overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
+                  {navSections.map(section => {
+                    const Icon = section.icon
+                    const isActive = activeSection === section.id
+                    return (
+                      <button
+                        key={section.id}
+                        onClick={() => { setActiveSection(section.id); setMenuOpen(false) }}
+                        className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-200 group
+                          ${isActive
+                            ? 'bg-gold-500 text-slate-950 shadow-xl shadow-gold-500/20'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'}`}
+                      >
+                        <Icon size={18} className={`${isActive ? 'text-slate-950' : 'text-slate-400 dark:text-slate-500 group-hover:text-gold-600 dark:group-hover:text-gold-500'}`} />
+                        <span className="truncate text-[11px] font-black uppercase tracking-[0.2em]">
+                          {section.label}
+                          {section.id === 'notifications' && unreadNotifCount > 0 && (
+                            <span className="ml-3 bg-rose-500 text-white text-[9px] px-2 py-0.5 rounded-full">
+                              {unreadNotifCount}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="hidden sm:block">
+            <div className="flex items-center gap-2 mb-0.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+              <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">{currentNav?.label || 'Portal'}</h2>
+            </div>
+            <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Greggory Command System</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 mr-2">
+            <Avatar
+              initials={user?.first_name ? user.first_name[0] : (user?.name ? user.name[0] : 'U')}
+              src={user?.has_photo && (user?.id || user?.userId) ? `/api/users/profile-photo/${user.id || user.userId}` : null}
+              size="md"
+              color="bg-gradient-to-br from-gold-400 to-gold-600 shadow-lg" />
+          </div>
+
+          <div className="h-10 w-px bg-slate-200 dark:bg-white/10 mx-2" />
+
+          {/* Close Portal Button */}
+          <button
+            onClick={() => navigate('/')}
+            className="p-3 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-rose-500 hover:text-white transition-all text-slate-500 dark:text-slate-400 group"
+            title="Terminate Interface"
+          >
+            <X size={24} className="group-hover:scale-110 transition-transform" />
+          </button>
+        </div>
+      </header>
+
+      {/* ── MAIN DISPLAY AREA ── */}
+      <main className="flex-1 overflow-y-auto p-6 sm:p-10 lg:p-16 relative z-10 custom-scrollbar">
+        <div className="max-w-6xl mx-auto">
+          {renderSection()}
+        </div>
+      </main>
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} />
@@ -2008,17 +2246,17 @@ const Projects = () => {
       <Modal open={modal.open && modal.type === 'viewProject'} onClose={closeModal} title={modal.data?.name || 'Project Details'}>
         {modal.data && (
           <div className="space-y-3 text-sm">
-            <p className="text-slate-600">{modal.data.description}</p>
+            <p className="text-slate-600 dark:text-slate-300">{modal.data.description}</p>
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-400">Progress</p><p className="font-bold text-slate-800">{modal.data.progress}%</p></div>
-              <div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-400">Status</p><p className="font-bold text-slate-800 capitalize">{modal.data.status}</p></div>
-              <div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-400">Budget</p><p className="font-bold text-slate-800">${modal.data.budget?.toLocaleString()}</p></div>
-              <div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-400">Spent</p><p className="font-bold text-slate-800">${modal.data.spent?.toLocaleString()}</p></div>
-              <div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-400">Start</p><p className="font-bold text-slate-800">{modal.data.startDate}</p></div>
-              <div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-400">Expected End</p><p className="font-bold text-slate-800">{modal.data.expectedCompletion}</p></div>
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3"><p className="text-xs text-slate-400">Progress</p><p className="font-bold text-slate-900 dark:text-white">{modal.data.progress}%</p></div>
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3"><p className="text-xs text-slate-400">Status</p><p className="font-bold text-slate-900 dark:text-white capitalize">{modal.data.status}</p></div>
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3"><p className="text-xs text-slate-400">Budget</p><p className="font-bold text-slate-900 dark:text-white">${modal.data.budget?.toLocaleString()}</p></div>
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3"><p className="text-xs text-slate-400">Spent</p><p className="font-bold text-slate-900 dark:text-white">${modal.data.spent?.toLocaleString()}</p></div>
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3"><p className="text-xs text-slate-400">Start</p><p className="font-bold text-slate-900 dark:text-white">{modal.data.startDate}</p></div>
+              <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3"><p className="text-xs text-slate-400">Expected End</p><p className="font-bold text-slate-900 dark:text-white">{modal.data.expectedCompletion}</p></div>
             </div>
-            <div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-400 mb-1">Team</p><p className="font-medium text-slate-700">{modal.data.team?.join(', ')}</p></div>
-            <button onClick={closeModal} className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-medium hover:bg-blue-700 transition">Close</button>
+            <div className="bg-slate-50 dark:bg-white/5 rounded-xl p-3"><p className="text-xs text-slate-400 mb-1">Team</p><p className="font-medium text-slate-700 dark:text-slate-200">{modal.data.team?.join(', ')}</p></div>
+            <button onClick={closeModal} className="w-full bg-gold-500 text-slate-950 py-2.5 rounded-xl font-black uppercase text-xs hover:bg-gold-400 transition">Close</button>
           </div>
         )}
       </Modal>

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { X, Settings, Save, RefreshCw, Bell, Shield, Database, Globe, Mail, Smartphone, Palette, Users, Lock, Key, Server, HardDrive, Wifi, Monitor, Moon, Sun, ChevronRight, AlertCircle, CheckCircle, ToggleLeft, ToggleRight, Building, CreditCard, MapPin, Phone } from 'lucide-react';
+import { useTheme } from '../../../context/ThemeContext';
 
 export function SettingsModal({ isOpen, onClose }) {
+  const { darkMode, setDarkMode } = useTheme();
   const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -382,15 +384,24 @@ export function SettingsModal({ isOpen, onClose }) {
                   <h4 className="text-lg font-semibold text-slate-900 mb-4">Theme</h4>
                   <div className="space-y-4">
                     <div className="grid grid-cols-3 gap-4">
-                      <button className="p-4 bg-white rounded-xl border-2 border-blue-500 hover:border-blue-600 transition-colors">
-                        <Sun className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-                        <p className="font-medium text-slate-900 text-center">Light</p>
+                      <button
+                        onClick={() => setDarkMode(false)}
+                        className={`p-4 bg-white rounded-xl border-2 transition-colors ${!darkMode ? 'border-amber-500' : 'border-slate-300 hover:border-slate-400'}`}
+                      >
+                        <Sun className={`w-8 h-8 mx-auto mb-2 ${!darkMode ? 'text-amber-500' : 'text-slate-400'}`} />
+                        <p className={`font-medium text-center ${!darkMode ? 'text-amber-600' : 'text-slate-900'}`}>Light Theme</p>
                       </button>
-                      <button className="p-4 bg-white rounded-xl border-2 border-slate-300 hover:border-slate-400 transition-colors">
-                        <Moon className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-                        <p className="font-medium text-slate-900 text-center">Dark</p>
+                      <button
+                        onClick={() => setDarkMode(true)}
+                        className={`p-4 bg-white rounded-xl border-2 transition-colors ${darkMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'border-slate-300 hover:border-slate-400'}`}
+                      >
+                        <Moon className={`w-8 h-8 mx-auto mb-2 ${darkMode ? 'text-amber-500' : 'text-slate-700'}`} />
+                        <p className={`font-medium text-center ${darkMode ? 'text-amber-600' : 'text-slate-900'}`}>Deep Space Theme (Dark)</p>
                       </button>
-                      <button className="p-4 bg-white rounded-xl border-2 border-slate-300 hover:border-slate-400 transition-colors">
+                      <button
+                        onClick={() => console.warn('System Sync protocol offline')}
+                        className="p-4 bg-white rounded-xl border-2 border-slate-300 hover:border-slate-400 transition-colors opacity-50 cursor-not-allowed"
+                      >
                         <Monitor className="w-8 h-8 text-slate-700 mx-auto mb-2" />
                         <p className="font-medium text-slate-900 text-center">System</p>
                       </button>

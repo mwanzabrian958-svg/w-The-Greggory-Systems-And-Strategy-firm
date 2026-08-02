@@ -167,105 +167,107 @@ const Pricing = () => {
   }
 
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">Pricing & Proposals</h1>
-            <p className="text-xl text-gray-300 mb-8">
-              Transparent pricing for world-class project management consultancy
+    <div className="min-h-screen bg-[#0f172a] text-white pt-[140px] relative overflow-hidden">
+      {/* Immersive Background Elements */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(245,158,11,0.08),_transparent_50%)]" />
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_80%,_rgba(45,212,191,0.05),_transparent_50%)]" />
+        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay"
+             style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }} />
+      </div>
+
+      {/* Hero Section Protocol */}
+      <section className="relative z-10 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="max-w-3xl mx-auto">
+            <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-4">Capital Protocol</p>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-8">System Allocation</h1>
+            <p className="text-lg text-slate-400 font-medium leading-relaxed uppercase tracking-widest mb-12">
+              Transparent resource mapping for high-tier strategic consultancy and implementation.
             </p>
             
-            {/* Billing Toggle */}
-            <div className="flex items-center justify-center space-x-4">
-              <span className={`text-lg ${billingCycle === 'monthly' ? 'text-white' : 'text-gray-400'}`}>
-                Monthly
+            {/* Billing Toggle Protocol */}
+            <div className="flex items-center justify-center space-x-6 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 w-fit mx-auto shadow-2xl">
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-500'}`}>
+                Operational Cycle
               </span>
               <button
                 onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
-                className="relative inline-flex h-8 w-14 items-center rounded-full bg-teal-600 transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 focus:ring-offset-navy-900"
+                className="relative inline-flex h-8 w-14 items-center rounded-full bg-gold-500 transition-all focus:outline-none shadow-[0_0_15px_rgba(234,179,8,0.3)]"
               >
                 <span
-                  className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-6 w-6 transform rounded-full bg-slate-950 transition-transform shadow-lg ${
                     billingCycle === 'annual' ? 'translate-x-7' : 'translate-x-1'
                   }`}
                 />
               </button>
-              <span className={`text-lg ${billingCycle === 'annual' ? 'text-white' : 'text-gray-400'}`}>
-                Annual <span className="text-teal-400 font-semibold">(Save 20%)</span>
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${billingCycle === 'annual' ? 'text-gold-500' : 'text-slate-500'}`}>
+                Strategic Cycle <span className="text-teal-400 italic">(Delta: -20%)</span>
               </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing Plans */}
-      <section className="py-16 bg-gray-50">
+      {/* Pricing Plans Protocol */}
+      <section className="relative z-10 py-16 pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Choose Your Plan</h2>
-            <p className="text-xl text-gray-600">
-              Flexible pricing designed to scale with your business
-            </p>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {plans.map((plan) => (
               <div
                 key={plan.id}
-                className={`relative bg-white rounded-2xl shadow-lg overflow-hidden transform transition-all duration-200 hover:scale-105 ${
-                  plan.popular ? 'ring-2 ring-teal-500' : ''
+                className={`relative bg-white/5 backdrop-blur-2xl rounded-[40px] border transition-all duration-500 hover:bg-white/[0.08] hover:-translate-y-2 flex flex-col group ${
+                  plan.popular ? 'border-gold-500/40 shadow-[0_0_50px_rgba(234,179,8,0.1)]' : 'border-white/10 shadow-2xl'
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute top-0 right-0 bg-teal-500 text-white px-4 py-1 text-sm font-semibold">
-                    Most Popular
+                  <div className="absolute top-8 right-8 bg-gold-500 text-slate-950 px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-lg">
+                    Optimum Protocol
                   </div>
                 )}
                 
-                <div className={`p-8 ${plan.popular ? 'bg-teal-50' : ''}`}>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  <p className="text-gray-600 mb-6">{plan.description}</p>
+                <div className="p-10 border-b border-white/5">
+                  <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2 group-hover:text-gold-400 transition-colors">{plan.name}</h3>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{plan.description}</p>
                   
-                  <div className="mb-6">
-                    <div className="flex items-baseline">
-                      <span className="text-4xl font-bold text-gray-900">
-                        ${plan.price.toLocaleString()}
+                  <div className="mt-10 mb-10">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-black text-white tracking-tighter">
+                        KES {plan.price.toLocaleString()}
                       </span>
-                      <span className="text-gray-500 ml-2">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        / {billingCycle === 'monthly' ? 'Operational' : 'Strategic'} Cycle
+                      </span>
                     </div>
-                    {plan.originalPrice > plan.price && (
-                      <div className="text-sm text-gray-500 line-through">
-                        ${plan.originalPrice.toLocaleString()}/{billingCycle === 'monthly' ? 'month' : 'year'}
-                      </div>
-                    )}
                   </div>
 
                   <button
                     onClick={() => handlePlanSelect(plan.id)}
-                    className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors ${
-                      plan.popular
-                        ? 'bg-teal-600 text-white hover:bg-teal-700'
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] transition-all shadow-xl ${
+                      selectedPlan === plan.id
+                        ? 'bg-teal-500 text-slate-950 shadow-teal-500/20'
+                        : plan.popular
+                          ? 'bg-gold-500 text-slate-950 hover:bg-gold-400 shadow-gold-500/20'
+                          : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'
                     }`}
                   >
-                    {selectedPlan === plan.id ? 'Selected' : 'Choose Plan'}
+                    {selectedPlan === plan.id ? 'Protocol Initialized' : 'Initialize Protocol'}
                   </button>
                 </div>
 
-                <div className="px-8 pb-8">
-                  <ul className="space-y-3">
+                <div className="p-10 flex-grow">
+                   <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.4em] mb-6">Integrated Modules:</p>
+                  <ul className="space-y-4">
                     {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">{feature}</span>
+                      <li key={index} className="flex items-start group/feature">
+                        <Check className="w-4 h-4 text-teal-500 mr-4 flex-shrink-0 mt-0.5 group-hover/feature:scale-125 transition-transform" />
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest group-hover/feature:text-white transition-colors">{feature}</span>
                       </li>
                     ))}
                     {plan.excluded.map((feature, index) => (
-                      <li key={index} className="flex items-start opacity-60">
-                        <X className="w-5 h-5 text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-500">{feature}</span>
+                      <li key={index} className="flex items-start opacity-30 grayscale">
+                        <X className="w-4 h-4 text-slate-500 mr-4 flex-shrink-0 mt-0.5" />
+                        <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -275,199 +277,217 @@ const Pricing = () => {
           </div>
 
           {selectedPlan && (
-            <div className="mt-12 text-center">
-              <div className="bg-teal-50 border border-teal-200 rounded-lg p-6 max-w-2xl mx-auto">
-                <h3 className="text-xl font-semibold text-teal-900 mb-2">
-                  Great choice! You selected the {plans.find(p => p.id === selectedPlan)?.name} plan
-                </h3>
-                <p className="text-teal-700 mb-4">
-                  Let's get you started with a personalized proposal
-                </p>
-                <Link
-                  to="/contact"
-                  state={{ selectedPlan, billingCycle }}
-                  className="inline-flex items-center px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-                >
-                  Get Custom Proposal
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
+            <div className="mt-16 animate-fade-in">
+              <div className="bg-teal-500/5 backdrop-blur-2xl border border-teal-500/20 rounded-[40px] p-10 max-w-4xl mx-auto shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-10 opacity-[0.05]">
+                   <CheckCircle className="w-32 h-32 text-teal-400" />
+                </div>
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+                  <div className="text-center md:text-left">
+                    <p className="text-[10px] font-black text-teal-400 uppercase tracking-[0.4em] mb-2">Protocol Ready</p>
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-4">
+                      {plans.find(p => p.id === selectedPlan)?.name} Level Synchronization Initialized
+                    </h3>
+                    <p className="text-slate-400 text-sm font-bold uppercase tracking-widest leading-relaxed">
+                      Finalize the strategic proposal for your {billingCycle} deployment cycle.
+                    </p>
+                  </div>
+                  <Link
+                    to="/contact"
+                    state={{ selectedPlan, billingCycle }}
+                    className="whitespace-nowrap px-10 py-5 bg-teal-500 text-slate-950 rounded-[20px] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-teal-400 transition-all shadow-xl shadow-teal-500/20"
+                  >
+                    Sync Proposal Protocol
+                    <ArrowRight className="w-4 h-4 ml-3 inline-block" />
+                  </Link>
+                </div>
               </div>
             </div>
           )}
         </div>
       </section>
 
-      {/* Custom Project Calculator */}
-      <section className="py-16 bg-white">
+      {/* Custom Project Calculator Protocol */}
+      <section className="relative z-10 py-24 bg-white/[0.02] border-y border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Custom Project Calculator</h2>
-            <p className="text-xl text-gray-600">
-              Get an instant estimate for your specific project needs
+          <div className="text-center mb-16">
+            <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-4">Module Estimator</p>
+            <h2 className="text-4xl font-black text-white uppercase tracking-tight">Deployment Calculator</h2>
+            <p className="text-lg text-slate-500 font-bold uppercase tracking-widest mt-4">
+              Real-time capital mapping for unique mission parameters
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Calculator Form */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+            {/* Calculator Form Protocol */}
             <div>
-              <form onSubmit={handleCustomProjectSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Project Type
-                  </label>
-                  <select
-                    value={customProject.type}
-                    onChange={(e) => setCustomProject({...customProject, type: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Select a project type</option>
-                    {projectTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Project Duration (months)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="24"
-                    value={customProject.duration}
-                    onChange={(e) => setCustomProject({...customProject, duration: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="e.g., 3"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Complexity
-                  </label>
-                  <div className="grid grid-cols-3 gap-4">
-                    {['simple', 'medium', 'complex'].map((level) => (
-                      <label key={level} className="relative">
-                        <input
-                          type="radio"
-                          name="complexity"
-                          value={level}
-                          checked={customProject.complexity === level}
-                          onChange={(e) => setCustomProject({...customProject, complexity: e.target.value})}
-                          className="sr-only peer"
-                        />
-                        <div className="p-4 border-2 rounded-lg cursor-pointer transition-all peer-checked:border-teal-500 peer-checked:bg-teal-50 hover:border-gray-400">
-                          <div className="text-center">
-                            <div className="font-medium text-gray-900 capitalize">{level}</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {level === 'simple' && 'Basic requirements'}
-                              {level === 'medium' && 'Standard features'}
-                              {level === 'complex' && 'Advanced needs'}
-                            </div>
-                          </div>
-                        </div>
+              <form onSubmit={handleCustomProjectSubmit} className="space-y-8">
+                <div className="bg-white/5 rounded-[32px] p-10 border border-white/10 shadow-2xl">
+                  <div className="space-y-8">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 ml-2">
+                        Mission Classification
                       </label>
-                    ))}
+                      <select
+                        value={customProject.type}
+                        onChange={(e) => setCustomProject({...customProject, type: e.target.value})}
+                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-black text-[11px] uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-gold-500/40 transition-all"
+                        required
+                      >
+                        <option value="" className="bg-slate-900">Select Classification</option>
+                        {projectTypes.map((type) => (
+                          <option key={type.id} value={type.id} className="bg-slate-900">
+                            {type.name.toUpperCase()}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 ml-2">
+                        Deployment Duration (Cycles)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        value={customProject.duration}
+                        onChange={(e) => setCustomProject({...customProject, duration: e.target.value})}
+                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40 transition-all"
+                        placeholder="e.g., 3 months"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6 ml-2">
+                        Protocol Complexity
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {['simple', 'medium', 'complex'].map((level) => (
+                          <label key={level} className="relative group cursor-pointer">
+                            <input
+                              type="radio"
+                              name="complexity"
+                              value={level}
+                              checked={customProject.complexity === level}
+                              onChange={(e) => setCustomProject({...customProject, complexity: e.target.value})}
+                              className="sr-only peer"
+                            />
+                            <div className="p-6 bg-white/5 border border-white/10 rounded-2xl transition-all peer-checked:border-gold-500 peer-checked:bg-gold-500/10 hover:bg-white/[0.08] group-hover:border-white/20">
+                              <div className="text-center">
+                                <div className="font-black text-white uppercase tracking-widest text-[10px] peer-checked:text-gold-500 transition-colors">{level}</div>
+                                <div className="text-[8px] font-bold text-slate-600 uppercase tracking-tighter mt-2 group-hover:text-slate-400 transition-colors">
+                                  {level === 'simple' && 'Baseline'}
+                                  {level === 'medium' && 'Standard'}
+                                  {level === 'complex' && 'Tier-0'}
+                                </div>
+                              </div>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 ml-2">
+                        Personnel Load
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={customProject.teamSize}
+                        onChange={(e) => setCustomProject({...customProject, teamSize: e.target.value})}
+                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40 transition-all"
+                        placeholder="Expected personnel nodes"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 ml-2">
+                        Mission Requirements
+                      </label>
+                      <textarea
+                        value={customProject.requirements}
+                        onChange={(e) => setCustomProject({...customProject, requirements: e.target.value})}
+                        rows="4"
+                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-medium text-sm focus:outline-none focus:ring-2 focus:ring-gold-500/40 transition-all resize-none"
+                        placeholder="Define detailed mission parameters..."
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-5 bg-gold-500 text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-gold-400 transition-all shadow-xl shadow-gold-500/20"
+                    >
+                      Initialize Proposal Protocol
+                    </button>
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Team Size
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={customProject.teamSize}
-                    onChange={(e) => setCustomProject({...customProject, teamSize: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="Number of team members involved"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Project Requirements
-                  </label>
-                  <textarea
-                    value={customProject.requirements}
-                    onChange={(e) => setCustomProject({...customProject, requirements: e.target.value})}
-                    rows="4"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
-                    placeholder="Describe your project requirements..."
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 px-6 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold"
-                >
-                  Get Detailed Proposal
-                </button>
               </form>
             </div>
 
-            {/* Price Estimate */}
-            <div>
-              <div className="bg-gray-50 rounded-lg p-8 sticky top-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Price Estimate</h3>
+            {/* Price Estimate Protocol */}
+            <div className="relative">
+              <div className="bg-white/5 backdrop-blur-2xl rounded-[40px] p-12 border border-white/10 sticky top-40 shadow-2xl overflow-hidden group">
+                <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+                   <Calculator className="w-48 h-48" />
+                </div>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-10 relative z-10">Capital Telemetry</h3>
                 
                 {customProject.type ? (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center pb-4 border-b">
-                      <span className="text-gray-600">Base Price</span>
-                      <span className="font-semibold">
-                        ${projectTypes.find(p => p.id === customProject.type)?.basePrice.toLocaleString()}
+                  <div className="space-y-8 relative z-10">
+                    <div className="flex justify-between items-center pb-6 border-b border-white/5">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Base Protocol Capital</span>
+                      <span className="text-sm font-black text-white">
+                        KES {projectTypes.find(p => p.id === customProject.type)?.basePrice.toLocaleString()}
                       </span>
                     </div>
                     
                     {customProject.duration && (
-                      <div className="flex justify-between items-center pb-4 border-b">
-                        <span className="text-gray-600">Duration Multiplier</span>
-                        <span className="font-semibold">{customProject.duration}x</span>
+                      <div className="flex justify-between items-center pb-6 border-b border-white/5">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Temporal Multiplier</span>
+                        <span className="text-sm font-black text-gold-500">{customProject.duration} Cycle Units</span>
                       </div>
                     )}
                     
-                    <div className="flex justify-between items-center pb-4 border-b">
-                      <span className="text-gray-600">Complexity</span>
-                      <span className="font-semibold capitalize">{customProject.complexity}</span>
+                    <div className="flex justify-between items-center pb-6 border-b border-white/5">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Complexity Index</span>
+                      <span className="text-sm font-black text-white uppercase tracking-widest">{customProject.complexity}</span>
                     </div>
                     
-                    <div className="flex justify-between items-center pt-4">
-                      <span className="text-xl font-bold text-gray-900">Estimated Total</span>
-                      <span className="text-2xl font-bold text-teal-600">
-                        ${calculateCustomPrice().toLocaleString()}
+                    <div className="flex justify-between items-center pt-6">
+                      <span className="text-xs font-black text-white uppercase tracking-[0.3em]">Estimated Allocation</span>
+                      <span className="text-4xl font-black text-gold-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.3)]">
+                        KES {calculateCustomPrice().toLocaleString()}
                       </span>
                     </div>
                     
-                    <div className="mt-6 p-4 bg-teal-50 rounded-lg">
+                    <div className="mt-12 p-8 bg-gold-500/5 rounded-3xl border border-gold-500/20">
                       <div className="flex items-start">
-                        <Calculator className="w-5 h-5 text-teal-600 mr-2 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm text-teal-700">
-                          <p className="font-semibold mb-1">What's included:</p>
-                          <ul className="space-y-1 text-xs">
-                            <li>• Dedicated project manager</li>
-                            <li>• Weekly progress reports</li>
-                            <li>• Performance analytics</li>
-                            <li>• Documentation & training</li>
-                            <li>• 30-day support after completion</li>
+                        <Shield className="w-5 h-5 text-gold-500 mr-4 flex-shrink-0 mt-0.5" />
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                          <p className="font-black text-gold-500 mb-4 tracking-[0.2em]">Protocol Standard Inclusion:</p>
+                          <ul className="space-y-3">
+                            <li className="flex items-center gap-2"><div className="w-1 h-1 bg-gold-500/40 rounded-full"></div> Dedicated Strategic Lead</li>
+                            <li className="flex items-center gap-2"><div className="w-1 h-1 bg-gold-500/40 rounded-full"></div> Bi-Weekly Telemetry Reports</li>
+                            <li className="flex items-center gap-2"><div className="w-1 h-1 bg-gold-500/40 rounded-full"></div> Integrated Performance Analytics</li>
+                            <li className="flex items-center gap-2"><div className="w-1 h-1 bg-gold-500/40 rounded-full"></div> Systemic Documentation Registry</li>
+                            <li className="flex items-center gap-2"><div className="w-1 h-1 bg-gold-500/40 rounded-full"></div> 30-Day Post-Mission Protocol Support</li>
                           </ul>
                         </div>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Calculator className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">
-                      Select project options to see your estimate
+                  <div className="text-center py-20 relative z-10">
+                    <div className="mb-8 p-10 bg-white/5 rounded-[40px] border border-white/10 inline-block">
+                       <Calculator className="w-16 h-16 text-slate-700" />
+                    </div>
+                    <p className="text-slate-500 font-black text-[10px] uppercase tracking-[0.4em]">
+                      Awaiting Mission Parameters...
                     </p>
                   </div>
                 )}
@@ -477,46 +497,36 @@ const Pricing = () => {
         </div>
       </section>
 
-      {/* Value Proposition */}
-      <section className="py-16 bg-teal-600 text-white">
+      {/* Value Proposition Protocol */}
+      <section className="relative z-10 py-32 bg-gold-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Why Choose Our Consultancy?</h2>
-            <p className="text-xl text-teal-100">
-              Proven results with transparent pricing
-            </p>
+          <div className="text-center mb-20">
+            <p className="text-[10px] font-black text-slate-950 uppercase tracking-[0.5em] mb-4 opacity-60">Validation Matrix</p>
+            <h2 className="text-5xl font-black text-slate-950 uppercase tracking-tight">The Greggory Standard</h2>
+            <div className="h-1.5 w-24 bg-slate-950 mx-auto mt-8 rounded-full opacity-20" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="bg-white/10 rounded-lg p-6 mb-4">
-                <Star className="w-12 h-12 text-white mx-auto" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            {[
+              { icon: Star, title: '98% Delivery Parity', desc: 'Missions consistently synchronized within temporal and capital parameters.', val: '98%' },
+              { icon: DollarSign, title: 'Strategic ROI', desc: 'Average 30% capital efficiency and 40% systemic throughput optimization.', val: 'ROI+' },
+              { icon: Headphones, title: 'Constant Uplink', desc: '24/7 direct relay to strategic personnel and priority synchronization.', val: '24/7' }
+            ].map((item, i) => (
+              <div key={i} className="group relative">
+                <div className="bg-slate-950 rounded-[40px] p-10 h-full border-4 border-slate-950 shadow-2xl transform transition-all hover:scale-105">
+                  <div className="bg-gold-500/10 rounded-3xl p-6 mb-8 w-fit mx-auto border border-gold-500/20 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all">
+                    <item.icon className="w-10 h-10 text-gold-500 group-hover:text-slate-950" />
+                  </div>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight mb-4 text-center">{item.title}</h3>
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-widest text-center leading-relaxed">
+                    {item.desc}
+                  </p>
+                  <div className="absolute -top-4 -right-4 bg-slate-900 text-gold-500 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-slate-950 group-hover:bg-white group-hover:text-slate-950 transition-all shadow-xl">
+                    {item.val}
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold mb-2">98% Success Rate</h3>
-              <p className="text-teal-100">
-                Our projects consistently deliver on time and within budget
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-white/10 rounded-lg p-6 mb-4">
-                <DollarSign className="w-12 h-12 text-white mx-auto" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Clear ROI</h3>
-              <p className="text-teal-100">
-                Average 30% cost reduction and 40% efficiency improvement
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-white/10 rounded-lg p-6 mb-4">
-                <Headphones className="w-12 h-12 text-white mx-auto" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Dedicated Support</h3>
-              <p className="text-teal-100">
-                24/7 access to your project team and priority support
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>

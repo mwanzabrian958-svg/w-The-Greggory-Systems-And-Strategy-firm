@@ -28,7 +28,7 @@ function emitAdminSessionChanged() {
 
 export function getAdminToken() {
   try {
-    return sessionStorage.getItem(TOKEN_KEY)
+    return localStorage.getItem(TOKEN_KEY)
   } catch {
     return null
   }
@@ -36,14 +36,16 @@ export function getAdminToken() {
 
 export function setAdminToken(token) {
   clearLegacyAdminStorage()
-  sessionStorage.setItem(TOKEN_KEY, token)
+  localStorage.setItem(TOKEN_KEY, token)
   emitAdminSessionChanged()
 }
 
 export function clearAdminSession() {
   clearLegacyAdminStorage()
   try {
-    sessionStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem('gf_admin_session')
+    localStorage.removeItem('gf_admin_user')
   } catch {
     /* ignore */
   }

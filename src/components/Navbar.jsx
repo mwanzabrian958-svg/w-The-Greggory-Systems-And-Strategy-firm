@@ -67,7 +67,7 @@ const Navbar = () => {
     { name: 'Contact', path: '/contact' },
     ...(isAuthenticated && user ? [{
       name: 'Client Portal',
-      path: user?.admin_level || user?.developer_level ? '/admin' : '/projects'
+      path: user?.admin_level || user?.developer_level ? '/admin' : '/client-portal'
     }] : []),
   ]
 
@@ -103,35 +103,35 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className={`bg-[#07111f] border-b border-white/5 sticky top-0 z-50 shadow-2xl transition-transform duration-500 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-[120px] sm:h-[140px]">
+      <nav className={`bg-white dark:bg-[#0f172a] border-b border-slate-200 dark:border-white/5 sticky top-0 z-50 shadow-xl dark:shadow-2xl transition-all duration-500 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-24 sm:h-28">
             {/* Brand Header with Logo */}
             <div className="flex items-center flex-shrink-0">
               <Link to="/" className="hover:opacity-90 transition-opacity">
                 <img
                   src="/brand-header.png/sja.PNG"
                   alt="Company Brand"
-                  className="h-[120px] sm:h-[150px] w-auto max-w-[320px] object-contain brightness-110 contrast-110"
+                  className="h-14 sm:h-18 w-auto object-contain brightness-110 contrast-110 dark:brightness-110 dark:contrast-110"
                 />
               </Link>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-6">
+            <div className="hidden md:flex items-center space-x-8">
               {navigation.map((item, index) => (
                 <div key={item.path} className="relative group flex items-center">
                   {item.dropdown ? (
                     <>
                       <button
-                        className="flex items-center text-base font-bold text-slate-300 hover:text-amber-400 transition-colors duration-300 py-2"
+                        className="flex items-center text-base font-bold text-slate-600 dark:text-slate-300 hover:text-gold-600 dark:hover:text-gold-400 transition-colors duration-300 py-2"
                         onClick={() => setCompaniesDropdownOpen(!companiesDropdownOpen)}
                       >
                         {item.name}
                         <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-300 ${companiesDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
                       <div
-                        className={`absolute left-0 top-full mt-2 w-80 bg-[#0f1f3d] border border-white/10 rounded-2xl shadow-2xl py-4 z-50 backdrop-blur-xl ${
+                        className={`absolute left-0 top-full mt-2 w-80 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl py-4 z-50 backdrop-blur-xl ${
                           companiesDropdownOpen ? 'block' : 'hidden'
                         }`}
                         onMouseLeave={() => setCompaniesDropdownOpen(false)}
@@ -141,7 +141,7 @@ const Navbar = () => {
                             key={subItem.path}
                             to={subItem.path}
                             onClick={() => setCompaniesDropdownOpen(false)}
-                            className="flex items-center px-6 py-3 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-amber-400 transition-all"
+                            className="flex items-center px-6 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-gold-600 dark:hover:text-gold-400 transition-all"
                           >
                             {subItem.name}
                           </Link>
@@ -154,8 +154,8 @@ const Navbar = () => {
                         to={item.path}
                         className={`text-base font-bold transition-all duration-300 py-2 ${
                           location.pathname === item.path
-                            ? 'text-amber-400'
-                            : 'text-slate-300 hover:text-amber-400'
+                            ? 'text-gold-600 dark:text-gold-400'
+                            : 'text-slate-600 dark:text-slate-300 hover:text-gold-600 dark:hover:text-gold-400'
                         }`}
                       >
                         {item.name}
@@ -165,14 +165,14 @@ const Navbar = () => {
                           {isAuthenticated ? (
                             <button
                               onClick={handleLogout}
-                              className="bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full text-xs font-black hover:bg-amber-400 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-amber-500/20"
+                              className="bg-gold-500 text-slate-950 px-4 py-1.5 rounded-full text-xs font-black hover:bg-gold-400 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-gold-500/20"
                             >
                               LOGOUT
                             </button>
                           ) : (
                             <Link
                               to="/login"
-                              className="bg-amber-500 text-slate-950 px-4 py-1.5 rounded-full text-xs font-black hover:bg-amber-400 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-amber-500/20 inline-flex items-center gap-1"
+                              className="bg-gold-500 text-slate-950 px-4 py-1.5 rounded-full text-xs font-black hover:bg-gold-400 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-gold-500/20 inline-flex items-center gap-1"
                             >
                               <LogIn size={14} />
                               LOGIN
@@ -187,30 +187,30 @@ const Navbar = () => {
             </div>
 
             {/* User Profile Display */}
-            <div className="flex items-center space-x-4 bg-white/5 px-4 py-2.5 rounded-2xl border border-white/10 backdrop-blur-md">
+            <div className="flex items-center space-x-4 bg-slate-100 dark:bg-white/5 px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-white/10 backdrop-blur-md transition-colors">
               {isAuthenticated && user ? (
                 <>
                   {profilePhotoUrl ? (
                     <img
                       src={profilePhotoUrl}
                       alt={user.display_name || user.name}
-                      className="h-10 w-10 rounded-full object-cover border-2 border-amber-500/50"
+                      className="h-10 w-10 rounded-full object-cover border-2 border-gold-500/50"
                     />
                   ) : (
-                    <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
+                    <div className="h-10 w-10 rounded-full bg-gold-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
                       {user.first_name ? user.first_name[0] : (user.name ? user.name[0] : 'U')}
                     </div>
                   )}
-                  <div className="hidden lg:block text-sm font-black text-white tracking-wide uppercase">
+                  <div className="hidden lg:block text-sm font-black text-slate-900 dark:text-white tracking-wide uppercase transition-colors">
                     {user.display_name || user.name || 'User'}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
+                  <div className="h-10 w-10 rounded-full bg-gold-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
                     JL
                   </div>
-                  <div className="hidden lg:block text-sm font-black text-white tracking-wide uppercase">
+                  <div className="hidden lg:block text-sm font-black text-slate-900 dark:text-white tracking-wide uppercase transition-colors">
                     John Lee
                   </div>
                 </>
@@ -230,7 +230,7 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden bg-[#07111f] border-t border-white/5 pb-8 px-4 animate-fade-in">
+          <div className="md:hidden bg-[#0f172a] border-t border-white/5 pb-8 px-4 animate-fade-in">
             {/* Mobile User Profile Display */}
             <div className="flex items-center space-x-4 bg-white/5 p-4 rounded-2xl border border-white/10 my-6">
               {isAuthenticated && user ? (
@@ -239,10 +239,10 @@ const Navbar = () => {
                     <img
                       src={profilePhotoUrl}
                       alt={user.display_name || user.name}
-                      className="h-10 w-10 rounded-full object-cover border-2 border-amber-500/50"
+                      className="h-10 w-10 rounded-full object-cover border-2 border-gold-500/50"
                     />
                   ) : (
-                    <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
+                    <div className="h-10 w-10 rounded-full bg-gold-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
                       {user.first_name ? user.first_name[0] : (user.name ? user.name[0] : 'U')}
                     </div>
                   )}
@@ -252,7 +252,7 @@ const Navbar = () => {
                 </>
               ) : (
                 <>
-                  <div className="h-10 w-10 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
+                  <div className="h-10 w-10 rounded-full bg-gold-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
                     JL
                   </div>
                   <div className="text-sm font-black text-white tracking-wide uppercase">
@@ -274,8 +274,8 @@ const Navbar = () => {
                        onClick={() => setIsOpen(false)}
                        className={`px-4 py-3 rounded-xl text-lg font-bold transition-all ${
                          location.pathname === item.path
-                           ? 'bg-amber-500 text-slate-950'
-                           : 'text-slate-300 hover:bg-white/5 hover:text-amber-400'
+                           ? 'bg-gold-500 text-slate-950'
+                           : 'text-slate-300 hover:bg-white/5 hover:text-gold-400'
                        }`}
                      >
                        {item.name}
@@ -294,7 +294,7 @@ const Navbar = () => {
                            <Link
                              to="/login"
                              onClick={() => setIsOpen(false)}
-                             className="w-full bg-amber-500 text-slate-950 px-4 py-3 rounded-xl text-base font-bold hover:bg-amber-400 transition-all inline-flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
+                             className="w-full bg-gold-500 text-slate-950 px-4 py-3 rounded-xl text-base font-bold hover:bg-gold-400 transition-all inline-flex items-center justify-center gap-2 shadow-lg shadow-gold-500/20"
                            >
                              <LogIn size={18} />
                              Login
@@ -327,19 +327,19 @@ function MobileDropdown({ item, closeMenu }){
     <div className="px-4">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full text-left flex items-center justify-between py-3 rounded-xl text-lg font-bold text-slate-300 hover:text-amber-400"
+        className="w-full text-left flex items-center justify-between py-3 rounded-xl text-lg font-bold text-slate-300 hover:text-gold-400"
       >
         <span>{item.name}</span>
         <ChevronDown className={`h-5 w-5 transform transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="mt-2 ml-4 border-l-2 border-amber-500/30 pl-4 flex flex-col space-y-2">
+        <div className="mt-2 ml-4 border-l-2 border-gold-500/30 pl-4 flex flex-col space-y-2">
           {item.dropdown.map((sub) => (
             <Link
               key={sub.path}
               to={sub.path}
               onClick={() => { closeMenu(); }}
-              className="block py-2 text-base font-semibold text-slate-400 hover:text-amber-400"
+              className="block py-2 text-base font-semibold text-slate-400 hover:text-gold-400"
             >
               {sub.name}
             </Link>

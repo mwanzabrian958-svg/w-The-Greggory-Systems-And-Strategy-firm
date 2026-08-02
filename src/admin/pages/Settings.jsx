@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Settings as SettingsIcon, Save, RefreshCw, Bell, Shield, Database, Globe, Mail, Smartphone, Palette, Users, Lock, Key, Server, HardDrive, Wifi, Monitor, Moon, Sun, ChevronRight, AlertCircle, CheckCircle, ToggleLeft, ToggleRight } from "lucide-react";
+import { useTheme } from "../../context/ThemeContext";
 
 export function Settings({ user }) {
+  const { darkMode, setDarkMode } = useTheme();
   const [activeTab, setActiveTab] = useState("general");
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -358,19 +360,25 @@ export function Settings({ user }) {
           <div className="flex items-center justify-between p-4 bg-white rounded-xl">
             <div className="flex items-center gap-4">
               <Sun className="h-6 w-6 text-orange-500" />
-              <p className="font-medium text-slate-900">Light Mode</p>
+              <p className="font-medium text-slate-900">Standard Light Theme</p>
             </div>
-            <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-blue-600 transition-colors">
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6" />
+            <button
+              onClick={() => setDarkMode(false)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${!darkMode ? 'bg-blue-600' : 'bg-slate-300'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!darkMode ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
           </div>
           <div className="flex items-center justify-between p-4 bg-white rounded-xl">
             <div className="flex items-center gap-4">
               <Moon className="h-6 w-6 text-slate-700" />
-              <p className="font-medium text-slate-900">Dark Mode</p>
+              <p className="font-medium text-slate-900">Deep Space Theme (Dark)</p>
             </div>
-            <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-300 transition-colors">
-              <span className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1" />
+            <button
+              onClick={() => setDarkMode(true)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${darkMode ? 'bg-amber-500' : 'bg-slate-300'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
           </div>
         </div>

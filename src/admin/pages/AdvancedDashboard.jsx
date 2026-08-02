@@ -427,8 +427,8 @@ function OverviewSection({ stats, budgetOverview, recentActivity, pendingApprova
         </div>
       </div>
 
-      {/* Recent Activity & Pending Approvals */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Relay Monitor & Pending Approvals */}
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl shadow-xl p-6 border border-white/10">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -444,17 +444,33 @@ function OverviewSection({ stats, budgetOverview, recentActivity, pendingApprova
           
           <div className="space-y-3">
             {recentActivity.length > 0 ? (
-              recentActivity.slice(0, 5).map((activity, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${index === 0 ? 'bg-emerald-500/20' : 'bg-white/5'}`}>
-                    <Clock className={`h-4 w-4 ${index === 0 ? 'text-emerald-400' : 'text-slate-400'}`} />
+              recentActivity.slice(0, 5).map((activity, index) => {
+                const isRelay = activity.source === 'relay';
+                const badgeClass = isRelay
+                  ? activity.status === 'queued'
+                    ? 'bg-amber-500/20 text-amber-300'
+                    : 'bg-emerald-500/20 text-emerald-300'
+                  : 'bg-white/10 text-slate-300';
+
+                return (
+                  <div key={activity.id || index} className="flex items-start gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isRelay ? 'bg-sky-500/20' : index === 0 ? 'bg-emerald-500/20' : 'bg-white/5'}`}>
+                      {isRelay ? <MessageSquare className="h-4 w-4 text-sky-400" /> : <Clock className={`h-4 w-4 ${index === 0 ? 'text-emerald-400' : 'text-slate-400'}`} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-white font-medium text-sm">{activity.action || 'Activity'}</p>
+                        {isRelay && (
+                          <span className={`text-[10px] uppercase tracking-[0.2em] px-2 py-0.5 rounded-full font-semibold ${badgeClass}`}>
+                            {activity.status === 'queued' ? 'Queued' : 'Sent'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-slate-400 text-xs">{activity.timestamp ? new Date(activity.timestamp).toLocaleString() : 'Just now'}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium text-sm">{activity.action || 'Activity'}</p>
-                    <p className="text-slate-400 text-xs">{activity.timestamp || 'Just now'}</p>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-6 text-slate-400">
                 <Activity className="h-10 w-10 mx-auto mb-2" />
@@ -464,41 +480,68 @@ function OverviewSection({ stats, budgetOverview, recentActivity, pendingApprova
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl p-3">
-              <ClipboardList className="h-6 w-6 text-white" />
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-gradient-to-br from-sky-500 to-cyan-600 rounded-2xl p-3">
+                <MessageSquare className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <p className="text-sm uppercase tracking-[0.25em] text-slate-500 font-semibold">Operational Relay</p>
+                <h3 className="text-xl font-bold text-slate-900">Relay Monitor</h3>
+              </div>
             </div>
-            <div>
-              <p className="text-sm uppercase tracking-[0.25em] text-slate-500 font-semibold">Action Required</p>
-              <h3 className="text-xl font-bold text-slate-900">Pending Approvals</h3>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                { label: "Queued", value: recentActivity.filter((item) => item.source === "relay" && item.status === "queued").length, tone: "amber" },
+                { label: "Sent", value: recentActivity.filter((item) => item.source === "relay" && item.status !== "queued").length, tone: "emerald" },
+                { label: "Failed", value: 0, tone: "rose" },
+              ].map((item) => (
+                <div key={item.label} className={`rounded-2xl border p-4 ${item.tone === "amber" ? "bg-amber-50 border-amber-200" : item.tone === "emerald" ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200"}`}>
+                  <p className={`text-sm font-semibold ${item.tone === "amber" ? "text-amber-700" : item.tone === "emerald" ? "text-emerald-700" : "text-rose-700"}`}>{item.label}</p>
+                  <p className={`mt-2 text-3xl font-black ${item.tone === "amber" ? "text-amber-900" : item.tone === "emerald" ? "text-emerald-900" : "text-rose-900"}`}>{item.value}</p>
+                </div>
+              ))}
             </div>
           </div>
-          
-          <div className="space-y-3">
-            {pendingApprovals.length > 0 ? (
-              pendingApprovals.slice(0, 4).map((approval) => (
-                <div key={approval.id} className="bg-slate-50 rounded-2xl p-4 border border-slate-200 hover:border-teal-300 transition-all">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <FileCheck className="h-5 w-5 text-teal-600" />
-                      <div>
-                        <p className="text-slate-900 font-medium text-sm">{approval.title || 'Approval'}</p>
-                        <p className="text-slate-500 text-xs">{approval.type || 'General'}</p>
-                      </div>
-                    </div>
-                    <span className="bg-orange-100 text-orange-700 text-xs font-semibold px-2 py-1 rounded-full">
-                      {approval.status || 'Pending'}
-                    </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-6 text-slate-400">
-                <CheckCircle className="h-10 w-10 mx-auto mb-2 text-emerald-500" />
-                <p className="text-sm">All caught up!</p>
+
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl p-3">
+                <ClipboardList className="h-6 w-6 text-white" />
               </div>
-            )}
+              <div>
+                <p className="text-sm uppercase tracking-[0.25em] text-slate-500 font-semibold">Action Required</p>
+                <h3 className="text-xl font-bold text-slate-900">Pending Approvals</h3>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              {pendingApprovals.length > 0 ? (
+                pendingApprovals.slice(0, 4).map((approval) => (
+                  <div key={approval.id} className="bg-slate-50 rounded-2xl p-4 border border-slate-200 hover:border-teal-300 transition-all">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileCheck className="h-5 w-5 text-teal-600" />
+                        <div>
+                          <p className="text-slate-900 font-medium text-sm">{approval.title || 'Approval'}</p>
+                          <p className="text-slate-500 text-xs">{approval.type || 'General'}</p>
+                        </div>
+                      </div>
+                      <span className="bg-orange-100 text-orange-700 text-xs font-semibold px-2 py-1 rounded-full">
+                        {approval.status || 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-slate-400">
+                  <CheckCircle className="h-10 w-10 mx-auto mb-2 text-emerald-500" />
+                  <p className="text-sm">All caught up!</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

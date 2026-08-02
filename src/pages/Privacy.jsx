@@ -3,10 +3,10 @@ import { ArrowLeft, Database, Eye, Share2, Shield, User, Cookie, ExternalLink, M
 
 const Privacy = () => {
   return (
-    <div className="min-h-screen bg-[#07111f] text-white">
+    <div className="min-h-screen bg-[#0f172a] text-white">
       {/* Header */}
       <section className="relative overflow-hidden pt-24 pb-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#07111f] via-[#0f1f3d] to-[#172c49]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155]" />
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(45,212,191,0.1),_transparent_50%)]" />
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">

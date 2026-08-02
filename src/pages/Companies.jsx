@@ -34,28 +34,6 @@ const Companies = () => {
       // Mock data - replace with actual API call
       const mockCompanies = [
         {
-          id: 1,
-          name: 'Greggory Properties',
-          slug: 'greggory-properties',
-          description: 'Premium real estate and property management services offering residential and commercial properties across Kenya. Specializing in modern apartments, luxury villas, and commercial spaces.',
-          logo_url: '/brand-header.png/sja.PNG',
-          website_url: 'https://greggoryproperties.com',
-          contact_email: 'info@greggoryproperties.com',
-          contact_phone: '+254799789956',
-          address_line1: 'Rafiki Plaza, Kabarak Road',
-          address_line2: '',
-          city: 'Nairobi',
-          state: 'Nairobi County',
-          postal_code: '00100',
-          country: 'Kenya',
-          is_active: true,
-          property_count: 15,
-          rating: 4.8,
-          established_year: 2020,
-          services: ['Property Sales', 'Property Management', 'Real Estate Consulting', 'Property Valuation'],
-          industry: 'Real Estate'
-        },
-        {
           id: 2,
           name: 'Greggory Construction',
           slug: 'greggory-construction',
@@ -122,7 +100,6 @@ const Companies = () => {
 
   const getIndustryIcon = (industry) => {
     switch (industry) {
-      case 'Real Estate': return <Home className="w-6 h-6" />
       case 'Construction': return <Building className="w-6 h-6" />
       case 'Consulting': return <Briefcase className="w-6 h-6" />
       default: return <Building className="w-6 h-6" />
@@ -131,7 +108,6 @@ const Companies = () => {
 
   const getIndustryColor = (industry) => {
     switch (industry) {
-      case 'Real Estate': return 'bg-blue-100 text-blue-600'
       case 'Construction': return 'bg-orange-100 text-orange-600'
       case 'Consulting': return 'bg-purple-100 text-purple-600'
       default: return 'bg-gray-100 text-gray-600'
@@ -190,7 +166,6 @@ const Companies = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               >
                 <option value="all">All Industries</option>
-                <option value="Real Estate">Real Estate</option>
                 <option value="Construction">Construction</option>
                 <option value="Consulting">Consulting</option>
               </select>
@@ -248,10 +223,10 @@ const Companies = () => {
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div>
                       <div className="text-2xl font-bold text-teal-600">
-                        {company.property_count || company.project_count || company.client_count || 0}
+                        {company.project_count || company.client_count || 0}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {company.property_count ? 'Properties' : company.project_count ? 'Projects' : 'Clients'}
+                        {company.project_count ? 'Projects' : 'Clients'}
                       </div>
                     </div>
                     <div>

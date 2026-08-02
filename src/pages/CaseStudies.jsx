@@ -213,403 +213,357 @@ const CaseStudies = () => {
   }
 
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">Success Stories</h1>
-            <p className="text-xl text-gray-300">
-              Real results from real clients. Discover how we've helped organizations achieve their goals through strategic project management.
+    <div className="min-h-screen bg-[#0f172a] text-white pt-[140px] relative overflow-hidden">
+      {/* Immersive Background Elements */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(245,158,11,0.08),_transparent_50%)]" />
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_80%,_rgba(45,212,191,0.05),_transparent_50%)]" />
+        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay"
+             style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }} />
+      </div>
+
+      {/* Hero Section Protocol */}
+      <section className="relative z-10 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="max-w-3xl mx-auto">
+            <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-4">Verification Matrix</p>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-8">Mission Artifacts</h1>
+            <p className="text-lg text-slate-400 font-medium leading-relaxed uppercase tracking-widest mb-12">
+              Real-world telemetry from successful systemic synchronizations across global entities.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Introduction */}
-      <section className="py-16 bg-white">
+      {/* Introduction Protocol */}
+      <section className="relative z-10 py-16 bg-white/5 backdrop-blur-2xl border-y border-white/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="section-title">Proven Results Across Industries</h2>
-          <p className="section-subtitle mx-auto mt-4">
-            Our project management expertise has delivered measurable value for clients across technology, manufacturing, healthcare, finance, and retail sectors. Each engagement follows our proven methodology to ensure sustainable success.
+           <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.3em] mb-4">Strategic Results</p>
+          <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-6">Proven Systemic Throughput</h2>
+          <p className="text-slate-400 text-sm font-bold uppercase tracking-widest leading-relaxed mb-10">
+            Our architectural expertise has delivered measurable capital and temporal efficiency for clients across technology, manufacturing, and financial sectors.
           </p>
           {canEdit && (
-            <div className="mt-6 flex items-center justify-center gap-3">
+            <div className="mt-6 flex items-center justify-center gap-4">
               <button
                 type="button"
-                className={`px-4 py-2 rounded-md border ${editMode ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-teal-700 border-teal-600'}`}
+                className={`px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] border transition-all ${editMode ? 'bg-gold-500 text-slate-950 border-gold-500' : 'bg-white/5 text-gold-500 border-gold-500/20 hover:bg-white/10'}`}
                 onClick={() => setEditMode((v) => !v)}
               >
-                {editMode ? 'Exit Edit Mode' : 'Edit Reports'}
+                {editMode ? 'Seal Artifacts' : 'Modify Records'}
               </button>
               {editMode && (
                 <button
                   type="button"
-                  className="px-4 py-2 rounded-md bg-teal-600 text-white border border-teal-600"
+                  className="px-8 py-3 rounded-xl bg-emerald-500 text-slate-950 font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/10"
                   onClick={saveAll}
                 >
-                  Save All
+                  Authorize Updates
                 </button>
               )}
-              {editMode && (
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-md border border-gray-300 text-gray-700"
-                  onClick={resetAll}
-                >
-                  Reset
-                </button>
-              )}
-              {editMode && (
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-md border border-gray-300 text-gray-700"
-                  onClick={exportJson}
-                >
-                  Import/Export JSON
-                </button>
-              )}
-            </div>
-          )}
-          {editMode && showImportExport && (
-            <div className="mt-4 text-left bg-gray-50 border rounded p-4">
-              <label className="block text-xs text-gray-600 mb-1">Import or edit JSON then click Apply</label>
-              <textarea
-                className="w-full h-48 border rounded p-2 text-sm"
-                value={importText}
-                onChange={(e) => setImportText(e.target.value)}
-              />
-              <div className="mt-2 flex gap-2">
-                <button className="px-3 py-1 rounded bg-gray-200" onClick={importJson}>Apply</button>
-                <button className="px-3 py-1 rounded bg-gray-200" onClick={() => setShowImportExport(false)}>Close</button>
-              </div>
             </div>
           )}
         </div>
       </section>
 
-      {/* Case Studies */}
-      {studies.map((study, index) => (
-        <section 
-          key={index} 
-          className={index % 2 === 0 ? 'py-16 bg-gray-50' : 'py-16 bg-white'}
-        >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Header */}
-            <div className="mb-8">
-              <div className="flex items-center gap-4 mb-4">
-                {!editMode && (
-                  <span className="bg-teal-600 text-white px-4 py-1 rounded-full text-sm font-semibold">{study.industry}</span>
-                )}
-                {editMode && canEdit && (
-                  <input
-                    className="border rounded px-2 py-1 text-sm"
-                    value={study.industry}
-                    onChange={(e) => {
-                      const next = [...studies]
-                      next[index].industry = e.target.value
-                      setStudies(next)
-                    }}
-                  />
-                )}
-              </div>
-              {!editMode && (
-                <h2 className="text-3xl md:text-4xl font-bold text-navy-900 mb-4">{study.company}</h2>
-              )}
-              {editMode && canEdit && (
-                <input
-                  className="w-full max-w-xl border rounded px-3 py-2 text-lg font-bold text-navy-900"
-                  value={study.company}
-                  onChange={(e) => {
-                    const next = [...studies]
-                    next[index].company = e.target.value
-                    setStudies(next)
-                  }}
-                />
-              )}
-            </div>
-
-            {/* Hero Image */}
-            <div className="mb-12">
-              {!editMode && (
-                <img src={study.image} alt={study.company} className="w-full h-64 md:h-96 object-cover rounded-lg shadow-xl" />
-              )}
-              {editMode && canEdit && (
-                <div className="space-y-2">
-                  <img src={study.image} alt={study.company} className="w-full h-64 md:h-96 object-cover rounded-lg shadow" />
-                  <input
-                    className="w-full border rounded px-3 py-2"
-                    value={study.image}
-                    onChange={(e) => {
-                      const next = [...studies]
-                      next[index].image = e.target.value
-                      setStudies(next)
-                    }}
-                    placeholder="Image URL"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              {/* STAR Method Content */}
-              <div className="space-y-8">
-                {/* Situation */}
+      {/* Case Studies Protocol */}
+      <div className="relative z-10">
+        {studies.map((study, index) => (
+          <section
+            key={index}
+            className="py-24 border-b border-white/5 group"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {/* Header */}
+              <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
                 <div>
-                  <h3 className="text-2xl font-bold text-navy-900 mb-3 flex items-center gap-2">
-                    <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-bold text-sm">
-                      S
-                    </div>
-                    Situation
-                  </h3>
-                  {!editMode && <p className="text-gray-600 leading-relaxed">{study.situation}</p>}
-                  {editMode && canEdit && (
-                    <textarea
-                      className="w-full border rounded p-2"
-                      value={study.situation}
-                      onChange={(e) => {
-                        const next = [...studies]
-                        next[index].situation = e.target.value
-                        setStudies(next)
-                      }}
-                    />
-                  )}
-                </div>
-
-                {/* Task */}
-                <div>
-                  <h3 className="text-2xl font-bold text-navy-900 mb-3 flex items-center gap-2">
-                    <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-bold text-sm">
-                      T
-                    </div>
-                    Task
-                  </h3>
-                  {!editMode && <p className="text-gray-600 leading-relaxed">{study.task}</p>}
-                  {editMode && canEdit && (
-                    <textarea
-                      className="w-full border rounded p-2"
-                      value={study.task}
-                      onChange={(e) => {
-                        const next = [...studies]
-                        next[index].task = e.target.value
-                        setStudies(next)
-                      }}
-                    />
-                  )}
-                </div>
-
-                {/* Action */}
-                <div>
-                  <h3 className="text-2xl font-bold text-navy-900 mb-3 flex items-center gap-2">
-                    <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-bold text-sm">
-                      A
-                    </div>
-                    Action
-                  </h3>
-                  {!editMode && (
-                    <ul className="space-y-2">
-                      {study.action.map((item, idx) => (
-                        <li key={idx} className="flex items-start gap-3">
-                          <CheckCircle className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                          <span className="text-gray-600">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {editMode && canEdit && (
-                    <div className="space-y-2">
-                      {study.action.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <input
-                            className="flex-1 border rounded px-2 py-1"
-                            value={item}
-                            onChange={(e) => {
-                              const next = [...studies]
-                              next[index].action[idx] = e.target.value
-                              setStudies(next)
-                            }}
-                          />
-                          <button
-                            type="button"
-                            className="px-2 py-1 border rounded text-sm"
-                            onClick={() => {
-                              const next = [...studies]
-                              next[index].action.splice(idx, 1)
-                              setStudies(next)
-                            }}
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        className="px-3 py-1 border rounded text-sm"
-                        onClick={() => {
-                          const next = [...studies]
-                          next[index].action.push('')
-                          setStudies(next)
-                        }}
-                      >
-                        Add Action
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Results & Testimonial */}
-              <div className="space-y-8">
-                {/* Results */}
-                <div>
-                  <h3 className="text-2xl font-bold text-navy-900 mb-6 flex items-center gap-2">
-                    <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-bold text-sm">
-                      R
-                    </div>
-                    Results
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {study.results.map((result, idx) => (
-                      <div key={idx} className="bg-white rounded-lg shadow-md p-6 text-center border-2 border-teal-100">
-                        <div className="text-teal-600 flex justify-center mb-2">
-                          {result.icon}
-                        </div>
-                        {!editMode && (
-                          <>
-                            <div className="text-3xl font-bold text-navy-900 mb-1">{result.metric}</div>
-                            <div className="text-sm text-gray-600">{result.label}</div>
-                          </>
-                        )}
-                        {editMode && canEdit && (
-                          <div className="space-y-2 text-left">
-                            <label className="block text-xs text-gray-500">Metric</label>
-                            <input
-                              className="w-full border rounded px-2 py-1"
-                              value={result.metric}
-                              onChange={(e) => {
-                                const next = [...studies]
-                                next[index].results[idx].metric = e.target.value
-                                setStudies(next)
-                              }}
-                            />
-                            <label className="block text-xs text-gray-500">Label</label>
-                            <input
-                              className="w-full border rounded px-2 py-1"
-                              value={result.label}
-                              onChange={(e) => {
-                                const next = [...studies]
-                                next[index].results[idx].label = e.target.value
-                                setStudies(next)
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  {editMode && canEdit && (
-                    <div className="mt-3 flex gap-2">
-                      <button
-                        type="button"
-                        className="px-3 py-1 border rounded text-sm"
-                        onClick={() => {
-                          const next = [...studies]
-                          next[index].results.push({ icon: <TrendingUp />, metric: '', label: 'New Metric' })
-                          setStudies(next)
-                        }}
-                      >
-                        Add Result
-                      </button>
-                      <button
-                        type="button"
-                        className="px-3 py-1 border rounded text-sm"
-                        onClick={() => {
-                          const next = [...studies]
-                          if (next[index].results.length > 0) next[index].results.pop()
-                          setStudies(next)
-                        }}
-                      >
-                        Remove Last Result
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Testimonial */}
-                <div className="bg-navy-900 text-white rounded-lg p-8">
-                  <svg className="w-10 h-10 text-teal-400 mb-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                  </svg>
-                  {!editMode && (
-                    <>
-                      <blockquote className="text-lg mb-4 italic">"{study.testimonial.quote}"</blockquote>
-                      <div className="font-semibold">{study.testimonial.author}</div>
-                      <div className="text-gray-300 text-sm">{study.testimonial.role}</div>
-                    </>
-                  )}
-                  {editMode && canEdit && (
-                    <div className="space-y-3">
-                      <label className="block text-xs text-gray-300">Testimonial Quote</label>
-                      <textarea
-                        className="w-full bg-navy-800 text-white rounded px-2 py-2"
-                        value={study.testimonial.quote}
+                  <div className="flex items-center gap-4 mb-6">
+                    <span className="bg-gold-500/10 text-gold-500 px-4 py-1 rounded-md text-[9px] font-black uppercase tracking-[0.3em] border border-gold-500/20">{study.industry} Protocol</span>
+                    {editMode && canEdit && (
+                      <input
+                        className="bg-white/5 border border-white/10 rounded px-3 py-1 text-[10px] font-black uppercase text-white"
+                        value={study.industry}
                         onChange={(e) => {
                           const next = [...studies]
-                          next[index].testimonial.quote = e.target.value
+                          next[index].industry = e.target.value
                           setStudies(next)
                         }}
                       />
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs text-gray-300">Author</label>
+                    )}
+                  </div>
+                  {!editMode ? (
+                    <h2 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter group-hover:text-gold-400 transition-colors">{study.company}</h2>
+                  ) : (
+                    <input
+                      className="bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-3xl font-black text-white uppercase w-full max-w-2xl"
+                      value={study.company}
+                      onChange={(e) => {
+                        const next = [...studies]
+                        next[index].company = e.target.value
+                        setStudies(next)
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Hero Image Protocol */}
+              <div className="mb-16 relative overflow-hidden rounded-[40px] border border-white/10 shadow-2xl">
+                {!editMode ? (
+                  <img src={study.image} alt={study.company} className="w-full h-64 md:h-[500px] object-cover brightness-[0.7] contrast-[1.1] grayscale-[0.3] group-hover:scale-105 group-hover:grayscale-0 group-hover:brightness-90 transition-all duration-1000" />
+                ) : (
+                  <div className="space-y-4">
+                    <img src={study.image} alt={study.company} className="w-full h-64 md:h-96 object-cover rounded-[32px] opacity-50" />
+                    <input
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-3 text-xs font-bold text-slate-400"
+                      value={study.image}
+                      onChange={(e) => {
+                        const next = [...studies]
+                        next[index].image = e.target.value
+                        setStudies(next)
+                      }}
+                      placeholder="Image URL Registry"
+                    />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] to-transparent opacity-60" />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                {/* STAR Method Protocol */}
+                <div className="space-y-12">
+                  {/* Situation */}
+                  <div className="bg-white/[0.02] rounded-[32px] p-8 border border-white/5 hover:bg-white/[0.04] transition-all">
+                    <h3 className="text-xs font-black text-gold-500 mb-6 flex items-center gap-4 uppercase tracking-[0.4em]">
+                      <div className="w-10 h-10 bg-gold-500 rounded-2xl flex items-center justify-center text-slate-950 font-black shadow-lg shadow-gold-500/20">
+                        S
+                      </div>
+                      Situation Context
+                    </h3>
+                    {!editMode ? (
+                      <p className="text-slate-400 font-medium leading-relaxed uppercase text-xs tracking-widest">{study.situation}</p>
+                    ) : (
+                      <textarea
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-6 text-sm text-white"
+                        value={study.situation}
+                        onChange={(e) => {
+                          const next = [...studies]
+                          next[index].situation = e.target.value
+                          setStudies(next)
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Task */}
+                  <div className="bg-white/[0.02] rounded-[32px] p-8 border border-white/5 hover:bg-white/[0.04] transition-all">
+                    <h3 className="text-xs font-black text-sky-400 mb-6 flex items-center gap-4 uppercase tracking-[0.4em]">
+                      <div className="w-10 h-10 bg-sky-400 rounded-2xl flex items-center justify-center text-slate-950 font-black shadow-lg shadow-sky-400/20">
+                        T
+                      </div>
+                      Mission Objective
+                    </h3>
+                    {!editMode ? (
+                      <p className="text-slate-400 font-medium leading-relaxed uppercase text-xs tracking-widest">{study.task}</p>
+                    ) : (
+                      <textarea
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-6 text-sm text-white"
+                        value={study.task}
+                        onChange={(e) => {
+                          const next = [...studies]
+                          next[index].task = e.target.value
+                          setStudies(next)
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Action */}
+                  <div className="bg-white/[0.02] rounded-[32px] p-8 border border-white/5 hover:bg-white/[0.04] transition-all">
+                    <h3 className="text-xs font-black text-emerald-400 mb-6 flex items-center gap-4 uppercase tracking-[0.4em]">
+                      <div className="w-10 h-10 bg-emerald-400 rounded-2xl flex items-center justify-center text-slate-950 font-black shadow-lg shadow-emerald-400/20">
+                        A
+                      </div>
+                      Strategic Execution
+                    </h3>
+                    {!editMode ? (
+                      <ul className="space-y-4">
+                        {study.action.map((item, idx) => (
+                          <li key={idx} className="flex items-start gap-4 group/item">
+                            <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5 transition-transform group-hover/item:scale-110" />
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest group-hover/item:text-white transition-colors">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="space-y-4">
+                        {study.action.map((item, idx) => (
+                          <div key={idx} className="flex items-center gap-4">
+                            <input
+                              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white"
+                              value={item}
+                              onChange={(e) => {
+                                const next = [...studies]
+                                next[index].action[idx] = e.target.value
+                                setStudies(next)
+                              }}
+                            />
+                            <button
+                              type="button"
+                              className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                              onClick={() => {
+                                const next = [...studies]
+                                next[index].action.splice(idx, 1)
+                                setStudies(next)
+                              }}
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          className="w-full py-3 border-2 border-dashed border-white/5 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-emerald-400 hover:border-emerald-400/20 transition-all"
+                          onClick={() => {
+                            const next = [...studies]
+                            next[index].action.push('')
+                            setStudies(next)
+                          }}
+                        >
+                          Append Action
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Results & Testimonial Protocol */}
+                <div className="space-y-12">
+                  {/* Results */}
+                  <div>
+                    <h3 className="text-xs font-black text-gold-500 mb-8 flex items-center gap-4 uppercase tracking-[0.4em]">
+                      <div className="w-10 h-10 bg-gold-500 rounded-2xl flex items-center justify-center text-slate-950 font-black shadow-lg shadow-gold-500/20">
+                        R
+                      </div>
+                      Measured Outcomes
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {study.results.map((result, idx) => (
+                        <div key={idx} className="bg-white/5 backdrop-blur-xl rounded-[32px] p-8 border border-white/10 text-center shadow-xl group/res hover:bg-white/[0.08] transition-all">
+                          <div className="text-gold-500 flex justify-center mb-6 transition-transform group-hover/res:scale-110">
+                            {result.icon}
+                          </div>
+                          {!editMode ? (
+                            <>
+                              <div className="text-4xl font-black text-white tracking-tighter mb-2">{result.metric}</div>
+                              <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{result.label}</div>
+                            </>
+                          ) : (
+                            <div className="space-y-4">
+                              <input
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xl font-black text-center text-white"
+                                value={result.metric}
+                                onChange={(e) => {
+                                  const next = [...studies]
+                                  next[index].results[idx].metric = e.target.value
+                                  setStudies(next)
+                                }}
+                              />
+                              <input
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black text-center text-slate-400"
+                                value={result.label}
+                                onChange={(e) => {
+                                  const next = [...studies]
+                                  next[index].results[idx].label = e.target.value
+                                  setStudies(next)
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Testimonial Protocol */}
+                  <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-[40px] p-10 border border-white/10 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-[0.05]">
+                       <Rocket className="w-32 h-32 text-gold-500" />
+                    </div>
+                    <svg className="w-12 h-12 text-gold-500/20 mb-8" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                    </svg>
+                    {!editMode ? (
+                      <div className="relative z-10">
+                        <blockquote className="text-xl font-bold text-slate-200 mb-8 leading-relaxed italic">"{study.testimonial.quote}"</blockquote>
+                        <div className="flex items-center gap-4">
+                           <div className="h-px w-8 bg-gold-500"></div>
+                           <div>
+                              <div className="font-black text-white uppercase tracking-widest text-sm">{study.testimonial.author}</div>
+                              <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">{study.testimonial.role}</div>
+                           </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-6 relative z-10">
+                        <textarea
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-sm text-white italic"
+                          value={study.testimonial.quote}
+                          onChange={(e) => {
+                            const next = [...studies]
+                            next[index].testimonial.quote = e.target.value
+                            setStudies(next)
+                          }}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
                           <input
-                            className="w-full bg-navy-800 text-white rounded px-2 py-1"
+                            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs font-black text-white"
                             value={study.testimonial.author}
                             onChange={(e) => {
                               const next = [...studies]
                               next[index].testimonial.author = e.target.value
                               setStudies(next)
                             }}
+                            placeholder="Author"
                           />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-300">Role</label>
                           <input
-                            className="w-full bg-navy-800 text-white rounded px-2 py-1"
+                            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs font-black text-white"
                             value={study.testimonial.role}
                             onChange={(e) => {
                               const next = [...studies]
                               next[index].testimonial.role = e.target.value
                               setStudies(next)
                             }}
+                            placeholder="Role"
                           />
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-      ))}
+          </section>
+        ))}
+      </div>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-navy-900 to-navy-800 text-white">
+      {/* CTA Section Protocol */}
+      <section className="relative z-10 py-32 bg-gold-500">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Write Your Success Story?
+          <p className="text-[10px] font-black text-slate-950 uppercase tracking-[0.5em] mb-4 opacity-60">Mission Intake</p>
+          <h2 className="text-5xl font-black text-slate-950 uppercase tracking-tight mb-8">
+            Initialize Your Sync
           </h2>
-          <p className="text-xl mb-8 text-gray-300">
-            Join our growing list of satisfied clients who have transformed their businesses through strategic project management.
+          <p className="text-lg font-bold text-slate-900 uppercase tracking-widest mb-12">
+            Join the strategic elite who have synchronized their business models with The Greggory Standard.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/contact" className="btn-primary bg-teal-600 hover:bg-teal-700 justify-center">
-              Schedule a Consultation
-            </a>
-            <a href="/services" className="btn-secondary bg-transparent border-white text-white hover:bg-white hover:text-navy-900 justify-center">
-              Explore Our Services
-            </a>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <Link to="/contact" className="px-10 py-5 bg-slate-950 text-white rounded-[20px] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-900 transition-all shadow-2xl">
+              Initialize Consultation
+            </Link>
+            <Link to="/services" className="px-10 py-5 bg-white/20 text-slate-950 border border-slate-950/20 rounded-[20px] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-white/30 transition-all">
+              Inspect Modules
+            </Link>
           </div>
         </div>
       </section>

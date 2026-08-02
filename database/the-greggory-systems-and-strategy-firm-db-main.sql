@@ -97,6 +97,28 @@ INSERT INTO team_members (name, role, department) VALUES
 ('Developer', 'developer', 'Technology');
 
 -- =============================================
+-- Table: website_content
+-- =============================================
+CREATE TABLE IF NOT EXISTS website_content (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    content_key VARCHAR(100) NOT NULL UNIQUE,
+    content_value LONGTEXT,
+    content_type ENUM('text', 'html', 'json', 'image_url') DEFAULT 'text',
+    section VARCHAR(100),
+    description TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_by BIGINT,
+    FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Insert default website content
+INSERT INTO website_content (content_key, content_value, content_type, section, description) VALUES
+('hero_title', 'THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM', 'text', 'hero', 'Main landing page title'),
+('hero_motto', 'Strategic Project Development for all clients', 'text', 'hero', 'Main landing page motto'),
+('intro_title', 'Empowering Your Success Through Comprehensive Solutions', 'text', 'intro', 'Introduction section title'),
+('intro_description', 'At The-Greggory-Systems-And-Strategy-firm, we believe that every business challenge-from systems design to strategic planning-can be solved with excellence.', 'text', 'intro', 'Introduction section description');
+
+-- =============================================
 -- Table: users
 -- Regular user accounts
 -- =============================================
@@ -296,39 +318,6 @@ CREATE TABLE IF NOT EXISTS user_roles (
     UNIQUE KEY unique_user_role (user_id, role_id),
     INDEX idx_user_roles_user (user_id),
     INDEX idx_user_roles_role (role_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- =============================================
--- Table: properties
--- =============================================
-CREATE TABLE IF NOT EXISTS properties (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description LONGTEXT,
-    property_type ENUM('apartment', 'house', 'villa', 'commercial', 'land', 'office') NOT NULL,
-    status ENUM('available', 'rented', 'maintenance', 'unavailable') DEFAULT 'available',
-    bedrooms INT DEFAULT 0,
-    bathrooms INT DEFAULT 0,
-    square_meters DECIMAL(10,2),
-    price_per_month DECIMAL(10,2),
-    location_address VARCHAR(255),
-    location_city VARCHAR(100),
-    location_country VARCHAR(100),
-    featured_image_id BIGINT,
-    is_featured BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    created_by BIGINT,
-    updated_by BIGINT,
-    deleted_at TIMESTAMP NULL DEFAULT NULL,
-    deleted_by BIGINT DEFAULT NULL,
-    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
-    FOREIGN KEY (featured_image_id) REFERENCES images(id) ON DELETE SET NULL,
-    INDEX idx_properties_company (company_id, status),
-    INDEX idx_properties_type (property_type, status),
-    INDEX idx_properties_featured (is_featured, status),
-    INDEX idx_properties_location (location_city, location_country)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
@@ -1372,206 +1361,8 @@ INSERT INTO admin_website_settings (setting_key, setting_value, setting_type, di
 ('contact_phone', '+254799789956', 'text', 'Contact Phone', 'Main contact phone number', 'contact', TRUE),
 ('company_address', 'rafiki kabarak, kabarak', 'textarea', 'Company Address', 'Physical office address', 'contact', TRUE),
 ('maintenance_mode', 'false', 'boolean', 'Maintenance Mode', 'Put site in maintenance mode', 'system', FALSE),
-('allow_registration', 'true', 'boolean', 'Allow Registration', 'Enable user registration', 'auth', FALSE);
-
--- =====================================================
--- SECTION 7: TEST USERS FOR ADMIN & DEVELOPER PLATFORMS
--- Password: ***REMOVED*** (for all admin users)
--- Password: ***REMOVED*** (for all developer users)
--- =====================================================
-
--- =============================================
--- Test Admin Users - Can access admin dashboard
--- =============================================
-INSERT INTO admin_users (
-    email, 
-    password_hash, 
-    first_name, 
-    last_name, 
-    admin_level, 
-    access_level, 
-    department, 
-    is_active, 
-    email_verified,
-    phone_number,
-    timezone
-) VALUES 
-(
-    'admin@thegreggorysystemsandstrategyfirm.org', 
-    '$2b$10$abcdefghijklmnopqrstuvwx01234567890123456789012345678901234567', 
-    'Super', 
-    'Administrator', 
-    'super_admin', 
-    'full', 
-    'Executive', 
-    1, 
-    1,
-    '+254799789956',
-    'Africa/Nairobi'
-),
-(
-    'manager@thegreggorysystemsandstrategyfirm.org', 
-    '$2b$10$abcdefghijklmnopqrstuvwx01234567890123456789012345678901234567', 
-    'Project', 
-    'Manager', 
-    'admin', 
-    'full', 
-    'Projects', 
-    1, 
-    1,
-    '+254799789957',
-    'Africa/Nairobi'
-),
-(
-    'moderator@thegreggorysystemsandstrategyfirm.org', 
-    '$2b$10$abcdefghijklmnopqrstuvwx01234567890123456789012345678901234567', 
-    'Content', 
-    'Moderator', 
-    'moderator', 
-    'limited', 
-    'Content Management', 
-    1, 
-    1,
-    '+254799789958',
-    'Africa/Nairobi'
-);
-
--- =============================================
--- Test Developer Users - Can access developer tools
--- =============================================
-INSERT INTO developer_users (
-    email, 
-    password_hash, 
-    first_name, 
-    last_name, 
-    developer_level, 
-    access_level, 
-    specialization, 
-    tech_stack,
-    github_username,
-    is_active, 
-    email_verified,
-    phone_number,
-    timezone
-) VALUES 
-(
-    'dev1@thegreggorysystemsandstrategyfirm.org', 
-    '$2b$10$zyxwvutsrqponmlkjihgfedcba012345678901234567890123456789012345', 
-    'John', 
-    'Senior', 
-    'senior', 
-    'full', 
-    'Full Stack Development', 
-    '["React", "Node.js", "MySQL", "Express", "MongoDB", "Docker"]',
-    'johnsenior',
-    1, 
-    1,
-    '+254799789960',
-    'Africa/Nairobi'
-),
-(
-    'dev2@thegreggorysystemsandstrategyfirm.org', 
-    '$2b$10$zyxwvutsrqponmlkjihgfedcba012345678901234567890123456789012345', 
-    'Jane', 
-    'Developer', 
-    'mid', 
-    'limited', 
-    'Frontend Development', 
-    '["React", "JavaScript", "TypeScript", "TailwindCSS", "HTML", "CSS"]',
-    'janedev',
-    1, 
-    1,
-    '+254799789961',
-    'Africa/Nairobi'
-),
-(
-    'junior@thegreggorysystemsandstrategyfirm.org', 
-    '$2b$10$zyxwvutsrqponmlkjihgfedcba012345678901234567890123456789012345', 
-    'Mike', 
-    'Trainee', 
-    'junior', 
-    'limited', 
-    'Backend Development', 
-    '["Node.js", "Express", "MySQL", "REST APIs"]',
-    'mikejr',
-    1, 
-    1,
-    '+254799789962',
-    'Africa/Nairobi'
-);
-
--- =============================================
--- Create corresponding users table entries for integration
--- =============================================
-INSERT INTO users (email, password_hash, first_name, last_name, primary_role, job_id, is_active, email_verified) 
-SELECT email, password_hash, first_name, last_name, 'admin', 
-    (SELECT id FROM team_members WHERE role='admin' LIMIT 1), 1, 1 
-FROM admin_users;
-
-INSERT INTO users (email, password_hash, first_name, last_name, primary_role, job_id, is_active, email_verified) 
-SELECT email, password_hash, first_name, last_name, 'developer', 
-    (SELECT id FROM team_members WHERE role='developer' LIMIT 1), 1, 1 
-FROM developer_users;
-
--- =============================================
--- Summary Views for Quick Reference
--- =============================================
-SELECT '=============================================' as '==========================================';
-SELECT '   THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM DATABASE SETUP' as 'COMPLETE';
-SELECT '=============================================' as '==========================================';
-
-SELECT 
-    'Admin Users' as User_Type,
-    COUNT(*) as Count,
-    GROUP_CONCAT(email SEPARATOR ', ') as Emails
-FROM admin_users;
-
-SELECT 
-    'Developer Users' as User_Type,
-    COUNT(*) as Count,
-    GROUP_CONCAT(email SEPARATOR ', ') as Emails
-FROM developer_users;
-
-SELECT 
-    'Total Tables' as Metric,
-    COUNT(*) as Count,
-    'Database Objects Created' as Description
-FROM information_schema.tables 
-WHERE table_schema = 'the_greggory_systems_and_strategy_firm_db_main';
-
--- =====================================================
--- TEST USER LOGIN CREDENTIALS REFERENCE
--- =====================================================
--- Admin Users Credentials (Password: ***REMOVED***)
---   admin@thegreggorysystemsandstrategyfirm.org (super_admin)
---   manager@thegreggorysystemsandstrategyfirm.org (admin)
---   moderator@thegreggorysystemsandstrategyfirm.org (moderator)
---
--- Developer Users Credentials (Password: ***REMOVED***)
---   dev1@thegreggorysystemsandstrategyfirm.org (senior)
---   dev2@thegreggorysystemsandstrategyfirm.org (mid)
---   junior@thegreggorysystemsandstrategyfirm.org (junior)
--- =====================================================
-
--- Show credentials as a proper result set
-SELECT 
-    'Admin' as Account_Type,
-    email as Email,
-    '***REMOVED***' as Password,
-    admin_level as Role,
-    CONCAT(first_name, ' ', last_name) as Full_Name
-FROM admin_users
-WHERE email LIKE '%@thegreggorysystemsandstrategyfirm.org'
-UNION ALL
-SELECT 
-    'Developer' as Account_Type,
-    email as Email,
-    '***REMOVED***' as Password,
-    developer_level as Role,
-    CONCAT(first_name, ' ', last_name) as Full_Name
-FROM developer_users
-WHERE email LIKE '%@thegreggorysystemsandstrategyfirm.org'
-ORDER BY Account_Type, Role;
+('allow_registration', 'true', 'boolean', 'Allow Registration', 'Enable user registration', 'auth', FALSE),
+('deep_space_mode', 'true', 'boolean', 'Deep Space Mode', 'Master theme switch. ON (true) = Deep Space Dark Protocol, OFF (false) = Light Mode Protocol.', 'appearance', TRUE);
 
 -- =====================================================
 -- SECTION 7: CLIENT PORTAL - PROJECTS & ACTIVITIES
@@ -2233,6 +2024,18 @@ CREATE TABLE IF NOT EXISTS change_requests (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================
+-- SECTION 7: CORPORATE PROTOCOLS
+-- =====================================================
+
+-- Show finalization as a proper result set
+SELECT
+    'The-Greggory-Systems-And-Strategy-firm' as Corporate_Entity,
+    'Active' as Protocol_Status,
+    NOW() as Deployment_Timestamp,
+    'Strategic Systems & Business Solutions' as Mission_Profile,
+    'Deep Space (Dark)' as Theme_Protocol_Status;
+
+-- =====================================================
 -- SUCCESS MESSAGE
 -- =====================================================
-SELECT 'Complete database schema created successfully with all tables and test users!' as message;
+SELECT 'Complete database schema created successfully with zero ghosts and total strategic alignment!' as message;

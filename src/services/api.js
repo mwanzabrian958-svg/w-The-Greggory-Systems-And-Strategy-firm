@@ -46,31 +46,6 @@ const apiCall = async (endpoint, options = {}) => {
   }
 };
 
-// Properties API
-export const propertiesAPI = {
-  // Get all properties
-  getAll: (filters = {}) => {
-    const params = new URLSearchParams(filters);
-    return apiCall(`/properties?${params}`);
-  },
-
-  // Get property by ID
-  getById: (id) => apiCall(`/properties/${id}`),
-
-  // Create new property
-  create: (propertyData) =>
-    apiCall("/properties", {
-      method: "POST",
-      body: JSON.stringify(propertyData),
-    }),
-
-  // Delete property
-  delete: (id) =>
-    apiCall(`/properties/${id}`, {
-      method: "DELETE",
-    }),
-};
-
 // Companies API
 export const companiesAPI = {
   // Get all companies
@@ -270,7 +245,6 @@ export const projectsAPI = {
 export const healthCheck = () => apiCall("/health");
 
 export default {
-  properties: propertiesAPI,
   companies: companiesAPI,
   videos: videosAPI,
   contactForms: contactFormsAPI,

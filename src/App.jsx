@@ -6,6 +6,7 @@ import Footer from './components/Footer'
 import FloatingWhatsApp from './components/FloatingWhatsApp'
 import PrivateRoute from './components/PrivateRoute'
 import { AuthProvider } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 
 // Public Pages
 import Home from './pages/Home'
@@ -16,10 +17,7 @@ import Services from './pages/Services'
 import CaseStudies from './pages/CaseStudies'
 import Blog from './pages/Blog'
 import Contact from './pages/Contact'
-import ApplicationForm from './pages/ApplicationForm'
-import Properties from './pages/Properties'
 import Companies from './pages/Companies'
-import Applications from './pages/Applications'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ForgotPassword from './pages/ForgotPassword'
@@ -40,12 +38,13 @@ function Layout() {
   const isAuthPage = authPages.includes(location.pathname)
   const isAdminPage = location.pathname.startsWith('/admin')
   const isDeveloperPage = location.pathname === '/developer'
+  const isClientPortal = location.pathname === '/client-portal' || location.pathname.startsWith('/projects')
 
   return (
 
     <div className="flex flex-col min-h-screen">
 
-      {!isAuthPage && !isAdminPage && !isDeveloperPage && (
+      {!isAuthPage && !isAdminPage && !isDeveloperPage && !isClientPortal && (
         <>
           <Navbar />
           <SiteTagline />
@@ -86,13 +85,7 @@ function Layout() {
 
           <Route path="/contact" element={<Contact />} />
 
-          <Route path="/properties" element={<Properties />} />
-
           <Route path="/companies" element={<Companies />} />
-
-          <Route path="/applications" element={<Applications />} />
-
-          <Route path="/application-form" element={<ApplicationForm />} />
 
           <Route path="/login" element={<Login />} />
 
@@ -114,7 +107,7 @@ function Layout() {
             path="/client-portal" 
             element={
               <PrivateRoute>
-                <ClientPortal />
+                <Projects />
               </PrivateRoute>
             } 
           />
@@ -125,8 +118,8 @@ function Layout() {
 
       </main>
 
-      {!isAuthPage && !isAdminPage && !isDeveloperPage && <Footer />}
-      {!isAdminPage && !isDeveloperPage && <FloatingWhatsApp />}
+      {!isAuthPage && !isAdminPage && !isDeveloperPage && !isClientPortal && <Footer />}
+      {!isAdminPage && !isDeveloperPage && !isClientPortal && <FloatingWhatsApp />}
     </div>
 
   )
@@ -136,21 +129,15 @@ function Layout() {
 
 
 function App() {
-
   return (
-
-    <AuthProvider>
-
-      <Router>
-
-        <Layout />
-
-      </Router>
-
-    </AuthProvider>
-
+    <ThemeProvider>
+      <AuthProvider>
+        <Router>
+          <Layout />
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   )
-
 }
 
 

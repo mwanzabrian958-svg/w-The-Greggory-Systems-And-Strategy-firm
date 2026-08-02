@@ -110,6 +110,7 @@ const Login = () => {
         first_name: userData.first_name,
         last_name: userData.last_name,
         display_name: userData.display_name,
+        token: response.token || userData.token || null,
         // has_photo tells the Navbar whether to build the photo URL from the id.
         // The Navbar always reconstructs the URL dynamically — nothing is stored.
         has_photo: !!userData.has_photo,
@@ -178,7 +179,7 @@ const Login = () => {
           </label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Mail className="h-4 w-4 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+              <Mail className="h-4 w-4 text-slate-500 group-focus-within:text-gold-500 transition-colors" />
             </div>
             <input
               id="email"
@@ -188,7 +189,7 @@ const Login = () => {
               onChange={handleChange}
               required
               placeholder="Enter credentials"
-              className="block w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all text-sm font-medium"
+              className="block w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all text-sm font-medium"
             />
           </div>
           {errors.email && (
@@ -202,7 +203,7 @@ const Login = () => {
           </label>
           <div className="relative group">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Lock className="h-4 w-4 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+              <Lock className="h-4 w-4 text-slate-500 group-focus-within:text-gold-500 transition-colors" />
             </div>
             <input
               id="password"
@@ -212,12 +213,12 @@ const Login = () => {
               onChange={handleChange}
               required
               placeholder="••••••••"
-              className="block w-full pl-10 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all text-sm font-medium"
+              className="block w-full pl-10 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all text-sm font-medium"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-amber-500 transition-colors"
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-gold-500 transition-colors"
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
@@ -229,16 +230,16 @@ const Login = () => {
 
         <div className="text-[9px] text-slate-400 text-center leading-relaxed font-bold uppercase tracking-wider px-2">
           By signing in, you consent to our{' '}
-          <Link to="/terms" className="text-amber-400 hover:text-amber-300">Terms</Link>
+          <Link to="/terms" className="text-gold-400 hover:text-gold-300">Terms</Link>
           {' '}&{' '}
-          <Link to="/privacy" className="text-amber-400 hover:text-amber-300">Privacy</Link>
+          <Link to="/privacy" className="text-gold-400 hover:text-gold-300">Privacy</Link>
         </div>
 
         <div className="space-y-3">
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-xl text-sm font-black text-slate-950 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 transition-all transform hover:scale-[1.02] active:scale-[0.98] uppercase tracking-[0.1em]"
+            className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-xl text-sm font-black text-slate-950 bg-gradient-to-r from-gold-500 to-yellow-500 hover:from-gold-400 hover:to-yellow-400 transition-all transform hover:scale-[1.02] active:scale-[0.98] uppercase tracking-[0.1em]"
           >
             {isLoading ? 'Processing...' : 'Secure Access'}
           </button>
@@ -246,13 +247,13 @@ const Login = () => {
           <div className="flex items-center justify-between px-2">
             <Link
               to="/forgot-password"
-              className="text-[10px] font-bold text-slate-500 hover:text-amber-400 transition-colors uppercase tracking-widest"
+              className="text-[10px] font-bold text-slate-500 hover:text-gold-400 transition-colors uppercase tracking-widest"
             >
               Forgot?
             </Link>
             <Link
               to="/signup"
-              className="text-[10px] font-black text-amber-500 hover:text-amber-400 transition-colors uppercase tracking-widest"
+              className="text-[10px] font-black text-gold-500 hover:text-gold-400 transition-colors uppercase tracking-widest"
             >
               Sign Up
             </Link>
@@ -264,7 +265,7 @@ const Login = () => {
             <div className="w-full border-t border-white/5"></div>
           </div>
           <div className="relative flex justify-center text-[10px] font-black tracking-[0.5em]">
-            <span className="px-4 bg-[#07111f]/50 backdrop-blur-md text-slate-600">OR</span>
+            <span className="px-4 bg-[#0f172a]/50 backdrop-blur-md text-slate-600">OR</span>
           </div>
         </div>
 

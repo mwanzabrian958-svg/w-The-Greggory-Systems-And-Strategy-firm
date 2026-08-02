@@ -58,72 +58,98 @@ const Footer = () => {
 
   return (
     <>
-      <footer className="bg-navy-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 sm:gap-8">
+      <footer className="bg-[#0f172a] text-white border-t border-white/5 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-gold-500/20 to-transparent" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 sm:gap-16">
             {/* Company Info */}
-            <div className="col-span-1 md:col-span-2">
-              <div className="mb-4 sm:mb-6">
-                <Link to="/">
-                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white">{SITE_NAME}</h2>
-                  <p className="text-sm sm:text-base text-teal-400 font-medium">{SITE_TAGLINE}</p>
+            <div className="col-span-1 md:col-span-2 space-y-8">
+              <div>
+                <Link to="/" className="group inline-block">
+                  <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight group-hover:text-gold-500 transition-colors">{SITE_NAME}</h2>
+                  <div className="h-1 w-12 bg-gold-500 mt-3 rounded-full group-hover:w-20 transition-all duration-500" />
+                  <p className="text-[10px] sm:text-xs text-gold-500 font-black uppercase tracking-[0.4em] mt-4">{SITE_TAGLINE}</p>
                 </Link>
               </div>
-              <p className="text-sm sm:text-base text-gray-300 mb-4">
-                Strategic Systems and Business Solutions for all clients. Excellence through Innovation.
+              <p className="text-sm sm:text-base text-slate-400 font-medium leading-relaxed max-w-md uppercase tracking-widest text-xs">
+                Architecting high-tier strategic systems and tactical business solutions. Excellence through systemic innovation.
               </p>
-              <SocialMediaIcons
-                className="text-gray-300"
-                hoverColor="hover:text-teal-400"
-                iconSize={16}
-              />
+              <div className="pt-4">
+                <SocialMediaIcons
+                  className="text-slate-500"
+                  hoverColor="hover:text-gold-500"
+                  iconSize={20}
+                />
+              </div>
             </div>
 
-            {/* Contact Info */}
+            {/* Contact Protocol */}
             <div className="col-span-1 md:col-span-1">
-              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Contact Us</h3>
-              <ul className="space-y-2 sm:space-y-3">
-                <li className="flex items-start gap-2">
-                  <Mail size={16} className="text-teal-400 mt-1 flex-shrink-0" />
-                  <a
-                    href="mailto:brianmwanza651@gmail.com"
-                    className="text-sm sm:text-base text-gray-300 hover:text-teal-400 transition-colors"
-                  >
-                    brianmwanza651@gmail.com
-                  </a>
+              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-8">Contact Protocol</h3>
+              <ul className="space-y-6">
+                <li className="flex items-start gap-4 group">
+                  <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gold-500 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all">
+                    <Mail size={16} />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Secure Relay</p>
+                    <a
+                      href="mailto:brianmwanza651@gmail.com"
+                      className="text-xs sm:text-sm font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-wider"
+                    >
+                      brianmwanza651@gmail.com
+                    </a>
+                  </div>
                 </li>
-                <li className="flex items-start gap-2">
-                  <Phone size={16} className="text-teal-400 mt-1 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-300">+254799789956</span>
+                <li className="flex items-start gap-4 group">
+                   <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gold-500 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all">
+                    <Phone size={16} />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Direct Uplink</p>
+                    <span className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider">+254 799 789 956</span>
+                  </div>
                 </li>
-                <li className="flex items-start gap-2">
-                  <MapPin size={16} className="text-teal-400 mt-1 flex-shrink-0" />
-                  <span className="text-sm sm:text-base text-gray-300">
-                    rafiki kabarak
-                    <br />
-                    kabarak
-                  </span>
+                <li className="flex items-start gap-4 group">
+                   <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gold-500 group-hover:bg-gold-500 group-hover:text-slate-950 transition-all">
+                    <MapPin size={16} />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Node Location</p>
+                    <span className="text-xs sm:text-sm font-bold text-slate-300 uppercase tracking-wider">
+                      RAFIKI KABARAK, KABARAK
+                    </span>
+                  </div>
                 </li>
               </ul>
             </div>
           </div>
 
-          {/* Bottom Bar — hidden admin entry: three dots under copyright */}
-          <div className="border-t border-navy-700 mt-6 sm:mt-8 pt-6 sm:pt-8 text-center text-gray-400 text-xs sm:text-sm">
-            <p>&copy; {currentYear} {SITE_NAME}. All rights reserved.</p>
-            <button
-              type="button"
-              onClick={handleFooterAdminTrigger}
-              className="mt-2 inline-flex py-2 px-3 bg-transparent hover:bg-gray-800 opacity-30 hover:opacity-100 transition-all duration-300 rounded-full border border-gray-600 hover:border-white"
-              aria-label="Admin console access"
-              title="Admin console"
-            >
-              <span className="flex gap-1" aria-hidden>
-                <span className="w-1.5 h-1.5 bg-white rounded-full" />
-                <span className="w-1.5 h-1.5 bg-white rounded-full" />
-                <span className="w-1.5 h-1.5 bg-white rounded-full" />
-              </span>
-            </button>
+          {/* Bottom Bar Protocol */}
+          <div className="border-t border-white/5 mt-16 sm:mt-24 pt-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
+              &copy; {currentYear} {SITE_NAME}. Mission Synchronized.
+            </p>
+
+            <div className="flex items-center gap-8">
+               <Link to="/privacy" className="text-[10px] font-black text-slate-600 hover:text-white uppercase tracking-widest transition-colors">Privacy Protocol</Link>
+               <Link to="/terms" className="text-[10px] font-black text-slate-600 hover:text-white uppercase tracking-widest transition-colors">Terms of Service</Link>
+
+               <button
+                type="button"
+                onClick={handleFooterAdminTrigger}
+                className="group p-2 rounded-full border border-white/10 hover:border-gold-500/40 hover:bg-gold-500/5 transition-all duration-500"
+                aria-label="Admin console access"
+                title="Command Terminal"
+              >
+                <div className="flex gap-1.5 px-2 py-1">
+                  <span className="w-1 h-1 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors" />
+                  <span className="w-1 h-1 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors duration-300" />
+                  <span className="w-1 h-1 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors duration-500" />
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </footer>

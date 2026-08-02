@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const { createNotification } = require('../utils/notificationHelper');
 
 router.get('/', async (req, res) => {
   try {
@@ -48,6 +49,9 @@ router.post('/', async (req, res) => {
       [user_id, project_name, project_description || null, project_type || 'consulting', status || 'planning', priority || 'medium', start_date || null, end_date || null, estimated_budget || 0, actual_budget || 0, client_id || null, client_name || null, client_email || null, client_phone || null, project_manager_id || null, team_members ? JSON.stringify(team_members) : null, deliverables ? JSON.stringify(deliverables) : null, milestones ? JSON.stringify(milestones) : null, documents ? JSON.stringify(documents) : null, progress_percentage || 0, notes || null, req.body.created_by || user_id]
     );
 
+    // REAL-LIFE NOTIF: Notify user of new project assignment
+    await createNotification(user_id, 'project_update', 'Mission Deployment', `New project initialized: ${project_name}`, 'high');
+
     res.status(201).json({ message: 'Project created successfully', id: result.insertId });
   } catch (error) {
     console.error('Error creating user project:', error);
@@ -69,6 +73,13 @@ router.put('/:id', async (req, res) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // REAL-LIFE NOTIF: Notify user of project parameters change
+    // We fetch the user_id for this project first
+    const [proj] = await db.promise().query('SELECT user_id FROM user_projects WHERE id = ?', [id]);
+    if (proj.length > 0) {
+      await createNotification(proj[0].user_id, 'project_update', 'Mission Parameters Shift', `Tactical parameters for ${project_name} have been synchronized.`, 'normal');
     }
 
     res.json({ message: 'Project updated successfully' });

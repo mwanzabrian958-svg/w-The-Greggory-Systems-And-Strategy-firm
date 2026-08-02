@@ -5,10 +5,17 @@ const rateLimit = require("express-rate-limit");
 const mysql = require("mysql2/promise");
 const mongoose = require("mongoose");
 const connectMongoDB = require("./server/config/mongodb");
+const models = require("./server/models");
+const {
+  User, Project, Document, Message, WebsiteContent,
+  Finance, Company, BlogArticle, CaseStudy, Video,
+  ContactForm, Transaction, ActivityLog
+} = models;
 const path = require("path");
 const multer = require("multer");
 const crypto = require("crypto");
 const bcryptjs = require("bcryptjs");
+const { buildClientPortalPayload } = require("./server/utils/clientPortalData");
 require("dotenv").config();
 
 function getAdminSessionSecret() {
@@ -533,69 +540,79 @@ app.post("/api/users/login", async (req, res) => {
         .json({ success: false, message: "Email and password are required" });
     }
 
-    const [users] = await mainDb.query(
+    // 1. Try MongoDB first (The new Strategic Standard)
+    let user = null;
+    let authSource = 'mongodb';
+
+    if (mongoose.connection.readyState === 1) {
+      user = await User.findOne({ email: normalizedEmail, is_active: true, deleted_at: null });
+    }
+
+    if (user) {
+      // Validate via Mongoose method
+      const isPasswordValid = await user.comparePassword(normalizedPassword);
+      if (!isPasswordValid) {
+        return res.status(401).json({ success: false, message: "Invalid credentials" });
+      }
+
+      return res.json({
+        success: true,
+        user: {
+          id: user._id,
+          sql_id: user.sql_id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          display_name: user.display_name,
+          has_photo: !!user.profile_photo?.data,
+          profile_photo_url: user.profile_photo?.data ? `/api/users/profile-photo/${user._id}` : null,
+          role: user.primary_role || "user",
+          source: 'mongodb'
+        },
+      });
+    }
+
+    // 2. Fallback to MySQL (Legacy Compatibility)
+    const [sqlUsers] = await mainDb.query(
       "SELECT id, email, first_name, last_name, display_name, password_hash, profile_photo_blob IS NOT NULL AS has_photo FROM users WHERE LOWER(email) = ? AND deleted_at IS NULL",
       [normalizedEmail],
     );
 
-    if (users.length === 0) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid credentials" });
+    if (sqlUsers.length === 0) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
-    const user = users[0];
+    const sqlUser = sqlUsers[0];
+    let isSqlPasswordValid = false;
+    const storedPassword = sqlUser.password_hash || "";
 
-    // Verify password using bcrypt when possible.
-    // Compatibility fallback supports older plain-text records and upgrades them to bcrypt.
-    let isPasswordValid = false;
-    const storedPassword = user.password_hash || "";
-    if (
-      storedPassword.startsWith("$2a$") ||
-      storedPassword.startsWith("$2b$") ||
-      storedPassword.startsWith("$2y$")
-    ) {
-      isPasswordValid = await bcryptjs.compare(
-        normalizedPassword,
-        storedPassword,
-      );
+    if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$") || storedPassword.startsWith("$2y$")) {
+      isSqlPasswordValid = await bcryptjs.compare(normalizedPassword, storedPassword);
     } else {
-      isPasswordValid = normalizedPassword === storedPassword;
-      if (isPasswordValid) {
-        const upgradedHash = await bcryptjs.hash(normalizedPassword, 10);
-        await mainDb.query("UPDATE users SET password_hash = ? WHERE id = ?", [
-          upgradedHash,
-          user.id,
-        ]);
-      }
+      isSqlPasswordValid = normalizedPassword === storedPassword;
     }
 
-    if (!isPasswordValid) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid credentials" });
+    if (!isSqlPasswordValid) {
+      return res.status(401).json({ success: false, message: "Invalid credentials" });
     }
 
     res.json({
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        display_name: user.display_name,
-        has_photo: user.has_photo,
-        profile_photo_url: user.has_photo
-          ? `/api/users/profile-photo/${user.id}`
-          : null,
+        id: sqlUser.id,
+        email: sqlUser.email,
+        first_name: sqlUser.first_name,
+        last_name: sqlUser.last_name,
+        display_name: sqlUser.display_name,
+        has_photo: sqlUser.has_photo,
+        profile_photo_url: sqlUser.has_photo ? `/api/users/profile-photo/${sqlUser.id}` : null,
         role: "user",
+        source: 'mysql'
       },
     });
   } catch (error) {
     console.error("Login error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Login failed", error: error.message });
+    res.status(500).json({ success: false, message: "Login failed", error: error.message });
   }
 });
 
@@ -711,7 +728,7 @@ const handleUserRegister = async (req, res) => {
       }
     }
 
-    // Create new user with profile photo BLOB if provided
+    // Create new user with profile photo BLOB if provided (MySQL)
     const [result] = await mainDb.query(
       "INSERT INTO users (email, password_hash, first_name, last_name, display_name, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name, is_active, email_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)",
       [
@@ -727,9 +744,34 @@ const handleUserRegister = async (req, res) => {
     );
 
     const userId = result.insertId;
-    console.log("[USER REGISTER] Registration successful:", userId);
+    console.log("[USER REGISTER] SQL Registration successful:", userId);
 
-    // Assign role to user
+    // MONGODB DUAL-WRITE (New Strategic Standard)
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const mongoUser = new User({
+          email: email.toLowerCase(),
+          password_hash: hashedPassword,
+          first_name,
+          last_name,
+          display_name: display_name || `${first_name} ${last_name}`,
+          primary_role: userRole || 'user',
+          profile_photo: profilePhotoBlob ? {
+            data: profilePhotoBlob,
+            contentType: photoMimeType,
+            fileName: photoFileName
+          } : undefined,
+          email_verified: true,
+          sql_id: userId
+        });
+        await mongoUser.save();
+        console.log("[USER REGISTER] MongoDB Registration successful:", mongoUser._id);
+      } catch (mongoErr) {
+        console.error("[USER REGISTER] MongoDB sync failed (but SQL succeeded):", mongoErr.message);
+      }
+    }
+
+    // Assign role to user (MySQL)
     let roleId = 2; // Default to user role
     if (userRole === "admin") {
       roleId = 1;
@@ -849,15 +891,29 @@ app.get("/api/users/client-dashboard/:id", async (req, res) => {
     const user = users[0];
 
     const [projectRows] = await mainDb.query(
-      `SELECT id, project_name, project_description, project_type, status, priority, progress_percentage, end_date, estimated_budget, actual_budget
-       FROM user_projects
-       WHERE user_id = ? AND is_active = true AND deleted_at IS NULL
-       ORDER BY updated_at DESC`,
+      `SELECT up.id, up.project_name, up.project_description, up.project_type, up.status, up.priority, up.progress_percentage, up.end_date, up.estimated_budget, up.actual_budget, up.created_at,
+              CONCAT(pm.first_name, ' ', pm.last_name) AS manager_name
+       FROM user_projects up
+       LEFT JOIN users pm ON pm.id = up.project_manager_id
+       WHERE up.user_id = ? AND up.is_active = true AND up.deleted_at IS NULL
+       ORDER BY up.updated_at DESC`,
       [id],
     );
 
     const projectIds = projectRows.map((project) => project.id);
     const placeholders = projectIds.length > 0 ? projectIds.map(() => "?").join(",") : "0";
+
+    const [taskRows] = await mainDb.query(
+      `SELECT pt.id, pt.project_id, up.project_name, pt.task_name, pt.status, pt.priority, pt.due_date, pt.progress_percentage,
+              CONCAT(u.first_name, ' ', u.last_name) AS assignee_name
+       FROM project_tasks pt
+       LEFT JOIN user_projects up ON up.id = pt.project_id
+       LEFT JOIN users u ON u.id = pt.assigned_to
+       WHERE pt.project_id IN (${placeholders}) AND pt.deleted_at IS NULL
+       ORDER BY pt.due_date ASC
+       LIMIT 10`,
+      projectIds.length > 0 ? projectIds : [0],
+    );
 
     const [activityRows] = await mainDb.query(
       `SELECT pa.id, pa.project_id, pa.activity_type, pa.message, pa.created_at, CONCAT(u.first_name, ' ', u.last_name) AS sender_name
@@ -865,12 +921,31 @@ app.get("/api/users/client-dashboard/:id", async (req, res) => {
        LEFT JOIN users u ON u.id = pa.user_id
        WHERE pa.project_id IN (${placeholders})
        ORDER BY pa.created_at DESC
-       LIMIT 6`,
+       LIMIT 8`,
+      projectIds.length > 0 ? projectIds : [0],
+    );
+
+    const [invoiceRows] = await mainDb.query(
+      `SELECT pi.id, pi.invoice_number, pi.amount, pi.status, pi.due_date, up.project_name
+       FROM project_invoices pi
+       JOIN user_projects up ON up.id = pi.project_id
+       WHERE up.user_id = ? AND pi.status != 'cancelled'
+       ORDER BY pi.issue_date DESC
+       LIMIT 10`,
+      [id],
+    );
+
+    const [documentRows] = await mainDb.query(
+      `SELECT pd.id, pd.project_id, pd.name, pd.category, pd.created_at
+       FROM project_docs pd
+       WHERE pd.project_id IN (${placeholders}) AND pd.deleted_at IS NULL
+       ORDER BY pd.created_at DESC
+       LIMIT 12`,
       projectIds.length > 0 ? projectIds : [0],
     );
 
     const [feedbackRows] = await mainDb.query(
-      `SELECT id, title, message, feedback_type, status, priority, created_at, admin_response, responded_at
+      `SELECT id, title, message, feedback_type, status, priority, created_at, admin_response, responded_at, rating
        FROM user_feedback
        WHERE user_id = ? AND deleted_at IS NULL AND status != 'closed'
        ORDER BY created_at DESC
@@ -878,88 +953,36 @@ app.get("/api/users/client-dashboard/:id", async (req, res) => {
       [id],
     );
 
-    const parsedProjects = projectRows.map((project) => ({
-      id: project.id,
-      name: project.project_name,
-      description: project.project_description,
-      type: project.project_type,
-      status: project.status || "planning",
-      priority: project.priority || "medium",
-      progress: project.progress_percentage || 0,
-      deadline: project.end_date,
-      plannedBudget: Number(project.estimated_budget || 0),
-      actualBudget: Number(project.actual_budget || 0),
-    }));
+    const summaryRow = await mainDb.query(
+      `SELECT total_projects, active_projects, completed_projects, total_budget, total_spent, average_project_duration, client_rating
+       FROM client_project_summary
+       WHERE user_id = ? LIMIT 1`,
+      [id],
+    );
+    const summary = summaryRow[0]?.[0] || null;
 
-    const parsedMessages = [
-      ...activityRows.map((activity) => ({
-        id: activity.id,
-        sender: activity.sender_name || "Team",
-        subject: (activity.activity_type || "update").replace(/_/g, " "),
-        unread: true,
-        time: activity.created_at,
-        message: activity.message,
-      })),
-      ...feedbackRows.map((feedback) => ({
-        id: `feedback-${feedback.id}`,
-        sender: "Company Admin",
-        subject: feedback.title || "Direct feedback",
-        unread: feedback.status === "new",
-        time: feedback.created_at,
-        message: feedback.message,
-        feedback: true,
-      })),
-    ]
-      .sort((a, b) => new Date(b.time) - new Date(a.time))
-      .slice(0, 8);
-
-    const parsedTasks = [];
-    const parsedResources = [];
+    const payload = buildClientPortalPayload({
+      user: {
+        id: user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        display_name: user.display_name || `${user.first_name} ${user.last_name}`,
+        role: user.primary_role || "user",
+        profilePhotoData: user.profile_photo_blob ? `data:${user.profile_photo_mime_type || "image/jpeg"};base64,${Buffer.from(user.profile_photo_blob).toString("base64")}` : null,
+      },
+      projects: projectRows,
+      tasks: taskRows,
+      activities: activityRows,
+      invoices: invoiceRows,
+      documents: documentRows,
+      feedback: feedbackRows,
+      summary,
+    });
 
     res.json({
       success: true,
-      dashboard: {
-        user: {
-          id: user.id,
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          display_name: user.display_name || `${user.first_name} ${user.last_name}`,
-          role: user.primary_role || "user",
-          profilePhotoData: user.profile_photo_blob ? `data:${user.profile_photo_mime_type || "image/jpeg"};base64,${Buffer.from(user.profile_photo_blob).toString("base64")}` : null,
-        },
-        projects: parsedProjects,
-        invoices: [],
-        messages: parsedMessages,
-        tasks: parsedTasks,
-        resourceAllocations: parsedResources,
-        budgetOverview: {
-          planned: parsedProjects.reduce((sum, project) => sum + project.plannedBudget, 0),
-          spent: parsedProjects.reduce((sum, project) => sum + project.actualBudget, 0),
-          forecast: 0,
-          variance: 0,
-        },
-        documentSummary: [
-          { id: 1, label: "Signed Contracts", value: 0 },
-          { id: 2, label: "Deliverables", value: parsedProjects.length },
-          { id: 3, label: "Pending Approvals", value: 0 },
-        ],
-        kpiMetrics: [
-          { id: 1, label: "On-time Delivery", value: "N/A", trend: "up" },
-          { id: 2, label: "Client Satisfaction", value: "4.7/5", trend: "up" },
-          { id: 3, label: "Budget Variance", value: "0%", trend: "up" },
-        ],
-        roleUpdates: {
-          admin: [
-            { title: "Project Oversight", description: "Admin reviews project milestones and status updates directly for you." },
-            { title: "Invoice & Payment Control", description: "Admin manages billing and payment progress for your portal." },
-          ],
-          developer: [
-            { title: "Delivery Updates", description: "Developers share status and implementation updates here." },
-            { title: "Quality Assurance", description: "QA and release milestones appear here as they are completed." },
-          ],
-        },
-      },
+      dashboard: payload,
     });
   } catch (error) {
     console.error("[CLIENT DASHBOARD] Error:", error);
@@ -3683,130 +3706,76 @@ app.get("/api/admin/session", async (req, res) => {
   }
 });
 
-// Properties API
-app.get("/api/properties", async (req, res) => {
-  try {
-    const { status, property_type, limit = 50, offset = 0 } = req.query;
-
-    let query = `
-      SELECT p.*, c.name as company_name, c.logo_url as company_logo
-      FROM properties p
-      LEFT JOIN companies c ON p.company_id = c.id
-      WHERE p.deleted_at IS NULL
-    `;
-    const params = [];
-
-    if (status) {
-      query += " AND p.status = ?";
-      params.push(status);
-    }
-
-    if (property_type) {
-      query += " AND p.property_type = ?";
-      params.push(property_type);
-    }
-
-    query += " ORDER BY p.created_at DESC LIMIT ? OFFSET ?";
-    params.push(parseInt(limit), parseInt(offset));
-
-    const [properties] = await mainDb.query(query, params);
-
-    res.json({ success: true, properties });
-  } catch (error) {
-    console.error("Error fetching properties:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching properties",
-      error: error.message,
-    });
-  }
-});
-
-app.post("/api/properties", async (req, res) => {
-  try {
-    const property = req.body;
-    const [result] = await mainDb.query(
-      "INSERT INTO properties (title, description, property_type, status, price, bedrooms, bathrooms, area, location_address, location_city, location_country, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [
-        property.title,
-        property.description,
-        property.property_type,
-        property.status,
-        property.price,
-        property.bedrooms,
-        property.bathrooms,
-        property.area,
-        property.location_address,
-        property.location_city,
-        property.location_country,
-        property.company_id,
-      ],
-    );
-
-    res.json({ success: true, propertyId: result.insertId });
-  } catch (error) {
-    console.error("Error creating property:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error creating property",
-      error: error.message,
-    });
-  }
-});
-
 // Companies API
 app.get("/api/companies", async (req, res) => {
   try {
     const { industry, limit = 50, offset = 0 } = req.query;
 
+    // 1. Try MongoDB
+    if (mongoose.connection.readyState === 1) {
+      const query = industry && industry !== 'all' ? { industry } : {};
+      const companies = await Company.find(query)
+        .sort({ name: 1 })
+        .limit(parseInt(limit))
+        .skip(parseInt(offset));
+
+      if (companies.length > 0) {
+        return res.json({ success: true, companies, source: 'mongodb' });
+      }
+    }
+
+    // 2. Fallback to MySQL
     let query = "SELECT * FROM companies WHERE deleted_at IS NULL";
     const params = [];
-
-    if (industry) {
+    if (industry && industry !== 'all') {
       query += " AND industry = ?";
       params.push(industry);
     }
-
     query += " ORDER BY name ASC LIMIT ? OFFSET ?";
     params.push(parseInt(limit), parseInt(offset));
 
     const [companies] = await mainDb.query(query, params);
-
-    res.json({ success: true, companies });
+    res.json({ success: true, companies, source: 'mysql' });
   } catch (error) {
     console.error("Error fetching companies:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching companies",
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: "Error fetching companies", error: error.message });
   }
 });
 
 app.post("/api/companies", async (req, res) => {
   try {
     const company = req.body;
+
+    // Write to MySQL
     const [result] = await mainDb.query(
-      "INSERT INTO companies (name, description, industry, website_url, phone, email, logo_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        company.name,
-        company.description,
-        company.industry,
-        company.website_url,
-        company.phone,
-        company.email,
-        company.logo_url,
-      ],
+      "INSERT INTO companies (name, slug, description, industry, website_url, contact_email, contact_phone) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [company.name, company.slug, company.description, company.industry, company.website_url, company.contact_email, company.contact_phone],
     );
+
+    // Sync to MongoDB
+    if (mongoose.connection.readyState === 1) {
+      const mongoCompany = new Company({
+        ...company,
+        sql_id: result.insertId
+      });
+      await mongoCompany.save();
+    }
 
     res.json({ success: true, companyId: result.insertId });
   } catch (error) {
     console.error("Error creating company:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error creating company",
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: "Error creating company", error: error.message });
+  }
+});
+
+// Website Content API
+app.get("/api/website-content", async (req, res) => {
+  try {
+    const [content] = await mainDb.query("SELECT * FROM website_content");
+    res.json({ success: true, content });
+  } catch (error) {
+    console.error("Error fetching website content:", error);
+    res.status(500).json({ success: false, message: "Error fetching website content", error: error.message });
   }
 });
 
@@ -3815,45 +3784,54 @@ app.get("/api/blog-articles", async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query;
 
+    // 1. Try MongoDB
+    if (mongoose.connection.readyState === 1) {
+      const articles = await BlogArticle.find({ is_published: true })
+        .sort({ created_at: -1 })
+        .limit(parseInt(limit))
+        .skip(parseInt(offset));
+
+      if (articles.length > 0) {
+        return res.json({ success: true, articles, source: 'mongodb' });
+      }
+    }
+
+    // 2. Fallback to MySQL
     const [articles] = await mainDb.query(
       "SELECT * FROM blog_articles WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?",
       [parseInt(limit), parseInt(offset)],
     );
 
-    res.json({ success: true, articles });
+    res.json({ success: true, articles, source: 'mysql' });
   } catch (error) {
     console.error("Error fetching blog articles:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching blog articles",
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: "Error fetching blog articles", error: error.message });
   }
 });
 
 app.post("/api/blog-articles", async (req, res) => {
   try {
     const article = req.body;
+
+    // Write to MySQL
     const [result] = await mainDb.query(
-      "INSERT INTO blog_articles (title, excerpt, content, author_id, status, featured_image_id) VALUES (?, ?, ?, ?, ?, ?)",
-      [
-        article.title,
-        article.excerpt,
-        article.content,
-        article.author_id,
-        article.status,
-        article.featured_image_id,
-      ],
+      "INSERT INTO blog_articles (title, excerpt, content, author, read_time, category, is_published) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [article.title, article.excerpt, article.content, article.author, article.read_time, article.category, article.is_published],
     );
+
+    // Sync to MongoDB
+    if (mongoose.connection.readyState === 1) {
+      const mongoArticle = new BlogArticle({
+        ...article,
+        sql_id: result.insertId
+      });
+      await mongoArticle.save();
+    }
 
     res.json({ success: true, articleId: result.insertId });
   } catch (error) {
     console.error("Error creating blog article:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error creating blog article",
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: "Error creating blog article", error: error.message });
   }
 });
 
@@ -3911,8 +3889,8 @@ app.get("/api/videos", async (req, res) => {
     const { is_active = true, limit = 20, offset = 0 } = req.query;
 
     const [videos] = await mainDb.query(
-      "SELECT * FROM videos WHERE is_active = ? ORDER BY display_order ASC, created_at DESC LIMIT ? OFFSET ?",
-      [is_active === "true", parseInt(limit), parseInt(offset)],
+      "SELECT id, title, description, video_url, thumbnail_url, is_active, is_featured, display_order, video_blob IS NOT NULL as has_video_blob, thumbnail_blob IS NOT NULL as has_thumbnail_blob FROM videos WHERE is_active = ? ORDER BY display_order ASC, created_at DESC LIMIT ? OFFSET ?",
+      [is_active === "true" ? 1 : 0, parseInt(limit), parseInt(offset)],
     );
 
     res.json({ success: true, videos });
@@ -3923,6 +3901,23 @@ app.get("/api/videos", async (req, res) => {
       message: "Error fetching videos",
       error: error.message,
     });
+  }
+});
+
+// Video BLOB stream endpoint
+app.get("/api/videos/stream/:id", async (req, res) => {
+  try {
+    const [videos] = await mainDb.query(
+      "SELECT video_blob, video_mime_type FROM videos WHERE id = ?",
+      [req.params.id]
+    );
+    if (videos.length === 0 || !videos[0].video_blob) {
+      return res.status(404).send("Video not found");
+    }
+    res.set("Content-Type", videos[0].video_mime_type || "video/mp4");
+    res.send(videos[0].video_blob);
+  } catch (error) {
+    res.status(500).send("Streaming error");
   }
 });
 

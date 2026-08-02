@@ -9,11 +9,47 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const requireAdmin = require('../middleware/auth');
 const authController = require('../controllers/authController');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
+const { createNotification } = require('../utils/notificationHelper');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
+
+const authenticateUser = (req, res, next) => {
+  const authHeader = req.header('authorization') || req.header('Authorization');
+  let token = null;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7).trim();
+  } else if (authHeader) {
+    token = authHeader.trim();
+  }
+
+  if (!token) {
+    token = req.header('x-auth-token') || req.query.token || req.body?.token;
+  }
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || '***REMOVED***');
+    req.authUser = decoded;
+    req.userId = decoded.userId || decoded.id || decoded.user?.id;
+
+    if (!req.userId) {
+      return res.status(401).json({ success: false, message: 'Invalid authentication token' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('[AUTH] Invalid token:', error.message);
+    return res.status(401).json({ success: false, message: 'Invalid or expired authentication token' });
+  }
+};
 
 // Health check - verify router is loaded
 router.get('/test', (req, res) => {
@@ -367,6 +403,9 @@ router.post('/register', authEndpointValidator('user', 'users'), async (req, res
     console.log('[USER REGISTER] ✓ SUCCESS - Inserted into TABLE: users | ID:', result.insertId);
     console.log('[USER REGISTER] =========================================');
     
+    // REAL-LIFE NOTIF: Notify the user of successful account creation
+    await createNotification(result.insertId, 'system', 'Account Initialized', 'Welcome to The-Greggory-Systems-And-Strategy-firm tactical portal.', 'normal');
+
     res.status(201).json({
       success: true,
       message: 'User registered successfully in users table',
@@ -431,6 +470,12 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
       profilePhotoData = `data:${mimeType};base64,${base64}`;
     }
     
+    const authToken = jwt.sign(
+      { userId: user.id, email: user.email, role: 'user' },
+      process.env.JWT_SECRET || '***REMOVED***',
+      { expiresIn: '7d' }
+    );
+
     return res.json({
       id: user.id,
       email: user.email,
@@ -442,7 +487,8 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
       job_role: user.job_role,
       role_type: 'user',
       profilePhotoData: profilePhotoData,
-      profile_image_id: user.profile_image_id
+      profile_image_id: user.profile_image_id,
+      token: authToken
     });
 
   } catch (error) {
@@ -452,8 +498,8 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
 });
 
 // Client dashboard data for authenticated users
-router.get('/client-dashboard/:id', async (req, res) => {
-  const { id } = req.params;
+router.get('/client-dashboard', authenticateUser, async (req, res) => {
+  const id = req.userId;
 
   try {
     const [users] = await db.promise().query(
@@ -609,7 +655,7 @@ router.get('/client-dashboard/:id', async (req, res) => {
 
     const satisfaction = feedbackRows[0]?.average_rating
       ? `${Number(feedbackRows[0].average_rating).toFixed(1)}/5`
-      : '4.7/5';
+      : '0.0/5';
 
     const budgetVariancePercent = totalPlannedBudget > 0
       ? `${Math.round((budgetVariance / totalPlannedBudget) * 100)}%`
@@ -636,8 +682,8 @@ router.get('/client-dashboard/:id', async (req, res) => {
       id: resource.name,
       name: resource.name,
       role: resource.role,
-      availability: `${Math.max(40, 100 - resource.tasks * 10)}%`,
-      utilization: Math.min(100, Math.round((resource.completed / Math.max(resource.tasks, 1)) * 100) + 20)
+      availability: `${Math.max(0, 100 - resource.tasks * 10)}%`,
+      utilization: Math.min(100, Math.round((resource.completed / Math.max(resource.tasks, 1)) * 100))
     }));
 
     const dashboard = {
@@ -648,8 +694,8 @@ router.get('/client-dashboard/:id', async (req, res) => {
         last_name: user.last_name,
         display_name: user.display_name || `${user.first_name} ${user.last_name}`,
         role: user.primary_role || 'user',
-        job_title: user.job_title || 'Client',
-        job_role: user.job_role || 'Stakeholder',
+        job_title: user.job_title || 'Personnel',
+        job_role: user.job_role || 'Operator',
         profilePhotoData,
         profile_image_id: user.profile_image_id || null
       },
@@ -671,19 +717,19 @@ router.get('/client-dashboard/:id', async (req, res) => {
       ],
       kpiMetrics: [
         { id: 1, label: 'On-time Delivery', value: onTimeDelivery, trend: 'up' },
-        { id: 2, label: 'Client Satisfaction', value: satisfaction, trend: 'up' },
+        { id: 2, label: 'Satisfaction Index', value: satisfaction, trend: 'neutral' },
         { id: 3, label: 'Budget Variance', value: budgetVariancePercent, trend: budgetVariance <= 0 ? 'up' : 'down' }
       ],
       roleUpdates: {
         admin: [
-          { title: 'Project Oversight', description: 'Admin approves project milestones, budget changes, and scope decisions for greater control.' },
-          { title: 'Invoice & Payment Control', description: 'Admin manages billing, invoice review, and payment workflows for on-time collection.' },
-          { title: 'Risk & Compliance', description: 'Admin monitors risk, approvals, and resource alignment across all active engagements.' }
+          { title: 'Project Oversight', description: 'Admin approves project milestones, budget changes, and scope decisions.' },
+          { title: 'Financial Control', description: 'Admin manages billing, invoice review, and payment workflows.' },
+          { title: 'Risk Compliance', description: 'Admin monitors risk, approvals, and resource alignment across deployments.' }
         ],
         developer: [
-          { title: 'Task Delivery', description: 'Developers update task status, document progress, and manage technical delivery milestones.' },
-          { title: 'Quality Assurance', description: 'Developer teams log code reviews, QA checks, and delivery readiness in real time.' },
-          { title: 'Release Updates', description: 'Developers communicate completion status and next-step handoffs directly through the portal.' }
+          { title: 'Task Delivery', description: 'Developers update task status and manage technical delivery milestones.' },
+          { title: 'Quality Assurance', description: 'Developer teams log code reviews and QA checks in real time.' },
+          { title: 'Deployment Synch', description: 'Developers communicate completion status and handoffs through the portal.' }
         ]
       },
       summary: {
@@ -693,7 +739,7 @@ router.get('/client-dashboard/:id', async (req, res) => {
         totalBudget: clientSummary?.total_budget ?? totalPlannedBudget,
         totalSpent: clientSummary?.total_spent ?? totalActualBudget,
         averageProjectDuration: clientSummary?.average_project_duration ?? 0,
-        rating: clientSummary?.client_rating ?? Number(feedbackRows[0]?.average_rating ?? 4.7)
+        rating: clientSummary?.client_rating ?? Number(feedbackRows[0]?.average_rating ?? 0)
       }
     };
 
@@ -1044,10 +1090,64 @@ router.put('/profile', async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
+    // REAL-LIFE NOTIF: Notify of profile update
+    await createNotification(userId, 'system', 'Profile Synchronized', 'Your tactical personnel parameters have been updated.', 'low');
+
     res.json({ success: true, message: 'Profile updated successfully' });
   } catch (error) {
     console.error('[PROFILE UPDATE] Error:', error);
     res.status(500).json({ success: false, message: 'Failed to update profile', error: error.message });
+  }
+});
+
+// Notifications Endpoints
+router.get('/notifications/me', authenticateUser, async (req, res) => {
+  const userId = req.userId;
+  try {
+    const [notifications] = await db.promise().query(
+      'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+      [userId]
+    );
+
+    res.json({ success: true, notifications });
+  } catch (error) {
+    console.error('[GET NOTIFICATIONS] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch notifications' });
+  }
+});
+
+router.put('/notifications/:id/read', authenticateUser, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.userId;
+  try {
+    // Strict multi-tenancy: only mark read if the notification belongs to this user
+    const [result] = await db.promise().query(
+      'UPDATE notifications SET status = "read", read_at = NOW() WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Notification not found or access denied' });
+    }
+
+    res.json({ success: true, message: 'Notification marked as read' });
+  } catch (error) {
+    console.error('[READ NOTIFICATION] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update notification' });
+  }
+});
+
+router.put('/notifications/read-all/me', authenticateUser, async (req, res) => {
+  const userId = req.userId;
+  try {
+    await db.promise().query(
+      'UPDATE notifications SET status = "read", read_at = NOW() WHERE user_id = ? AND status = "unread"',
+      [userId]
+    );
+    res.json({ success: true, message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('[READ ALL NOTIFICATIONS] Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update notifications' });
   }
 });
 

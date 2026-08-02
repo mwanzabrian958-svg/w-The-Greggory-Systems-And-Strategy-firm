@@ -74,12 +74,10 @@ export function ActivityLogs({ user }) {
   };
 
   const filteredActivities = activities.filter((a) => {
-    const matchesSearch =
-      a.activity?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.admin_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.admin_email?.toLowerCase().includes(searchQuery.toLowerCase());
+    const searchValue = `${a.activity || ""} ${a.details || ""} ${a.admin_name || ""} ${a.admin_email || ""}`.toLowerCase();
+    const matchesSearch = searchValue.includes(searchQuery.toLowerCase());
     const matchesType =
-      typeFilter === "all" || a.activity?.toLowerCase().includes(typeFilter);
+      typeFilter === "all" || (a.activity || "").toLowerCase().includes(typeFilter);
     return matchesSearch && matchesType;
   });
 
@@ -135,7 +133,7 @@ export function ActivityLogs({ user }) {
             <div className="ml-3">
               <p className="text-sm text-gray-500">Successful</p>
               <p className="text-xl font-bold text-gray-900">
-                {activities.filter((a) => a.success).length}
+                {activities.filter((a) => a.status !== "failed" && a.success !== false).length}
               </p>
             </div>
           </div>
@@ -148,7 +146,7 @@ export function ActivityLogs({ user }) {
             <div className="ml-3">
               <p className="text-sm text-gray-500">Failed</p>
               <p className="text-xl font-bold text-gray-900">
-                {activities.filter((a) => !a.success).length}
+                {activities.filter((a) => a.status === "failed" || a.success === false).length}
               </p>
             </div>
           </div>
@@ -278,18 +276,24 @@ export function ActivityLogs({ user }) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          activity.success
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
+                          activity.status === "queued"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : activity.status === "failed" || activity.success === false
+                              ? "bg-red-100 text-red-800"
+                              : "bg-green-100 text-green-800"
                         }`}
                       >
-                        {activity.success ? (
+                        {activity.status === "queued" ? (
                           <>
-                            <CheckCircle className="w-3 h-3 mr-1" /> Success
+                            <Clock className="w-3 h-3 mr-1" /> Queued
+                          </>
+                        ) : activity.status === "failed" || activity.success === false ? (
+                          <>
+                            <XCircle className="w-3 h-3 mr-1" /> Failed
                           </>
                         ) : (
                           <>
-                            <XCircle className="w-3 h-3 mr-1" /> Failed
+                            <CheckCircle className="w-3 h-3 mr-1" /> Success
                           </>
                         )}
                       </span>

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const mysql = require('mysql2');
+const jwt = require('jsonwebtoken');
 const { sendWhatsAppMessage, sendBulkWhatsApp, COMPANY_WHATSAPP_NUMBER } = require('../services/whatsappService');
 
 // Create connection pool
@@ -9,11 +10,35 @@ const db = mysql.createPool({
   port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'greggory_foundation_db_main',
+  database: process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
+
+const authenticateUser = (req, res, next) => {
+  const authHeader = req.header('authorization') || req.header('Authorization');
+  let token = null;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.slice(7).trim();
+  } else if (authHeader) {
+    token = authHeader.trim();
+  }
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || '***REMOVED***');
+    req.authUser = decoded;
+    req.userId = decoded.userId || decoded.id;
+    next();
+  } catch (error) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired authentication token' });
+  }
+};
 
 // Health check
 router.get('/test', (req, res) => {
@@ -21,9 +46,10 @@ router.get('/test', (req, res) => {
 });
 
 // Send WhatsApp message FROM user TO company WhatsApp number
-router.post('/send', async (req, res) => {
+router.post('/send', authenticateUser, async (req, res) => {
   try {
-    const { userId, message } = req.body;
+    const userId = req.userId;
+    const { message } = req.body;
     
     if (!userId || !message) {
       return res.status(400).json({ 
@@ -58,18 +84,25 @@ router.post('/send', async (req, res) => {
     const whatsappResult = await sendWhatsAppMessage(user.phone_number, message);
     
     if (whatsappResult.success) {
-      // Log the WhatsApp message sent
-      await db.promise().query(
-        `INSERT INTO admin_activity_logs (admin_user_id, action_type, action_description, affected_table, affected_record_id, created_at)
-         VALUES (?, 'WHATSAPP_SENT', ?, 'users', ?, NOW())`,
-        [userId, `WhatsApp sent FROM ${user.first_name} ${user.last_name} (${user.phone_number}) TO company (${COMPANY_WHATSAPP_NUMBER})`, userId]
-      );
+      try {
+        // Log the WhatsApp message sent
+        await db.promise().query(
+          `INSERT INTO admin_activity_logs (admin_user_id, action_type, action_description, affected_table, affected_record_id, created_at)
+           VALUES (?, 'WHATSAPP_SENT', ?, 'users', ?, NOW())`,
+          [userId, `WhatsApp sent FROM ${user.first_name} ${user.last_name} (${user.phone_number}) TO company (${COMPANY_WHATSAPP_NUMBER})`, userId]
+        );
+      } catch (logError) {
+        console.warn('[WHATSAPP SEND] Activity log insert failed, continuing with relay success:', logError.message);
+      }
       
+      const simulated = Boolean(whatsappResult?.data?.simulated);
       res.json({ 
         success: true, 
-        message: 'WhatsApp message sent successfully to company',
+        message: simulated ? 'WhatsApp message queued for delivery to company' : 'WhatsApp message sent successfully to company',
         from: user.phone_number,
-        to: COMPANY_WHATSAPP_NUMBER
+        to: COMPANY_WHATSAPP_NUMBER,
+        simulated,
+        relay: simulated ? 'queued' : 'sent'
       });
     } else {
       res.status(500).json({ 

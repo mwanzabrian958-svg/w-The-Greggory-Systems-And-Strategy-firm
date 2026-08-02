@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Users, FolderKanban, ClipboardList, Settings, Briefcase, BarChart3, FileText, MessageSquare, HelpCircle, ShieldCheck, Code2, Home, Info, BookOpen, Calculator, Building2, CheckSquare, TrendingUp, Search } from "lucide-react";
 import { API_BASE_URL } from "../../services/api";
@@ -94,9 +94,9 @@ function AdminLayout({ user, children }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-[#0f172a] dark:via-[#1e293b] dark:to-[#0f172a] transition-colors duration-500">
       {/* Minimal Header with User Info */}
-      <div className="bg-blue-900 border-b border-blue-800 sticky top-0 z-50">
+      <div className="bg-[#0f172a] dark:bg-[#050b14] border-b border-white/10 dark:border-white/5 sticky top-0 z-50 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* User Profile Photo on Left */}
@@ -161,7 +161,7 @@ function AdminLayout({ user, children }) {
       <DeveloperModal isOpen={modals.developer} onClose={() => closeModal('developer')} />
 
       {/* Horizontal Scrollable Quick Links */}
-      <div className="bg-blue-900 border-b border-blue-800 sticky top-16 z-40">
+      <div className="bg-[#0f172a] border-b border-white/10 sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 py-3 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-600 scrollbar-track-blue-900">
             <button onClick={() => openModal('users')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">

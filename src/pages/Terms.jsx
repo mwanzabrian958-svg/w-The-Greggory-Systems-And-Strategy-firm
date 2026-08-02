@@ -67,11 +67,11 @@ const Terms = () => {
   }, [activeTopic])
 
   return (
-    <div className="min-h-screen bg-[#07111f] text-white relative">
+    <div className="min-h-screen bg-[#0f172a] text-white relative">
       {/* Global Close Button (Return Home) */}
       <Link
         to="/"
-        className="fixed top-6 right-6 z-[90] h-12 w-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-amber-500 hover:text-slate-950 transition-all duration-300 border border-white/20 shadow-2xl group"
+        className="fixed top-6 right-6 z-[90] h-12 w-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-gold-500 hover:text-slate-950 transition-all duration-300 border border-white/20 shadow-2xl group"
         title="Return to Home"
       >
         <X size={24} className="transition-transform group-hover:rotate-90" />
@@ -79,16 +79,16 @@ const Terms = () => {
 
       {/* Header */}
       <section className="relative overflow-hidden pt-24 pb-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#07111f] via-[#0f1f3d] to-[#172c49]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155]" />
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(245,158,11,0.1),_transparent_50%)]" />
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Link to="/signup" className="inline-flex items-center gap-2 text-amber-500 hover:text-amber-400 font-bold uppercase tracking-widest text-[10px] mb-6 transition-colors">
+          <Link to="/signup" className="inline-flex items-center gap-2 text-gold-500 hover:text-gold-400 font-bold uppercase tracking-widest text-[10px] mb-6 transition-colors">
             <ArrowLeft size={14} />
             Back to Registry
           </Link>
           <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">Terms of Use</h1>
-          <div className="h-1 w-16 bg-amber-500 mb-6 mx-auto rounded-full" />
+          <div className="h-1 w-16 bg-gold-500 mb-6 mx-auto rounded-full" />
           <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">Strategic Governance Framework</p>
         </div>
       </section>
@@ -101,13 +101,13 @@ const Terms = () => {
               <button
                 key={topic.id}
                 onClick={() => setActiveTopic(topic)}
-                className="group relative bg-white/5 border border-white/10 p-6 rounded-2xl text-left hover:bg-white/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/5 overflow-hidden"
+                className="group relative bg-white/5 border border-white/10 p-6 rounded-2xl text-left hover:bg-white/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-gold-500/5 overflow-hidden"
               >
-                <div className="absolute -top-12 -right-12 h-24 w-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/15 transition-all duration-700" />
-                <topic.icon size={28} className="text-amber-500 mb-4 group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute -top-12 -right-12 h-24 w-24 bg-gold-500/5 rounded-full blur-2xl group-hover:bg-gold-500/15 transition-all duration-700" />
+                <topic.icon size={28} className="text-gold-500 mb-4 group-hover:scale-110 transition-transform duration-500" />
                 <h3 className="text-base font-black uppercase tracking-wider mb-1">{topic.label}</h3>
                 <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Protocol {topic.id.toUpperCase()}</p>
-                <div className="mt-4 inline-flex items-center gap-2 text-amber-500 text-[9px] font-black uppercase tracking-widest group-hover:gap-3 transition-all">
+                <div className="mt-4 inline-flex items-center gap-2 text-gold-500 text-[9px] font-black uppercase tracking-widest group-hover:gap-3 transition-all">
                   Open Document <ArrowLeft className="rotate-180" size={12} />
                 </div>
               </button>
@@ -119,23 +119,23 @@ const Terms = () => {
       {/* Independent "Page" / Modal for each topic */}
       {activeTopic && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
-          <div className="absolute inset-0 bg-[#07111f]/95 backdrop-blur-md" onClick={() => setActiveTopic(null)} />
+          <div className="absolute inset-0 bg-[#0f172a]/95 backdrop-blur-md" onClick={() => setActiveTopic(null)} />
 
           <div className="relative w-full max-w-2xl bg-[#0f1f3d] border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-scale-up">
             {/* Header of the Topic Page */}
             <div className="p-6 sm:p-8 border-b border-white/5 flex items-start justify-between bg-gradient-to-br from-white/[0.02] to-transparent">
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20">
+                <div className="h-14 w-14 rounded-2xl bg-gold-500/10 flex items-center justify-center text-gold-500 border border-gold-500/20">
                   <activeTopic.icon size={28} />
                 </div>
                 <div>
-                  <p className="text-amber-500 text-[9px] font-black uppercase tracking-[0.3em] mb-1">Strategic Module</p>
+                  <p className="text-gold-500 text-[9px] font-black uppercase tracking-[0.3em] mb-1">Strategic Module</p>
                   <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">{activeTopic.title}</h2>
                 </div>
               </div>
               <button
                 onClick={() => setActiveTopic(null)}
-                className="group h-12 w-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-amber-500 hover:text-slate-950 transition-all duration-300 border border-white/20 shadow-lg"
+                className="group h-12 w-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-gold-500 hover:text-slate-950 transition-all duration-300 border border-white/20 shadow-lg"
                 aria-label="Close"
               >
                 <X size={28} className="transition-transform group-hover:rotate-90" />
@@ -150,11 +150,11 @@ const Terms = () => {
 
               {activeTopic.restrictions && (
                 <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
-                  <h4 className="text-amber-200 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Mandatory Restrictions & Parameters:</h4>
+                  <h4 className="text-gold-200 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Mandatory Restrictions & Parameters:</h4>
                   <div className="grid grid-cols-1 gap-3">
                     {activeTopic.restrictions.map((item, i) => (
                       <div key={i} className="flex items-start gap-3">
-                        <div className="mt-1.5 h-1 w-1 rounded-full bg-amber-500 flex-shrink-0" />
+                        <div className="mt-1.5 h-1 w-1 rounded-full bg-gold-500 flex-shrink-0" />
                         <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest leading-relaxed">{item}</span>
                       </div>
                     ))}
@@ -167,7 +167,7 @@ const Terms = () => {
             <div className="p-6 bg-white/[0.02] border-t border-white/5 flex justify-center">
               <button
                 onClick={() => setActiveTopic(null)}
-                className="px-10 py-4 rounded-2xl bg-amber-500 text-slate-950 text-sm font-black uppercase tracking-widest hover:bg-amber-400 transition-all transform hover:scale-105"
+                className="px-10 py-4 rounded-2xl bg-gold-500 text-slate-950 text-sm font-black uppercase tracking-widest hover:bg-gold-400 transition-all transform hover:scale-105"
               >
                 Close Protocol
               </button>
@@ -179,7 +179,7 @@ const Terms = () => {
       {/* Support Section */}
       <section className="py-20 border-t border-white/5">
         <div className="max-w-4xl mx-auto px-4 text-center">
-           <Mail size={40} className="text-amber-500 mx-auto mb-6" />
+           <Mail size={40} className="text-gold-500 mx-auto mb-6" />
            <h2 className="text-2xl font-black uppercase tracking-widest mb-4">Support & Compliance</h2>
            <p className="text-slate-500 font-medium mb-8">For inquiries regarding these strategic terms, contact our administrative center:</p>
            <p className="text-white font-bold tracking-[0.2em]">brianmwanza651@gmail.com</p>

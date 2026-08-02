@@ -185,7 +185,7 @@ const Signup = () => {
           {/* Profile Photo Upload */}
           <div className="flex flex-col items-center mb-8">
             <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-tr from-amber-500 to-cyan-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+              <div className="absolute -inset-1 bg-gradient-to-tr from-gold-500 to-cyan-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
               {/* Circle with user icon or preview */}
               <div className="relative w-24 h-24 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border-2 border-white/20 backdrop-blur-xl">
                 {profilePreview ? (
@@ -197,7 +197,7 @@ const Signup = () => {
               {/* Small + button on bottom-left of the circle */}
               <label
                 htmlFor="profilePhoto"
-                className="absolute -bottom-1 -left-1 w-8 h-8 rounded-full bg-amber-500 border-2 border-[#07111f] flex items-center justify-center text-slate-950 text-sm cursor-pointer shadow-xl hover:bg-amber-400 transition-colors"
+                className="absolute -bottom-1 -left-1 w-8 h-8 rounded-full bg-gold-500 border-2 border-[#0f172a] flex items-center justify-center text-slate-950 text-sm cursor-pointer shadow-xl hover:bg-gold-400 transition-colors"
                 title="Add profile photo"
               >
                 <Camera className="w-4 h-4" />
@@ -221,7 +221,7 @@ const Signup = () => {
               <div className="space-y-2">
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+                    <User className="h-5 w-5 text-slate-500 group-focus-within:text-gold-500 transition-colors" />
                   </div>
                   <input
                     type="text"
@@ -230,7 +230,7 @@ const Signup = () => {
                     onChange={handleChange}
                     placeholder="First Name"
                     required
-                    className={`w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all text-sm font-medium ${errors.firstName ? 'border-red-500/50' : 'border-white/10'}`}
+                    className={`w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all text-sm font-medium ${errors.firstName ? 'border-red-500/50' : 'border-white/10'}`}
                   />
                 </div>
                 {errors.firstName && <p className="mt-1 text-[10px] text-red-400 font-bold ml-1">{errors.firstName}</p>}
@@ -240,7 +240,7 @@ const Signup = () => {
               <div className="space-y-2">
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+                    <User className="h-5 w-5 text-slate-500 group-focus-within:text-gold-500 transition-colors" />
                   </div>
                   <input
                     type="text"
@@ -249,7 +249,7 @@ const Signup = () => {
                     onChange={handleChange}
                     placeholder="Last Name"
                     required
-                    className={`w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all text-sm font-medium ${errors.lastName ? 'border-red-500/50' : 'border-white/10'}`}
+                    className={`w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all text-sm font-medium ${errors.lastName ? 'border-red-500/50' : 'border-white/10'}`}
                   />
                 </div>
                 {errors.lastName && <p className="mt-1 text-[10px] text-red-400 font-bold ml-1">{errors.lastName}</p>}
@@ -260,7 +260,7 @@ const Signup = () => {
             <div className="space-y-2">
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+                  <Mail className="h-5 w-5 text-slate-500 group-focus-within:text-gold-500 transition-colors" />
                 </div>
                 <input
                   type="email"
@@ -269,7 +269,7 @@ const Signup = () => {
                   onChange={handleChange}
                   placeholder="Email Address"
                   required
-                  className={`w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all text-sm font-medium ${errors.email ? 'border-red-500/50' : 'border-white/10'}`}
+                  className={`w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all text-sm font-medium ${errors.email ? 'border-red-500/50' : 'border-white/10'}`}
                 />
               </div>
               {errors.email && <p className="mt-1 text-[10px] text-red-400 font-bold ml-1">{errors.email}</p>}
@@ -279,7 +279,7 @@ const Signup = () => {
             <div className="space-y-2">
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Phone className="h-5 w-5 text-slate-500 group-focus-within:text-amber-500 transition-colors" />
+                  <Phone className="h-5 w-5 text-slate-500 group-focus-within:text-gold-500 transition-colors" />
                 </div>
                 <input
                   type="tel"
@@ -287,7 +287,7 @@ const Signup = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="Phone Number (Optional)"
-                  className={`w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all text-sm font-medium ${errors.phone ? 'border-red-500/50' : 'border-white/10'}`}
+                  className={`w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all text-sm font-medium ${errors.phone ? 'border-red-500/50' : 'border-white/10'}`}
                 />
               </div>
               {errors.phone && <p className="mt-1 text-[10px] text-red-400 font-bold ml-1">{errors.phone}</p>}
@@ -304,12 +304,12 @@ const Signup = () => {
                     onChange={handleChange}
                     placeholder="Password"
                     required
-                    className={`w-full pl-4 pr-10 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all text-sm font-medium ${errors.password ? 'border-red-500/50' : 'border-white/10'}`}
+                    className={`w-full pl-4 pr-10 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all text-sm font-medium ${errors.password ? 'border-red-500/50' : 'border-white/10'}`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-amber-500 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-gold-500 transition-colors"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -326,12 +326,12 @@ const Signup = () => {
                     onChange={handleChange}
                     placeholder="Confirm"
                     required
-                    className={`w-full pl-4 pr-10 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/40 transition-all text-sm font-medium ${errors.confirmPassword ? 'border-red-500/50' : 'border-white/10'}`}
+                    className={`w-full pl-4 pr-10 py-4 bg-white/5 border rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all text-sm font-medium ${errors.confirmPassword ? 'border-red-500/50' : 'border-white/10'}`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-amber-500 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-gold-500 transition-colors"
                   >
                     {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -349,11 +349,11 @@ const Signup = () => {
                     id="terms"
                     checked={agreedToTerms}
                     onChange={(e) => setAgreedToTerms(e.target.checked)}
-                    className="w-5 h-5 rounded-lg border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/40 transition-all cursor-pointer"
+                    className="w-5 h-5 rounded-lg border-white/20 bg-white/5 text-gold-500 focus:ring-gold-500/40 transition-all cursor-pointer"
                   />
                 </div>
                 <label htmlFor="terms" className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
-                  I agree to the <Link to="/terms" className="text-amber-400 hover:text-amber-300">Terms of Use</Link> & <Link to="/privacy" className="text-amber-400 hover:text-amber-300">Privacy Policy</Link>
+                  I agree to the <Link to="/terms" className="text-gold-400 hover:text-gold-300">Terms of Use</Link> & <Link to="/privacy" className="text-gold-400 hover:text-gold-300">Privacy Policy</Link>
                 </label>
               </div>
               {errors.terms && <p className="text-[10px] text-red-400 font-bold ml-1">{errors.terms}</p>}
@@ -370,7 +370,7 @@ const Signup = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-xl text-base font-black text-slate-950 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] uppercase tracking-[0.1em]"
+                className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-xl text-base font-black text-slate-950 bg-gradient-to-r from-gold-500 to-yellow-500 hover:from-gold-400 hover:to-yellow-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98] uppercase tracking-[0.1em]"
               >
                 {isLoading ? 'Registering...' : 'Initialize Account'}
               </button>
@@ -378,7 +378,7 @@ const Signup = () => {
               <div className="text-center">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
                   Already joined?{' '}
-                  <Link to="/login" className="text-amber-500 hover:text-amber-400 transition-colors">
+                  <Link to="/login" className="text-gold-500 hover:text-gold-400 transition-colors">
                     Log In
                   </Link>
                 </p>
@@ -391,7 +391,7 @@ const Signup = () => {
                 <div className="w-full border-t border-white/5"></div>
               </div>
               <div className="relative flex justify-center text-[10px] font-black tracking-[0.3em]">
-                <span className="px-4 bg-[#07111f]/50 backdrop-blur-md text-slate-600">OR CONTINUE WITH</span>
+                <span className="px-4 bg-[#0f172a]/50 backdrop-blur-md text-slate-600">OR CONTINUE WITH</span>
               </div>
             </div>
 
@@ -406,13 +406,13 @@ const Signup = () => {
       {(isLoading || isRedirecting) && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100]">
           <div className="bg-[#0f1f3d] border border-white/10 rounded-[40px] shadow-2xl p-10 w-96 relative overflow-hidden">
-            <div className="absolute -top-20 -right-20 h-40 w-40 bg-amber-500/10 blur-[80px] rounded-full pointer-events-none" />
+            <div className="absolute -top-20 -right-20 h-40 w-40 bg-gold-500/10 blur-[80px] rounded-full pointer-events-none" />
 
             <div className="relative flex flex-col items-center space-y-8">
               {/* Complex Loader */}
               <div className="relative h-20 w-20">
-                <div className="absolute inset-0 rounded-full border-4 border-amber-500/10"></div>
-                <div className="absolute inset-0 rounded-full border-4 border-t-amber-500 animate-spin"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-gold-500/10"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-t-gold-500 animate-spin"></div>
                 {showSuccess && (
                   <div className="absolute inset-0 flex items-center justify-center animate-bounce">
                     <CheckCircle className="w-10 h-10 text-green-500" />
@@ -434,7 +434,7 @@ const Signup = () => {
               <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                 <div 
                   className={`h-full transition-all duration-1000 ease-linear ${
-                    showSuccess ? 'bg-green-500' : 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
+                    showSuccess ? 'bg-green-500' : 'bg-gold-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
                   }`}
                   style={{ width: showSuccess ? '100%' : '75%' }}
                 ></div>

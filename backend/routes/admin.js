@@ -5,6 +5,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
+const { formatActivityLog } = require('../utils/activityLogFormatter');
 
 // =============================================
 // GET ALL ADMIN USERS
@@ -465,6 +466,61 @@ router.get('/users/:id', async (req, res) => {
 });
 
 // =============================================
+// GET ACTIVITY LOGS
+// =============================================
+router.get('/activity-logs', async (req, res) => {
+  try {
+    const [activityRows] = await db.promise().query(`
+      SELECT
+        aal.id,
+        aal.action_type,
+        aal.action_description,
+        aal.affected_table,
+        aal.affected_record_id,
+        aal.created_at,
+        aal.ip_address,
+        u.first_name,
+        u.last_name,
+        u.display_name,
+        u.email AS admin_email
+      FROM admin_activity_logs aal
+      LEFT JOIN users u ON aal.admin_user_id = u.id
+      ORDER BY aal.created_at DESC
+      LIMIT 200
+    `);
+
+    const activities = activityRows.map((row) => {
+      const formatted = formatActivityLog(row);
+      const actorName = [row.display_name, row.first_name, row.last_name].find(Boolean) || 'System';
+      const activityLabel = formatted.type ? formatted.type.replace(/_/g, ' ').toLowerCase() : 'activity';
+
+      return {
+        id: formatted.id,
+        activity: formatted.type,
+        details: formatted.description,
+        admin_name: actorName,
+        admin_email: row.admin_email || null,
+        ip_address: row.ip_address || 'N/A',
+        timestamp: row.created_at,
+        success: true,
+        status: formatted.status,
+        type: activityLabel,
+        ...formatted
+      };
+    });
+
+    res.json(activities);
+  } catch (error) {
+    console.error('Error fetching activity logs:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch activity logs',
+      error: error.message
+    });
+  }
+});
+
+// =============================================
 // GET DASHBOARD DATA
 // =============================================
 router.get('/dashboard', async (req, res) => {
@@ -517,6 +573,35 @@ router.get('/dashboard', async (req, res) => {
       LIMIT 10
     `);
 
+    const [relayActivity] = await db.promise().query(`
+      SELECT
+        action_type,
+        action_description,
+        created_at,
+        affected_table,
+        affected_record_id
+      FROM admin_activity_logs
+      WHERE action_type IN ('SMS_SENT', 'WHATSAPP_SENT', 'BULK_SMS_SENT', 'BULK_WHATSAPP_SENT')
+      ORDER BY created_at DESC
+      LIMIT 8
+    `);
+
+    const combinedActivity = [
+      ...recentActivity.map((activity) => ({
+        ...activity,
+        action: activity.description || 'Activity',
+        timestamp: activity.timestamp || new Date().toISOString(),
+        source: 'system'
+      })),
+      ...relayActivity.map((activity) => ({
+        id: `relay-${activity.created_at}`,
+        action: `${activity.action_type.replace(/_/g, ' ')} · ${activity.action_description}`,
+        timestamp: activity.created_at,
+        source: 'relay',
+        status: activity.action_description?.toLowerCase().includes('queued') ? 'queued' : 'sent'
+      }))
+    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 10);
+
     res.json({
       success: true,
       dashboard: {
@@ -526,7 +611,7 @@ router.get('/dashboard', async (req, res) => {
           users: userCount[0].count,
           total: adminCount[0].count + developerCount[0].count + userCount[0].count
         },
-        recentActivity: recentActivity,
+        recentActivity: combinedActivity,
         timestamp: new Date().toISOString()
       }
     });

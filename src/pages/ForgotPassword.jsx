@@ -111,8 +111,8 @@ const ForgotPassword = () => {
       </div>
 
       {/* Footer */}
-      <p className="text-center text-xs text-gray-500 mt-6">
-        &copy; 2024 THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM. All rights reserved.
+      <p className="text-center text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mt-8 relative z-10">
+        &copy; {new Date().getFullYear()} {SITE_NAME.toUpperCase()}. All Rights Reserved.
       </p>
     </AuthLayout>
   )

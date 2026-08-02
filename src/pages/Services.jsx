@@ -110,109 +110,125 @@ const Services = () => {
   ]
 
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-12 sm:py-16 md:py-20">
-        <div className="w-full pl-0 pr-4 sm:px-6 lg:px-8">
-          <div className="max-w-full sm:max-w-3xl">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">Our Services</h1>
-            <p className="text-base sm:text-lg md:text-xl text-gray-300">
-              Comprehensive project management solutions that transform the way you do business
+    <div className="min-h-screen bg-[#0f172a] text-white pt-[140px] relative overflow-hidden">
+      {/* Immersive Background Elements */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(245,158,11,0.08),_transparent_50%)]" />
+        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_80%,_rgba(45,212,191,0.05),_transparent_50%)]" />
+        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay"
+             style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }} />
+      </div>
+
+      {/* Hero Section Protocol */}
+      <section className="relative z-10 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-4">Service Protocol</p>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-8">Integrated Modules</h1>
+            <p className="text-lg text-slate-400 font-medium leading-relaxed uppercase tracking-widest">
+              Comprehensive strategic solutions architected for high-performance mission delivery.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Introduction */}
-      <section className="py-12 sm:py-16 bg-white">
-        <div className="w-full pl-0 pr-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="section-title text-2xl sm:text-3xl md:text-4xl">Comprehensive Solutions as Your Competitive Advantage</h2>
-          <p className="section-subtitle mx-auto mt-4 text-sm sm:text-base md:text-lg px-2 sm:px-0">
-            At THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM, we view every aspect of your business through the lens of comprehensive solutions and specialized services. 
-            Whether you're managing daily operations, pursuing innovation, or delivering critical initiatives, 
-            we provide the frameworks, expertise, and leadership to ensure success.
+      {/* Introduction Protocol */}
+      <section className="relative z-10 py-16 bg-white/5 backdrop-blur-2xl border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-6">Strategic Asset Alignment</h2>
+          <p className="max-w-4xl mx-auto text-slate-400 text-sm font-bold uppercase tracking-widest leading-relaxed">
+            At THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM, we handle projects through their entire lifecycle: <span className="text-white">Design, Creation, and Maintenance</span>. We transform complex organizational challenges into practical systems and clear strategies that build lasting confidence.
           </p>
         </div>
       </section>
 
-      {/* Service Details */}
-      {services.map((service, index) => (
-        <section 
-          key={service.id} 
-          id={service.id}
-          className={index % 2 === 0 ? 'py-12 sm:py-16 bg-gray-50' : 'py-12 sm:py-16 bg-white'}
-        >
-          <div className="w-full pl-0 pr-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 items-start">
-              {/* Service Overview */}
-              <div className={index % 2 === 0 ? 'order-1' : 'order-2'}>
-                <div className="bg-teal-100 w-16 h-16 sm:w-20 sm:h-20 rounded-lg flex items-center justify-center mb-4 sm:mb-6 text-teal-600">
-                  {service.icon}
-                </div>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-navy-900 mb-3 sm:mb-4">
-                  {service.title}
-                </h2>
-                <h3 className="text-lg sm:text-xl text-teal-600 font-semibold mb-4 sm:mb-6">
-                  {service.subtitle}
-                </h3>
-                <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8 leading-relaxed">
-                  {service.description}
-                </p>
+      {/* Service Details Protocol */}
+      <div className="relative z-10">
+        {services.map((service, index) => (
+          <section
+            key={service.id}
+            id={service.id}
+            className="py-24 border-b border-white/5 group"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
+                {/* Service Overview */}
+                <div className={index % 2 === 0 ? 'lg:order-1' : 'lg:order-2'}>
+                  <div className="bg-gold-500/10 w-24 h-24 rounded-3xl flex items-center justify-center mb-10 text-gold-500 border border-gold-500/20 group-hover:scale-110 transition-transform shadow-xl shadow-gold-500/5">
+                    {service.icon}
+                  </div>
+                  <h2 className="text-4xl font-black text-white uppercase tracking-tight mb-4 group-hover:text-gold-400 transition-colors">
+                    {service.title}
+                  </h2>
+                  <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] mb-8">
+                    PROTOCOL: {service.subtitle}
+                  </h3>
+                  <p className="text-sm text-slate-400 font-medium leading-relaxed uppercase tracking-widest mb-10">
+                    {service.description}
+                  </p>
 
-                {/* Benefits */}
-                <div className="bg-white rounded-lg p-4 sm:p-6 shadow-md">
-                  <h4 className="font-bold text-navy-900 mb-3 sm:mb-4 text-base sm:text-lg">Key Benefits:</h4>
-                  <ul className="space-y-2 sm:space-y-3">
-                    {service.benefits.map((benefit, idx) => (
-                      <li key={idx} className="flex items-start gap-2 sm:gap-3">
-                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm sm:text-base text-gray-600">{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {/* Benefits Protocol */}
+                  <div className="bg-white/5 rounded-[32px] p-8 border border-white/10 shadow-2xl">
+                    <h4 className="text-[10px] font-black text-white uppercase tracking-[0.4em] mb-6 flex items-center gap-3">
+                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                       Systemic ROI
+                    </h4>
+                    <ul className="space-y-4">
+                      {service.benefits.map((benefit, idx) => (
+                        <li key={idx} className="flex items-start gap-4 group/item">
+                          <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5 transition-transform group-hover/item:scale-110" />
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest group-hover/item:text-white transition-colors">{benefit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
 
-              {/* Service Offerings */}
-              <div className={index % 2 === 0 ? 'order-2' : 'order-1'}>
-                <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
-                  <h4 className="text-xl sm:text-2xl font-bold text-navy-900 mb-4 sm:mb-6">What We Offer:</h4>
-                  <div className="space-y-4 sm:space-y-6">
-                    {service.offerings.map((offering, idx) => (
-                      <div key={idx} className="flex gap-3 sm:gap-4">
-                        <div className="bg-teal-100 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center text-teal-600 flex-shrink-0">
-                          {offering.icon}
+                {/* Service Offerings Protocol */}
+                <div className={index % 2 === 0 ? 'lg:order-2' : 'lg:order-1'}>
+                  <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-[40px] shadow-2xl p-10 border border-white/10 relative overflow-hidden group/card">
+                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover/card:opacity-[0.06] transition-opacity">
+                       <Shield size={120} />
+                    </div>
+                    <h4 className="text-xs font-black text-gold-500 uppercase tracking-[0.3em] mb-10 relative z-10">Module Components</h4>
+                    <div className="space-y-8 relative z-10">
+                      {service.offerings.map((offering, idx) => (
+                        <div key={idx} className="flex gap-6 group/offering">
+                          <div className="bg-white/5 w-14 h-14 rounded-2xl flex items-center justify-center text-gold-500 flex-shrink-0 border border-white/10 group-hover/offering:bg-gold-500 group-hover/offering:text-slate-950 transition-all">
+                            {offering.icon}
+                          </div>
+                          <div>
+                            <h5 className="text-sm font-black text-white uppercase tracking-wider mb-2">{offering.title}</h5>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">{offering.description}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h5 className="font-bold text-navy-900 mb-1 sm:mb-2 text-sm sm:text-base">{offering.title}</h5>
-                          <p className="text-xs sm:text-sm text-gray-600">{offering.description}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-      ))}
+          </section>
+        ))}
+      </div>
 
-      {/* Methodologies */}
-      <section className="py-12 sm:py-16 bg-navy-900 text-white">
-        <div className="w-full pl-0 pr-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Our Methodologies</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-3xl mx-auto px-2 sm:px-0">
-              We leverage industry-leading frameworks tailored to your unique needs
+      {/* Methodologies Protocol */}
+      <section className="relative z-10 py-24 bg-white/5 backdrop-blur-2xl border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-4">Frameworks</p>
+            <h2 className="text-4xl font-black text-white uppercase tracking-tight">Systemic Standards</h2>
+            <p className="text-lg text-slate-500 font-bold uppercase tracking-widest mt-4">
+              Validated methodologies architected for complex deployment
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {['PMI/PMBOK', 'Agile/Scrum', 'PRINCE2', 'Lean Six Sigma'].map((method, index) => (
               <div key={index} className="text-center">
-                <div className="bg-navy-800 rounded-lg p-4 sm:p-6 hover:bg-navy-700 transition-colors">
-                  <div className="text-lg sm:text-2xl font-bold mb-1 sm:mb-2">{method}</div>
-                  <div className="text-xs sm:text-sm text-gray-300">Certified Experts</div>
+                <div className="bg-white/5 rounded-[28px] p-10 border border-white/5 hover:bg-white/10 hover:border-gold-500/20 transition-all group">
+                  <div className="text-xl sm:text-2xl font-black text-white uppercase tracking-tighter mb-2 group-hover:text-gold-500 transition-colors">{method}</div>
+                  <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Certified Protocol</div>
                 </div>
               </div>
             ))}
@@ -220,22 +236,22 @@ const Services = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-12 sm:py-16 bg-white">
-        <div className="w-full pl-0 pr-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-navy-900 mb-4 sm:mb-6">
-            Ready to Transform Your Business?
+      {/* CTA Section Protocol */}
+      <section className="relative z-10 py-32 bg-gold-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-5xl font-black text-slate-950 uppercase tracking-tight mb-8">
+            Initialize Transformation
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 px-2 sm:px-0">
-            Let's discuss how our project management expertise can help you achieve your goals.
+          <p className="text-lg font-bold text-slate-900 uppercase tracking-widest mb-12 max-w-2xl mx-auto">
+            Integrate our high-tier architectural expertise into your business model today.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <Link to="/contact" className="btn-primary justify-center text-sm sm:text-base py-3 px-6">
-              Schedule a Consultation
-              <ArrowRight size={16} className="sm:size-20" />
+          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+            <Link to="/contact" className="px-10 py-5 bg-slate-950 text-white rounded-[20px] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-900 transition-all shadow-2xl flex items-center justify-center gap-3">
+              Schedule Synchronization
+              <ArrowRight size={18} />
             </Link>
-            <Link to="/case-studies" className="btn-secondary justify-center text-sm sm:text-base py-3 px-6">
-              View Our Success Stories
+            <Link to="/case-studies" className="px-10 py-5 bg-white/20 text-slate-950 border border-slate-950/20 rounded-[20px] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-white/30 transition-all text-center">
+              Inspect Mission Artifacts
             </Link>
           </div>
         </div>

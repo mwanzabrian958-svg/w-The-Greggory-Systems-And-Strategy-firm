@@ -14,22 +14,60 @@ const AuthContext = createContext(defaultContext)
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     // Restore auth state from localStorage on page load
-    const saved = localStorage.getItem('tgf_user')
-    return saved ? JSON.parse(saved) : null
-  })
-
-  useEffect(() => {
-    // Validate auth on page load - check if session expired
+    // Check for regular user first
     const saved = localStorage.getItem('tgf_user')
     if (saved) {
       try {
-        const parsed = JSON.parse(saved)
-        // Check for session expiration if we add expiry later
-        setUser(parsed)
+        return JSON.parse(saved)
       } catch (e) {
-        console.error('Failed to parse stored auth:', e)
-        localStorage.removeItem('tgf_user')
+        console.error('Failed to parse regular auth:', e)
       }
+    }
+
+    // Fallback: Check for Admin/Developer session
+    const adminSaved = localStorage.getItem('gf_admin_user')
+    if (adminSaved) {
+      try {
+        const adminData = JSON.parse(adminSaved)
+        // Ensure role is correctly identified
+        return {
+          ...adminData,
+          role: adminData.role || (adminData.admin_level ? 'admin' : 'developer')
+        }
+      } catch (e) {
+        console.error('Failed to parse admin auth:', e)
+      }
+    }
+
+    return null
+  })
+
+  useEffect(() => {
+    // Sync logic for when other tabs or modals update storage
+    const syncAuth = () => {
+      const saved = localStorage.getItem('tgf_user')
+      if (saved) {
+        setUser(JSON.parse(saved))
+      } else {
+        const adminSaved = localStorage.getItem('gf_admin_user')
+        if (adminSaved) {
+          const adminData = JSON.parse(adminSaved)
+          setUser({
+            ...adminData,
+            role: adminData.role || (adminData.admin_level ? 'admin' : 'developer')
+          })
+        } else {
+          setUser(null)
+        }
+      }
+    }
+
+    window.addEventListener('storage', syncAuth)
+    window.addEventListener('gf-admin-session-changed', syncAuth)
+
+    return () => {
+      window.removeEventListener('storage', syncAuth)
+      window.removeEventListener('gf-admin-session-changed', syncAuth)
     }
   }, [])
 
@@ -39,12 +77,14 @@ export const AuthProvider = ({ children }) => {
     else localStorage.removeItem('tgf_user')
   }
 
-  const login = (userData = null) => {
-    // If userData is provided, store it; otherwise use backward compatibility
-    if (userData) {
-      persist(userData)
+  const login = (userData = null, fallbackUser = null) => {
+    const normalizedUser = typeof userData === 'string'
+      ? { token: userData, ...(fallbackUser || {}) }
+      : userData || fallbackUser || null
+
+    if (normalizedUser) {
+      persist(normalizedUser)
     } else {
-      // Backward compatibility: simple auth with no role
       persist({ role: 'employee' })
     }
   }
