@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Mail, Phone, MapPin, Send, Clock } from 'lucide-react'
-import SocialMediaIcons from '../components/SocialMediaIcons'
+import { Clock, Mail, MapPin, Phone, Send } from 'lucide-react'
 import { getApiUrl } from '../services/api'
 
 const Contact = () => {
@@ -30,7 +29,6 @@ const Contact = () => {
     setSubmitStatus(null)
 
     try {
-      // 1. Backend Recording
       const response = await fetch(getApiUrl('/api/contact-forms'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,7 +44,6 @@ const Contact = () => {
 
       if (!response.ok) throw new Error('Relay failure')
 
-      // 2. Client-side Relay
       const subject = formData.service ? `${formData.service} Inquiry` : 'New Inquiry'
       const body = `Name: ${formData.name}%0D%0AEmail: ${formData.email}%0D%0APhone: ${formData.phone}%0D%0ACompany: ${formData.company}%0D%0AService: ${formData.service}%0D%0A%0D%0AMessage:%0D%0A${encodeURIComponent(formData.message)}`
       const whatsappText = encodeURIComponent(`Hello, I'm ${formData.name}. Service: ${formData.service}. ${formData.message} (Email: ${formData.email}, Phone: ${formData.phone})`)
@@ -69,34 +66,33 @@ const Contact = () => {
 
   const contactInfo = [
     {
-      icon: <Mail className="w-6 h-6" />,
-      title: 'Email Us',
+      icon: <Mail className="h-5 w-5" />,
+      title: 'Email',
       content: 'thegreggorysystemsandstrategyf@gmail.com',
       link: 'mailto:thegreggorysystemsandstrategyf@gmail.com'
     },
     {
-      icon: <Phone className="w-6 h-6" />,
-      title: 'Call Us',
+      icon: <Phone className="h-5 w-5" />,
+      title: 'Call',
       content: '+254 715 312 251',
       link: 'tel:+254715312251'
     },
     {
-      icon: <Phone className="w-6 h-6" />,
+      icon: <Phone className="h-5 w-5" />,
       title: 'WhatsApp',
       content: '+254 715 312 251',
       link: 'https://wa.me/254715312251'
     },
     {
-      icon: <MapPin className="w-6 h-6" />,
-      title: 'Visit Us',
-      content: 'RAFIKI KABARAK, KABARAK',
+      icon: <MapPin className="h-5 w-5" />,
+      title: 'Visit',
+      content: 'Rafiki Kabarak, Kabarak',
       link: 'https://www.google.com/maps/search/?api=1&query=RAFIKI+KABARAK,+KABARAK'
     },
     {
-      icon: <Clock className="w-6 h-6" />,
-      title: 'Business Hours',
-      content: 'Monday - Friday: 9:00 AM - 6:00 PM EAT',
-      link: '#'
+      icon: <Clock className="h-5 w-5" />,
+      title: 'Hours',
+      content: 'Mon - Fri · 9:00 AM - 6:00 PM EAT'
     }
   ]
 
@@ -112,219 +108,105 @@ const Contact = () => {
   ]
 
   return (
-    <div className="bg-white dark:bg-[#0f172a] transition-colors duration-500">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-12 sm:py-16 md:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight mb-4 sm:mb-6">Contact Us</h1>
-            <p className="text-base sm:text-lg text-slate-300 uppercase tracking-widest leading-relaxed">
-              Let's discuss how we can help you achieve your strategic goals through systemic innovation.
-            </p>
-          </div>
-        </div>
-      </section>
+    <div className="page-shell pt-24">
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
+        <div className="soft-panel overflow-hidden">
+          <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="bg-[#223028] p-8 text-white sm:p-10 lg:p-12">
+              <p className="eyebrow text-[#8fb28a]">Contact us</p>
+              <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
+                Let’s talk about your next move.
+              </h1>
+              <p className="mt-5 max-w-xl text-base text-slate-300 sm:text-lg">
+                Share a few details and we’ll follow up with the right next step for your organization.
+              </p>
 
-      {/* Contact Section */}
-      <section className="py-12 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-20">
-            {/* Contact Form */}
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-navy-900 dark:text-white uppercase tracking-tight mb-6">Send Us a Message</h2>
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mb-10 font-medium uppercase tracking-wider">
-                Fill out the form below and our strategic team will get back to you within 24 hours.
+              <div className="mt-8 space-y-3">
+                {contactInfo.map((item) => (
+                  <a key={item.title} href={item.link || '#'} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/10 p-4 transition hover:bg-white/15">
+                    <div className="mt-0.5 rounded-xl bg-[#8fb28a]/15 p-2 text-[#8fb28a]">{item.icon}</div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{item.title}</p>
+                      <p className="text-sm text-slate-300">{item.content}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-[#f8efe6] p-8 sm:p-10 lg:p-12 dark:bg-[#171d19]">
+              <p className="eyebrow">Send a message</p>
+              <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
+                We’ll reply with a practical next step.
+              </h2>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                Whether you want a proposal, a system review, or a quick strategy conversation, we can help you get started.
               </p>
 
               {submitStatus === 'success' && (
-                <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-800 dark:text-emerald-400 px-6 py-4 rounded-2xl mb-8 animate-in fade-in">
-                  <p className="font-black text-sm uppercase tracking-widest">Transmission Successful</p>
-                  <p className="text-xs mt-1 uppercase tracking-wider">Your briefing has been securely relayed to our operations hub.</p>
+                <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  Your message has been prepared successfully.
                 </div>
               )}
 
               {submitStatus === 'error' && (
-                <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 text-rose-800 dark:text-rose-400 px-6 py-4 rounded-2xl mb-8 animate-in fade-in">
-                  <p className="font-black text-sm uppercase tracking-widest">Relay Failed</p>
-                  <p className="text-xs mt-1 uppercase tracking-wider">Network disruption detected. Please retry or use a direct channel.</p>
+                <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-300">
+                  We could not relay this request right now. Please try again or reach us directly.
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                <div className="grid gap-5 md:grid-cols-2">
                   <div>
-                    <label htmlFor="name" className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-transparent text-navy-900 dark:text-white text-sm font-bold uppercase tracking-widest transition-all"
-                      placeholder="JOHN DOE"
-                    />
+                    <label htmlFor="name" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Full Name *</label>
+                    <input id="name" name="name" value={formData.name} onChange={handleChange} required className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="John Doe" />
                   </div>
-
                   <div>
-                    <label htmlFor="email" className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-transparent text-navy-900 dark:text-white text-sm font-bold uppercase tracking-widest transition-all"
-                      placeholder="UPLINK@COMPANY.COM"
-                    />
+                    <label htmlFor="email" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Email Address *</label>
+                    <input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="you@company.com" />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid gap-5 md:grid-cols-2">
                   <div>
-                    <label htmlFor="company" className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                      Company
-                    </label>
-                    <input
-                      type="text"
-                      id="company"
-                      name="company"
-                      value={formData.company}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-transparent text-navy-900 dark:text-white text-sm font-bold uppercase tracking-widest transition-all"
-                      placeholder="ORGANIZATION NAME"
-                    />
+                    <label htmlFor="company" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Company</label>
+                    <input id="company" name="company" value={formData.company} onChange={handleChange} className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="Organization name" />
                   </div>
-
                   <div>
-                    <label htmlFor="phone" className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-transparent text-navy-900 dark:text-white text-sm font-bold uppercase tracking-widest transition-all"
-                      placeholder="+254 715 312 251"
-                    />
+                    <label htmlFor="phone" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Phone Number</label>
+                    <input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="+254 700 000 000" />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="service" className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                    Service of Interest
-                  </label>
-                  <select
-                    id="service"
-                    name="service"
-                    value={formData.service}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-transparent text-navy-900 dark:text-white text-sm font-bold uppercase tracking-widest appearance-none transition-all"
-                  >
-                    <option value="">SELECT PROTOCOL</option>
-                    {services.map((service, index) => (
-                      <option key={index} value={service} className="bg-white dark:bg-[#1e293b]">
-                        {service.toUpperCase()}
-                      </option>
+                  <label htmlFor="service" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Service of interest</label>
+                  <select id="service" name="service" value={formData.service} onChange={handleChange} className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                    <option value="">Select a service</option>
+                    {services.map((service) => (
+                      <option key={service} value={service}>{service}</option>
                     ))}
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setPreferredChannel('email')}
-                    className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border transition-all ${preferredChannel === 'email' ? 'bg-navy-900 dark:bg-gold-500 text-white dark:text-slate-950 border-navy-900 dark:border-gold-500' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500'}`}
-                  >
-                    Email
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button type="button" onClick={() => setPreferredChannel('email')} className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${preferredChannel === 'email' ? 'border-[#4c6a4d] bg-[#4c6a4d] text-white' : 'border-[#e3d2bb] bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}>
+                    Email reply
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreferredChannel('whatsapp')}
-                    className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border transition-all ${preferredChannel === 'whatsapp' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500'}`}
-                  >
-                    WhatsApp
+                  <button type="button" onClick={() => setPreferredChannel('whatsapp')} className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${preferredChannel === 'whatsapp' ? 'border-[#aa7d3f] bg-[#aa7d3f] text-white' : 'border-[#e3d2bb] bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}>
+                    WhatsApp reply
                   </button>
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
-                    Message *
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
-                    rows="5"
-                    className="w-full px-4 py-3 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-transparent resize-none text-navy-900 dark:text-white text-sm font-bold uppercase tracking-widest transition-all"
-                    placeholder="SPECIFY YOUR STRATEGIC GOALS..."
-                  ></textarea>
+                  <label htmlFor="message" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Message *</label>
+                  <textarea id="message" name="message" rows="5" value={formData.message} onChange={handleChange} required className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="Tell us what you want to improve or build." />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-4 bg-navy-900 dark:bg-gold-500 text-white dark:text-slate-950 rounded-xl text-xs font-black uppercase tracking-[0.4em] hover:bg-navy-800 dark:hover:bg-gold-400 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  {isSubmitting ? 'TRANSMITTING...' : 'SEND'}
-                  <Send size={16} />
+                <button type="submit" disabled={isSubmitting} className="inline-flex items-center gap-2 rounded-2xl bg-[#223028] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2f3f33] disabled:opacity-70">
+                  <Send className="h-4 w-4" />
+                  {isSubmitting ? 'Sending...' : 'Send message'}
                 </button>
               </form>
-            </div>
-
-            {/* Contact Information */}
-            <div className="space-y-10">
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-black text-navy-900 dark:text-white uppercase tracking-tight mb-6">Get in Touch</h2>
-                <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 font-medium uppercase tracking-wider leading-relaxed">
-                  We're here to answer your questions and discuss how we can support your organization's mission success.
-                </p>
-              </div>
-
-              <div className="space-y-8">
-                {contactInfo.map((info, index) => (
-                  <div key={index} className="flex items-start gap-5 group">
-                    <div className="bg-navy-50 dark:bg-white/5 p-4 rounded-2xl text-navy-900 dark:text-gold-500 border border-slate-100 dark:border-white/10 group-hover:bg-gold-500 group-hover:text-white dark:group-hover:text-slate-950 transition-all duration-300">
-                      {info.icon}
-                    </div>
-                    <div>
-                      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">{info.title}</h3>
-                      {info.link === '#' ? (
-                        <p className="text-sm font-bold text-navy-900 dark:text-white uppercase tracking-wider">{info.content}</p>
-                      ) : (
-                        <a
-                          href={info.link}
-                          target={info.title === 'Visit Us' || info.title === 'WhatsApp' ? "_blank" : undefined}
-                          rel={info.title === 'Visit Us' || info.title === 'WhatsApp' ? "noopener noreferrer" : undefined}
-                          className="text-sm font-bold text-navy-900 dark:text-white hover:text-gold-600 dark:hover:text-gold-500 transition-colors uppercase tracking-wider"
-                        >
-                          {info.content}
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Social Media */}
-              <div className="bg-slate-50 dark:bg-white/5 rounded-[32px] p-8 border border-slate-100 dark:border-white/10 shadow-sm">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-center">Neural Networks</h3>
-                <div className="flex justify-center">
-                  <SocialMediaIcons
-                    iconSize={20}
-                    hoverColor="hover:text-gold-600 dark:hover:text-gold-500"
-                  />
-                </div>
-              </div>
             </div>
           </div>
         </div>

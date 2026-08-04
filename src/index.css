@@ -3,23 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --border-primary: #e2e8f0;
-  --accent-primary: #0d9488;
-  --card-bg: rgba(255, 255, 255, 0.8);
+  --bg-primary: #f8efe6;
+  --bg-secondary: #f3e7d8;
+  --text-primary: #1f2937;
+  --text-secondary: #5e6b71;
+  --border-primary: #dccbb3;
+  --accent-primary: #4c6a4d;
+  --accent-secondary: #aa7d3f;
+  --card-bg: rgba(255, 251, 247, 0.92);
 }
 
 .dark {
-  --bg-primary: #0f172a; /* Original Navy Blue */
-  --bg-secondary: #1e293b;
-  --text-primary: #ffffff;
-  --text-secondary: #94a3b8;
-  --border-primary: rgba(255, 255, 255, 0.1);
-  --accent-primary: #eab308; /* Original Gold (#eab308) */
-  --card-bg: rgba(15, 23, 42, 0.6);
+  --bg-primary: #101615;
+  --bg-secondary: #161d1a;
+  --text-primary: #f5efe9;
+  --text-secondary: #c8b9a7;
+  --border-primary: rgba(255, 255, 255, 0.12);
+  --accent-primary: #8fb28a;
+  --accent-secondary: #d1a257;
+  --card-bg: rgba(28, 35, 31, 0.92);
   color-scheme: dark;
 }
 
@@ -28,12 +30,12 @@
     @apply antialiased transition-colors duration-300 bg-[var(--bg-primary)] text-[var(--text-primary)];
     letter-spacing: 0.015em;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;
     letter-spacing: -0.02em;
   }
-  
+
   p {
     @apply leading-relaxed;
   }
@@ -41,35 +43,49 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-teal-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-teal-700 transition-colors duration-200 inline-flex items-center gap-2;
+    @apply inline-flex items-center gap-2 rounded-2xl bg-[var(--accent-primary)] px-6 py-3 font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#405b43];
   }
-  
+
   .btn-secondary {
-    @apply bg-white text-navy-900 px-6 py-3 rounded-lg font-semibold border-2 border-navy-900 hover:bg-navy-900 hover:text-white transition-colors duration-200 inline-flex items-center gap-2;
+    @apply inline-flex items-center gap-2 rounded-2xl border border-[var(--border-primary)] bg-white/80 px-6 py-3 font-semibold text-slate-800 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)];
+  }
+
+  .page-shell {
+    @apply min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(76,106,77,0.18),_transparent_40%),radial-gradient(circle_at_bottom_right,_rgba(170,125,63,0.16),_transparent_35%),linear-gradient(135deg,_#f8efe6_0%,_#f3e7d8_48%,_#efe2d0_100%)] text-[var(--text-primary)] transition-colors duration-300;
+  }
+
+  .soft-panel {
+    @apply rounded-[36px] border border-[#eadbcf] bg-[#fdf8f1]/90 text-inherit shadow-[0_20px_70px_-40px_rgba(31,42,35,0.38)] backdrop-blur-sm;
+  }
+
+  .soft-card {
+    @apply rounded-[24px] border border-[#e8dcc9] bg-[rgba(255,250,245,0.95)] shadow-[0_16px_50px_-30px_rgba(31,42,35,0.35)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_-30px_rgba(31,42,35,0.42)] dark:border-white/10 dark:bg-[#1d2521]/95 dark:hover:bg-[#232d27];
+  }
+
+  .eyebrow {
+    @apply text-[10px] font-black uppercase tracking-[0.35em] text-[var(--accent-primary)] dark:text-[#8fb28a];
   }
 }
 
-/* Smooth scroll behavior */
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #f0e2d0;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #0d9488;
+  background: #4c6a4d;
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #0f766e;
+  background: #405b43;
 }
 
 .animate-fade-in {
@@ -79,4 +95,28 @@ html {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(-5%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+  50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
 }

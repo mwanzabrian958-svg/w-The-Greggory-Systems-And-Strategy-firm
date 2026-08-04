@@ -583,6 +583,9 @@ CREATE TABLE IF NOT EXISTS blog_articles (
     read_time VARCHAR(50),
     category VARCHAR(100),
     image_url VARCHAR(512),
+    image_blob LONGBLOB,
+    image_mime_type VARCHAR(100),
+    image_file_name VARCHAR(255),
     image_id BIGINT,
     icon_class VARCHAR(100),
     is_published BOOLEAN DEFAULT FALSE,
@@ -593,6 +596,20 @@ CREATE TABLE IF NOT EXISTS blog_articles (
     INDEX idx_blog_articles_published (is_published, published_date),
     INDEX idx_blog_articles_category (category),
     INDEX idx_blog_articles_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: blog_subscriptions
+-- =============================================
+CREATE TABLE IF NOT EXISTS blog_subscriptions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    status ENUM('active', 'unsubscribed', 'pending') DEFAULT 'active',
+    source VARCHAR(100) DEFAULT 'website_blog',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_blog_subs_email (email),
+    INDEX idx_blog_subs_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
@@ -607,6 +624,10 @@ CREATE TABLE IF NOT EXISTS case_studies (
     solution LONGTEXT,
     results LONGTEXT,
     duration VARCHAR(100),
+    image_url VARCHAR(512),
+    image_blob LONGBLOB,
+    image_mime_type VARCHAR(100),
+    image_file_name VARCHAR(255),
     image_urls JSON,
     is_featured BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

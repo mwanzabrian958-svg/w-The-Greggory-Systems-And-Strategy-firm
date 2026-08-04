@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ShieldCheck, Scale, Globe, UserCheck, Lock, AlertCircle, RefreshCw, Mail, X } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Globe, Lock, Mail, Scale, ShieldCheck, UserCheck, X } from 'lucide-react'
 
 const Terms = () => {
   const [activeTopic, setActiveTopic] = useState(null)
@@ -10,188 +10,136 @@ const Terms = () => {
       id: 'acceptance',
       icon: ShieldCheck,
       label: 'Acceptance',
-      title: 'Strategic Acceptance',
-      content: 'By accessing the The-Greggory-Systems-And-Strategy-firm ecosystem, you enter into a legally binding framework. This acceptance extends to all automated systems, strategic modules, and human-led consulting interfaces. Continued use of the platform after any modifications to these terms constitutes your tactical agreement to the updated governance protocols.'
+      title: 'Strategic acceptance',
+      content: 'By using the services and resources provided by The-Greggory-Systems-And-Strategy-firm, you agree to the terms of this framework. These terms address our service model, your responsibilities, and the shared expectations for working together.'
     },
     {
       id: 'license',
       icon: Scale,
-      label: 'Legal License',
-      title: 'Professional Legal License',
-      content: 'Our intellectual assets are protected under international strategic property laws. We grant you a limited, non-exclusive, non-transferable license to utilize our public-facing frameworks for internal organizational evaluation.',
-      restrictions: [
-        'No redistribution of proprietary systems',
-        'No unauthorized commercial exploitation',
-        'No reverse-engineering of strategic algorithms',
-        'No removal of firm watermark or metadata',
-        'No scraping of systemic data nodes'
-      ]
+      label: 'License',
+      title: 'Professional license',
+      content: 'We grant you limited permission to use our public-facing materials for internal evaluation and planning. This permission does not include redistribution, resale, or unauthorized reuse of our proprietary systems.',
+      restrictions: ['No redistribution', 'No reverse engineering', 'No removal of attribution', 'No scraping of protected content']
     },
     {
       id: 'services',
       icon: Globe,
       label: 'Services',
-      title: 'Service Parameters',
-      content: 'The firm provides high-tier systems design and strategic leadership. We maintain absolute autonomy over service delivery methodologies. We reserve the right to suspend or terminate services for any entity that fails to meet our professional compliance standards or ethical alignment requirements.'
+      title: 'Service parameters',
+      content: 'Our services are delivered in accordance with agreed scope, timing, and communication practices. We reserve the right to pause or end work when delivery expectations are not met or when requested work falls outside our agreed standards.'
     },
     {
       id: 'accounts',
       icon: UserCheck,
       label: 'Accounts',
-      title: 'Account Governance',
-      content: 'Operational accounts are high-security assets. You are solely responsible for maintaining the confidentiality of your access keys and command center credentials. Any breach of security originating from your node must be reported to our administrative team within 60 minutes of detection.'
+      title: 'Account governance',
+      content: 'You are responsible for maintaining the security of your account details and for ensuring that all access credentials remain private and secure.'
     },
     {
       id: 'intellectual',
       icon: Lock,
       label: 'Intellectual',
-      title: 'Intellectual Dominance',
-      content: 'All methodologies, custom-coded frameworks, strategic reports, and systemic blueprints delivered by The-Greggory-Systems-And-Strategy-firm remain the exclusive intellectual property of the firm unless explicitly transferred via a Tier-1 Asset Purchase Agreement. Unauthorized use of our "Out of Frame" design language or strategic wording is strictly monitored and enforced.'
+      title: 'Intellectual property',
+      content: 'Any methods, frameworks, reports, and delivery materials created by our team remain protected unless a separate written agreement transfers ownership.'
     },
     {
       id: 'liability',
       icon: AlertCircle,
       label: 'Liability',
-      title: 'Liability & Indemnity',
-      content: 'The firm and its suppliers shall not be held liable for systemic failures resulting from external market volatility, force majeure events, or unauthorized user modifications. Our liability is capped at the total amount paid for the specific strategic module in question. You agree to indemnify and hold the firm harmless from any tactical errors resulting from the misapplication of our provided frameworks.'
+      title: 'Liability and indemnity',
+      content: 'We will do our best to provide reliable service, but we are not liable for losses caused by external market pressures, force majeure events, or unauthorized changes made by third parties.'
     }
   ]
 
-  // Prevent body scroll when a topic is open
   useEffect(() => {
-    if (activeTopic) {
-      document.body.style.overflow = 'hidden'
-    } else {
+    document.body.style.overflow = activeTopic ? 'hidden' : 'unset'
+    return () => {
       document.body.style.overflow = 'unset'
     }
   }, [activeTopic])
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white relative">
-      {/* Global Close Button (Return Home) */}
-      <Link
-        to="/"
-        className="fixed top-6 right-6 z-[90] h-12 w-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-gold-500 hover:text-slate-950 transition-all duration-300 border border-white/20 shadow-2xl group"
-        title="Return to Home"
-      >
-        <X size={24} className="transition-transform group-hover:rotate-90" />
+    <div className="page-shell pt-24">
+      <Link to="/" className="fixed right-6 top-6 z-[90] flex h-12 w-12 items-center justify-center rounded-full border border-[#e3d2bb] bg-[#fff8ef]/90 text-[#243128] shadow-lg transition hover:bg-[#223028] hover:text-white" title="Return home">
+        <X className="h-5 w-5" />
       </Link>
 
-      {/* Header */}
-      <section className="relative overflow-hidden pt-24 pb-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155]" />
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(245,158,11,0.1),_transparent_50%)]" />
-
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <Link to="/signup" className="inline-flex items-center gap-2 text-gold-500 hover:text-gold-400 font-bold uppercase tracking-widest text-[10px] mb-6 transition-colors">
-            <ArrowLeft size={14} />
-            Back to Registry
-          </Link>
-          <h1 className="text-4xl md:text-5xl font-black mb-4 tracking-tight">Terms of Use</h1>
-          <div className="h-1 w-16 bg-gold-500 mb-6 mx-auto rounded-full" />
-          <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">Strategic Governance Framework</p>
-        </div>
-      </section>
-
-      {/* Topics Grid - The "Buttons" */}
-      <section className="py-12">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {topics.map((topic) => (
-              <button
-                key={topic.id}
-                onClick={() => setActiveTopic(topic)}
-                className="group relative bg-white/5 border border-white/10 p-6 rounded-2xl text-left hover:bg-white/10 transition-all duration-500 hover:scale-[1.02] hover:shadow-xl hover:shadow-gold-500/5 overflow-hidden"
-              >
-                <div className="absolute -top-12 -right-12 h-24 w-24 bg-gold-500/5 rounded-full blur-2xl group-hover:bg-gold-500/15 transition-all duration-700" />
-                <topic.icon size={28} className="text-gold-500 mb-4 group-hover:scale-110 transition-transform duration-500" />
-                <h3 className="text-base font-black uppercase tracking-wider mb-1">{topic.label}</h3>
-                <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Protocol {topic.id.toUpperCase()}</p>
-                <div className="mt-4 inline-flex items-center gap-2 text-gold-500 text-[9px] font-black uppercase tracking-widest group-hover:gap-3 transition-all">
-                  Open Document <ArrowLeft className="rotate-180" size={12} />
-                </div>
-              </button>
-            ))}
+      <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
+        <div className="soft-panel p-8 sm:p-10 lg:p-12">
+          <div className="max-w-3xl">
+            <p className="eyebrow">Terms of use</p>
+            <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">A clear framework for working together.</h1>
+            <p className="mt-5 text-base text-slate-300">
+              These terms outline the expectations for how the firm and its clients engage with our services, systems, and shared materials.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Independent "Page" / Modal for each topic */}
-      {activeTopic && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in">
-          <div className="absolute inset-0 bg-[#0f172a]/95 backdrop-blur-md" onClick={() => setActiveTopic(null)} />
+      <section className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {topics.map((topic) => (
+            <button key={topic.id} onClick={() => setActiveTopic(topic)} className="soft-card p-6 text-left">
+              <topic.icon className="h-7 w-7 text-[#4c6a4d]" />
+              <h2 className="mt-4 text-lg font-black text-slate-900 dark:text-white">{topic.label}</h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{topic.title}</p>
+              <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#4c6a4d]">
+                Open section
+                <ArrowLeft className="h-4 w-4 rotate-180" />
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
 
-          <div className="relative w-full max-w-2xl bg-[#0f1f3d] border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-scale-up">
-            {/* Header of the Topic Page */}
-            <div className="p-6 sm:p-8 border-b border-white/5 flex items-start justify-between bg-gradient-to-br from-white/[0.02] to-transparent">
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-2xl bg-gold-500/10 flex items-center justify-center text-gold-500 border border-gold-500/20">
-                  <activeTopic.icon size={28} />
+      {activeTopic && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#142018]/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-2xl rounded-[32px] border border-[#e3d2bb] bg-[#fff8ef] p-6 shadow-2xl sm:p-8 dark:bg-slate-900">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef4ea] text-[#4c6a4d] dark:bg-[#233124] dark:text-[#8fb28a]">
+                  <activeTopic.icon className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-gold-500 text-[9px] font-black uppercase tracking-[0.3em] mb-1">Strategic Module</p>
-                  <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight">{activeTopic.title}</h2>
+                  <p className="text-xs font-black uppercase tracking-[0.3em] text-[#4c6a4d]">Section</p>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">{activeTopic.title}</h3>
                 </div>
               </div>
-              <button
-                onClick={() => setActiveTopic(null)}
-                className="group h-12 w-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-gold-500 hover:text-slate-950 transition-all duration-300 border border-white/20 shadow-lg"
-                aria-label="Close"
-              >
-                <X size={28} className="transition-transform group-hover:rotate-90" />
+              <button onClick={() => setActiveTopic(null)} className="rounded-full border border-[#e3d2bb] p-2 text-slate-700 transition hover:bg-[#f0e2d0] dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Content of the Topic Page */}
-            <div className="p-6 sm:p-8 max-h-[50vh] overflow-y-auto custom-scrollbar">
-              <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-light mb-8">
-                {activeTopic.content}
-              </p>
-
+            <div className="mt-6 max-h-[55vh] overflow-y-auto pr-2 text-sm text-slate-600 dark:text-slate-300">
+              <p className="leading-7">{activeTopic.content}</p>
               {activeTopic.restrictions && (
-                <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
-                  <h4 className="text-gold-200 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Mandatory Restrictions & Parameters:</h4>
-                  <div className="grid grid-cols-1 gap-3">
-                    {activeTopic.restrictions.map((item, i) => (
-                      <div key={i} className="flex items-start gap-3">
-                        <div className="mt-1.5 h-1 w-1 rounded-full bg-gold-500 flex-shrink-0" />
-                        <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest leading-relaxed">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <ul className="mt-6 space-y-2">
+                  {activeTopic.restrictions.map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[#4c6a4d]" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
 
-            {/* Footer of the Topic Page */}
-            <div className="p-6 bg-white/[0.02] border-t border-white/5 flex justify-center">
-              <button
-                onClick={() => setActiveTopic(null)}
-                className="px-10 py-4 rounded-2xl bg-gold-500 text-slate-950 text-sm font-black uppercase tracking-widest hover:bg-gold-400 transition-all transform hover:scale-105"
-              >
-                Close Protocol
+            <div className="mt-8 flex justify-end">
+              <button onClick={() => setActiveTopic(null)} className="rounded-2xl bg-[#223028] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2f3f33]">
+                Close section
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Support Section */}
-      <section className="py-20 border-t border-white/5">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-           <Mail size={40} className="text-gold-500 mx-auto mb-6" />
-           <h2 className="text-2xl font-black uppercase tracking-widest mb-4">Support & Compliance</h2>
-           <p className="text-slate-500 font-medium mb-8">For inquiries regarding these strategic terms, contact our administrative center:</p>
-           <p className="text-white font-bold tracking-[0.2em]">thegreggorysystemsandstrategyf@gmail.com</p>
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="soft-card p-8 text-center sm:p-10">
+          <Mail className="mx-auto h-8 w-8 text-[#4c6a4d]" />
+          <h2 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">Questions about these terms?</h2>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">Email our team at thegreggorysystemsandstrategyf@gmail.com.</p>
         </div>
       </section>
-
-      {/* Footer Copy */}
-      <footer className="py-12 border-t border-white/5 text-center">
-        <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.5em]">
-          &copy; {new Date().getFullYear()} THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM. STRATEGIC GOVERNANCE.
-        </p>
-      </footer>
     </div>
   )
 }

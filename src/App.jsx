@@ -63,21 +63,7 @@ function Layout() {
 
           <Route path="/projects/:id" element={<ProjectDetails />} />
 
-          <Route
-
-            path="/services"
-
-            element={
-
-              <PrivateRoute>
-
-                <Services />
-
-              </PrivateRoute>
-
-            }
-
-          />
+          <Route path="/services" element={<Services />} />
 
           <Route path="/case-studies" element={<CaseStudies />} />
 

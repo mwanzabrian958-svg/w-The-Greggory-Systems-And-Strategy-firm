@@ -165,16 +165,16 @@ const Navbar = () => {
                           {isAuthenticated ? (
                             <button
                               onClick={handleLogout}
-                              className="bg-gold-500 text-slate-950 px-4 py-1.5 rounded-full text-xs font-black hover:bg-gold-400 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-gold-500/20"
+                              className="bg-gold-500 text-slate-950 px-2.5 py-1 rounded-full text-[10px] font-black hover:bg-gold-400 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-gold-500/20"
                             >
                               LOGOUT
                             </button>
                           ) : (
                             <Link
                               to="/login"
-                              className="bg-gold-500 text-slate-950 px-4 py-1.5 rounded-full text-xs font-black hover:bg-gold-400 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-gold-500/20 inline-flex items-center gap-1"
+                              className="bg-gold-500 text-slate-950 px-2.5 py-1 rounded-full text-[10px] font-black hover:bg-gold-400 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-gold-500/20 inline-flex items-center gap-1"
                             >
-                              <LogIn size={14} />
+                              <LogIn size={12} />
                               LOGIN
                             </Link>
                           )}
@@ -286,7 +286,7 @@ const Navbar = () => {
                          {isAuthenticated ? (
                            <button
                              onClick={() => { setIsOpen(false); handleLogout() }}
-                             className="w-full bg-white/10 text-white px-4 py-3 rounded-xl text-base font-bold hover:bg-white/20 transition-all border border-white/10"
+                             className="w-full bg-white/10 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-white/20 transition-all border border-white/10"
                            >
                              Logout
                            </button>
@@ -294,9 +294,9 @@ const Navbar = () => {
                            <Link
                              to="/login"
                              onClick={() => setIsOpen(false)}
-                             className="w-full bg-gold-500 text-slate-950 px-4 py-3 rounded-xl text-base font-bold hover:bg-gold-400 transition-all inline-flex items-center justify-center gap-2 shadow-lg shadow-gold-500/20"
+                             className="w-full bg-gold-500 text-slate-950 px-4 py-2 rounded-xl text-sm font-bold hover:bg-gold-400 transition-all inline-flex items-center justify-center gap-2 shadow-lg shadow-gold-500/20"
                            >
-                             <LogIn size={18} />
+                             <LogIn size={16} />
                              Login
                            </Link>
                          )}

@@ -1,262 +1,234 @@
-import { Calendar, User, ArrowRight, BookOpen, TrendingUp, Lightbulb, Target } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { ArrowRight, BookOpen, CalendarDays, Command, User, Sparkles, TrendingUp, Search, Filter } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { getApiUrl } from '../services/api'
 
 const Blog = () => {
-  const articles = [
-    {
-      id: 1,
-      title: 'Why Your Business Strategy is a Project Portfolio',
-      excerpt: 'Discover how viewing your business strategy as a collection of interconnected projects can transform your organizational effectiveness and strategic execution.',
-      author: 'Dr. James Greggory',
-      date: 'October 15, 2024',
-      readTime: '8 min read',
-      category: 'Business Strategy',
-      image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=500&fit=crop',
-      icon: <Target className="w-6 h-6" />
-    },
-    {
-      id: 2,
-      title: '5 Project Management Principles to Improve Daily Operations',
-      excerpt: 'Learn how to apply core project management principles to your everyday business operations for increased efficiency, clarity, and results.',
-      author: 'Sarah Mitchell',
-      date: 'October 8, 2024',
-      readTime: '6 min read',
-      category: 'Operations',
-      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=500&fit=crop',
-      icon: <TrendingUp className="w-6 h-6" />
-    },
-    {
-      id: 3,
-      title: 'Agile vs. Waterfall: Choosing the Right Path for Your Innovation Project',
-      excerpt: 'A comprehensive comparison of Agile and Waterfall methodologies to help you select the best approach for your specific innovation initiatives.',
-      author: 'Marcus Thompson',
-      date: 'October 1, 2024',
-      readTime: '10 min read',
-      category: 'Innovation',
-      image: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&h=500&fit=crop',
-      icon: <Lightbulb className="w-6 h-6" />
-    },
-    {
-      id: 4,
-      title: 'The Role of Change Management in Successful Business Improvement',
-      excerpt: 'Why technical solutions alone aren\'t enough. Understanding the critical human element in driving sustainable business transformation.',
-      author: 'Elena Rodriguez',
-      date: 'September 24, 2024',
-      readTime: '7 min read',
-      category: 'Change Management',
-      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=500&fit=crop',
-      icon: <BookOpen className="w-6 h-6" />
-    },
-    {
-      id: 5,
-      title: 'Building a Project Management Office (PMO): A Starter Guide',
-      excerpt: 'Step-by-step guidance on establishing a PMO that drives consistency, improves project success rates, and builds organizational capability.',
-      author: 'Dr. James Greggory',
-      date: 'September 17, 2024',
-      readTime: '12 min read',
-      category: 'Project Management',
-      image: 'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&h=500&fit=crop',
-      icon: <Target className="w-6 h-6" />
-    },
-    {
-      id: 6,
-      title: 'Measuring Project Success: Beyond On-Time and On-Budget',
-      excerpt: 'Expand your definition of project success with comprehensive metrics that capture true business value and stakeholder satisfaction.',
-      author: 'Sarah Mitchell',
-      date: 'September 10, 2024',
-      readTime: '9 min read',
-      category: 'Project Management',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=500&fit=crop',
-      icon: <TrendingUp className="w-6 h-6" />
-    }
-  ]
+  const [articles, setArticles] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const categories = ['All', 'Business Strategy', 'Operations', 'Innovation', 'Change Management', 'Project Management']
+  // Subscription state
+  const [email, setEmail] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [subStatus, setSubStatus] = useState(null)
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const response = await fetch('/api/blog-articles')
+        const result = await response.json()
+        if (result.success) {
+          setArticles(result.articles)
+        } else {
+          setError('Failed to load articles')
+        }
+      } catch (err) {
+        console.error('Error fetching blog articles:', err)
+        setError('An error occurred while fetching articles')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchArticles()
+  }, [])
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault()
+    if (!email) return
+
+    setSubmitting(true)
+    setSubStatus(null)
+
+    try {
+      const response = await fetch('/api/blog-subscriptions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          source: 'website_blog'
+        })
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        setSubStatus('success')
+        setEmail('')
+      } else {
+        setSubStatus('error')
+      }
+    } catch (err) {
+      console.error('Subscription error:', err)
+      setSubStatus('error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
-    <div>
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-navy-900 to-navy-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">Blog & Insights</h1>
-            <p className="text-xl text-gray-300">
-              Expert perspectives on project management, business strategy, and organizational excellence
-            </p>
-          </div>
-        </div>
-      </section>
+    <div className="relative min-h-screen bg-[#fdfaf6] text-[#111] pt-32 selection:bg-[#8fb28a] selection:text-white font-sans overflow-x-hidden">
 
-      {/* Introduction */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="section-title">Thought Leadership in Project Management</h2>
-          <p className="section-subtitle mx-auto mt-4">
-            Stay informed with the latest insights, best practices, and trends in project management, 
-            business operations, and organizational transformation from our team of experts.
-          </p>
-        </div>
-      </section>
-
-      {/* Category Filter */}
-      <section className="pb-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap gap-3 justify-center">
-            {categories.map((category, index) => (
-              <button
-                key={index}
-                className={`px-6 py-2 rounded-full font-medium transition-colors ${
-                  index === 0
-                    ? 'bg-teal-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-teal-50 hover:text-teal-600 border border-gray-200'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Article */}
-      <section className="py-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              <div className="relative h-64 lg:h-auto">
-                <img 
-                  src={articles[0].image} 
-                  alt={articles[0].title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute top-4 left-4">
-                  <span className="bg-teal-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                    Featured
-                  </span>
-                </div>
-              </div>
-              <div className="p-8 lg:p-12 flex flex-col justify-center">
-                <div className="flex items-center gap-2 text-teal-600 mb-4">
-                  {articles[0].icon}
-                  <span className="font-semibold">{articles[0].category}</span>
-                </div>
-                <h3 className="text-3xl font-bold text-navy-900 mb-4">
-                  {articles[0].title}
-                </h3>
-                <p className="text-gray-600 mb-6 leading-relaxed">
-                  {articles[0].excerpt}
-                </p>
-                <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-                  <div className="flex items-center gap-2">
-                    <User size={16} />
-                    <span>{articles[0].author}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} />
-                    <span>{articles[0].date}</span>
-                  </div>
-                  <span>{articles[0].readTime}</span>
-                </div>
-                <button className="btn-primary w-fit">
-                  Read Article
-                  <ArrowRight size={20} />
-                </button>
-              </div>
+      {/* 1. HERO SECTION - Broadly defined, smaller professional typography */}
+      <section className="w-full px-6 lg:px-20 mb-32">
+        <div className="flex flex-col lg:flex-row items-end justify-between gap-12 border-b border-black/5 pb-20">
+          <div className="lg:w-2/3">
+            <div className="flex items-center gap-3 opacity-60 mb-8">
+              <BookOpen className="w-4 h-4 text-black" />
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-black">The Journal / Insights & Strategy</span>
             </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight text-black">
+              Practical Thinking for <br />
+              <span className="text-[#aa7d3f] italic">Systemic Momentum.</span>
+            </h1>
+          </div>
+          <div className="lg:w-1/3">
+            <p className="text-base text-black leading-relaxed font-normal">
+              Exploring the intersection of human psychology, technological architecture, and the mechanics of sustainable business flow.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Article Grid */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {articles.slice(1).map((article) => (
-              <article key={article.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col">
-                <div className="relative h-48">
-                  <img 
-                    src={article.image} 
-                    alt={article.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-6 flex flex-col flex-grow">
-                  <div className="flex items-center gap-2 text-teal-600 mb-3">
-                    {article.icon}
-                    <span className="text-sm font-semibold">{article.category}</span>
-                  </div>
-                  <h3 className="text-xl font-bold text-navy-900 mb-3 line-clamp-2">
-                    {article.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4 flex-grow line-clamp-3">
-                    {article.excerpt}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-4">
-                    <div className="flex items-center gap-1">
-                      <User size={14} />
-                      <span>{article.author}</span>
+      {/* 2. THE JOURNAL BOOK - Dense, informative entries */}
+      <section className="w-full px-6 lg:px-20 mb-60">
+
+        {loading ? (
+          <div className="flex justify-center py-40">
+            <div className="w-10 h-10 border-t-2 border-[#8fb28a] rounded-full animate-spin" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-40">
+            <p className="text-black font-bold uppercase tracking-widest">{error}</p>
+          </div>
+        ) : articles.length === 0 ? (
+          <div className="text-center py-40">
+            <p className="text-black font-bold uppercase tracking-widest">No articles found in the repository.</p>
+          </div>
+        ) : (
+          <div className="space-y-40">
+            {articles.map((article, index) => (
+              <div key={article.id || article._id} className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+                <div className="lg:col-span-4">
+                  <div className="sticky top-40 space-y-6">
+                    <div className="flex items-center gap-4">
+                      <span className="text-xs font-black text-[#aa7d3f] uppercase tracking-[0.3em]">
+                        {new Date(article.published_date || article.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                      </span>
+                      <div className="h-px w-10 bg-[#aa7d3f]/30" />
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{article.category || 'Strategy'}</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar size={14} />
-                      <span>{article.date}</span>
+                    <h3 className="text-2xl font-bold text-black leading-tight group-hover:text-[#aa7d3f] transition-colors">
+                      {article.title}
+                    </h3>
+                    <div className="pt-4 flex items-center gap-3">
+                       <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                          <User className="w-4 h-4 text-slate-400" />
+                       </div>
+                       <span className="text-xs font-bold text-black uppercase tracking-widest">{article.author || 'Firm Contributor'}</span>
                     </div>
                   </div>
-                  <button className="text-teal-600 font-semibold hover:text-teal-700 inline-flex items-center gap-2">
-                    Read More
-                    <ArrowRight size={16} />
-                  </button>
                 </div>
-              </article>
+
+                <div className="lg:col-span-8">
+                  <div className="space-y-10 group">
+                    {article.image_url && (
+                      <div className="relative w-full aspect-[21/9] overflow-hidden rounded-[80px_20px_100px_40px] mb-12 shadow-2xl">
+                         <img
+                           src={article.image_url}
+                           alt={article.title}
+                           className="w-full h-full object-cover grayscale brightness-110 contrast-110 transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105"
+                         />
+                      </div>
+                    )}
+
+                    <p className="text-lg md:text-xl text-black font-medium leading-relaxed max-w-4xl border-l-4 border-[#8fb28a]/20 pl-8">
+                      {article.excerpt}
+                    </p>
+
+                    <div className="text-base text-black leading-[1.8] max-w-4xl space-y-6" dangerouslySetInnerHTML={{ __html: article.content.substring(0, 500) + '...' }} />
+
+                    <div className="pt-10">
+                      <Link
+                        to={`/blog/${article.id || article._id}`}
+                        className="inline-flex items-center gap-4 text-sm font-black border-b-2 border-black pb-2 hover:gap-8 transition-all"
+                      >
+                        READ FULL PERSPECTIVE
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
+        )}
       </section>
 
-      {/* Newsletter Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-navy-900 to-navy-800 rounded-lg p-8 md:p-12 text-center text-white">
-            <BookOpen className="w-12 h-12 mx-auto mb-4 text-teal-400" />
-            <h2 className="text-3xl font-bold mb-4">
-              Subscribe to Our Newsletter
-            </h2>
-            <p className="text-xl text-gray-300 mb-8">
-              Get the latest insights on project management delivered to your inbox monthly
-            </p>
-            <form className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
+      {/* 3. SUBSCRIPTION NARRATIVE - Broad and Minimal */}
+      <section className="w-full px-6 lg:px-20 mb-80 bg-slate-50 py-40 border-y border-black/5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+          <div>
+            <h2 className="text-xs font-black uppercase tracking-[0.5em] text-[#8fb28a] mb-6">Stay Tuned</h2>
+            <p className="text-4xl md:text-5xl font-bold tracking-tight text-black leading-none mb-8">Notes on structural <span className="italic">clarity.</span></p>
+            <p className="text-base text-black max-w-md">Subscribe to receive monthly deep-dives into the systems and habits that drive organizational resonance.</p>
+          </div>
+
+          <div className="relative">
+            <form onSubmit={handleSubscribe} className="flex flex-col gap-6">
               <input
                 type="email"
-                placeholder="Enter your email address"
-                className="flex-grow px-6 py-3 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your professional email"
+                className="w-full bg-transparent border-b-2 border-black/10 py-6 text-xl text-black placeholder:text-slate-300 focus:outline-none focus:border-[#8fb28a] transition-colors"
               />
-              <button type="submit" className="btn-primary bg-teal-600 hover:bg-teal-700 whitespace-nowrap">
-                Subscribe
-                <ArrowRight size={20} />
+              <button
+                type="submit"
+                disabled={submitting}
+                className="self-start group inline-flex items-center gap-6 text-xl font-bold text-black border-b-4 border-black pb-2 hover:gap-10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? 'PROCESSING...' : 'JOIN THE JOURNAL'}
+                <Sparkles className={`w-6 h-6 text-[#aa7d3f] ${submitting ? 'animate-spin' : ''}`} />
               </button>
+
+              {subStatus === 'success' && (
+                <p className="text-[#8fb28a] font-bold uppercase tracking-widest animate-fade-in">Welcome to the Journal. Your subscription is active.</p>
+              )}
+              {subStatus === 'error' && (
+                <p className="text-red-500 font-bold uppercase tracking-widest animate-fade-in">System error. Please try again later.</p>
+              )}
             </form>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-navy-900 mb-6">
-            Want to Learn More About Our Services?
+      {/* 4. FINAL CALL TO ACTION - Broad Fluid Exit */}
+      <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
+        <div
+          className="absolute inset-0 bg-[#1a1a1a] transition-transform duration-[4s] hover:scale-105"
+          style={{
+            borderRadius: '100% 100% 0 0 / 100% 100% 0 0',
+            transform: 'translateY(10%)'
+          }}
+        />
+
+        <div className="relative z-10 text-center px-10">
+          <h2 className="text-4xl md:text-5xl font-bold text-white leading-none tracking-tight mb-10">
+            CONTRIBUTE TO THE <br />
+            <span className="italic font-light text-[#8fb28a]">RESONANCE.</span>
           </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Discover how our project management expertise can transform your organization
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/services" className="btn-primary justify-center">
-              Explore Our Services
-              <ArrowRight size={20} />
-            </a>
-            <a href="/contact" className="btn-secondary justify-center">
-              Schedule a Consultation
-            </a>
-          </div>
+          <Link
+            to="/contact"
+            className="group inline-flex items-center gap-6 text-xl font-bold text-white hover:text-[#8fb28a] transition-all"
+          >
+            CONNECT WITH OUR AUTHORS
+            <ArrowRight className="w-8 h-8 group-hover:translate-x-4 transition-transform" />
+          </Link>
         </div>
       </section>
+
     </div>
   )
 }

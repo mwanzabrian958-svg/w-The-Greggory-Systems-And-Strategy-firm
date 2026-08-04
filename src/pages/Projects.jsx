@@ -1824,8 +1824,8 @@ const SettingsSection = ({ user }) => {
   return (
     <div className="space-y-10">
       <div>
-         <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-2">Interface Protocol</p>
-         <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">System Configurations</h2>
+         <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-2">Account settings</p>
+         <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Preferences and account details</h2>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -1837,7 +1837,7 @@ const SettingsSection = ({ user }) => {
 
           <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-10 flex items-center gap-4">
              <Users className="w-4 h-4 text-gold-500" />
-             Personnel Credentials
+             Profile information
           </h3>
 
           <div className="flex items-center gap-8 mb-12">
@@ -1865,14 +1865,14 @@ const SettingsSection = ({ user }) => {
 
           <div className="space-y-6">
             <div className="group">
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2 block group-focus-within:text-gold-500 transition-colors">Callsign (Display Name)</label>
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2 block group-focus-within:text-gold-500 transition-colors">Display name</label>
               <input 
                 value={profileData.displayName}
                 onChange={(e) => handleProfileChange('displayName', e.target.value)}
                 className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500/40 focus:border-gold-500/40 transition-all" />
             </div>
             <div>
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2 block">Uplink Address (Email)</label>
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2 block">Email address</label>
               <div className="relative">
                 <input
                   value={profileData.email}
@@ -1883,7 +1883,7 @@ const SettingsSection = ({ user }) => {
               </div>
             </div>
             <div className="group">
-              <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2 block group-focus-within:text-gold-500 transition-colors">Temporal Zone</label>
+              <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2 block group-focus-within:text-gold-500 transition-colors">Time zone</label>
               <select 
                 value={profileData.timezone}
                 onChange={(e) => handleProfileChange('timezone', e.target.value)}
@@ -1902,12 +1902,12 @@ const SettingsSection = ({ user }) => {
               {isSaving ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Synchronizing...
+                  Saving...
                 </>
               ) : (
                 <>
                   <Database className="w-4 h-4" />
-                  Update Credentials
+                  Save changes
                 </>
               )}
             </button>
@@ -1919,12 +1919,12 @@ const SettingsSection = ({ user }) => {
           <SectionCard className="p-10 border border-white/10">
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-4">
                <Bell className="w-4 h-4 text-gold-500" />
-               Relay Protocols
+               Notifications
             </h3>
             <div className="space-y-6">
               {[
-                { label: 'Satellite Transmissions (Email)', val: emailNotifs, setter: setEmailNotifs },
-                { label: 'Direct Node Alerts (SMS)', val: smsNotifs, setter: setSmsNotifs }
+                { label: 'Email updates', val: emailNotifs, setter: setEmailNotifs },
+                { label: 'SMS alerts', val: smsNotifs, setter: setSmsNotifs }
               ].map((pref) => (
                 <div key={pref.label} className="flex items-center justify-between group">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-white transition-colors">{pref.label}</span>
@@ -1941,13 +1941,13 @@ const SettingsSection = ({ user }) => {
           <SectionCard className="p-10 border border-white/10">
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-8 flex items-center gap-4">
                <Eye className="w-4 h-4 text-gold-500" />
-               Interface Parameters
+               Display options
             </h3>
             <div className="space-y-6">
               {[
-                { id: 'theme', label: 'Deep Space Theme (Dark)', val: darkMode, setter: toggleTheme },
-                { id: 'density', label: 'Data Density (Compact)', val: compactView, setter: setCompactView },
-                { id: 'matrix', label: 'High-Visibility Matrix', val: largeText, setter: setLargeText }
+                { id: 'theme', label: 'Dark mode', val: darkMode, setter: toggleTheme },
+                { id: 'density', label: 'Compact view', val: compactView, setter: setCompactView },
+                { id: 'matrix', label: 'Larger text', val: largeText, setter: setLargeText }
               ].map((pref) => (
                 <div key={pref.id} className="flex items-center justify-between group">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-white transition-colors">{pref.label}</span>
@@ -1964,9 +1964,9 @@ const SettingsSection = ({ user }) => {
           <SectionCard className="p-10 border border-white/10 bg-gradient-to-br from-white/[0.02] to-transparent">
             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6 flex items-center gap-4">
                <Smartphone className="w-4 h-4 text-gold-500" />
-               External Node Uplink
+               Mobile access
             </h3>
-            <p className="text-[11px] font-medium text-slate-400 leading-relaxed uppercase tracking-widest mb-8">Establish secure connections via mobile interface modules for real-time field synchronization.</p>
+            <p className="text-[11px] font-medium text-slate-400 leading-relaxed uppercase tracking-widest mb-8">Use your mobile device to stay connected to project updates and important notices.</p>
             <div className="flex flex-wrap gap-4">
               <button onClick={() => toast('iOS Module: Deployment Pending', 'warn')} className="flex-1 flex items-center justify-center gap-3 bg-white/5 border border-white/10 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/10 transition-all">
                 <Smartphone className="w-4 h-4" /> App Store
@@ -2169,7 +2169,7 @@ const Projects = () => {
             {menuOpen && (
               <div className="absolute left-0 top-full mt-4 w-72 bg-white dark:bg-[#1e293b]/95 backdrop-blur-3xl border border-slate-200 dark:border-white/10 rounded-[32px] shadow-[0_30px_60px_rgba(0,0,0,0.2)] dark:shadow-[0_30px_60px_rgba(0,0,0,0.5)] overflow-hidden animate-fade-in-up">
                 <div className="p-4 border-b border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02]">
-                   <p className="text-[10px] font-black text-gold-600 dark:text-gold-500 uppercase tracking-[0.4em] px-4 py-2">Mission Sections</p>
+                   <p className="text-[10px] font-black text-gold-600 dark:text-gold-500 uppercase tracking-[0.4em] px-4 py-2">Portal sections</p>
                 </div>
                 <div className="max-h-[60vh] overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
                   {navSections.map(section => {
@@ -2206,7 +2206,7 @@ const Projects = () => {
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
               <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">{currentNav?.label || 'Portal'}</h2>
             </div>
-            <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">Greggory Command System</p>
+            <p className="text-sm font-black text-slate-900 dark:text-white tracking-tight">Greggory client portal</p>
           </div>
         </div>
 
@@ -2225,7 +2225,7 @@ const Projects = () => {
           <button
             onClick={() => navigate('/')}
             className="p-3 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-rose-500 hover:text-white transition-all text-slate-500 dark:text-slate-400 group"
-            title="Terminate Interface"
+            title="Close portal"
           >
             <X size={24} className="group-hover:scale-110 transition-transform" />
           </button>

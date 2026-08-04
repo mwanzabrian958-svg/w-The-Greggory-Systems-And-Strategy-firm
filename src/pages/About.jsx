@@ -1,192 +1,173 @@
-import { Target, Eye, Heart, Award, Users, TrendingUp, CheckCircle } from 'lucide-react'
+import React from 'react'
+import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const About = () => {
-  const team = [
-    {
-      name: 'Brian Mwanza',
-      role: 'Chief Executive Officer (CEO)',
-      credentials: 'PMP, PMI-ACP',
-      bio: 'Leads The-Greggory-Systems-And-Strategy-firm with a focus on systems design, strategic planning, operational excellence, and client value through intelligent solutions.',
-      image: '/images/brian-mwanza-ceo.jpg'
-    }
-  ]
-
-  const values = [
-    {
-      icon: <Target className="w-10 h-10 text-teal-600" />,
-      title: 'Discipline',
-      description: 'We apply rigorous methodologies and proven frameworks to every engagement.'
-    },
-    {
-      icon: <Heart className="w-10 h-10 text-teal-600" />,
-      title: 'Collaboration',
-      description: 'We work alongside your team as trusted partners, not external consultants.'
-    },
-    {
-      icon: <Award className="w-10 h-10 text-teal-600" />,
-      title: 'Innovation',
-      description: 'We continuously evolve our practices to incorporate the latest industry insights.'
-    },
-    {
-      icon: <CheckCircle className="w-10 h-10 text-teal-600" />,
-      title: 'Results-Driven',
-      description: 'We measure success by the tangible value we deliver to your organization.'
-    }
-  ]
-
   return (
-    <div className="bg-[#0f172a] text-white pt-[140px] relative overflow-hidden">
-      {/* Immersive Background Elements */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(245,158,11,0.08),_transparent_50%)]" />
-        <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_80%,_rgba(45,212,191,0.05),_transparent_50%)]" />
-        <div className="absolute inset-0 opacity-[0.02] mix-blend-overlay"
-             style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")' }} />
-      </div>
+    <div className="relative min-h-screen bg-[#fdfaf6] text-[#111] pt-32 selection:bg-[#8fb28a] selection:text-white font-sans overflow-x-hidden">
 
-      {/* Hero Section Protocol */}
-      <section className="relative z-10 py-20 pb-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl">
-            <div className="inline-flex items-center gap-3 rounded-full border border-gold-500/30 bg-gold-500/5 px-5 py-2 text-[10px] font-black text-gold-200 backdrop-blur-xl mb-10 uppercase tracking-[0.4em]">
-              Protocol Established 2021 • Systems Excellence
+      {/* 1. HERO SECTION - Broadly defined, smaller professional typography */}
+      <section className="w-full px-6 lg:px-20 mb-40">
+        <div className="flex flex-col lg:flex-row items-end justify-between gap-12">
+          <div className="lg:w-2/3">
+            <div className="flex items-center gap-3 opacity-60 mb-8">
+              <Fingerprint className="w-4 h-4" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.4em]">The Architectural Identity</span>
             </div>
-            <h1 className="text-5xl md:text-8xl font-black mb-10 tracking-tight leading-[0.9] uppercase">
-              Deciphering <br />
-              <span className="text-gold-500">Complexity.</span>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+              We design the underlying operating systems <br />
+              that allow strategy to breathe <span className="text-[#8fb28a]">independently.</span>
             </h1>
-            <p className="text-xl sm:text-2xl text-slate-400 font-medium leading-relaxed max-w-2xl uppercase tracking-widest">
-              Empowering organizations through expert systems design and high-tier strategic planning.
+          </div>
+          <div className="lg:w-1/3">
+            <p className="text-base text-black leading-relaxed font-normal">
+              The-Greggory-Systems-And-Strategy-firm was founded on a singular premise: that complexity is the greatest tax on human ambition. We exist to dismantle that tax.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Our Story Protocol */}
-      <section className="relative z-10 py-32 bg-white text-slate-950 rounded-[60px] mx-4 sm:mx-6 lg:mx-8 shadow-2xl mb-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-12 lg:px-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-            <div className="space-y-10">
-              <div>
-                <p className="text-[10px] font-black text-gold-600 uppercase tracking-[0.4em] mb-4">Firm Origin Protocol</p>
-                <h3 className="text-5xl font-black tracking-tighter uppercase">Our Genesis</h3>
-              </div>
-              <div className="space-y-8 text-lg text-slate-600 font-bold uppercase tracking-widest text-xs leading-relaxed">
-                <p>
-                  <span className="text-slate-950 font-black border-b-2 border-gold-500/40 pb-1">The-Greggory-Systems-And-Strategy-firm</span> was architected from a core observation: organizations struggle not due to a lack of vision, but a lack of systemic throughput.
-                </p>
-                <p>
-                  We witnessed countless missions fail due to fragmented strategy and inadequate design. Today, we've synchronized over 50 global entities with high-tier architecture and operational excellence.
-                </p>
-                <div className="bg-slate-50 rounded-[32px] p-10 border border-slate-100 relative group overflow-hidden">
-                   <div className="absolute top-0 left-0 w-1 h-full bg-gold-500 group-hover:w-2 transition-all" />
-                   <p className="italic text-slate-950 text-xl font-black uppercase tracking-tight leading-relaxed">
-                     "Every business challenge requires a systematic solution and a high-tier strategic framework for sustainable confidence."
-                   </p>
-                </div>
-              </div>
-            </div>
-            <div className="relative group">
-              <div className="absolute -inset-10 bg-gold-500/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-gold-500/10 transition-all duration-1000" />
-              <img 
-                src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=800&fit=crop"
-                alt="Strategic Architecture"
-                className="relative z-10 rounded-[48px] shadow-2xl grayscale group-hover:grayscale-0 transition-all duration-1000 border-8 border-white/50"
-              />
+      {/* 2. THE LONG NARRATIVE - Broad layout, small readable font */}
+      <section className="w-full px-6 lg:px-20 mb-60">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+          <div className="lg:col-span-4">
+            <div className="sticky top-40 space-y-6">
+               <h2 className="text-xs font-black uppercase tracking-[0.3em] text-[#aa7d3f]">01 / The Origin</h2>
+               <p className="text-sm text-slate-400 leading-relaxed uppercase tracking-widest font-bold">The evolution of systemic resonance.</p>
+               <div className="h-px w-20 bg-[#aa7d3f]/20" />
             </div>
           </div>
+          <div className="lg:col-span-8 space-y-16">
+            <p className="text-base text-black leading-[1.8] max-w-3xl">
+              We began not as a consultancy, but as a laboratory for operational resilience. We observed how even the most brilliant strategies often collapsed under the weight of their own implementation. The missing link was never the "what"—it was always the "how" of the ecosystem.
+            </p>
+            <p className="text-base text-black leading-[1.8] max-w-3xl">
+              By studying the intersection of human psychology, technological architecture, and market dynamics, we developed a methodology that prioritizes flow over force. We don't push organizations toward change; we design the environment so that change becomes the path of least resistance.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 mt-40">
+          <div className="lg:col-span-4">
+            <div className="sticky top-40 space-y-6">
+               <h2 className="text-xs font-black uppercase tracking-[0.3em] text-[#8fb28a]">02 / Integrity</h2>
+               <p className="text-sm text-slate-400 leading-relaxed uppercase tracking-widest font-bold">Mapping the organizational organism.</p>
+               <div className="h-px w-20 bg-[#8fb28a]/20" />
+            </div>
+          </div>
+          <div className="lg:col-span-8 space-y-16">
+            <p className="text-base text-black leading-[1.8] max-w-3xl">
+              Most firms look at a company as a collection of departments. We look at it as a living organism. When one part of the system is out of sync, the entire structure vibrates with friction. Our intervention starts with a deep mapping of these vibrations.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-10 max-w-3xl">
+              <div className="space-y-4">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                  <Microscope className="w-5 h-5 text-slate-400" />
+                </div>
+                <h3 className="font-bold text-sm uppercase tracking-widest text-black">Deep Diagnosis</h3>
+                <p className="text-sm text-black leading-relaxed">We identify the hidden tactical frictions that leak energy and slow down decision-making at every level.</p>
+              </div>
+              <div className="space-y-4">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
+                  <Radio className="w-5 h-5 text-slate-400" />
+                </div>
+                <h3 className="font-bold text-sm uppercase tracking-widest text-black">Signal Clarity</h3>
+                <p className="text-sm text-black leading-relaxed">We transform internal communications from static noise into a clear frequency that every team member can tune into.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Mission & Vision Protocol */}
-      <section className="relative z-10 py-32 bg-[#050b14] border-y border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {[
-              { icon: Target, title: 'Our Mission', desc: 'To empower global entities by applying rigorous systems design, ensuring clarity, agility, and measurable systemic throughput. We transform complexity into executable strategy.' },
-              { icon: Eye, title: 'Our Vision', desc: 'To be the definitive catalyst for transformative growth. We envision a landscape where every organization operates through intelligent systems architecture.' }
-            ].map((box, i) => (
-              <div key={i} className="bg-white/5 backdrop-blur-2xl p-12 rounded-[48px] border border-white/10 hover:bg-white/[0.08] transition-all group shadow-2xl">
-                <div className="h-20 w-20 rounded-[24px] bg-gold-500/10 flex items-center justify-center text-gold-500 mb-10 border border-gold-500/20 group-hover:scale-110 transition-transform">
-                  <box.icon size={40} />
-                </div>
-                <h3 className="text-3xl font-black text-white uppercase tracking-tight mb-8 group-hover:text-gold-400 transition-colors">{box.title}</h3>
-                <p className="text-slate-400 text-sm font-bold uppercase tracking-widest leading-relaxed">
-                  {box.desc}
+      {/* 3. PHILOSOPHY - Broad definition of values */}
+      <section className="w-full px-6 lg:px-20 mb-80">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            <div className="space-y-6">
+              <div className="w-10 h-10 rounded-2xl bg-[#8fb28a]/10 flex items-center justify-center">
+                <Orbit className="w-5 h-5 text-[#4c6a4d]" />
+              </div>
+              <h3 className="text-xl font-bold tracking-tight text-black">Ecosystem Thinking</h3>
+              <p className="text-sm text-black leading-relaxed">We move beyond isolated solutions. Every strategy we deploy considers the ripple effect across your entire organization.</p>
+            </div>
+            <div className="space-y-6">
+              <div className="w-10 h-10 rounded-2xl bg-[#aa7d3f]/10 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-[#aa7d3f]" />
+              </div>
+              <h3 className="text-xl font-bold tracking-tight text-black">Radical Momentum</h3>
+              <p className="text-sm text-black leading-relaxed">Speed is a by-product of clarity. By removing obstacles, we unlock a natural, sustainable velocity without burnout.</p>
+            </div>
+            <div className="space-y-6">
+              <div className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center">
+                <Heart className="w-5 h-5 text-slate-600" />
+              </div>
+              <h3 className="text-xl font-bold tracking-tight text-black">Cultural Resonance</h3>
+              <p className="text-sm text-black leading-relaxed">Systems are for people. We design with empathy, ensuring our technical solutions feel natural and empowering.</p>
+            </div>
+        </div>
+      </section>
+
+      {/* 4. THE SINGLE LINE DIVIDER */}
+      <div className="w-full px-6 lg:px-20">
+         <div className="h-px w-full bg-slate-200" />
+      </div>
+
+      {/* 5. LEADERSHIP SECTION - Broadly defined, at the bottom */}
+      <section className="py-32 w-full px-6 lg:px-20">
+        <div className="flex flex-col lg:flex-row items-start gap-20">
+          <div className="lg:w-1/3">
+             <div className="relative w-full aspect-[4/5] max-w-sm">
+                <div className="absolute inset-0 bg-[#8fb28a]/10 rounded-[60%_40%_30%_70%/60%_30%_70%_40%] rotate-3 -z-10" />
+                <div
+                  className="w-full h-full object-cover grayscale brightness-110 contrast-110 shadow-2xl transition-all duration-700 hover:grayscale-0"
+                  style={{
+                    backgroundImage: 'url("/images/brian-mwanza-ceo.jpg")',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    borderRadius: '80px 40px 100px 50px',
+                  }}
+                />
+             </div>
+          </div>
+
+          <div className="lg:w-2/3 space-y-10">
+             <div className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-[0.4em] text-[#8fb28a]">Firm Leadership</span>
+                <h2 className="text-4xl font-bold tracking-tight">Brian Mwanza</h2>
+                <p className="text-sm font-bold text-[#aa7d3f] uppercase tracking-[0.2em]">Founder & Managing Director</p>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl">
+                <p className="text-sm text-black leading-[1.8]">
+                  Brian Mwanza is the visionary force behind The-Greggory-Systems-And-Strategy-firm. With over a decade of experience in systemic design and business strategy, he has guided some of the most ambitious organizations through complex digital and operational transformations.
                 </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+                <p className="text-sm text-black leading-[1.8]">
+                  His philosophy is rooted in the belief that "Strategy is not a document; it's a pulse." Under his leadership, the firm has evolved from a boutique advisory to a global architect of business resonance, known for its uncompromising commitment to clarity and human-centric systems.
+                </p>
+             </div>
 
-      {/* Corporate Values Protocol */}
-      <section className="relative z-10 py-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-24">
-            <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.5em] mb-4">Protocol Standards</p>
-            <h2 className="text-5xl font-black text-white uppercase tracking-tighter">Core Values</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {values.map((value, index) => (
-              <div key={index} className="group p-10 rounded-[40px] bg-white/5 border border-white/5 hover:bg-white/10 hover:border-gold-500/20 transition-all shadow-xl">
-                <div className="text-gold-500 mb-8 transition-transform group-hover:scale-110">
-                  {value.icon}
-                </div>
-                <h4 className="text-sm font-black text-white uppercase tracking-[0.2em] mb-4">{value.title}</h4>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed group-hover:text-slate-300 transition-colors">{value.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Leadership Protocol */}
-      <section className="relative z-10 py-32 bg-white text-slate-950 rounded-[60px] mx-4 sm:mx-6 lg:mx-8 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="mb-24">
-             <p className="text-[10px] font-black text-gold-600 uppercase tracking-[0.4em] mb-4">Strategic Leadership</p>
-             <h2 className="text-5xl font-black text-slate-950 uppercase tracking-tighter">Personnel Directory</h2>
-          </div>
-
-          <div className="flex justify-center">
-            {team.map((member, index) => (
-              <div key={index} className="max-w-md group cursor-default">
-                <div className="relative overflow-hidden rounded-[50px] mb-12 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] bg-slate-200 border-8 border-white">
-                  <div className="absolute inset-0 bg-gold-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700 z-10" />
-                  <img 
-                    src={member.image} 
-                    alt={member.name}
-                    className="w-full h-[550px] object-cover transform transition-transform duration-1000 group-hover:scale-105 grayscale group-hover:grayscale-0"
-                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=600&h=800&fit=crop' }}
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 p-12 bg-gradient-to-t from-slate-950 to-transparent z-20">
-                     <p className="text-gold-500 text-[10px] font-black uppercase tracking-[0.4em] mb-3">{member.role}</p>
-                     <h4 className="text-3xl font-black text-white uppercase tracking-tight leading-none">{member.name}</h4>
-                  </div>
-                </div>
-                <div className="px-8 text-center">
-                   <div className="inline-block px-4 py-1.5 bg-slate-950 text-white rounded-full text-[9px] font-black uppercase tracking-widest mb-6">
-                      {member.credentials}
+             <div className="pt-6">
+                <div className="flex items-center gap-4">
+                   <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-white">
+                      <Fingerprint className="w-4 h-4" />
                    </div>
-                   <p className="text-slate-600 text-sm font-bold uppercase tracking-widest leading-relaxed">{member.bio}</p>
+                   <span className="text-xs font-bold uppercase tracking-widest text-slate-400 italic">"Design for resonance, not just function."</span>
                 </div>
-              </div>
-            ))}
+             </div>
           </div>
         </div>
       </section>
 
-      {/* Final CTA Protocol */}
-      <section className="relative z-10 py-32 bg-gold-500">
-         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-5xl font-black text-slate-950 uppercase tracking-tight mb-10">Sync Your Vision</h2>
-            <Link to="/contact" className="inline-flex items-center justify-center px-12 py-6 bg-slate-950 text-white rounded-[24px] font-black text-[11px] uppercase tracking-[0.4em] hover:bg-slate-900 transition-all shadow-2xl">
-               Contact Relay
+      {/* FINAL CALL TO ACTION */}
+      <section className="py-40 bg-white w-full px-6 lg:px-20 text-center">
+         <div className="max-w-3xl mx-auto flex flex-col items-center gap-10">
+            <h2 className="text-3xl font-bold tracking-tight">Ready to integrate <br /> these systems into your vision?</h2>
+            <Link to="/contact" className="group inline-flex items-center gap-4 px-8 py-4 rounded-full bg-black text-white font-bold text-base hover:bg-slate-800 transition-all">
+               Start the Conversation
+               <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
             </Link>
          </div>
       </section>
+
     </div>
   )
 }

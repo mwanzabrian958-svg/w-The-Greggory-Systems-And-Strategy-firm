@@ -83,5 +83,8 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [require("daisyui")],
+  daisyui: {
+    themes: ["dark", "light", "cupcake", "synthwave", "luxury"],
+  },
 }

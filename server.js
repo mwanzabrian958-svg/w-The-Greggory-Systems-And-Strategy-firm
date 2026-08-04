@@ -3792,20 +3792,67 @@ app.get("/api/blog-articles", async (req, res) => {
         .skip(parseInt(offset));
 
       if (articles.length > 0) {
-        return res.json({ success: true, articles, source: 'mongodb' });
+        return res.json({
+          success: true,
+          articles: articles.map(a => ({
+            ...a.toObject(),
+            has_photo: !!a.featured_image?.data,
+            image_url: a.featured_image?.data ? `/api/blog-articles/photo/${a._id}?source=mongodb` : a.featured_image?.url
+          })),
+          source: 'mongodb'
+        });
       }
     }
 
     // 2. Fallback to MySQL
     const [articles] = await mainDb.query(
-      "SELECT * FROM blog_articles WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      "SELECT id, title, excerpt, author, read_time, category, image_url, icon_class, is_published, published_date, created_at, image_blob IS NOT NULL as has_photo FROM blog_articles WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?",
       [parseInt(limit), parseInt(offset)],
     );
 
-    res.json({ success: true, articles, source: 'mysql' });
+    res.json({
+      success: true,
+      articles: articles.map(a => ({
+        ...a,
+        image_url: a.has_photo ? `/api/blog-articles/photo/${a.id}?source=mysql` : a.image_url
+      })),
+      source: 'mysql'
+    });
   } catch (error) {
     console.error("Error fetching blog articles:", error);
     res.status(500).json({ success: false, message: "Error fetching blog articles", error: error.message });
+  }
+});
+
+// Blog Article Photo Retrieval
+app.get("/api/blog-articles/photo/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { source = 'mysql' } = req.query;
+
+    if (source === 'mongodb' && mongoose.connection.readyState === 1) {
+      const article = await BlogArticle.findById(id);
+      if (article && article.featured_image?.data) {
+        res.set("Content-Type", article.featured_image.contentType || "image/jpeg");
+        return res.send(article.featured_image.data);
+      }
+    }
+
+    const [articles] = await mainDb.query(
+      "SELECT image_blob, image_mime_type FROM blog_articles WHERE id = ? AND image_blob IS NOT NULL",
+      [id]
+    );
+
+    if (articles.length === 0) {
+      return res.status(404).json({ success: false, message: "Photo not found" });
+    }
+
+    const article = articles[0];
+    res.set("Content-Type", article.image_mime_type || "image/jpeg");
+    res.send(article.image_blob);
+  } catch (error) {
+    console.error("Blog photo retrieval error:", error);
+    res.status(500).json({ success: false, message: "Failed to retrieve photo" });
   }
 });
 
@@ -3832,6 +3879,32 @@ app.post("/api/blog-articles", async (req, res) => {
   } catch (error) {
     console.error("Error creating blog article:", error);
     res.status(500).json({ success: false, message: "Error creating blog article", error: error.message });
+  }
+});
+
+// Blog Subscriptions API
+app.post("/api/blog-subscriptions", async (req, res) => {
+  try {
+    const { email, source = 'website_blog' } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    // Insert into MySQL
+    const [result] = await mainDb.query(
+      "INSERT INTO blog_subscriptions (email, source) VALUES (?, ?) ON DUPLICATE KEY UPDATE status = 'active', updated_at = NOW()",
+      [email, source]
+    );
+
+    res.json({
+      success: true,
+      message: "Subscription successful",
+      subscriptionId: result.insertId
+    });
+  } catch (error) {
+    console.error("Error creating blog subscription:", error);
+    res.status(500).json({ success: false, message: "Subscription failed", error: error.message });
   }
 });
 
