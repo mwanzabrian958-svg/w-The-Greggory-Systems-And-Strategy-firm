@@ -140,27 +140,29 @@ const Footer = () => {
 
           {/* Bottom Bar Protocol */}
           <div className="border-t border-white/5 mt-10 sm:mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">
-              &copy; {currentYear} {SITE_NAME}. Mission Synchronized.
-            </p>
+            <div className="flex items-center gap-4">
+              <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">
+                &copy; {currentYear} {SITE_NAME}. Mission Synchronized.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleFooterAdminTrigger}
+                className="group p-1.5 rounded-full border border-white/5 hover:border-gold-500/20 hover:bg-gold-500/5 transition-all duration-500 opacity-40 hover:opacity-100"
+                aria-label="Admin console access"
+                title="Command Terminal"
+              >
+                <div className="flex gap-1 px-1.5 py-0.5">
+                  <span className="w-0.5 h-0.5 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors" />
+                  <span className="w-0.5 h-0.5 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors duration-300" />
+                  <span className="w-0.5 h-0.5 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors duration-500" />
+                </div>
+              </button>
+            </div>
 
             <div className="flex items-center gap-6">
                <Link to="/privacy" className="text-[9px] font-black text-slate-600 hover:text-white uppercase tracking-widest transition-colors">Privacy Protocol</Link>
                <Link to="/terms" className="text-[9px] font-black text-slate-600 hover:text-white uppercase tracking-widest transition-colors">Terms of Service</Link>
-
-               <button
-                type="button"
-                onClick={handleFooterAdminTrigger}
-                className="group p-2 rounded-full border border-white/10 hover:border-gold-500/40 hover:bg-gold-500/5 transition-all duration-500"
-                aria-label="Admin console access"
-                title="Command Terminal"
-              >
-                <div className="flex gap-1.5 px-2 py-1">
-                  <span className="w-1 h-1 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors" />
-                  <span className="w-1 h-1 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors duration-300" />
-                  <span className="w-1 h-1 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors duration-500" />
-                </div>
-              </button>
             </div>
           </div>
         </div>
