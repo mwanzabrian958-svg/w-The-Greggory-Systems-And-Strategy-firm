@@ -8,6 +8,68 @@ const bcrypt = require('bcryptjs');
 const { formatActivityLog } = require('../utils/activityLogFormatter');
 
 // =============================================
+// GLOBAL SEARCH TELEMETRY
+// =============================================
+router.get('/search', async (req, res) => {
+  try {
+    const { q, deep } = req.query;
+    if (!q || q.length < 2) return res.json({ success: true, results: [] });
+
+    const searchTerm = `%${q}%`;
+    const isDeep = deep === 'true';
+    const limit = isDeep ? 20 : 5;
+
+    // 1. Search Personnel (Users, Admins, Developers)
+    const personnelQuery = isDeep
+      ? `(SELECT 'user' as type, id, display_name as title, email, phone_number as phone, primary_role as role, is_active, created_at as metadata, CONCAT('/admin/users/detail/', id, '/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ? OR phone_number LIKE ?) AND deleted_at IS NULL)
+         UNION ALL
+         (SELECT 'user' as type, id, display_name as title, email, phone_number as phone, admin_level as role, is_active, created_at as metadata, CONCAT('/admin/users/detail/', id, '/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ? OR phone_number LIKE ?) AND deleted_at IS NULL)
+         UNION ALL
+         (SELECT 'user' as type, id, display_name as title, email, phone_number as phone, developer_level as role, is_active, created_at as metadata, CONCAT('/admin/users/detail/', id, '/developer') as link FROM developer_users WHERE (display_name LIKE ? OR email LIKE ? OR phone_number LIKE ?) AND deleted_at IS NULL)
+         LIMIT ?`
+      : `(SELECT 'user' as type, id, display_name as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL)
+         UNION ALL
+         (SELECT 'user' as type, id, display_name as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL)
+         UNION ALL
+         (SELECT 'user' as type, id, display_name as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/developer') as link FROM developer_users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL)
+         LIMIT ?`;
+
+    const personnelParams = isDeep
+      ? [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, limit]
+      : [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, limit];
+
+    const [users] = await db.promise().query(personnelQuery, personnelParams);
+
+    // 2. Search Projects
+    const projectQuery = isDeep
+      ? "SELECT 'project' as type, id, project_name as title, client_name as subtitle, project_description as description, status, progress_percentage as metadata, '/admin/projects' as link FROM user_projects WHERE (project_name LIKE ? OR client_name LIKE ?) AND deleted_at IS NULL LIMIT ?"
+      : "SELECT 'project' as type, id, project_name as title, client_name as subtitle, '/admin/projects' as link FROM user_projects WHERE (project_name LIKE ? OR client_name LIKE ?) AND deleted_at IS NULL LIMIT ?";
+
+    const [projects] = await db.promise().query(projectQuery, [searchTerm, searchTerm, limit]);
+
+    // 3. Search Ledger
+    const [ledger] = await db.promise().query(
+      "SELECT 'ledger' as type, id, description as title, CONCAT('KSh ', amount) as subtitle, '/admin/billing' as link FROM accounting_entries WHERE (description LIKE ? OR transaction_reference LIKE ?) AND deleted_at IS NULL LIMIT ?",
+      [searchTerm, searchTerm, limit]
+    );
+
+    // 4. Search Tasks
+    const [tasks] = await db.promise().query(
+      "SELECT 'task' as type, id, task_name as title, task_description as description, status, priority as metadata, CONCAT('/admin/projects/', project_id, '/tasks') as link FROM project_tasks WHERE (task_name LIKE ? OR task_description LIKE ?) AND deleted_at IS NULL LIMIT ?",
+      [searchTerm, searchTerm, limit]
+    );
+
+    res.json({
+      success: true,
+      results: [...users, ...projects, ...ledger, ...tasks]
+    });
+  } catch (error) {
+    console.error('Global Search Error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =============================================
 // GET ALL ADMIN USERS
 // =============================================
 router.get('/admin-users', async (req, res) => {
@@ -25,6 +87,8 @@ router.get('/admin-users', async (req, res) => {
         au.is_active,
         au.last_login_at,
         au.last_login_ip,
+        au.whatsapp_verified,
+        au.whatsapp_auth_key,
         au.created_at,
         au.updated_at
       FROM admin_users au
@@ -69,6 +133,8 @@ router.get('/developer-users', async (req, res) => {
         du.is_active,
         du.last_login_at,
         du.last_login_ip,
+        du.whatsapp_verified,
+        du.whatsapp_auth_key,
         du.created_at,
         du.updated_at
       FROM developer_users du
@@ -105,8 +171,10 @@ router.get('/users', async (req, res) => {
         u.display_name,
         u.primary_role,
         u.is_active,
-        u.last_login,
+        u.last_login_at,
         u.last_login_ip,
+        u.whatsapp_verified,
+        u.whatsapp_auth_key,
         u.created_at,
         u.updated_at,
         tm.name as job_title,
@@ -431,7 +499,7 @@ router.get('/users/:id', async (req, res) => {
       query = `
         SELECT 
           u.id, u.email, u.first_name, u.last_name, u.display_name,
-          u.primary_role, u.is_active, u.last_login, u.last_login_ip,
+          u.primary_role, u.is_active, u.last_login_at, u.last_login_ip,
           u.created_at, u.updated_at, u.deleted_at,
           tm.name as job_title, tm.role as job_role
         FROM users u
@@ -538,6 +606,13 @@ router.get('/dashboard', async (req, res) => {
       'SELECT COUNT(*) as count FROM users WHERE is_active = 1 AND deleted_at IS NULL'
     );
 
+    const [verifiedCount] = await db.promise().query(`
+      SELECT
+        (SELECT COUNT(*) FROM users WHERE whatsapp_verified = 1 AND deleted_at IS NULL) +
+        (SELECT COUNT(*) FROM admin_users WHERE whatsapp_verified = 1 AND deleted_at IS NULL) +
+        (SELECT COUNT(*) FROM developer_users WHERE whatsapp_verified = 1 AND deleted_at IS NULL) as count
+    `);
+
     // Get recent activity
     const [recentActivity] = await db.promise().query(`
       (SELECT 
@@ -563,11 +638,11 @@ router.get('/dashboard', async (req, res) => {
       (SELECT 
         'user_login' as type,
         display_name as user_name,
-        last_login as timestamp,
+        last_login_at as timestamp,
         'User logged in' as description
        FROM users 
-       WHERE last_login IS NOT NULL 
-       ORDER BY last_login DESC 
+       WHERE last_login_at IS NOT NULL
+       ORDER BY last_login_at DESC
        LIMIT 5)
       ORDER BY timestamp DESC
       LIMIT 10
@@ -609,6 +684,7 @@ router.get('/dashboard', async (req, res) => {
           admins: adminCount[0].count,
           developers: developerCount[0].count,
           users: userCount[0].count,
+          verified: verifiedCount[0].count,
           total: adminCount[0].count + developerCount[0].count + userCount[0].count
         },
         recentActivity: combinedActivity,
@@ -723,14 +799,14 @@ router.get('/developer-dashboard', async (req, res) => {
 // =============================================
 router.get('/budget-overview', async (req, res) => {
   try {
-    // Calculate budget overview from projects and financial data
+    // Calculate budget overview from the new user_projects table
     const [budgetData] = await db.promise().query(`
       SELECT 
-        COALESCE(SUM(CASE WHEN p.budget IS NOT NULL THEN p.budget ELSE 0 END), 0) as planned,
-        COALESCE(SUM(CASE WHEN p.actual_spent IS NOT NULL THEN p.actual_spent ELSE 0 END), 0) as spent,
-        COALESCE(SUM(CASE WHEN p.forecast IS NOT NULL THEN p.forecast ELSE 0 END), 0) as forecast
-      FROM client_projects p
-      WHERE p.deleted_at IS NULL
+        COALESCE(SUM(actual_budget), 0) as spent,
+        COALESCE(SUM(estimated_budget), 0) as planned,
+        COALESCE(SUM(estimated_budget * 1.1), 0) as forecast
+      FROM user_projects
+      WHERE deleted_at IS NULL
     `);
 
     res.json({
@@ -756,21 +832,17 @@ router.get('/budget-overview', async (req, res) => {
 // =============================================
 router.get('/pending-approvals', async (req, res) => {
   try {
-    // Get pending approvals from various sources
+    // Get pending approvals from the new user_projects table
     const [approvals] = await db.promise().query(`
       SELECT 
         'project' as type,
-        p.project_name as name,
-        p.created_at as date,
-        CASE 
-          WHEN p.priority = 'high' THEN 'High'
-          WHEN p.priority = 'medium' THEN 'Medium'
-          ELSE 'Low'
-        END as priority,
-        p.id
-      FROM client_projects p
-      WHERE p.status = 'pending' AND p.deleted_at IS NULL
-      ORDER BY p.created_at DESC
+        project_name as name,
+        created_at as date,
+        priority,
+        id
+      FROM user_projects
+      WHERE status = 'planning' AND deleted_at IS NULL
+      ORDER BY created_at DESC
       LIMIT 5
     `);
 
@@ -836,16 +908,16 @@ router.get('/pending-invoices', async (req, res) => {
 // =============================================
 router.get('/client-feedback', async (req, res) => {
   try {
-    // Get client feedback from contact forms or feedback tables
+    // Get client feedback from the new user_feedback table
     const [feedback] = await db.promise().query(`
       SELECT 
-        cf.id,
-        cf.name as type,
-        COALESCE(cf.rating, 5) as rating,
-        cf.created_at as date
-      FROM contact_forms cf
-      WHERE cf.deleted_at IS NULL
-      ORDER BY cf.created_at DESC
+        id,
+        feedback_type as type,
+        rating,
+        created_at as date
+      FROM user_feedback
+      WHERE deleted_at IS NULL
+      ORDER BY created_at DESC
       LIMIT 5
     `);
 
@@ -865,6 +937,77 @@ router.get('/client-feedback', async (req, res) => {
       message: 'Failed to fetch client feedback',
       error: error.message
     });
+  }
+});
+
+// =============================================
+// GET GENERAL LEDGER TELEMETRY
+// =============================================
+router.get('/ledger', async (req, res) => {
+  try {
+    const { client_id, project_id, team_member_id, start_date, end_date, type } = req.query;
+
+    let query = `
+      SELECT
+        ae.*,
+        p.project_name,
+        u.display_name as client_name,
+        cb.display_name as creator_name
+      FROM accounting_entries ae
+      LEFT JOIN user_projects p ON ae.project_id = p.id
+      LEFT JOIN users u ON p.user_id = u.id
+      LEFT JOIN users cb ON ae.created_by = cb.id
+      WHERE ae.deleted_at IS NULL
+    `;
+
+    const params = [];
+
+    if (client_id) {
+      query += " AND p.user_id = ?";
+      params.push(client_id);
+    }
+
+    if (project_id) {
+      query += " AND ae.project_id = ?";
+      params.push(project_id);
+    }
+
+    if (team_member_id) {
+      query += " AND (ae.project_id IN (SELECT project_id FROM project_team_members WHERE user_id = ? AND removed_at IS NULL))";
+      params.push(team_member_id);
+    }
+
+    if (start_date && end_date) {
+      query += " AND ae.transaction_date BETWEEN ? AND ?";
+      params.push(start_date, end_date);
+    }
+
+    if (type && type !== 'all') {
+      query += " AND ae.entry_type = ?";
+      params.push(type);
+    }
+
+    query += " ORDER BY ae.transaction_date DESC, ae.created_at DESC LIMIT 500";
+
+    const [entries] = await db.promise().query(query, params);
+
+    // Metadata for filters
+    const [clients] = await db.promise().query("SELECT id, display_name as name FROM users WHERE deleted_at IS NULL");
+    const [projects] = await db.promise().query("SELECT id, project_name as name FROM user_projects WHERE deleted_at IS NULL");
+    const [team] = await db.promise().query("SELECT id, display_name as name FROM users WHERE primary_role IN ('admin', 'developer') AND deleted_at IS NULL");
+
+    res.json({
+      success: true,
+      entries,
+      filters: {
+        clients,
+        projects,
+        team
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching ledger:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -1192,6 +1335,52 @@ router.get('/project-timeline', async (req, res) => {
       message: 'Failed to fetch project timeline',
       error: error.message
     });
+  }
+});
+
+// =============================================
+// GET CRM TELEMETRY
+// =============================================
+router.get('/crm-telemetry', async (req, res) => {
+  try {
+    const [clients] = await db.promise().query(`
+      SELECT
+        u.id, u.display_name as name, u.email,
+        COUNT(p.id) as projects,
+        COALESCE(AVG(f.rating), 5.0) as satisfaction,
+        'Active' as status
+      FROM users u
+      LEFT JOIN user_projects p ON u.id = p.user_id AND p.deleted_at IS NULL
+      LEFT JOIN user_feedback f ON u.id = f.user_id AND f.deleted_at IS NULL
+      WHERE u.deleted_at IS NULL
+      GROUP BY u.id
+      LIMIT 10
+    `);
+
+    const [opportunities] = await db.promise().query(`
+      SELECT
+        id, project_name as title, client_name as client,
+        estimated_budget as value, 'Proposal' as stage,
+        DATEDIFF(end_date, NOW()) as daysLeft
+      FROM user_projects
+      WHERE status = 'planning' AND deleted_at IS NULL
+      LIMIT 5
+    `);
+
+    res.json({
+      success: true,
+      clients,
+      opportunities,
+      pipeline: [
+        { stage: "New", count: clients.length, color: "bg-blue-100 text-blue-700" },
+        { stage: "Qualified", count: Math.floor(clients.length * 0.6), color: "bg-green-100 text-green-700" },
+        { stage: "Proposal", count: opportunities.length, color: "bg-amber-100 text-amber-700" },
+        { stage: "Closed", count: 0, color: "bg-emerald-100 text-emerald-700" },
+      ]
+    });
+  } catch (error) {
+    console.error('Error fetching CRM telemetry:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

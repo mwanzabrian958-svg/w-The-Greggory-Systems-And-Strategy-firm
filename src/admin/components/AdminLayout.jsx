@@ -1,249 +1,177 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { LogOut, Users, FolderKanban, ClipboardList, Settings, Briefcase, BarChart3, FileText, MessageSquare, HelpCircle, ShieldCheck, Code2, Home, Info, BookOpen, Calculator, Building2, CheckSquare, TrendingUp, Search } from "lucide-react";
-import { API_BASE_URL } from "../../services/api";
-import { UsersModal } from "./modals/UsersModal";
-import { ProjectsModal } from "./modals/ProjectsModal";
-import { ApplicationsModal } from "./modals/ApplicationsModal";
-import { SettingsModal } from "./modals/SettingsModal";
-import { ContentModal } from "./modals/ContentModal";
-import { AnalyticsModal } from "./modals/AnalyticsModal";
-import { ReportsModal } from "./modals/ReportsModal";
-import { CommunicationModal } from "./modals/CommunicationModal";
-import { SupportModal } from "./modals/SupportModal";
-import { SecurityModal } from "./modals/SecurityModal";
-import { FinancialModal } from "./modals/FinancialModal";
-import { CRMModal } from "./modals/CRMModal";
-import { TasksModal } from "./modals/TasksModal";
-import { DeveloperModal } from "./modals/DeveloperModal";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import * as LucideIcons from "lucide-react";
+import {
+  LogOut, Search, Bell, X, ChevronRight, HelpCircle,
+  Home, Users, FolderKanban, Calculator, Building2,
+  Briefcase, MessageSquare, LifeBuoy, BarChart3, ShieldCheck, Activity, ClipboardList
+} from "lucide-react";
+import { apiCall } from "../../services/api";
+import { getNavigationItems } from "../utils/permissions";
 
-function AdminLayout({ user, children }) {
+/**
+ * AdminLayout - Mission Control Framing
+ */
+function AdminLayout({ user, children, onLogout }) {
   const navigate = useNavigate();
-  const [profilePhotoData, setProfilePhotoData] = useState(user?.profilePhotoData || user?.profile_photo_blob || null);
-  
-  // Modal state management
-  const [modals, setModals] = useState({
-    users: false,
-    projects: false,
-    applications: false,
-    settings: false,
-    content: false,
-    analytics: false,
-    reports: false,
-    communication: false,
-    support: false,
-    security: false,
-    financial: false,
-    crm: false,
-    tasks: false,
-    developer: false,
-  });
+  const location = useLocation();
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState(null);
+  const [imageError, setImagePhotoError] = useState(false);
 
-  const openModal = (modalName) => {
-    setModals(prev => ({ ...prev, [modalName]: true }));
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef(null);
+
+  const navItems = getNavigationItems(user);
+  const displayName = user?.display_name || user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.email || "Admin";
+  const initials = displayName.split(" ").map(s => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+
+  const IconComponent = ({ name, ...props }) => {
+    const Icon = LucideIcons[name] || HelpCircle;
+    return <Icon {...props} />;
   };
 
-  const closeModal = (modalName) => {
-    setModals(prev => ({ ...prev, [modalName]: false }));
-  };
-
-  const displayName =
-    user?.display_name ||
-    user?.name ||
-    [user?.first_name, user?.last_name].filter(Boolean).join(" ") ||
-    user?.email ||
-    "Admin";
-
-  const initials = displayName
-    .split(" ")
-    .map((segment) => segment[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
-  // Fetch profile photo if not available
   useEffect(() => {
-    const fetchProfilePhoto = async () => {
-      if (user?.id && !profilePhotoData) {
+    const handleClickOutside = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setShowResults(false); };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.length >= 2) {
+        setIsSearching(true);
         try {
-          const API_URL = import.meta.env.VITE_API_URL || API_BASE_URL;
-          const response = await fetch(`${API_URL}/admin/profile-photo/admin/${user.id}`);
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success && data.profile_photo) {
-              setProfilePhotoData(data.profile_photo);
-            }
+          const data = await apiCall(`/admin/search?q=${searchQuery}`);
+          if (data.success) {
+            setSearchResults(data.results || []);
+            setShowResults(true);
           }
-        } catch (error) {
-          console.error('Error fetching profile photo:', error);
+        } catch (e) {
+          console.error("Search failure", e);
+        } finally {
+          setIsSearching(false);
         }
+      } else {
+        setSearchResults([]);
+        setShowResults(false);
       }
-    };
+    }, 400);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
-    fetchProfilePhoto();
-  }, [user?.id, profilePhotoData]);
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      setShowResults(false);
+      navigate(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
-  // Debug logging to check if profile photo data is available
-  console.log('[AdminLayout] User data:', user);
-  console.log('[AdminLayout] Profile photo data available:', !!profilePhotoData);
+  useEffect(() => {
+    if (user?.id) {
+      let role = user.role === "developer" || user.developer_level ? "developer" : "admin";
+      setProfilePhotoUrl(`/api/admin/profile-photo/${role}/${user.id}?v=${Date.now()}`);
+      setImagePhotoError(false);
+    }
+  }, [user]);
 
-  const handleLogout = () => {
-    sessionStorage.clear();
-    navigate("/login");
+  const handleLogoutClick = () => {
+    if (onLogout) onLogout();
+    else {
+      sessionStorage.clear(); localStorage.clear();
+      navigate("/admin/login", { replace: true });
+    }
+  };
+
+  const isActive = (path) => {
+    if (path === '/admin') return location.pathname === '/admin' || location.pathname === '/admin/';
+    return location.pathname.startsWith(path);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-[#0f172a] dark:via-[#1e293b] dark:to-[#0f172a] transition-colors duration-500">
-      {/* Minimal Header with User Info */}
-      <div className="bg-[#0f172a] dark:bg-[#050b14] border-b border-white/10 dark:border-white/5 sticky top-0 z-50 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* User Profile Photo on Left */}
-            <div className="flex items-center gap-4">
-              {profilePhotoData ? (
-                <img
-                  src={profilePhotoData}
-                  alt={displayName}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
-                />
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      <header className="bg-[#0f172a] border-b border-white/10 sticky top-0 z-50 flex-shrink-0 shadow-2xl">
+        <div className="max-w-[1600px] mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="cursor-pointer group relative" onClick={() => navigate('/admin/settings')}>
+              {!imageError && profilePhotoUrl ? (
+                <img src={profilePhotoUrl} alt={displayName} onError={() => setImagePhotoError(true)} className="w-12 h-12 rounded-full object-cover border-2 border-teal-500 bg-slate-800 shadow-xl" />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-sm border-2 border-blue-300">
-                  {initials}
-                </div>
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg border-2 border-white/20 shadow-xl">{initials}</div>
               )}
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-[#0f172a] rounded-full shadow-sm"></div>
             </div>
-
-            {/* Search Bar in Middle */}
-            <div className="flex-1 max-w-2xl mx-8">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-300" />
-                <input
-                  type="text"
-                  placeholder="Search users, projects, applications, content, analytics..."
-                  className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder-blue-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
-                />
-              </div>
-            </div>
-
-            {/* User Name and Logout on Right */}
-            <div className="flex items-center gap-4">
-              <div className="bg-white/20 backdrop-blur-md rounded-xl px-4 py-2 border border-white/30">
-                <p className="text-sm font-semibold text-white">{displayName}</p>
-                <p className="text-xs text-blue-200">Administrator</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors font-medium text-sm"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
+            <div className="hidden md:block">
+              <p className="text-sm font-bold text-white leading-none">{displayName}</p>
+              <p className="text-[9px] text-teal-400 font-black uppercase tracking-[0.2em] mt-1.5">{user?.role === 'developer' ? 'Technical Node' : 'Systems Admin'}</p>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Modals */}
-      <UsersModal isOpen={modals.users} onClose={() => closeModal('users')} />
-      <ProjectsModal isOpen={modals.projects} onClose={() => closeModal('projects')} />
-      <ApplicationsModal isOpen={modals.applications} onClose={() => closeModal('applications')} />
-      <SettingsModal isOpen={modals.settings} onClose={() => closeModal('settings')} />
-      <ContentModal isOpen={modals.content} onClose={() => closeModal('content')} />
-      <AnalyticsModal isOpen={modals.analytics} onClose={() => closeModal('analytics')} />
-      <ReportsModal isOpen={modals.reports} onClose={() => closeModal('reports')} />
-      <CommunicationModal isOpen={modals.communication} onClose={() => closeModal('communication')} />
-      <SupportModal isOpen={modals.support} onClose={() => closeModal('support')} />
-      <SecurityModal isOpen={modals.security} onClose={() => closeModal('security')} />
-      <FinancialModal isOpen={modals.financial} onClose={() => closeModal('financial')} />
-      <CRMModal isOpen={modals.crm} onClose={() => closeModal('crm')} />
-      <TasksModal isOpen={modals.tasks} onClose={() => closeModal('tasks')} />
-      <DeveloperModal isOpen={modals.developer} onClose={() => closeModal('developer')} />
+          <div className="flex-1 max-w-2xl mx-10 relative" ref={searchRef}>
+            <div className="relative">
+              <Search className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 ${isSearching ? 'text-teal-400 animate-pulse' : 'text-slate-500'}`} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchSubmit}
+                placeholder="Query system database..."
+                className="w-full pl-12 pr-10 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-[11px] font-bold focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all"
+              />
+            </div>
+            {showResults && (
+              <div className="absolute top-full left-0 right-0 mt-3 bg-[#1e293b] border border-white/10 rounded-[24px] shadow-2xl overflow-hidden z-[60] animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-2 max-h-[400px] overflow-y-auto custom-scrollbar">
+                  {searchResults.length > 0 ? (
+                    <>
+                      {searchResults.map((result, idx) => (
+                        <button key={`${result.type}-${result.id}-${idx}`} onClick={() => { navigate(result.link); setShowResults(false); setSearchQuery(""); }} className="w-full flex items-center gap-4 p-4 hover:bg-white/5 rounded-xl text-left border-b border-white/5 last:border-0 transition-all group">
+                          <div className="bg-teal-500/10 p-2 rounded-lg group-hover:bg-teal-500/20"><IconComponent name={result.type === 'user' ? 'Users' : result.type === 'project' ? 'FolderKanban' : result.type === 'task' ? 'CheckSquare' : 'Calculator'} size={18} className="text-teal-400" /></div>
+                          <div><p className="text-sm font-bold text-white leading-tight">{result.title}</p><p className="text-[9px] font-black text-slate-500 uppercase mt-1">{result.subtitle}</p></div>
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => { navigate(`/admin/search?q=${encodeURIComponent(searchQuery)}`); setShowResults(false); }}
+                        className="w-full p-4 text-[9px] font-black text-teal-400 uppercase tracking-widest hover:bg-white/5 transition-all text-center border-t border-white/5"
+                      >
+                        Deep Scan Database for "{searchQuery}"
+                      </button>
+                    </>
+                  ) : (
+                    <div className="p-10 text-center text-slate-600 uppercase font-black text-[9px] tracking-widest">No Matches Found</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
-      {/* Horizontal Scrollable Quick Links */}
-      <div className="bg-[#0f172a] border-b border-white/10 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3 py-3 overflow-x-auto scrollbar-thin scrollbar-thumb-blue-600 scrollbar-track-blue-900">
-            <button onClick={() => openModal('users')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <Users className="h-4 w-4" />
-              Manage Users
-            </button>
-            <button onClick={() => openModal('projects')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <FolderKanban className="h-4 w-4" />
-              Projects
-            </button>
-            <button onClick={() => openModal('applications')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <ClipboardList className="h-4 w-4" />
-              Applications
-            </button>
-            <button onClick={() => openModal('settings')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <Settings className="h-4 w-4" />
-              Settings
-            </button>
-            <button onClick={() => openModal('content')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <Briefcase className="h-4 w-4" />
-              Content
-            </button>
-            <button onClick={() => openModal('analytics')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </button>
-            <button onClick={() => openModal('reports')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <FileText className="h-4 w-4" />
-              Reports
-            </button>
-            <button onClick={() => openModal('communication')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <MessageSquare className="h-4 w-4" />
-              Communication
-            </button>
-            <button onClick={() => openModal('support')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <HelpCircle className="h-4 w-4" />
-              Support
-            </button>
-            <button onClick={() => openModal('security')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <ShieldCheck className="h-4 w-4" />
-              Security
-            </button>
-            <button onClick={() => openModal('financial')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <Calculator className="h-4 w-4" />
-              Financial
-            </button>
-            <button onClick={() => openModal('crm')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <Building2 className="h-4 w-4" />
-              CRM
-            </button>
-            <button onClick={() => openModal('tasks')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <CheckSquare className="h-4 w-4" />
-              Tasks
-            </button>
-            <button onClick={() => openModal('developer')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <Code2 className="h-4 w-4" />
-              Developer
-            </button>
-            <button onClick={() => navigate('/admin/home')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <Home className="h-4 w-4" />
-              Home
-            </button>
-            <button onClick={() => navigate('/admin/about')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <Info className="h-4 w-4" />
-              About
-            </button>
-            <button onClick={() => navigate('/admin/blog')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <BookOpen className="h-4 w-4" />
-              Blog
-            </button>
-            <button onClick={() => navigate('/admin/activity')} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white text-sm font-medium whitespace-nowrap transition-all">
-              <TrendingUp className="h-4 w-4" />
-              Activity
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/admin/activity')} className="p-3 text-slate-400 hover:text-white rounded-2xl transition-all relative group"><Bell className="h-5 w-5 group-hover:scale-110 transition-transform" /><span className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#0f172a]"></span></button>
+            <button onClick={handleLogoutClick} className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-rose-600/10 text-rose-500 hover:bg-rose-600 hover:text-white font-black text-[9px] uppercase tracking-widest border border-rose-600/20 shadow-xl shadow-rose-900/10 transition-all active:scale-95">
+              <LogOut size={14} /> Logout
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-12">
-        {children}
-      </div>
+      <nav className="bg-[#0f172a] border-b border-white/5 sticky top-20 z-40 backdrop-blur-xl flex-shrink-0">
+        <div className="max-w-[1600px] mx-auto px-6 py-3 flex items-center gap-1 overflow-x-auto no-scrollbar">
+          {navItems.map((item) => (
+            <button key={item.path} onClick={() => navigate(item.path)} className={`flex items-center gap-3 px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all group ${isActive(item.path) ? 'bg-teal-600 text-white shadow-2xl shadow-teal-900/30' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
+              <IconComponent name={item.icon} size={14} className={isActive(item.path) ? 'text-white' : 'text-slate-600 group-hover:text-teal-400'} />
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      <main className="flex-1 overflow-y-auto bg-slate-50">
+        <div className="max-w-[1600px] mx-auto px-6 py-10">
+          {children}
+        </div>
+      </main>
     </div>
   );
 }

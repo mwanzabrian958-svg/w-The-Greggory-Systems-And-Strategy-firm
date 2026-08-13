@@ -16,6 +16,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "db:init": "node scripts/initialize-db.js",
+    "db:whatsapp": "node scripts/setup-whatsapp-verification.js",
     "mongodb:init": "node scripts/initialize-mongodb.js",
     "start": "node server.js",
     "server": "nodemon server.js"

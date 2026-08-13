@@ -1,263 +1,120 @@
-import React, { useState } from "react";
-import { DollarSign, TrendingUp, TrendingDown, Calendar, Download, Plus, BarChart3 } from "lucide-react";
-import { usePermissions } from "../hooks/usePermissions";
-import { PERMISSIONS } from "../utils/permissions";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { apiCall } from "../../services/api";
+import { TrendingUp, Plus, Banknote, ShieldCheck, Clock, RefreshCw, Filter, Briefcase, X, Save, AlertCircle, PieChart, ArrowUpRight, ArrowDownRight, FileText, Send, User, Download, QrCode, Printer } from "lucide-react";
 
-const FINANCIAL_OVERVIEW = [
-  { label: "Total Revenue", value: "$124,500", change: "+12.5%", icon: TrendingUp, color: "bg-green-100 text-green-700" },
-  { label: "Total Expenses", value: "$78,200", change: "+8.3%", icon: TrendingDown, color: "bg-red-100 text-red-700" },
-  { label: "Net Income", value: "$46,300", change: "+18.2%", icon: TrendingUp, color: "bg-blue-100 text-blue-700" },
-  { label: "Budget Remaining", value: "$32,450", change: "-5.1%", icon: DollarSign, color: "bg-amber-100 text-amber-700" },
-];
+/**
+ * Financial - Admin Revenue Monitor & Invoicing Suite
+ */
+export function Billing({ user }) {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("ledger");
+  const [loading, setLoading] = useState(true);
+  const [financials, setFinancials] = useState({
+    revenue: 0, expenses: 0, net_income: 0,
+    entries: [], invoices: [],
+    filters: { clients: [], projects: [], team: [] }
+  });
 
-const INCOME_SOURCES = [
-  { source: "Donations", amount: "$45,200", percentage: 36, color: "bg-emerald-500" },
-  { source: "Grants", amount: "$38,500", percentage: 31, color: "bg-blue-500" },
-  { source: "Partnerships", amount: "$28,400", percentage: 23, color: "bg-purple-500" },
-  { source: "Other", amount: "$12,400", percentage: 10, color: "bg-slate-500" },
-];
+  const [isolation, setIsolation] = useState({ client_id: '', project_id: '', team_member_id: '', type: 'all' });
 
-const RECENT_TRANSACTIONS = [
-  { id: 1, description: "Grant from Foundation X", amount: "+$15,000", date: "May 12, 2024", category: "Income", status: "completed" },
-  { id: 2, description: "Staff salaries", amount: "-$28,500", date: "May 10, 2024", category: "Expense", status: "completed" },
-  { id: 3, description: "Program supplies", amount: "-$3,250", date: "May 8, 2024", category: "Expense", status: "completed" },
-  { id: 4, description: "Donor contribution", amount: "+$5,000", date: "May 6, 2024", category: "Income", status: "pending" },
-];
+  useEffect(() => { fetchFinancialData(); }, [isolation]);
 
-const BUDGET_ITEMS = [
-  { category: "Salaries", budgeted: "$45,000", spent: "$38,500", status: "on-track" },
-  { category: "Programs", budgeted: "$35,000", spent: "$24,300", status: "on-track" },
-  { category: "Administration", budgeted: "$20,000", spent: "$15,400", status: "on-track" },
-  { category: "Equipment", budgeted: "$15,000", spent: "$11,200", status: "on-track" },
-];
+  const fetchFinancialData = async () => {
+    try {
+      setLoading(true);
+      const queryParams = new URLSearchParams(isolation);
+      const [ledgerRes, budgetRes, invoiceRes] = await Promise.all([
+        apiCall(`/admin/ledger?${queryParams}`),
+        apiCall("/admin/budget-overview"),
+        apiCall("/invoices")
+      ]);
 
-export function Financial({ user }) {
-  const { can } = usePermissions(user);
-  const [activeTab, setActiveTab] = useState("overview");
+      const totalRevenue = (ledgerRes.entries || [])
+        .filter(e => e.entry_type === 'invoice_payment' || e.entry_type === 'income')
+        .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+      const totalExpenses = (ledgerRes.entries || [])
+        .filter(e => e.entry_type === 'expense')
+        .reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+      setFinancials({
+        revenue: totalRevenue,
+        expenses: totalExpenses,
+        net_income: totalRevenue - totalExpenses,
+        entries: ledgerRes.entries || [],
+        invoices: invoiceRes.invoices || [],
+        filters: ledgerRes.filters || { clients: [], projects: [], team: [] }
+      });
+    } catch (e) {
+      console.error("Ledger Node Failure:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading && financials.entries.length === 0) return (
+    <div className="flex flex-col items-center justify-center py-40">
+       <RefreshCw className="animate-spin text-teal-600 w-8 h-8" />
+       <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Synchronizing Master Ledger...</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Key Metrics */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {FINANCIAL_OVERVIEW.map((metric) => {
-          const Icon = metric.icon;
-          return (
-            <div key={metric.label} className="rounded-3xl bg-white p-6 shadow-sm border border-slate-200">
-              <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${metric.color}`}>
-                <Icon className="h-6 w-6" />
-              </div>
-              <p className="mt-4 text-sm text-slate-500">{metric.label}</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{metric.value}</p>
-              <p className="mt-2 text-xs text-emerald-600 font-semibold">{metric.change} vs last month</p>
+    <div className="space-y-6 animate-fade-in font-sans max-w-[1400px] mx-auto">
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          { label: "Receivable Relay", value: financials.revenue, icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-50" },
+          { label: "Operational Outflow", value: financials.expenses, icon: Banknote, color: "text-rose-500", bg: "bg-rose-50" },
+          { label: "Net Sync Node", value: financials.net_income, icon: ShieldCheck, color: "text-blue-500", bg: "bg-blue-50", action: () => navigate('/admin/billing/pl-report') },
+        ].map((metric) => (
+          <div key={metric.label} onClick={metric.action} className={`bg-white rounded-xl p-4 border border-slate-100 shadow-md flex items-center justify-between transition-all ${metric.action ? 'cursor-pointer hover:scale-[1.03] hover:border-blue-200' : ''}`}>
+            <div>
+              <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{metric.label}</p>
+              <p className="text-xl font-black text-slate-900">KSh {metric.value.toLocaleString()}</p>
             </div>
-          );
-        })}
+            <div className={`${metric.bg} p-2.5 rounded-xl ${metric.color}`}><metric.icon size={16} /></div>
+          </div>
+        ))}
       </div>
 
-      {/* Main Financial Panel */}
-      <div className="rounded-3xl bg-white shadow-sm border border-slate-200 overflow-hidden">
-        {/* Tabs */}
-        <div className="flex border-b border-slate-200">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={`flex-1 px-6 py-4 text-sm font-semibold transition ${
-              activeTab === "overview"
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab("transactions")}
-            className={`flex-1 px-6 py-4 text-sm font-semibold transition ${
-              activeTab === "transactions"
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Transactions
-          </button>
-          <button
-            onClick={() => setActiveTab("budget")}
-            className={`flex-1 px-6 py-4 text-sm font-semibold transition ${
-              activeTab === "budget"
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Budget
-          </button>
-          <button
-            onClick={() => setActiveTab("invoices")}
-            className={`flex-1 px-6 py-4 text-sm font-semibold transition ${
-              activeTab === "invoices"
-                ? "border-b-2 border-blue-600 text-blue-600"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Invoices
-          </button>
+      <div className="bg-[#0f172a] rounded-2xl p-4 border border-white/10 shadow-2xl">
+        <div className="flex items-center justify-between mb-4 px-1">
+          <div className="flex items-center gap-3 text-teal-400"><Filter size={14} /><h3 className="text-[9px] font-black uppercase tracking-widest">Isolation Protocol</h3></div>
+          <div className="flex gap-2">
+             <button onClick={() => navigate('/admin/billing/create')} className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-white px-3 py-1.5 rounded-lg text-[7px] font-black uppercase tracking-widest transition-all border border-white/10"><FileText size={12} className="text-teal-400" />Generate</button>
+             <button onClick={() => navigate('/admin/billing/entry')} className="flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg text-[7px] font-black uppercase tracking-widest transition-all shadow-lg"><Plus size={12} />Record</button>
+          </div>
         </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <select value={isolation.client_id} onChange={(e) => setIsolation({...isolation, client_id: e.target.value})} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[8px] font-black uppercase text-white outline-none"><option value="">All Clients</option>{financials.filters.clients.map(c => <option key={c.id} value={c.id} className="bg-[#0f172a]">{c.name}</option>)}</select>
+          <select value={isolation.project_id} onChange={(e) => setIsolation({...isolation, project_id: e.target.value})} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[8px] font-black uppercase text-white outline-none"><option value="">All Projects</option>{financials.filters.projects.map(p => <option key={p.id} value={p.id} className="bg-[#0f172a]">{p.name}</option>)}</select>
+          <select value={isolation.team_member_id} onChange={(e) => setIsolation({...isolation, team_member_id: e.target.value})} className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[8px] font-black uppercase text-white outline-none"><option value="">All Personnel</option>{financials.filters.team.map(t => <option key={t.id} value={t.id} className="bg-[#0f172a]">{t.name}</option>)}</select>
+          <button onClick={() => setIsolation({client_id: '', project_id: '', team_member_id: '', type: 'all'})} className="bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg py-2 text-slate-400 text-[8px] font-black uppercase tracking-widest transition-all">Reset Sync</button>
+        </div>
+      </div>
 
-        {/* Tab Content */}
-        <div className="p-6">
-          {activeTab === "overview" && (
-            <div className="space-y-6">
-              {/* Cash Flow Chart Placeholder */}
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">Cash Flow</h3>
-                <div className="h-64 bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl border border-slate-200 flex items-center justify-center">
-                  <div className="text-center">
-                    <BarChart3 className="h-12 w-12 text-slate-300 mx-auto" />
-                    <p className="mt-2 text-slate-500 text-sm">Cash flow chart will render here</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Income Distribution */}
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">Income Distribution</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="h-64 bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl border border-slate-200 flex items-center justify-center">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 text-slate-300 mx-auto" />
-                      <p className="mt-2 text-slate-500 text-sm">Pie chart will render here</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    {INCOME_SOURCES.map((source) => (
-                      <div key={source.source} className="rounded-3xl bg-slate-50 p-4 border border-slate-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-slate-900">{source.source}</h4>
-                          <span className="text-sm font-semibold text-slate-900">{source.amount}</span>
-                        </div>
-                        <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                          <div className={`h-full ${source.color}`} style={{ width: `${source.percentage}%` }} />
-                        </div>
-                        <p className="mt-1 text-xs text-slate-500">{source.percentage}%</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+      <div className="rounded-2xl bg-white shadow-xl border border-slate-100 overflow-hidden">
+        <div className="flex border-b border-slate-100 bg-slate-50/50">
+            {["ledger", "invoices"].map((tab) => (<button key={tab} onClick={() => setActiveTab(tab)} className={`flex-1 px-4 py-3 text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? "bg-white border-b-2 border-teal-500 text-teal-600" : "text-slate-400 hover:text-slate-600 hover:bg-white/50"}`}>{tab}</button>))}
+        </div>
+        <div className="p-4">
+          {activeTab === "ledger" && (
+            <div className="overflow-x-auto"><table className="w-full text-left border-collapse"><thead className="bg-slate-50/50"><tr className="text-[7px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50"><th className="px-4 py-3">Transaction</th><th className="px-4 py-3">Node</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3 text-right">Date</th></tr></thead><tbody className="divide-y divide-slate-50">{financials.entries.length > 0 ? financials.entries.map((entry) => (<tr key={entry.id} className="hover:bg-slate-50/50 transition-colors"><td className="px-4 py-3"><p className="font-black text-slate-900 text-[9px] uppercase">{entry.description}</p><p className="text-[7px] text-slate-400 font-bold uppercase">{entry.client_name || 'Internal'}</p></td><td className="px-4 py-3 font-black text-slate-600 text-[8px] uppercase">{entry.project_name || 'General'}</td><td className="px-4 py-3 font-black text-slate-900 text-[10px]">KSh {parseFloat(entry.amount).toLocaleString()}</td><td className="px-4 py-3 text-slate-400 text-[8px] font-black uppercase text-right">{new Date(entry.transaction_date).toLocaleDateString()}</td></tr>)) : (<tr><td colSpan="4" className="py-20 text-center opacity-20 uppercase font-black text-[10px]">Empty Ledger Node</td></tr>)}</tbody></table></div>
           )}
-
-          {activeTab === "transactions" && (
-            <div className="space-y-4">
-              <button className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-                <Plus className="h-4 w-4" />
-                New Transaction
-              </button>
-
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm text-slate-700">
-                  <thead className="bg-slate-100 text-left text-xs uppercase text-slate-500">
-                    <tr>
-                      <th className="px-4 py-3">Description</th>
-                      <th className="px-4 py-3">Amount</th>
-                      <th className="px-4 py-3">Category</th>
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {RECENT_TRANSACTIONS.map((trans) => (
-                      <tr key={trans.id} className="border-t border-slate-200 hover:bg-slate-50">
-                        <td className="px-4 py-4 font-medium text-slate-900">{trans.description}</td>
-                        <td className={`px-4 py-4 font-semibold ${trans.amount.startsWith("+") ? "text-emerald-600" : "text-red-600"}`}>
-                          {trans.amount}
-                        </td>
-                        <td className="px-4 py-4">{trans.category}</td>
-                        <td className="px-4 py-4 text-slate-500">{trans.date}</td>
-                        <td className="px-4 py-4">
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                            trans.status === "completed" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-                          }`}>
-                            {trans.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeTab === "budget" && (
-            <div className="space-y-4">
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm text-slate-700">
-                  <thead className="bg-slate-100 text-left text-xs uppercase text-slate-500">
-                    <tr>
-                      <th className="px-4 py-3">Category</th>
-                      <th className="px-4 py-3">Budgeted</th>
-                      <th className="px-4 py-3">Spent</th>
-                      <th className="px-4 py-3">Progress</th>
-                      <th className="px-4 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {BUDGET_ITEMS.map((item) => (
-                      <tr key={item.category} className="border-t border-slate-200 hover:bg-slate-50">
-                        <td className="px-4 py-4 font-medium text-slate-900">{item.category}</td>
-                        <td className="px-4 py-4">{item.budgeted}</td>
-                        <td className="px-4 py-4">{item.spent}</td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-2 w-32">
-                            <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                              <div className="h-full bg-blue-600" style={{ width: "65%" }} />
-                            </div>
-                            <span className="text-xs font-semibold">65%</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                            {item.status.replace("-", " ")}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
           {activeTab === "invoices" && (
-            <div className="space-y-4">
-              <button className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-                <Plus className="h-4 w-4" />
-                New Invoice
-              </button>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-3xl bg-slate-50 p-5 border border-slate-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-slate-900">INV-001</h4>
-                      <p className="text-sm text-slate-500">Kazi Community</p>
-                    </div>
-                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Paid</span>
-                  </div>
-                  <p className="mt-4 text-lg font-semibold text-slate-900">$8,500</p>
-                  <p className="text-xs text-slate-500">Due May 30, 2024</p>
-                </div>
-                <div className="rounded-3xl bg-slate-50 p-5 border border-slate-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-slate-900">INV-002</h4>
-                      <p className="text-sm text-slate-500">Green Impact</p>
-                    </div>
-                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Pending</span>
-                  </div>
-                  <p className="mt-4 text-lg font-semibold text-slate-900">$6,200</p>
-                  <p className="text-xs text-slate-500">Due June 5, 2024</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{financials.invoices.length > 0 ? financials.invoices.map(invoice => (
+              <div key={invoice.id} className="bg-slate-50/50 rounded-xl p-3 border border-slate-100 hover:border-teal-300 transition-all cursor-pointer group" onClick={() => navigate(`/admin/billing/preview/${invoice.id}`)}>
+                <div className="flex justify-between items-start mb-3"><p className="text-[7px] font-black text-teal-600 uppercase tracking-widest">{invoice.invoice_number}</p><span className={`px-2 py-0.5 rounded-md text-[6px] font-black uppercase ${invoice.status === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{invoice.status}</span></div>
+                <h4 className="font-black text-slate-900 text-[9px] uppercase mb-1 truncate group-hover:text-teal-600">{invoice.title}</h4>
+                <p className="text-[7px] font-bold text-slate-400 uppercase truncate mb-4">{invoice.client_name}</p>
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                   <span className="text-[11px] font-black text-slate-900">KSh {parseFloat(invoice.total_amount_kes || 0).toLocaleString()}</span>
+                   <FileText size={12} className="text-slate-300 group-hover:text-teal-500" />
                 </div>
               </div>
-            </div>
+            )) : (
+              <div className="col-span-full py-20 text-center opacity-20 uppercase font-black text-[10px]">Zero Invoices Found</div>
+            )}</div>
           )}
         </div>
       </div>

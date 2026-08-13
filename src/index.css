@@ -120,3 +120,42 @@ html {
 .animate-bounce-slow {
   animation: bounce-slow 3s infinite;
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ── PRINT PROTOCOL ── */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable-area, .printable-area * {
+    visibility: visible;
+  }
+  .printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 0;
+  }
+}
+
+.no-print {
+  @media print {
+    display: none !important;
+  }
+}

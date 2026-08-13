@@ -19,7 +19,7 @@ This will automatically:
 Once started, you can access:
 
 - **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8080
+- **Backend API**: http://localhost:3000
 - **phpMyAdmin**: http://localhost/phpmyadmin/index.php?route=/database/structure&db=the_greggory_systems_and_strategy_firm_db_main
 
 ## Other Commands
@@ -60,7 +60,7 @@ npm run dev:frontend
 If you see port conflicts, check:
 - Apache uses port 80
 - MySQL uses port 3306
-- Backend uses port 8080
+- Backend uses port 3000
 - Frontend uses port 5173
 
 Change ports in `.env` file if needed.

@@ -19,7 +19,11 @@ try {
 }
 
 // Company WhatsApp number that receives messages
-const COMPANY_WHATSAPP_NUMBER = process.env.COMPANY_WHATSAPP_NUMBER || '+254715312251';
+// Standardize to E.164 format (remove spaces, ensure + prefix)
+const rawCompanyNumber = process.env.COMPANY_WHATSAPP_NUMBER || '+254715312251';
+const COMPANY_WHATSAPP_NUMBER = rawCompanyNumber.replace(/\s+/g, '').startsWith('+')
+  ? rawCompanyNumber.replace(/\s+/g, '')
+  : `+${rawCompanyNumber.replace(/\s+/g, '')}`;
 
 function buildSimulatedResponse(provider, action) {
   return {
@@ -114,8 +118,39 @@ async function sendBulkWhatsApp(phoneNumbers, message) {
   }
 }
 
+/**
+ * Send WhatsApp message FROM company TO user (for Auth Keys, etc.)
+ * @param {string} toPhone - Recipient phone number
+ * @param {string} message - Message content
+ * @returns {Promise<Object>} - API response
+ */
+async function sendWhatsAppToUser(toPhone, message) {
+  try {
+    const formattedToPhone = toPhone.startsWith('+') ? toPhone : `+${toPhone}`;
+    console.log(`[WHATSAPP SERVICE] Sending Auth Key TO ${formattedToPhone}: ${message}`);
+
+    if (!whatsapp) {
+      console.warn('[WHATSAPP SERVICE] No provider credentials; using simulated relay path');
+      return buildSimulatedResponse('whatsapp', 'send-to-user');
+    }
+
+    const options = {
+      to: [formattedToPhone],
+      message: message,
+      from: COMPANY_WHATSAPP_NUMBER
+    };
+
+    const response = await whatsapp.send(options);
+    return { success: true, data: response };
+  } catch (error) {
+    console.error('[WHATSAPP SERVICE] Error sending to user:', error);
+    return buildSimulatedResponse('whatsapp', 'send-to-user');
+  }
+}
+
 module.exports = {
   sendWhatsAppMessage,
   sendBulkWhatsApp,
+  sendWhatsAppToUser,
   COMPANY_WHATSAPP_NUMBER
 };

@@ -28,9 +28,6 @@ import Pricing from './pages/Pricing'
 
 // Admin Module
 import { AdminRouter } from './admin/AdminRouter'
-import { Developer } from './admin/pages/Developer'
-
-
 
 function Layout() {
   const location = useLocation()
@@ -85,9 +82,6 @@ function Layout() {
 
           {/* Admin Routes - Using new modular admin system */}
           <Route path="/admin/*" element={<AdminRouter />} />
-
-          {/* Developer Platform - Standalone page */}
-          <Route path="/developer" element={<Developer />} />
 
           <Route 
             path="/client-portal" 

@@ -15,6 +15,8 @@ const userSchema = new mongoose.Schema({
   },
   // Authentication & Verification
   email_verified: { type: Boolean, default: false },
+  whatsapp_verified: { type: Boolean, default: false },
+  whatsapp_auth_key: String,
   email_verification_token: String,
   email_verification_expires: Date,
   password_reset_token: String,

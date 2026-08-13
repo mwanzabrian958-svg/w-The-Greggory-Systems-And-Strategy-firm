@@ -1,375 +1,112 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FileText,
   Plus,
   Search,
-  Edit2,
   Trash2,
-  Eye,
-  Calendar,
-  User,
-  Tag,
   ChevronLeft,
   ChevronRight,
-  MoreVertical,
-  Filter,
+  RefreshCw,
 } from "lucide-react";
-import { usePermissions } from "../hooks/usePermissions";
-import { PERMISSIONS } from "../utils/permissions";
-import { API_BASE_URL } from "../../services/api";
+import { getApiUrl } from "../../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || API_BASE_URL;
-
+/**
+ * Content Management System - Blog Central
+ * Optimized with compact blocks and tiny typography.
+ * Clicking a node opens a dedicated full-screen preview node.
+ */
 export function Content({ user }) {
-  const { can } = usePermissions(user);
-  const [content, setContent] = useState([]);
+  const navigate = useNavigate();
+  const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const itemsPerPage = 12;
 
-  useEffect(() => {
-    fetchContent();
-  }, []);
+  useEffect(() => { fetchBlogs(); }, []);
 
-  const fetchContent = async () => {
+  const fetchBlogs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/content`, {
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("gf_admin_session")?.token}`,
-        },
-      });
-
+      const response = await fetch(getApiUrl("/api/blog-articles"));
       if (response.ok) {
         const data = await response.json();
-        setContent(data);
+        setBlogs(data.articles || []);
       }
-    } catch (error) {
-      console.error("Fetch content error:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!can(PERMISSIONS.DELETE_CONTENT)) {
-      alert("You do not have permission to delete content");
-      return;
-    }
-
-    if (!confirm("Are you sure you want to delete this content?")) return;
-
-    try {
-      const response = await fetch(`${API_URL}/content/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("gf_admin_session")?.token}`,
-        },
-      });
-
-      if (response.ok) {
-        setContent(content.filter((c) => c.id !== id));
-      }
-    } catch (error) {
-      console.error("Delete content error:", error);
-    }
+  const handleDelete = (e, id) => {
+    e.stopPropagation(); // Prevent opening preview when deleting
+    if (!window.confirm("Terminate this node?")) return;
+    const executeDelete = async () => {
+      try {
+        const response = await fetch(getApiUrl(`/api/blog-articles/${id}`), { method: "DELETE" });
+        if (response.ok) setBlogs(blogs.filter((b) => b.id !== id));
+      } catch (e) { console.error(e); }
+    };
+    executeDelete();
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "published":
-        return "bg-green-100 text-green-800";
-      case "draft":
-        return "bg-yellow-100 text-yellow-800";
-      case "archived":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-blue-100 text-blue-800";
-    }
-  };
-
-  const filteredContent = content.filter((c) => {
-    const matchesSearch =
-      c.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.content?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === "all" || c.type === typeFilter;
-    const matchesStatus = statusFilter === "all" || c.status === statusFilter;
-    return matchesSearch && matchesType && matchesStatus;
-  });
-
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil(filteredContent.length / itemsPerPage);
-  const paginatedContent = filteredContent.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
-
-  if (!can(PERMISSIONS.VIEW_CONTENT)) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <h2 className="text-lg font-medium text-gray-900">Access Denied</h2>
-          <p className="text-gray-500">
-            You don't have permission to view content.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const filteredBlogs = blogs.filter((b) => (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()));
+  const totalPages = Math.ceil(filteredBlogs.length / itemsPerPage);
+  const paginatedBlogs = filteredBlogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Content Management
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Manage blog posts, case studies, and pages
-            </p>
-          </div>
-          {can(PERMISSIONS.CREATE_CONTENT) && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              New Content
-            </button>
-          )}
+    <div className="space-y-6 animate-fade-in font-sans">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Blog Management</h1>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[7px] mt-0.5">Global Relay Control</p>
         </div>
+        <button onClick={() => navigate("/admin/content/create")} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-600 text-white font-black text-[8px] uppercase tracking-widest shadow-lg hover:bg-teal-700 transition-all border border-teal-400/20"><Plus size={12} /> New Post</button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search content..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Types</option>
-              <option value="blog">Blog Post</option>
-              <option value="case_study">Case Study</option>
-              <option value="page">Page</option>
-            </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
-        </div>
+      <div className="bg-[#0f172a] rounded-2xl p-4 border border-white/10 shadow-xl flex justify-end items-center">
+        <div className="px-3 text-[7px] font-black uppercase text-slate-500 tracking-widest whitespace-nowrap">Active Nodes: {blogs.length}</div>
       </div>
 
-      {/* Content Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Title
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Author
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  </td>
-                </tr>
-              ) : paginatedContent.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className="px-6 py-8 text-center text-gray-500"
-                  >
-                    No content found
-                  </td>
-                </tr>
-              ) : (
-                paginatedContent.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-start">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <FileText className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {item.title}
-                          </div>
-                          <div className="text-sm text-gray-500 line-clamp-1">
-                            {item.excerpt || item.content?.substring(0, 100)}...
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize">
-                        <Tag className="w-3 h-3 mr-1" />
-                        {item.type?.replace("_", " ")}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusBadge(item.status)}`}
-                      >
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <User className="w-4 h-4 text-gray-400 mr-2" />
-                        <span className="text-sm text-gray-900">
-                          {item.author_name || "Unknown"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                        {item.created_at
-                          ? new Date(item.created_at).toLocaleDateString()
-                          : "N/A"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button
-                          className="text-gray-400 hover:text-gray-600"
-                          title="View"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        {can(PERMISSIONS.EDIT_CONTENT) && (
-                          <button
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Edit"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                        )}
-                        {can(PERMISSIONS.DELETE_CONTENT) && (
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing{" "}
-                  <span className="font-medium">
-                    {(currentPage - 1) * itemsPerPage + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-medium">
-                    {Math.min(
-                      currentPage * itemsPerPage,
-                      filteredContent.length,
-                    )}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-medium">{filteredContent.length}</span>{" "}
-                  results
-                </p>
+      {loading ? (
+        <div className="flex items-center justify-center py-12"><RefreshCw className="animate-spin text-teal-600 w-6 h-6" /></div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          {paginatedBlogs.map((item) => (
+            <div
+              key={item.id}
+              onClick={() => navigate(`/admin/content/preview/${item.id}`)}
+              className="bg-white rounded-2xl p-3 border border-slate-100 shadow-md hover:shadow-xl hover:scale-[1.03] transition-all group flex flex-col h-full cursor-pointer"
+            >
+              <div className="aspect-[4/3] bg-slate-100 rounded-xl mb-3 overflow-hidden border border-slate-50 relative">
+                 {item.image_url ? (
+                   <img src={item.image_url} alt="" className="w-full h-full object-cover transition-all duration-500" />
+                 ) : (
+                   <div className="w-full h-full flex items-center justify-center text-slate-200"><FileText size={20} /></div>
+                 )}
+                 <div className="absolute top-1.5 left-1.5 bg-[#0f172a]/80 backdrop-blur-sm text-white px-1.5 py-0.5 rounded-md text-[5px] font-black uppercase tracking-widest">{item.category || "General"}</div>
               </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          page === currentPage
-                            ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-                            : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ),
-                  )}
-                  <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                </nav>
+
+              <h4 className="font-black text-slate-900 leading-tight mb-4 text-[10px] uppercase tracking-tight line-clamp-3">{item.title}</h4>
+
+              <div className="mt-auto pt-2 border-t border-slate-50 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                   <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center text-[6px] font-black text-slate-400 uppercase">{(item.author || "A")[0]}</div>
+                   <span className="text-[6px] font-black text-slate-400 uppercase tracking-widest truncate w-16">{item.author || "Admin"}</span>
+                </div>
+                <button onClick={(e) => handleDelete(e, item.id)} className="p-1.5 bg-rose-50 text-rose-500 rounded-md hover:bg-rose-600 hover:text-white transition-all"><Trash2 size={10} /></button>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-6 pb-12">
+          <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ChevronLeft size={14} /></button>
+          <div className="px-4 py-2 bg-[#0f172a] rounded-xl text-[8px] font-black text-white uppercase tracking-widest border border-white/10 shadow-lg">Node {currentPage} / {totalPages}</div>
+          <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ChevronRight size={14} /></button>
+        </div>
+      )}
     </div>
   );
 }

@@ -197,6 +197,15 @@ function buildClientPortalPayload({
           first_name: user.first_name,
           last_name: user.last_name,
           display_name: user.display_name || `${user.first_name || ""} ${user.last_name || ""}`.trim() || "Client",
+          phone_number: user.phone_number || null,
+          mission_briefing: user.mission_briefing || null,
+          last_login_at: user.last_login_at || null,
+          last_login_ip: user.last_login_ip || null,
+          created_at: user.created_at || null,
+          updated_at: user.updated_at || null,
+          email_verified: user.email_verified || false,
+          timezone: user.timezone || "UTC",
+          locale: user.locale || "en-US",
           role: user.role || user.primary_role || "user",
           profilePhotoData: user.profilePhotoData || null,
         }
@@ -206,6 +215,15 @@ function buildClientPortalPayload({
     messages: normalizedMessages,
     tasks: normalizedTasks,
     resourceAllocations: normalizedResources,
+    documents: documents.map(doc => ({
+      id: doc.id,
+      name: doc.name || doc.document_name || "Document",
+      category: doc.category || doc.document_type || "General",
+      project: doc.project_name || "Project Node",
+      date: doc.created_at || doc.date || null,
+      size: doc.file_size ? `${(doc.file_size / (1024 * 1024)).toFixed(1)} MB` : "0.5 MB",
+      version: doc.version || "v1.0"
+    })),
     budgetOverview: {
       planned: plannedBudget,
       spent: spentBudget,

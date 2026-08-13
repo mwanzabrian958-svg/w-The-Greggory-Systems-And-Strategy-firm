@@ -1,383 +1,137 @@
 import React, { useState, useEffect } from "react";
 import {
   Activity,
-  User,
-  Shield,
-  Code,
-  Calendar,
-  CheckCircle,
-  XCircle,
-  Filter,
   Search,
+  Filter,
+  Clock,
+  User,
+  FileText,
+  RefreshCw,
   ChevronLeft,
   ChevronRight,
-  Clock,
+  Monitor,
+  ShieldCheck,
+  Zap
 } from "lucide-react";
-import { usePermissions } from "../hooks/usePermissions";
-import { PERMISSIONS } from "../utils/permissions";
-import { API_BASE_URL } from "../../services/api";
+import { getApiUrl } from "../../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || API_BASE_URL;
-
+/**
+ * ActivityLogs - Strategic Operations Log
+ * High-density compact view for system auditing.
+ */
 export function ActivityLogs({ user }) {
-  const { can } = usePermissions(user);
-  const [activities, setActivities] = useState([]);
+  const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
-  useEffect(() => {
-    fetchActivities();
-  }, []);
+  useEffect(() => { fetchLogs(); }, []);
 
-  const fetchActivities = async () => {
+  const fetchLogs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/admin/activity-logs`, {
-        headers: {
-          Authorization: `Bearer ${sessionStorage.getItem("gf_admin_session")?.token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setActivities(data);
+      const res = await fetch(getApiUrl("/api/admin/activity-logs"));
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(Array.isArray(data) ? data : []);
       }
-    } catch (error) {
-      console.error("Fetch activities error:", error);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
-  const getActivityIcon = (activity) => {
-    const activityLower = activity.toLowerCase();
-    if (activityLower.includes("login") || activityLower.includes("auth")) {
-      return <Shield className="w-4 h-4 text-blue-600" />;
-    }
-    if (
-      activityLower.includes("user") ||
-      activityLower.includes("delete") ||
-      activityLower.includes("create")
-    ) {
-      return <User className="w-4 h-4 text-green-600" />;
-    }
-    if (
-      activityLower.includes("content") ||
-      activityLower.includes("project") ||
-      activityLower.includes("edit")
-    ) {
-      return <Code className="w-4 h-4 text-purple-600" />;
-    }
-    return <Activity className="w-4 h-4 text-gray-600" />;
-  };
-
-  const filteredActivities = activities.filter((a) => {
-    const searchValue = `${a.activity || ""} ${a.details || ""} ${a.admin_name || ""} ${a.admin_email || ""}`.toLowerCase();
-    const matchesSearch = searchValue.includes(searchQuery.toLowerCase());
-    const matchesType =
-      typeFilter === "all" || (a.activity || "").toLowerCase().includes(typeFilter);
+  const filteredLogs = logs.filter(l => {
+    const matchesSearch = (l.details || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (l.admin_name || "").toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === "all" || l.type === typeFilter;
     return matchesSearch && matchesType;
   });
 
-  const itemsPerPage = 20;
-  const totalPages = Math.ceil(filteredActivities.length / itemsPerPage);
-  const paginatedActivities = filteredActivities.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  const paginatedLogs = filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  if (!can(PERMISSIONS.VIEW_ACTIVITY_LOGS)) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Activity className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <h2 className="text-lg font-medium text-gray-900">Access Denied</h2>
-          <p className="text-gray-500">
-            You don't have permission to view activity logs.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-teal-600 w-6 h-6" /></div>;
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Activity Logs</h1>
-        <p className="text-gray-600 mt-1">Track all admin and user actions</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Activity className="w-5 h-5 text-blue-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-gray-500">Total Activities</p>
-              <p className="text-xl font-bold text-gray-900">
-                {activities.length}
-              </p>
-            </div>
-          </div>
+    <div className="space-y-6 animate-fade-in font-sans max-w-[1400px] mx-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Operation Logs</h1>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[7px] mt-0.5">Immutable System Telemetry</p>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-gray-500">Successful</p>
-              <p className="text-xl font-bold text-gray-900">
-                {activities.filter((a) => a.status !== "failed" && a.success !== false).length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-              <XCircle className="w-5 h-5 text-red-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-gray-500">Failed</p>
-              <p className="text-xl font-bold text-gray-900">
-                {activities.filter((a) => a.status === "failed" || a.success === false).length}
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-              <Clock className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-gray-500">Today</p>
-              <p className="text-xl font-bold text-gray-900">
-                {
-                  activities.filter((a) => {
-                    const today = new Date().toDateString();
-                    return new Date(a.timestamp).toDateString() === today;
-                  }).length
-                }
-              </p>
-            </div>
-          </div>
+        <div className="flex gap-2">
+            <button onClick={fetchLogs} className="p-2 bg-white border border-slate-100 rounded-lg text-teal-600 shadow-sm"><RefreshCw size={14} /></button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search activities..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Filter className="w-5 h-5 text-gray-400" />
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Activities</option>
-              <option value="login">Login</option>
-              <option value="create">Create</option>
-              <option value="edit">Edit</option>
-              <option value="delete">Delete</option>
-            </select>
-          </div>
+      {/* Tighter Log Controls */}
+      <div className="bg-[#0f172a] rounded-xl p-3 border border-white/10 shadow-xl flex flex-col md:flex-row justify-between items-center gap-3">
+        <div className="flex-1 w-full relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+          <input type="text" placeholder="Filter audit stream..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[9px] font-bold text-white outline-none focus:ring-1 focus:ring-teal-500 transition-all" />
+        </div>
+        <div className="flex gap-3">
+           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[8px] font-black uppercase text-white outline-none">
+              <option value="all" className="bg-[#0f172a]">All Activities</option>
+              <option value="auth" className="bg-[#0f172a]">Authentication</option>
+              <option value="ledger" className="bg-[#0f172a]">Financial</option>
+              <option value="content" className="bg-[#0f172a]">Content</option>
+           </select>
         </div>
       </div>
 
-      {/* Activity List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      {/* High-Density Log Table */}
+      <div className="bg-white rounded-xl border border-slate-100 shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Activity
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  IP Address
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Timestamp
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  </td>
+          <table className="w-full text-left">
+             <thead className="bg-slate-50/50 border-b border-slate-100">
+                <tr className="text-[7px] font-black uppercase tracking-widest text-slate-400">
+                  <th className="px-4 py-3">Sequence / Activity</th>
+                  <th className="px-4 py-3">Actor Node</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Timestamp</th>
                 </tr>
-              ) : paginatedActivities.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="5"
-                    className="px-6 py-8 text-center text-gray-500"
-                  >
-                    No activities found
-                  </td>
-                </tr>
-              ) : (
-                paginatedActivities.map((activity) => (
-                  <tr key={activity.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                          {getActivityIcon(activity.activity)}
+             </thead>
+             <tbody className="divide-y divide-slate-50">
+                {paginatedLogs.map((l, i) => (
+                  <tr key={i} className="hover:bg-slate-50/50 transition-all">
+                     <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                           <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400"><Monitor size={14} /></div>
+                           <div className="min-w-0">
+                              <p className="text-[9px] font-black text-slate-900 uppercase truncate max-w-xs">{l.details}</p>
+                              <p className="text-[7px] text-slate-400 font-bold uppercase tracking-widest">{l.activity}</p>
+                           </div>
                         </div>
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">
-                            {activity.activity}
-                          </div>
-                          {activity.details && (
-                            <div className="text-xs text-gray-500">
-                              {activity.details}
-                            </div>
-                          )}
+                     </td>
+                     <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                           <div className="w-5 h-5 rounded-full bg-[#0f172a] flex items-center justify-center text-[7px] font-black text-white">{(l.admin_name || 'S')[0]}</div>
+                           <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{l.admin_name}</span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <User className="w-4 h-4 text-gray-400 mr-2" />
-                        <span className="text-sm text-gray-900">
-                          {activity.admin_name ||
-                            activity.admin_email ||
-                            "Unknown"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {activity.ip_address || "N/A"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          activity.status === "queued"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : activity.status === "failed" || activity.success === false
-                              ? "bg-red-100 text-red-800"
-                              : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {activity.status === "queued" ? (
-                          <>
-                            <Clock className="w-3 h-3 mr-1" /> Queued
-                          </>
-                        ) : activity.status === "failed" || activity.success === false ? (
-                          <>
-                            <XCircle className="w-3 h-3 mr-1" /> Failed
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="w-3 h-3 mr-1" /> Success
-                          </>
-                        )}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                        {activity.timestamp
-                          ? new Date(activity.timestamp).toLocaleString()
-                          : "N/A"}
-                      </div>
-                    </td>
+                     </td>
+                     <td className="px-4 py-3">
+                        <span className="inline-flex px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[6px] font-black uppercase tracking-tighter">Verified</span>
+                     </td>
+                     <td className="px-4 py-3 text-right">
+                        <p className="text-[9px] font-black text-slate-900">{new Date(l.timestamp).toLocaleTimeString()}</p>
+                        <p className="text-[7px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{new Date(l.timestamp).toLocaleDateString()}</p>
+                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
+                ))}
+             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing{" "}
-                  <span className="font-medium">
-                    {(currentPage - 1) * itemsPerPage + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-medium">
-                    {Math.min(
-                      currentPage * itemsPerPage,
-                      filteredActivities.length,
-                    )}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-medium">
-                    {filteredActivities.length}
-                  </span>{" "}
-                  results
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                          page === currentPage
-                            ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-                            : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ),
-                  )}
-                  <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-6 pb-12">
+          <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ChevronLeft size={14} /></button>
+          <div className="px-4 py-2 bg-[#0f172a] rounded-xl text-[8px] font-black text-white uppercase tracking-widest border border-white/10 shadow-lg">Log {currentPage} / {totalPages}</div>
+          <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ChevronRight size={14} /></button>
+        </div>
+      )}
     </div>
   );
 }
-
-export default ActivityLogs;

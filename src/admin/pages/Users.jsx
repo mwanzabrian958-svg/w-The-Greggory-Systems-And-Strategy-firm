@@ -1,511 +1,172 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Filter, UserPlus, Edit2, Trash2, Shield, Code, User, CheckCircle, XCircle, MoreVertical, ChevronLeft, ChevronRight, Download, Upload, Mail, Lock, Unlock, AlertCircle } from "lucide-react";
-import { API_BASE_URL } from "../../services/api";
-
-const API_URL = import.meta.env.VITE_API_URL || API_BASE_URL;
+import { apiCall } from "../../services/api";
+import { Filter, UserPlus, Shield, Code, User, CheckCircle, Download, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Users as UsersIcon, Trash2, AlertCircle } from "lucide-react";
 
 export function Users({ user }) {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
-  const [newUser, setNewUser] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    role: "user",
-    admin_level: "",
-    developer_level: "",
-    department: "",
-    phone_number: "",
-    is_active: true
-  });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const itemsPerPage = 12;
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useEffect(() => { fetchUsers(); }, []);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const token = sessionStorage.getItem("gf_admin_session")?.token;
-      const response = await fetch(`${API_URL}/users`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data.users || data || []);
-      }
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredUsers = users.filter(u => {
-    const matchesSearch = 
-      (u.display_name || u.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === "all" || 
-      u.primary_role === roleFilter || 
-      u.admin_level === roleFilter || 
-      u.developer_level === roleFilter;
-    const matchesStatus = statusFilter === "all" || 
-      (statusFilter === "active" && u.is_active) ||
-      (statusFilter === "inactive" && !u.is_active);
-    return matchesSearch && matchesRole && matchesStatus;
-  });
-
-  const itemsPerPage = 12;
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const getRoleIcon = (role) => {
-    if (role?.includes("admin") || role?.includes("moderator")) return <Shield className="w-4 h-4" />;
-    if (role?.includes("developer") || role?.includes("senior") || role?.includes("junior")) return <Code className="w-4 h-4" />;
-    return <User className="w-4 h-4" />;
-  };
-
-  const getRoleBadgeColor = (role) => {
-    if (role?.includes("super_admin")) return "bg-red-500/20 text-red-700 border-red-500/30";
-    if (role?.includes("admin")) return "bg-blue-500/20 text-blue-700 border-blue-500/30";
-    if (role?.includes("moderator")) return "bg-purple-500/20 text-purple-700 border-purple-500/30";
-    if (role?.includes("senior")) return "bg-indigo-500/20 text-indigo-700 border-indigo-500/30";
-    if (role?.includes("mid")) return "bg-green-500/20 text-green-700 border-green-500/30";
-    if (role?.includes("junior")) return "bg-yellow-500/20 text-yellow-700 border-yellow-500/30";
-    return "bg-gray-500/20 text-gray-700 border-gray-500/30";
-  };
-
-  const handleAddUser = async () => {
-    try {
-      const token = sessionStorage.getItem("gf_admin_session")?.token;
-      const response = await fetch(`${API_URL}/admin/create-admin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(newUser)
-      });
-      if (response.ok) {
-        await fetchUsers();
-        setShowAddModal(false);
-        setNewUser({
-          first_name: "",
-          last_name: "",
-          email: "",
-          role: "user",
-          admin_level: "",
-          developer_level: "",
-          department: "",
-          phone_number: "",
-          is_active: true
-        });
-      }
-    } catch (error) {
-      console.error("Error adding user:", error);
-    }
+      const sessionStr = sessionStorage.getItem("gf_admin_session") || localStorage.getItem("gf_admin_session");
+      const session = sessionStr ? JSON.parse(sessionStr) : null;
+      const data = await apiCall("/users", { headers: { Authorization: `Bearer ${session?.token}` } });
+      if (data.success) setUsers(data.users || []);
+    } catch (error) { console.error("User Sync Failure:", error); } finally { setLoading(false); }
   };
 
   const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+    setIsDeleting(true);
     try {
-      const token = sessionStorage.getItem("gf_admin_session")?.token;
-      const response = await fetch(`${API_URL}/users/${deletingUser.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        await fetchUsers();
+      const roleType = deletingUser.source_table || 'client';
+      const data = await apiCall(`/admin/users/${deletingUser.id}?role_type=${roleType}`, { method: "DELETE" });
+      if (data.success) {
+        setUsers(users.filter(u => !(u.id === deletingUser.id && u.source_table === deletingUser.source_table)));
         setShowDeleteModal(false);
-        setDeletingUser(null);
       }
-    } catch (error) {
-      console.error("Error deleting user:", error);
-    }
+    } catch (error) { console.error("Deletion failure:", error); } finally { setIsDeleting(false); setDeletingUser(null); }
   };
 
-  const toggleUserStatus = async (userId) => {
-    try {
-      const token = sessionStorage.getItem("gf_admin_session")?.token;
-      const targetUser = users.find(u => u.id === userId);
-      const response = await fetch(`${API_URL}/users/${userId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ is_active: !targetUser.is_active })
-      });
-      if (response.ok) {
-        await fetchUsers();
-      }
-    } catch (error) {
-      console.error("Error toggling user status:", error);
-    }
+  const navigateToDetail = (u) => {
+    const role = u.source_table || 'client';
+    navigate(`/admin/users/detail/${u.id}/${role}`);
   };
+
+  const filteredUsers = users.filter(u => {
+    const matchesRole = roleFilter === "all" || u.role === roleFilter || u.source_table === roleFilter;
+    const matchesStatus = statusFilter === "all" || (statusFilter === "active" && u.is_active) || (statusFilter === "inactive" && !u.is_active);
+    return matchesRole && matchesStatus;
+  });
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  if (loading && users.length === 0) return (
+    <div className="flex flex-col items-center justify-center py-40">
+       <RefreshCw className="animate-spin text-teal-600 w-8 h-8" />
+       <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Polling Identity Nodes...</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 animate-fade-in font-sans max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">User Management</h1>
-          <p className="text-slate-600 mt-1">Manage user accounts, roles, and permissions</p>
+          <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Identity Hub</h1>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[7px] mt-0.5">Personnel Node Control</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
-            <Download className="h-4 w-4" />
-            Export
+        <div className="flex gap-2">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 font-black text-[7px] uppercase tracking-widest hover:bg-slate-200 transition-colors">
+            <Download size={12} /> Export
           </button>
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
-          >
-            <UserPlus className="h-4 w-4" />
-            Add User
+          <button onClick={() => navigate('/admin/users/manage')} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-teal-600 text-white font-black text-[7px] uppercase tracking-widest shadow-md hover:bg-teal-700 border border-teal-400/20">
+            <UserPlus size={12} /> Add Personnel
           </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Total Assets", value: users.length, icon: UsersIcon, color: "text-blue-500", bg: "bg-blue-50" },
+          { label: "Active Nodes", value: users.filter(u => u.is_active).length, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-50" },
+          { label: "Admins", value: users.filter(u => u.source_table === "admin").length, icon: Shield, color: "text-purple-500", bg: "bg-purple-50" },
+          { label: "Dev Nodes", value: users.filter(u => u.source_table === "developer").length, icon: Code, color: "text-teal-500", bg: "bg-teal-50" },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-white rounded-xl p-3 border border-slate-100 shadow-md flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">Total Users</p>
-              <p className="text-2xl font-bold text-slate-900">{users.length}</p>
+              <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{stat.label}</p>
+              <p className="text-lg font-black text-slate-900">{stat.value}</p>
             </div>
-            <div className="bg-blue-100 rounded-xl p-3">
-              <User className="h-6 w-6 text-blue-600" />
-            </div>
+            <div className={`${stat.bg} p-2 rounded-lg ${stat.color}`}><stat.icon size={14} /></div>
           </div>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Active Users</p>
-              <p className="text-2xl font-bold text-green-600">{users.filter(u => u.is_active).length}</p>
-            </div>
-            <div className="bg-green-100 rounded-xl p-3">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Admins</p>
-              <p className="text-2xl font-bold text-purple-600">{users.filter(u => u.primary_role?.includes("admin")).length}</p>
-            </div>
-            <div className="bg-purple-100 rounded-xl p-3">
-              <Shield className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-slate-600">Developers</p>
-              <p className="text-2xl font-bold text-indigo-600">{users.filter(u => u.primary_role?.includes("developer")).length}</p>
-            </div>
-            <div className="bg-indigo-100 rounded-xl p-3">
-              <Code className="h-6 w-6 text-indigo-600" />
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search users by name or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-slate-400" />
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-            >
-              <option value="all">All Roles</option>
-              <option value="super_admin">Super Admin</option>
-              <option value="admin">Admin</option>
-              <option value="moderator">Moderator</option>
-              <option value="senior">Senior Developer</option>
-              <option value="mid">Developer</option>
-              <option value="junior">Junior Developer</option>
-              <option value="user">User</option>
+      <div className="bg-[#0f172a] rounded-xl p-4 border border-white/10 shadow-xl flex justify-between items-center">
+         <div className="flex items-center gap-3 text-teal-400"><Filter size={14} /><span className="text-[8px] font-black uppercase tracking-widest">Filters</span></div>
+         <div className="flex gap-3">
+            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[8px] font-black uppercase text-white outline-none">
+              <option value="all" className="bg-[#0f172a]">All Roles</option>
+              <option value="admin" className="bg-[#0f172a]">Admins</option>
+              <option value="developer" className="bg-[#0f172a]">Developers</option>
+              <option value="client" className="bg-[#0f172a]">Clients</option>
             </select>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[8px] font-black uppercase text-white outline-none">
+              <option value="all" className="bg-[#0f172a]">All Status</option>
+              <option value="active" className="bg-[#0f172a]">Active</option>
+              <option value="inactive" className="bg-[#0f172a]">Inactive</option>
             </select>
-          </div>
-        </div>
+         </div>
       </div>
 
-      {/* Users Grid */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : paginatedUsers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <User className="h-12 w-12 text-slate-300 mb-4" />
-            <p className="text-slate-600">No users found</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
-            {paginatedUsers.map((u) => (
-              <div key={u.id} className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-5 border border-slate-200 hover:shadow-lg transition-all group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-lg">
-                      {(u.display_name || u.name || u.email || "U")[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-slate-900">{u.display_name || u.name || "Unknown"}</p>
-                      <p className="text-sm text-slate-600">{u.email}</p>
-                    </div>
-                  </div>
-                  <button className="p-2 rounded-lg hover:bg-slate-100 transition-colors opacity-0 group-hover:opacity-100">
-                    <MoreVertical className="h-4 w-4 text-slate-600" />
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    {getRoleIcon(u.primary_role)}
-                    <span className={`text-xs px-3 py-1 rounded-full border ${getRoleBadgeColor(u.primary_role)}`}>
-                      {u.primary_role || "User"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600">Status:</span>
-                    <button
-                      onClick={() => toggleUserStatus(u.id)}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${
-                        u.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {u.is_active ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                      {u.is_active ? "Active" : "Inactive"}
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600">Department:</span>
-                    <span className="text-slate-900">{u.department || "N/A"}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200">
-                  <button
-                    onClick={() => { setEditingUser(u); setShowEditModal(true); }}
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors text-sm"
-                  >
-                    <Edit2 className="h-3 w-3" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => { setDeletingUser(u); setShowDeleteModal(true); }}
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors text-sm"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    Delete
-                  </button>
-                </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        {paginatedUsers.length > 0 ? paginatedUsers.map((u) => (
+          <div key={`${u.source_table}-${u.id}`} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-md hover:scale-[1.03] transition-all group flex flex-col cursor-pointer" onClick={() => navigateToDetail(u)}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-[#0f172a] flex items-center justify-center text-white font-black text-sm">{(u.display_name || u.name || "U")[0]}</div>
+              <div className="min-w-0 flex-1">
+                <h4 className="font-black text-slate-900 text-[10px] uppercase truncate group-hover:text-teal-600">{u.display_name || u.name}</h4>
+                <p className="text-[7px] text-slate-400 font-bold uppercase truncate">{u.email}</p>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200">
-            <p className="text-sm text-slate-600">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} users
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-1 rounded-lg transition-colors ${
-                    currentPage === page
-                      ? "bg-blue-600 text-white"
-                      : "border border-slate-300 hover:bg-slate-100"
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-slate-300 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
             </div>
+
+            <div className="space-y-2 mb-4">
+               <div className="flex justify-between items-center px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                  <span className="text-[6px] font-black uppercase tracking-widest text-slate-400">Node</span>
+                  <span className="text-[7px] font-black uppercase text-slate-900">{u.role || u.primary_role || 'User'}</span>
+               </div>
+               <div className="flex justify-between items-center px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                  <span className="text-[6px] font-black uppercase tracking-widest text-slate-400">Status</span>
+                  <span className={`text-[7px] font-black uppercase ${u.is_active ? 'text-emerald-500' : 'text-rose-500'}`}>{u.is_active ? 'Active' : 'Offline'}</span>
+               </div>
+            </div>
+
+            <div className="mt-auto pt-3 border-t border-slate-50 flex gap-2">
+               <button onClick={(e) => { e.stopPropagation(); navigateToDetail(u); }} className="flex-1 bg-slate-900 text-white py-2 rounded-lg text-[7px] font-black uppercase tracking-widest hover:bg-black transition-all">Analyze</button>
+               <button onClick={(e) => { e.stopPropagation(); setDeletingUser(u); setShowDeleteModal(true); }} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-600 hover:text-white transition-all"><Trash2 size={12} /></button>
+            </div>
+          </div>
+        )) : (
+          <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
+             <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">No Authorized Nodes Detected</p>
           </div>
         )}
       </div>
 
-      {/* Add User Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-slate-200">
-              <h2 className="text-2xl font-bold text-slate-900">Add New User</h2>
-              <p className="text-slate-600 mt-1">Create a new user account</p>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">First Name</label>
-                  <input
-                    type="text"
-                    value={newUser.first_name}
-                    onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Last Name</label>
-                  <input
-                    type="text"
-                    value={newUser.last_name}
-                    onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Role</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({...newUser, role: e.target.value})}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                  <option value="developer">Developer</option>
-                  <option value="moderator">Moderator</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Department</label>
-                <input
-                  type="text"
-                  value={newUser.department}
-                  onChange={(e) => setNewUser({...newUser, department: e.target.value})}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Phone Number</label>
-                <input
-                  type="tel"
-                  value={newUser.phone_number}
-                  onChange={(e) => setNewUser({...newUser, phone_number: e.target.value})}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-            </div>
-            <div className="p-6 border-t border-slate-200 flex justify-end gap-3">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="px-6 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddUser}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all"
-              >
-                Add User
-              </button>
-            </div>
-          </div>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-6 pb-12">
+          <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all"><ChevronLeft size={14} /></button>
+          <div className="px-4 py-2 bg-[#0f172a] rounded-xl text-[8px] font-black text-white uppercase tracking-widest border border-white/10">Page {currentPage} / {totalPages}</div>
+          <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all"><ChevronRight size={14} /></button>
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && deletingUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="bg-red-100 rounded-xl p-3">
-                  <AlertCircle className="h-6 w-6 text-red-600" />
-                </div>
-                <h2 className="text-xl font-bold text-slate-900">Delete User</h2>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[600] flex items-center justify-center p-4 font-sans">
+           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center mb-5 text-rose-500 mx-auto border border-rose-100"><AlertCircle size={24} /></div>
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter text-center mb-1">Terminate User Node?</h3>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center mb-8">Confirming deletion: <span className="text-slate-900">{deletingUser.display_name}</span></p>
+              <div className="flex gap-3">
+                 <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 bg-slate-100 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-600 transition-all">Abort</button>
+                 <button onClick={handleDeleteUser} disabled={isDeleting} className="flex-1 py-3 bg-rose-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
+                    {isDeleting ? <RefreshCw className="animate-spin" size={10} /> : <Trash2 size={10} />} Terminate
+                 </button>
               </div>
-              <p className="text-slate-600 mb-6">
-                Are you sure you want to delete <strong>{deletingUser.display_name || deletingUser.name || deletingUser.email}</strong>? This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => { setShowDeleteModal(false); setDeletingUser(null); }}
-                  className="px-6 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteUser}
-                  className="px-6 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
+           </div>
         </div>
       )}
     </div>

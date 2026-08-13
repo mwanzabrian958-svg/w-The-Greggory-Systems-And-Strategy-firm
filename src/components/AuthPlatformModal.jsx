@@ -25,13 +25,13 @@ export default function AuthPlatformModal({
   startOnAdminStep = false,
 }) {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const [view, setView] = useState("platform");
   const [hasAdminSessionToken, setHasAdminSessionToken] = useState(() =>
     hasAdminToken(),
   );
 
-  // Admin/Developer registration state - ONLY for admin area use, not shown in user platform
+  // Admin/Developer registration state
   const [regRole, setRegRole] = useState(""); // 'admin' or 'developer'
   const [regStep, setRegStep] = useState(1); // 1: credentials, 2: success
   const [regData, setRegData] = useState({
@@ -99,8 +99,7 @@ export default function AuthPlatformModal({
   const handleCredentialsSuccess = () => {
     // Keep platforms completely separate - no collision
     if (loginRole === "developer") {
-      // Developer goes to white blank page - completely separate from user/admin
-      window.location.href = "/developer";
+      window.location.href = "/admin"; // Redirect to admin instead of missing developer page
     } else if (loginRole === "admin") {
       // Admin uses callback
       onAdminSuccess?.();
@@ -108,24 +107,21 @@ export default function AuthPlatformModal({
     }
   };
 
-  // Admin/Developer registration handlers - NOT shown to regular users
+  // Admin/Developer registration handlers
   const handleRegisterStart = (role) => {
-    const goToRegister = () => {
-      setRegStep(1);
-      setRegData({
-        first_name: "",
-        last_name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      });
-      setRegError("");
-      setProfilePhoto(null);
-      setProfilePhotoPreview(null);
-      setView("register");
-    };
     setRegRole(role);
-    goToRegister();
+    setRegStep(1);
+    setRegData({
+      first_name: "",
+      last_name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
+    setRegError("");
+    setProfilePhoto(null);
+    setProfilePhotoPreview(null);
+    setView("register");
   };
 
   const handlePhotoChange = (e) => {
@@ -142,7 +138,6 @@ export default function AuthPlatformModal({
     e.preventDefault();
     setRegError("");
 
-    // Simple validation like user signup
     if (
       !regData.first_name ||
       !regData.last_name ||
@@ -161,7 +156,6 @@ export default function AuthPlatformModal({
     setIsSubmitting(true);
 
     try {
-      // Prepare registration data
       const registerData = {
         first_name: regData.first_name,
         last_name: regData.last_name,
@@ -170,22 +164,12 @@ export default function AuthPlatformModal({
         role: regRole,
       };
 
-      // Add profile photo directly as base64 if selected
       if (profilePhoto) {
-        console.log("[REGISTER] Adding profile photo to registration...");
         registerData.profile_photo_base64 = profilePhotoPreview;
-        registerData.profile_photo_mime_type =
-          profilePhoto.type || "image/jpeg";
-        registerData.profile_photo_file_name =
-          profilePhoto.name || "profile.jpg";
-        console.log(
-          "[REGISTER] Photo ready for direct upload to",
-          regRole,
-          "table",
-        );
+        registerData.profile_photo_mime_type = profilePhoto.type || "image/jpeg";
+        registerData.profile_photo_file_name = profilePhoto.name || "profile.jpg";
       }
 
-      // Register with role - 'admin' or 'developer'
       const response = await fetch(
         getApiUrl("/api/admin-verification/register"),
         {
@@ -195,31 +179,7 @@ export default function AuthPlatformModal({
         },
       );
 
-      // Get response text first to check if it's HTML or JSON
-      const responseText = await response.text();
-
-      // Check if response starts with HTML doctype
-      if (responseText.trim().startsWith("<")) {
-        console.error(
-          "[REGISTER] Server returned HTML error page:",
-          responseText.substring(0, 200),
-        );
-        throw new Error(
-          `Server error (${response.status}). Backend may be down or misconfigured.`,
-        );
-      }
-
-      // Try to parse as JSON
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseErr) {
-        console.error(
-          "[REGISTER] Invalid JSON response:",
-          responseText.substring(0, 200),
-        );
-        throw new Error(`Server returned invalid data (${response.status})`);
-      }
+      const data = await response.json();
 
       if (data.success) {
         setRegStep(3); // Success
@@ -227,7 +187,6 @@ export default function AuthPlatformModal({
         setRegError(data.message || "Registration failed");
       }
     } catch (err) {
-      console.error("[REGISTER] Network error:", err);
       setRegError("Network error: " + err.message);
     } finally {
       setIsSubmitting(false);
@@ -241,13 +200,10 @@ export default function AuthPlatformModal({
     setLoginLoading(true);
 
     try {
-      // Use correct endpoint based on role
       const endpoint =
         loginRole === "developer"
           ? getApiUrl("/api/developer-verification/authenticate")
           : getApiUrl("/api/admin-verification/authenticate-enhanced");
-
-      console.log("[AUTH] Logging in as", loginRole, "using", endpoint);
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -255,79 +211,24 @@ export default function AuthPlatformModal({
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
 
-      // Get response as text first
-      const responseText = await response.text();
-
-      console.log("[AUTH] Response status:", response.status);
-      console.log("[AUTH] Response text:", responseText.substring(0, 500));
-
-      // Try to parse as JSON
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        // Not JSON - likely an error page
-        console.error(
-          "[AUTH] Server returned HTML/text:",
-          responseText.substring(0, 200),
-        );
-        throw new Error(
-          `Server error (${response.status}). Backend issue - check console for details.`,
-        );
-      }
-
-      console.log("[AUTH] Parsed data:", data);
+      const data = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          data.message ||
-            data.error ||
-            `Authentication failed (${response.status})`,
+          data.message || data.error || `Authentication failed (${response.status})`,
         );
       }
 
-      // Upload/update profile photo if selected
-      if (profilePhoto && profilePhotoPreview) {
-        try {
-          console.log("[LOGIN] Uploading profile photo...");
-          const photoData = profilePhotoPreview.split(",")[1];
-          const contentType = profilePhoto.type || "image/jpeg";
-
-          const imageResponse = await fetch(getApiUrl("/api/images/profile"), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              dataBase64: photoData,
-              contentType: contentType,
-              fileName: profilePhoto.name || "profile.jpg",
-            }),
-          });
-
-          if (imageResponse.ok) {
-            const imageData = await imageResponse.json();
-            console.log(
-              "[LOGIN] Profile photo uploaded, image_id:",
-              imageData.image_id,
-            );
-            data.user.profile_image_id = imageData.image_id;
-          }
-        } catch (photoErr) {
-          console.error("[LOGIN] Photo upload failed:", photoErr);
-        }
-      }
-
-      // Store session for admin platform compatibility - Use localStorage for persistence
+      // Store session
       const session = {
         token: data.token,
         user: data.user,
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
       };
       localStorage.setItem("gf_admin_session", JSON.stringify(session));
-      // Also store individual keys for compatibility
       localStorage.setItem("gf_admin_session_token", data.token);
       localStorage.setItem("gf_admin_user", JSON.stringify(data.user));
 
-      // Update global AuthContext to prevent being "kicked out" on refresh
       login({
         ...data.user,
         role: loginRole,
@@ -335,10 +236,8 @@ export default function AuthPlatformModal({
       });
 
       window.dispatchEvent(new Event("gf-admin-session-changed"));
-
       handleCredentialsSuccess();
     } catch (err) {
-      console.error("Login error:", err);
       setLoginError(err.message || "Failed to connect to server.");
     } finally {
       setLoginLoading(false);
@@ -346,42 +245,29 @@ export default function AuthPlatformModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/55 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="auth-platform-title"
-    >
-      <div className="relative w-full max-w-lg max-h-[92vh] overflow-hidden rounded-2xl shadow-2xl border border-white/15 bg-slate-900 flex flex-col">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/55 backdrop-blur-sm">
+      <div className="relative w-full max-w-lg max-h-[92vh] overflow-hidden rounded-2xl shadow-2xl border border-white/15 bg-slate-900 flex flex-col font-sans">
         <button
           type="button"
           onClick={handleClose}
           className="absolute top-3 right-3 z-10 p-2 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-          aria-label="Close"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="overflow-y-auto flex-1">
           {view === "platform" && (
-            <section
-              className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white border-b border-purple-400/40 px-6 pt-10 pb-8 sm:px-8"
-              aria-label="Authentication platform"
-            >
+            <section className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white border-b border-purple-400/40 px-6 pt-10 pb-8 sm:px-8">
               <div className="flex items-start gap-3 mb-6">
                 <div className="mt-0.5 p-2.5 rounded-lg bg-white/10 border border-white/20 shrink-0">
-                  <Shield className="w-6 h-6 text-purple-200" aria-hidden />
+                  <Shield className="w-6 h-6 text-purple-200" />
                 </div>
                 <div>
-                  <p
-                    id="auth-platform-title"
-                    className="text-xs font-bold uppercase tracking-widest text-purple-200"
-                  >
+                  <p className="text-[10px] font-black uppercase tracking-widest text-purple-200">
                     Authentication platform
                   </p>
                   <p className="text-sm text-gray-200 mt-1.5 leading-relaxed">
-                    Member sign-in for protected pages, or admin access for the
-                    console.
+                    Member sign-in for protected pages, or admin access for the console.
                   </p>
                 </div>
               </div>
@@ -392,11 +278,10 @@ export default function AuthPlatformModal({
                     You are signed in as a member.
                   </p>
                 )}
-
                 <button
                   type="button"
                   onClick={handleAdminCta}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 text-white text-sm font-semibold hover:bg-purple-400 transition-colors sm:ml-auto"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-purple-400 transition-colors sm:ml-auto"
                 >
                   <Shield className="w-4 h-4" />
                   {hasAdminSessionToken ? "Open admin" : "access"}
@@ -406,407 +291,113 @@ export default function AuthPlatformModal({
           )}
 
           {view === "admin" && (
-            <div className="bg-white px-6 py-8 sm:px-8">
-              {/* Admin Login Form */}
+            <div className="bg-white px-6 py-8 sm:px-8 relative">
+              <button
+                onClick={() => setView("platform")}
+                className="absolute left-6 top-6 text-gray-400 hover:text-gray-600"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+
               <div className="text-center mb-6">
-                <button
-                  onClick={() => setView("platform")}
-                  className="absolute left-6 top-6 text-gray-400 hover:text-gray-600"
-                >
-                  <ArrowLeft className="w-6 h-6" />
-                </button>
                 <div className="relative w-20 h-20 mb-4 shrink-0 mx-auto">
-                  {/* Main purple circle with shield or photo - display only */}
-                  <div className="w-full h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 overflow-hidden flex items-center justify-center">
+                  <div className="w-full h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 overflow-hidden flex items-center justify-center border-2 border-slate-100 shadow-lg">
                     {profilePhotoPreview ? (
-                      <img
-                        src={profilePhotoPreview}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={profilePhotoPreview} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
                       <Shield className="w-10 h-10 text-white" />
                     )}
                   </div>
-                  {/* Plus badge - CLICKABLE for photo upload */}
-                  <label className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer hover:bg-green-600 transition-colors">
-                    <span className="text-white text-sm font-bold leading-none">
-                      +
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="hidden"
-                    />
+                  <label className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer hover:bg-green-600 shadow-md">
+                    <span className="text-white text-sm font-bold leading-none">+</span>
+                    <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
                   </label>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
                   Admin & Developer Access
                 </h2>
-                <p className="text-gray-600 mt-2 text-sm">
-                  Sign in to access the admin or developer panel
+                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mt-2">
+                  Initialize Secure Access Protocol
                 </p>
               </div>
 
               {loginError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center">
                   <Shield className="w-5 h-5 text-red-500 mr-2 shrink-0" />
-                  <span className="text-red-700 text-sm">{loginError}</span>
+                  <span className="text-red-700 text-[10px] font-bold uppercase tracking-widest">{loginError}</span>
                 </div>
               )}
 
               <form onSubmit={handleLoginSubmit} className="space-y-4">
-                {/* Role Selector */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Login As
-                  </label>
-                  <select
-                    value={loginRole}
-                    onChange={(e) => setLoginRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
-                  >
-                    <option value="admin">Administrator</option>
-                    <option value="developer">Developer</option>
+                  <label className="block text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Mission Context</label>
+                  <select value={loginRole} onChange={(e) => setLoginRole(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-purple-500">
+                    <option value="admin">ADMINISTRATOR</option>
+                    <option value="developer">DEVELOPER</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="admin@example.com"
-                  />
+                  <label className="block text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Email Node</label>
+                  <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="admin@thegreggoryfirm.org" />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Password
-                  </label>
+                  <label className="block text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Access Key</label>
                   <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 pr-10"
-                      placeholder="Enter your password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
-                    </button>
+                    <input type={showPassword ? "text" : "password"} value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold pr-10" placeholder="••••••••" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2 text-gray-400 hover:text-gray-600 transition-colors">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                   </div>
                 </div>
-
-                <button
-                  type="submit"
-                  disabled={loginLoading}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                >
-                  {loginLoading ? (
-                    <>
-                      <svg
-                        className="animate-spin h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Signing in...
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="w-5 h-5" />
-                      Sign In
-                    </>
-                  )}
+                <button type="submit" disabled={loginLoading} className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-purple-900/10">
+                  {loginLoading ? "Synchronizing..." : <><Shield className="w-4 h-4" />Sign In</>}
                 </button>
               </form>
 
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <p className="text-center text-sm text-gray-600 mb-4">
-                  Need an account?
-                </p>
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <p className="text-center text-[8px] font-black text-gray-400 uppercase tracking-widest mb-4">Request New Authorization Node?</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => handleRegisterStart("admin")}
-                    className="px-4 py-2 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition-colors text-sm font-medium"
-                  >
-                    Register as Admin
-                  </button>
-                  <button
-                    onClick={() => handleRegisterStart("developer")}
-                    className="px-4 py-2 border border-indigo-300 text-indigo-700 rounded-lg hover:bg-indigo-50 transition-colors text-sm font-medium"
-                  >
-                    Register as Dev
-                  </button>
+                  <button onClick={() => handleRegisterStart("admin")} className="px-4 py-2 border border-purple-200 text-purple-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-purple-50 transition-all">Register Admin</button>
+                  <button onClick={() => handleRegisterStart("developer")} className="px-4 py-2 border border-indigo-200 text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-all">Register Dev</button>
                 </div>
               </div>
             </div>
           )}
 
           {view === "register" && (
-            <div className="bg-white px-6 py-8 sm:px-8">
-              {/* Registration Header */}
+            <div className="bg-white px-6 py-8 sm:px-8 relative">
+              <button onClick={() => setView("platform")} className="absolute left-6 top-6 text-gray-400 hover:text-gray-600"><ArrowLeft className="w-6 h-6" /></button>
               <div className="text-center mb-6">
-                <button
-                  onClick={() => setView("platform")}
-                  className="absolute left-6 top-6 text-gray-400 hover:text-gray-600"
-                >
-                  <ArrowLeft className="w-6 h-6" />
-                </button>
                 <div className="relative w-20 h-20 mb-4 shrink-0 mx-auto">
-                  {/* Main purple circle with shield or photo - display only */}
-                  <div className="w-full h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 overflow-hidden flex items-center justify-center">
-                    {profilePhotoPreview ? (
-                      <img
-                        src={profilePhotoPreview}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Shield className="w-10 h-10 text-white" />
-                    )}
+                  <div className="w-full h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center overflow-hidden border-2 border-slate-100 shadow-lg">
+                    {profilePhotoPreview ? <img src={profilePhotoPreview} alt="Profile" className="w-full h-full object-cover" /> : <Shield className="w-10 h-10 text-white" />}
                   </div>
-                  {/* Plus badge - CLICKABLE for photo upload */}
-                  <label className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer hover:bg-green-600 transition-colors">
-                    <span className="text-white text-sm font-bold leading-none">
-                      +
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="hidden"
-                    />
-                  </label>
+                  <label className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer hover:bg-green-600 shadow-md"><span className="text-white text-sm font-bold">+</span><input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" /></label>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Create {regRole === "admin" ? "Admin" : "Developer"} Account
-                </h2>
-                <p className="text-gray-600 mt-2 text-sm">
-                  Register as a {regRole} to access the {regRole} console
-                </p>
+                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Identity Initialization</h2>
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-2">{regRole === "admin" ? "ADMINISTRATOR" : "DEVELOPER"} NODE</p>
               </div>
 
-              {/* Error Display */}
-              {regError && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
-                  <Shield className="w-5 h-5 text-red-500 mr-2 shrink-0" />
-                  <span className="text-red-700 text-sm">{regError}</span>
-                </div>
-              )}
+              {regError && <div className="mb-4 p-3 bg-red-50 text-red-700 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-red-100">{regError}</div>}
 
               {regStep === 3 ? (
-                // Success State
                 <div className="text-center py-8">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-                    <CheckCircle className="w-8 h-8 text-green-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                    Account Created!
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Your {regRole} account has been created successfully.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setRegRole("");
-                      setRegStep(1);
-                      setRegData({
-                        first_name: "",
-                        last_name: "",
-                        email: "",
-                        password: "",
-                        confirmPassword: "",
-                      });
-                      setRegError("");
-                      setView("admin");
-                    }}
-                    className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-                  >
-                    Proceed to Login
-                  </button>
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 mb-4 border border-emerald-100"><CheckCircle className="w-8 h-8 text-emerald-500" /></div>
+                  <h3 className="text-xl font-black uppercase tracking-tight mb-2">Node Solidified!</h3>
+                  <button onClick={() => setView("admin")} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">Proceed to Verification</button>
                 </div>
               ) : (
-                // Registration Form
                 <form onSubmit={handleRegisterSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        value={regData.first_name}
-                        onChange={(e) =>
-                          setRegData({ ...regData, first_name: e.target.value })
-                        }
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="John"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        value={regData.last_name}
-                        onChange={(e) =>
-                          setRegData({ ...regData, last_name: e.target.value })
-                        }
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Doe"
-                      />
-                    </div>
+                    <input type="text" value={regData.first_name} onChange={(e) => setRegData({ ...regData, first_name: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="First Name" />
+                    <input type="text" value={regData.last_name} onChange={(e) => setRegData({ ...regData, last_name: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Last Name" />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      value={regData.email}
-                      onChange={(e) =>
-                        setRegData({ ...regData, email: e.target.value })
-                      }
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="you@example.com"
-                    />
+                  <input type="email" value={regData.email} onChange={(e) => setRegData({ ...regData, email: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Identity Relay (Email)" />
+                  <div className="relative">
+                    <input type={showPassword ? "text" : "password"} value={regData.password} onChange={(e) => setRegData({ ...regData, password: e.target.value })} required minLength={6} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Access Key" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2 text-gray-400 hover:text-gray-600 transition-colors">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Password
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={regData.password}
-                        onChange={(e) =>
-                          setRegData({ ...regData, password: e.target.value })
-                        }
-                        required
-                        minLength={6}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 pr-10"
-                        placeholder="Create a password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-5 h-5" />
-                        ) : (
-                          <Eye className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Confirm Password
-                    </label>
-                    <input
-                      type="password"
-                      value={regData.confirmPassword}
-                      onChange={(e) =>
-                        setRegData({
-                          ...regData,
-                          confirmPassword: e.target.value,
-                        })
-                      }
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      placeholder="Confirm your password"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <svg
-                          className="animate-spin h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Creating Account...
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="w-5 h-5" />
-                        Create {regRole === "admin"
-                          ? "Admin"
-                          : "Developer"}{" "}
-                        Account
-                      </>
-                    )}
-                  </button>
-
-                  <p className="text-center text-sm text-gray-500">
-                    Already have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => setView("admin")}
-                      className="text-purple-600 hover:text-purple-700 font-medium"
-                    >
-                      Sign in here
-                    </button>
-                  </p>
+                  <input type="password" value={regData.confirmPassword} onChange={(e) => setRegData({ ...regData, confirmPassword: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Confirm Key" />
+                  <button type="submit" disabled={isSubmitting} className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">{isSubmitting ? "Solidifying..." : "Initialize Node"}</button>
+                  <p className="text-center text-[7px] font-black text-gray-400 uppercase tracking-widest">Pre-existing Node? <button type="button" onClick={() => setView("admin")} className="text-purple-600">Access Console here</button></p>
                 </form>
               )}
             </div>

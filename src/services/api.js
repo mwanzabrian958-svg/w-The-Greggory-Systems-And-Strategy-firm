@@ -1,238 +1,52 @@
 // API service for connecting to backend
-// Connected to database: the_greggory_systems_and_strategy_firm_db_main
+// Hardened for Strategic Mission Control
 
-// All API calls use relative paths so Vite's dev-server proxy forwards them
-// to the backend (localhost:8080) — this works whether the browser is on
-// localhost:5173 OR the network IP (192.168.x.x:5173) because the proxy
-// runs server-side on your machine, not in the client browser.
 export const API_BASE_URL = '/api';
 
-// Helper to build a full relative URL from a path like '/api/users/login'.
-// Keep this as a simple pass-through — the Vite proxy does the rest.
 export const getApiUrl = (path) => path;
 
-// Generic API helper
-const apiCall = async (endpoint, options = {}) => {
+/**
+ * Hardened API Relay
+ */
+export const apiCall = async (endpoint, options = {}) => {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    const response = await fetch(url, {
+      headers: { "Content-Type": "application/json", ...options.headers },
       ...options,
     });
 
     const text = await response.text();
-    let data = null;
+    if (!text) {
+        if (!response.ok) throw new Error(`Node Relay Error: ${response.status}`);
+        return { success: true };
+    }
 
-    if (text) {
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { message: text };
-      }
+    let data = null;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      data = { message: text, success: response.ok };
     }
 
     if (!response.ok) {
-      throw new Error(
-        data?.message || data?.error || `API Error: ${response.status}`,
-      );
+      throw new Error(data?.message || data?.error || `Protocol Error: ${response.status}`);
     }
 
     return data || {};
   } catch (error) {
-    console.error("API call failed:", error);
+    console.error("MISSION CRITICAL: API Relay Failure:", error);
     throw error;
   }
 };
 
-// Companies API
-export const companiesAPI = {
-  // Get all companies
-  getAll: (filters = {}) => {
-    const params = new URLSearchParams(filters);
-    return apiCall(`/companies?${params}`);
-  },
-
-  // Get company by ID
-  getById: (id) => apiCall(`/companies/${id}`),
-
-  // Create new company
-  create: (companyData) =>
-    apiCall("/companies", {
-      method: "POST",
-      body: JSON.stringify(companyData),
-    }),
-
-  // Delete company
-  delete: (id) =>
-    apiCall(`/companies/${id}`, {
-      method: "DELETE",
-    }),
+// M-Pesa API
+export const mpesaAPI = {
+  stkPush: (data) => apiCall('/mpesa/stkpush', { method: 'POST', body: JSON.stringify(data) }),
+  queryStatus: (checkoutRequestID) => apiCall(`/mpesa/status/${checkoutRequestID}`),
 };
 
-// Videos API
-export const videosAPI = {
-  // Get all videos
-  getAll: (filters = {}) => {
-    const params = new URLSearchParams(filters);
-    return apiCall(`/videos?${params}`);
-  },
-
-  // Get video by ID
-  getById: (id) => apiCall(`/videos/${id}`),
-
-  // Create new video
-  create: (videoData) =>
-    apiCall("/videos", {
-      method: "POST",
-      body: JSON.stringify(videoData),
-    }),
-
-  // Delete video
-  delete: (id) =>
-    apiCall(`/videos/${id}`, {
-      method: "DELETE",
-    }),
-};
-
-// Contact Forms API
-export const contactFormsAPI = {
-  // Get all contact forms
-  getAll: (filters = {}) => {
-    const params = new URLSearchParams(filters);
-    return apiCall(`/contact-forms?${params}`);
-  },
-
-  // Get contact form by ID
-  getById: (id) => apiCall(`/contact-forms/${id}`),
-
-  // Create new contact form
-  create: (formData) =>
-    apiCall("/contact-forms", {
-      method: "POST",
-      body: JSON.stringify(formData),
-    }),
-
-  // Delete contact form
-  delete: (id) =>
-    apiCall(`/contact-forms/${id}`, {
-      method: "DELETE",
-    }),
-};
-
-// Management API
-export const managementAPI = {
-  // Get management info by company
-  getByCompany: (companyId) => apiCall(`/management/${companyId}`),
-
-  // Update management info
-  update: (companyId, data) =>
-    apiCall(`/management/${companyId}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
-};
-
-// Users API
-export const usersAPI = {
-  // Login
-  login: (credentials) =>
-    apiCall("/users/login", {
-      method: "POST",
-      body: JSON.stringify(credentials),
-    }),
-
-  // Registration - ALWAYS sends JSON to users table
-  register: (userData) =>
-    apiCall("/users/register", {
-      method: "POST",
-      body: JSON.stringify(userData),
-    }),
-
-  // Google Authentication
-  googleAuth: (data) =>
-    apiCall("/users/google-auth", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-
-  // Get all users (admin)
-  getAll: () => apiCall("/users"),
-
-  // Get user by ID
-  getById: (id) => apiCall(`/users/${id}`),
-
-  // Create new user (admin)
-  create: (userData) =>
-    apiCall("/users", {
-      method: "POST",
-      body: JSON.stringify(userData),
-    }),
-};
-
-// Images API (profile photos, etc.)
-export const imagesAPI = {
-  // Upload a profile image (returns { image_id })
-  uploadProfile: (payload) =>
-    apiCall("/images/profile", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
-
-  // Delete image (admin only)
-  delete: (id) =>
-    apiCall(`/images/${id}`, {
-      method: "DELETE",
-    }),
-};
-
-// Content API (requires admin key header)
-const contentApiCall = async (endpoint, options = {}) => {
-  const adminKey = localStorage.getItem("admin_key") || "";
-  return apiCall(endpoint, {
-    ...options,
-    headers: {
-      "x-admin-key": adminKey,
-      ...options.headers,
-    },
-  });
-};
-
-export const contentAPI = {
-  // Blog articles
-  getBlogArticles: (filters = {}) => {
-    const params = new URLSearchParams(filters);
-    return apiCall(`/blog-articles?${params}`);
-  },
-  getBlogArticle: (id) => apiCall(`/blog-articles/${id}`),
-  createBlogArticle: (data) =>
-    apiCall("/blog-articles", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  updateBlogArticle: (id, data) =>
-    apiCall(`/blog-articles/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(data),
-    }),
-  deleteBlogArticle: (id) =>
-    apiCall(`/blog-articles/${id}`, {
-      method: "DELETE",
-    }),
-
-  // Contact forms
-  getContactForms: (filters = {}) => {
-    const params = new URLSearchParams(filters);
-    return apiCall(`/contact-forms?${params}`);
-  },
-  getContactForm: (id) => apiCall(`/contact-forms/${id}`),
-  deleteContactForm: (id) =>
-    apiCall(`/contact-forms/${id}`, {
-      method: "DELETE",
-    }),
-};
-
+// User Projects API
 export const projectsAPI = {
   getAll: () => apiCall('/user-projects'),
   getById: (id) => apiCall(`/user-projects/${id}`),
@@ -241,16 +55,44 @@ export const projectsAPI = {
   delete: (id) => apiCall(`/user-projects/${id}`, { method: 'DELETE' })
 };
 
-// Health check
-export const healthCheck = () => apiCall("/health");
+// Invoices API
+export const invoicesAPI = {
+  getAll: () => apiCall('/invoices'),
+  getById: (id) => apiCall(`/invoices/${id}`),
+  create: (data) => apiCall('/invoices', { method: 'POST', body: JSON.stringify(data) }),
+  delete: (id) => apiCall(`/invoices/${id}`, { method: 'DELETE' })
+};
+
+// Users API
+export const usersAPI = {
+  login: (credentials) => apiCall("/users/login", { method: "POST", body: JSON.stringify(credentials) }),
+  register: (userData) => apiCall("/users/register", { method: "POST", body: JSON.stringify(userData) }),
+  getAll: () => apiCall("/users"),
+  getById: (id) => apiCall(`/users/${id}`),
+};
+
+// Communication Hub API
+export const communicationAPI = {
+  getMessages: () => apiCall('/communication/messages'),
+  sendMessage: (data) => apiCall('/communication/messages', { method: 'POST', body: JSON.stringify(data) }),
+  getAnnouncements: () => apiCall('/communication/announcements'),
+};
+
+// Content API (Blog/Articles)
+export const contentAPI = {
+  getArticles: () => apiCall('/blog-articles'),
+  getArticleById: (id) => apiCall(`/blog-articles/${id}`),
+  createArticle: (data) => apiCall('/blog-articles', { method: 'POST', body: JSON.stringify(data) }),
+  updateArticle: (id, data) => apiCall(`/blog-articles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteArticle: (id) => apiCall(`/blog-articles/${id}`, { method: 'DELETE' }),
+};
 
 export default {
-  companies: companiesAPI,
-  videos: videosAPI,
-  contactForms: contactFormsAPI,
-  management: managementAPI,
+  apiCall,
+  mpesa: mpesaAPI,
+  projects: projectsAPI,
+  invoices: invoicesAPI,
   users: usersAPI,
-  content: contentAPI,
-  images: imagesAPI,
-  healthCheck,
+  communication: communicationAPI,
+  content: contentAPI
 };

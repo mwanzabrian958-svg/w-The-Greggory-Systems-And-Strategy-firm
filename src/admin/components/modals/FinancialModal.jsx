@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Calculator, DollarSign, TrendingUp, TrendingDown, Wallet, CreditCard, Smartphone, FileText, Download, Filter, Plus, Search, ArrowUpRight, ArrowDownRight, CheckCircle, AlertCircle } from 'lucide-react';
 
-export function FinancialModal({ isOpen, onClose }) {
+export function BillingModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('overview');
 
   const transactions = [
@@ -20,7 +20,7 @@ export function FinancialModal({ isOpen, onClose }) {
         <div className="bg-gradient-to-r from-green-600 to-emerald-700 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Calculator className="w-6 h-6 text-white" />
-            <h2 className="text-xl font-bold text-white">Financial Management</h2>
+            <h2 className="text-xl font-bold text-white">Billing Management</h2>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
             <X className="w-5 h-5 text-white" />
@@ -262,7 +262,7 @@ export function FinancialModal({ isOpen, onClose }) {
 
           {activeTab === 'reports' && (
             <div className="space-y-6">
-              <h3 className="text-lg font-semibold text-gray-900">Financial Reports</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Billing Reports</h3>
               
               <div className="grid grid-cols-3 gap-4">
                 {[

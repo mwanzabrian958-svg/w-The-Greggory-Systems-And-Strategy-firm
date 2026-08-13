@@ -6,7 +6,7 @@ import { PERMISSIONS } from "../utils/permissions";
 const REPORT_TEMPLATES = [
   { id: 1, title: "Executive Summary", description: "High-level overview of key metrics and achievements.", status: "ready", category: "Executive", lastGenerated: "May 10, 2024" },
   { id: 2, title: "Project Performance Report", description: "Detailed analysis of project status, progress, and deliverables.", status: "scheduled", category: "Projects", lastGenerated: "May 8, 2024" },
-  { id: 3, title: "Financial Audit Report", description: "Complete financial statements and variance analysis.", status: "pending", category: "Finance", lastGenerated: "Apr 30, 2024" },
+  { id: 3, title: "Billing Audit Report", description: "Complete billing statements and variance analysis.", status: "pending", category: "Billing", lastGenerated: "Apr 30, 2024" },
   { id: 4, title: "User Activity Report", description: "Login patterns, feature usage, and engagement metrics.", status: "ready", category: "Analytics", lastGenerated: "May 12, 2024" },
   { id: 5, title: "Compliance Report", description: "Data protection and regulatory compliance status.", status: "ready", category: "Compliance", lastGenerated: "May 1, 2024" },
   { id: 6, title: "Donor Impact Report", description: "Donor contributions and project impact metrics.", status: "ready", category: "Development", lastGenerated: "Apr 25, 2024" },
@@ -14,7 +14,7 @@ const REPORT_TEMPLATES = [
 
 const SCHEDULED_REPORTS = [
   { id: 1, title: "Weekly Dashboard Summary", frequency: "Weekly", sendTo: "admin@greggory.org", nextRun: "May 20, 2024" },
-  { id: 2, title: "Monthly Financial Report", frequency: "Monthly", sendTo: "finance@greggory.org", nextRun: "June 1, 2024" },
+  { id: 2, title: "Monthly Billing Report", frequency: "Monthly", sendTo: "billing@greggory.org", nextRun: "June 1, 2024" },
   { id: 3, title: "Quarterly Performance Review", frequency: "Quarterly", sendTo: "board@greggory.org", nextRun: "June 30, 2024" },
 ];
 
@@ -181,7 +181,7 @@ export function Reports({ user }) {
               <div>
                 <label className="block text-sm font-semibold text-slate-900 mb-2">Select Metrics</label>
                 <div className="space-y-2">
-                  {["Revenue", "User Activity", "Project Status", "Compliance Score", "Support Tickets", "Financial Health"].map((metric) => (
+                  {["Revenue", "User Activity", "Project Status", "Compliance Score", "Support Tickets", "Billing Health"].map((metric) => (
                     <label key={metric} className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100">
                       <input type="checkbox" className="h-4 w-4" />
                       <span className="text-sm font-medium text-slate-700">{metric}</span>

@@ -23,12 +23,13 @@ function generateRequestId() {
 /**
  * Hash request body for audit logging (without storing sensitive data)
  */
-function hashRequestBody(body) {
+function hashRequestBody(body = {}) {
+  const safeBody = body || {};
   const filtered = {
-    email: body.email,
-    has_password: !!body.password,
-    has_phone: !!body.phone,
-    fields: Object.keys(body).length
+    email: safeBody.email,
+    has_password: !!safeBody.password,
+    has_phone: !!safeBody.phone,
+    fields: Object.keys(safeBody).length
   };
   const json = JSON.stringify(filtered);
   return crypto.createHash('sha256').update(json).digest('hex');
