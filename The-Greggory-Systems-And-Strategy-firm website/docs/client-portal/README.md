@@ -1,18 +1,22 @@
 # Client Portal Business Blueprint
 
-This folder documents the client portal experience for real business use.
+The **Client Portal** is the primary transparency node for partners of **The Greggory Systems And Strategy Firm**. It is designed to provide real-time visibility into the tactical progress of all engaged projects.
 
-## Objectives
-- Show the client exactly what the company is doing for them.
-- Surface live project, task, invoice, document, and communication data.
-- Provide a professional operational view that supports trust and transparency.
+## Core Objectives
+- **Trust through Transparency**: Show the client exactly what the firm is doing for them at any given moment.
+- **Data Synchronization**: Surface live project milestones, task statuses, financial invoices, and document vaults.
+- **Operational Clarity**: Provide a professional view that simplifies complex project telemetry for executive review.
 
-## Included assets
-- Backend payload builder: server/utils/clientPortalData.js
-- Portal UI: src/pages/ClientPortal.jsx
-- Portal verification test: server/utils/clientPortalData.test.js
+## Included Assets
+- **Backend Relay**: `server/utils/clientPortalData.js` - Builds the comprehensive data payload.
+- **Interface**: `src/pages/ClientPortal.jsx` - The glassmorphism-based mission dashboard for clients.
+- **Verification**: `server/utils/clientPortalData.test.js` - Ensures data integrity across all nodes.
 
-## Production notes
-- Ensure the database contains real rows in user_projects, project_tasks, project_invoices, project_docs, project_activities, and user_feedback.
-- Link the portal to the authenticated user id so each client sees only their own records.
-- Add real document uploads and invoice PDFs over time to make the portal richer.
+## Implementation Standard
+- **Isolation**: Each client portal is strictly bound to the authenticated user ID.
+- **Project Nodes**: Includes real-time progress sliders and "Solidified" status indicators for completed milestones.
+- **Financial Ledger**: Access to project invoices with status tracking (Pending/Paid/Solidified).
+
+---
+© 2024 The Greggory Systems And Strategy Firm.
+"Strategic project development across all areas of industry."

@@ -1,157 +1,61 @@
-﻿# Website for The-Greggory-Systems-And-Strategy-firm
+﻿# Website for The Greggory Systems And Strategy Firm
 
 [![Build and Deploy](https://github.com/Brianmwanza-bit/Website-for-The-Greggory-Systems-And-Strategy-firm/actions/workflows/deploy.yml/badge.svg)](https://github.com/Brianmwanza-bit/Website-for-The-Greggory-Systems-And-Strategy-firm/actions/workflows/deploy.yml)
 
-A modern, professional website for The-Greggory-Systems-And-Strategy-firm, a consultancy that uses expert systems and strategy principles to drive business management, innovation, improvement, and successful project delivery.
+The digital interface of **The Greggory Systems And Strategy Firm**, a global consultancy that leverages expert systems and strategy principles to drive business management, innovation, and successful project delivery across all industries.
 
-## Features
+## Strategic Features
 
-- **Responsive Design**: Optimized for all devices
-- **Modern UI**: Built with React, TailwindCSS, and Lucide icons
-- **Professional Branding**: Navy blue, charcoal grey, with teal and gold accents
-- **Complete Site Structure**: Home, About, Services, Case Studies, Blog, Contact
-- **XAMPP Integration**: Full MySQL database with phpMyAdmin
-- **GitHub Backup**: Automated database backup to GitHub for disaster recovery
+- **Mission Control (Admin Dashboard)**: A sophisticated management interface designed for high-density data visualization and system oversight.
+- **Client Portal (Business Blueprint)**: Provides clients with transparent, live data regarding their projects, tasks, invoices, and communication.
+- **Financial Telemetry**: Real-time revenue tracking, expense categorization, and Profit/Loss reporting in KSh.
+- **Global Search Relay**: Deep scan database telemetry for personnel, projects, and ledger entries.
+- **Integrated Communications**: Built-in SMS and WhatsApp relays for seamless team and client collaboration.
 
-## Documentation
+## Core Documentation
 
-- **[XAMPP Setup Guide](XAMPP-SETUP-GUIDE.md)** - Complete XAMPP and database setup instructions
-- **[API Endpoints Guide](ENDPOINTS-GUIDE.md)** - Comprehensive API endpoint documentation
-- **[Deployment Guide](DEPLOYMENT-GUIDE.md)** - Deployment instructions for production
-- **[Database Access Codes](DATABASE_ACCESS_CODES.md)** - Authentication system documentation
-- **[Authentication Changes](AUTHENTICATION_CHANGES.md)** - Authentication protocol details
+- **[Mission Control Summary](ADMIN_PANEL_SUMMARY.md)** - Overview of the Admin Dashboard capabilities.
+- **[Client Portal Blueprint](docs/client-portal/README.md)** - Documentation of the client transparency experience.
+- **[API Endpoints Guide](ENDPOINTS-GUIDE.md)** - Comprehensive technical documentation for the API relay.
+- **[XAMPP Setup Guide](XAMPP-SETUP-GUIDE.md)** - Instructions for local database synchronization.
 
-## Getting Started
+## Setup & Deployment
 
-### Prerequisites
-
+### Tactical Prerequisites
 - Node.js (v16 or higher)
-- npm or yarn
-- XAMPP (for local database)
-- Git (for version control)
+- XAMPP (Local MySQL Node)
+- MongoDB Atlas (Strategic Data Node)
 
-### Quick Setup (Windows)
-
-Run the automated setup script:
+### Initialization (Windows)
+Run the automated synchronization script:
 ```powershell
 .\setup-xampp-project.ps1
 ```
 
-This will:
-1. Install all dependencies
-2. Create .env file
-3. Check XAMPP services
-4. Test database connection
-5. Create backups directory
-6. Optional: Create initial database backup
-
-### Manual Installation
-
+### Manual Node Activation
 ```bash
-# Install dependencies
+# Deploy dependencies
 npm install
 
-# Copy environment variables
+# Initialize Environment
 cp env.example .env
 
-# Start XAMPP (Apache + MySQL) via XAMPP Control Panel
-
-# Import database schema via phpMyAdmin
-# Open: http://localhost/phpmyadmin
+# Synchronize Database
 # Import: database/the-greggory-systems-and-strategy-firm-db-main.sql
 
-# Start development server
+# Start Frontend & Backend
 npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
 ```
 
-## Project Structure
+## Technical Architecture
 
-```
-src/
-  components/       # Reusable components
-  pages/            # Page components
-  App.jsx           # Main app component
-  main.jsx          # Entry point
-  index.css         # Global styles
-
-database/           # Database schemas and migrations
-  the-greggory-systems-and-strategy-firm-db-main.sql
-
-scripts/            # Utility scripts
-  backup-db-github.js    # Backup database to GitHub
-  restore-db-github.js   # Restore database from GitHub
-
-xampp-config/       # XAMPP configuration backups
-  my.ini            # MySQL configuration
-  php.ini           # PHP configuration
-  httpd.conf        # Apache configuration
-
-backups/            # Database backups (tracked in GitHub)
-```
-
-## Technologies Used
-
-- React 18
-- Vite
-- TailwindCSS
-- React Router DOM
-- Lucide React Icons
-- MySQL (via XAMPP)
-- Express.js
-- Node.js
-
-## Database Management
-
-### Access phpMyAdmin
-- **URL**: http://localhost/phpmyadmin/index.php?route=/database/structure&db=the_greggory_systems_and_strategy_firm_db_main
-- **Username**: root
-- **Password**: (empty by default)
-
-### Backup Database
-```bash
-# Backup to GitHub-safe format
-node scripts/backup-db-github.js
-```
-
-### Restore Database
-```bash
-# Restore from GitHub backup
-node scripts/restore-db-github.js
-```
-
-### Import Initial Schema
-1. Open phpMyAdmin: http://localhost/phpmyadmin
-2. Click "Import" tab
-3. Select file: `database/the-greggory-systems-and-strategy-firm-db-main.sql`
-4. Click "Go"
-
-## Access URLs
-
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8080
-- **phpMyAdmin**: http://localhost/phpmyadmin
-
-## GitHub Safety
-
-This project includes automated database backup to GitHub to ensure data safety:
-- Database backups are stored in `backups/` directory
-- XAMPP configurations are in `xampp-config/` directory
-- All critical configurations are version-controlled
-- Easy disaster recovery if PC is lost or corrupted
-
-**Important**: Regularly commit your database backups to GitHub:
-```bash
-git add backups/
-git commit -m "Database backup"
-git push
-```
+- **UI Framework**: React 18, Vite, TailwindCSS.
+- **Design Pattern**: Glassmorphism with Slate/Teal/Indigo aesthetic.
+- **Backend Relay**: Express.js with Hardened API Nodes.
+- **Data Matrix**: MySQL for relational integrity + MongoDB for strategic scaling.
+- **Security Hub**: JWT-based Role-Based Access Control (RBAC).
 
 ## License
 
-© 2024 The-Greggory-Systems-And-Strategy-firm. All rights reserved.
+© 2024 The Greggory Systems And Strategy Firm. All rights reserved.
+"Empowering Your Success Through Comprehensive Solutions."
