@@ -175,7 +175,7 @@ export function AdvancedDashboard({ user }) {
           </div>
           <div className="space-y-2">
             {pendingApprovals.length > 0 ? pendingApprovals.slice(0, 4).map((app, i) => (
-              <div key={i} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between group hover:bg-white transition-all cursor-pointer">
+              <div key={i} onClick={() => navigate('/admin/projects')} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between group hover:bg-white transition-all cursor-pointer">
                 <div><p className="text-[9px] font-black text-slate-900 uppercase">{app.name}</p><p className="text-[6px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Awaiting Audit</p></div>
                 <ChevronRight size={12} className="text-slate-300 group-hover:text-teal-500" />
               </div>

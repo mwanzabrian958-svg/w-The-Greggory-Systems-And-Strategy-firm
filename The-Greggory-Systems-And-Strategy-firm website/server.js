@@ -3891,6 +3891,38 @@ app.get("/api/website-content", async (req, res) => {
   }
 });
 
+app.put("/api/website-content/:key", async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { value } = req.body;
+    const userId = req.body.updated_by || 1;
+
+    // 1. Update MySQL
+    const [result] = await mainDb.query(
+      "UPDATE website_content SET content_value = ?, updated_by = ? WHERE content_key = ?",
+      [value, userId, key]
+    );
+
+    // 2. Sync to MongoDB if available
+    if (mongoose.connection.readyState === 1) {
+      await WebsiteContent.findOneAndUpdate(
+        { key },
+        { value, updated_by: userId },
+        { upsert: true }
+      );
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "Content key not found" });
+    }
+
+    res.json({ success: true, message: "Website content synchronized successfully" });
+  } catch (error) {
+    console.error("Error updating website content:", error);
+    res.status(500).json({ success: false, message: "Update failure" });
+  }
+});
+
 // Blog Articles API
 app.get("/api/blog-articles", async (req, res) => {
   try {
@@ -4591,10 +4623,11 @@ app.use((req, res) => {
 app.get("/api/user-projects", async (req, res) => {
   try {
     const [rows] = await mainDb.query(`
-      SELECT *
-      FROM user_projects
-      WHERE deleted_at IS NULL
-      ORDER BY created_at DESC
+      SELECT up.*, u.display_name as client_name
+      FROM user_projects up
+      LEFT JOIN users u ON up.user_id = u.id
+      WHERE up.deleted_at IS NULL
+      ORDER BY up.created_at DESC
     `);
     res.json(rows);
   } catch (error) {

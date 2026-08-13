@@ -352,6 +352,57 @@ router.post('/create-developer', async (req, res) => {
 });
 
 // =============================================
+// UPDATE USER DETAILS
+// =============================================
+router.put('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { first_name, last_name, email, role, admin_level, developer_level, department, mission_briefing, is_active } = req.body;
+
+    // We need to know which table to update.
+    // Usually the frontend should provide role_type, or we can infer from current role.
+    const roleType = req.query.role_type || (role === 'admin' ? 'admin' : (role === 'developer' ? 'developer' : 'client'));
+
+    let tableName;
+    let updates = [];
+    let params = [];
+
+    if (roleType === 'admin') {
+      tableName = 'admin_users';
+      updates = ['first_name = ?', 'last_name = ?', 'email = ?', 'admin_level = ?', 'department = ?', 'is_active = ?'];
+      params = [first_name, last_name, email, admin_level || 'admin', department || 'General', is_active ? 1 : 0];
+    } else if (roleType === 'developer') {
+      tableName = 'developer_users';
+      updates = ['first_name = ?', 'last_name = ?', 'email = ?', 'developer_level = ?', 'is_active = ?'];
+      params = [first_name, last_name, email, developer_level || 'mid', is_active ? 1 : 0];
+    } else {
+      tableName = 'users';
+      updates = ['first_name = ?', 'last_name = ?', 'email = ?', 'primary_role = ?', 'mission_briefing = ?', 'is_active = ?'];
+      params = [first_name, last_name, email, role || 'user', mission_briefing || null, is_active ? 1 : 0];
+    }
+
+    params.push(id);
+    const [result] = await db.promise().query(
+      `UPDATE ${tableName} SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`,
+      params
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({
+      success: true,
+      message: 'User details synchronized successfully'
+    });
+
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ success: false, message: 'Internal update failure', error: error.message });
+  }
+});
+
+// =============================================
 // UPDATE USER STATUS
 // =============================================
 router.put('/users/:id/status', async (req, res) => {
@@ -613,6 +664,14 @@ router.get('/dashboard', async (req, res) => {
         (SELECT COUNT(*) FROM developer_users WHERE whatsapp_verified = 1 AND deleted_at IS NULL) as count
     `);
 
+    const [activeProjectsCount] = await db.promise().query(
+      "SELECT COUNT(*) as count FROM user_projects WHERE status = 'in-progress' AND deleted_at IS NULL"
+    );
+
+    const [pendingApprovalsCount] = await db.promise().query(
+      "SELECT COUNT(*) as count FROM user_projects WHERE status = 'planning' AND deleted_at IS NULL"
+    );
+
     // Get recent activity
     const [recentActivity] = await db.promise().query(`
       (SELECT 
@@ -685,8 +744,10 @@ router.get('/dashboard', async (req, res) => {
           developers: developerCount[0].count,
           users: userCount[0].count,
           verified: verifiedCount[0].count,
-          total: adminCount[0].count + developerCount[0].count + userCount[0].count
+          total: adminCount[0].count + developerCount[0].count + userCount[0].count,
+          total_active_projects: activeProjectsCount[0].count
         },
+        pending_count: pendingApprovalsCount[0].count,
         recentActivity: combinedActivity,
         timestamp: new Date().toISOString()
       }
@@ -760,26 +821,7 @@ router.get('/developer-dashboard', async (req, res) => {
         },
         recentActivity: recentCommits,
         systemHealth: systemHealth,
-        notifications: [
-          {
-            id: 1,
-            title: 'Code review ready',
-            description: 'Review the latest client portal merge request.',
-            type: 'review'
-          },
-          {
-            id: 2,
-            title: 'Deployment scheduled',
-            description: 'Staging deploy scheduled for tomorrow at 09:00.',
-            type: 'deployment'
-          },
-          {
-            id: 3,
-            title: 'Security audit',
-            description: 'Confirm the new access control rules for admin routes.',
-            type: 'security'
-          }
-        ],
+        notifications: [],
         timestamp: new Date().toISOString()
       }
     });
@@ -799,8 +841,8 @@ router.get('/developer-dashboard', async (req, res) => {
 // =============================================
 router.get('/budget-overview', async (req, res) => {
   try {
-    // Calculate budget overview from the new user_projects table
-    const [budgetData] = await db.promise().query(`
+    // 1. Project-based Budget Data
+    const [projectBudgetData] = await db.promise().query(`
       SELECT 
         COALESCE(SUM(actual_budget), 0) as spent,
         COALESCE(SUM(estimated_budget), 0) as planned,
@@ -809,12 +851,29 @@ router.get('/budget-overview', async (req, res) => {
       WHERE deleted_at IS NULL
     `);
 
+    // 2. Ledger-based Financial Telemetry
+    const [financialData] = await db.promise().query(`
+      SELECT
+        COALESCE(SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END), 0) as revenue,
+        COALESCE(SUM(CASE WHEN entry_type = 'expense' THEN amount ELSE 0 END), 0) as expenses
+      FROM accounting_entries
+      WHERE deleted_at IS NULL AND payment_status = 'completed'
+    `);
+
+    const revenue = financialData[0]?.revenue || 0;
+    const expenses = financialData[0]?.expenses || 0;
+    const net_income = revenue - expenses;
+
     res.json({
       success: true,
       data: {
-        planned: budgetData[0]?.planned || 0,
-        spent: budgetData[0]?.spent || 0,
-        forecast: budgetData[0]?.forecast || 0
+        planned: projectBudgetData[0]?.planned || 0,
+        spent: projectBudgetData[0]?.spent || 0,
+        forecast: projectBudgetData[0]?.forecast || 0,
+        revenue,
+        expenses,
+        net_income,
+        remaining: (projectBudgetData[0]?.planned || 0) - (projectBudgetData[0]?.spent || 0)
       }
     });
   } catch (error) {
@@ -1016,37 +1075,33 @@ router.get('/ledger', async (req, res) => {
 // =============================================
 router.get('/risk-alerts', async (req, res) => {
   try {
-    // Get risk alerts based on various system indicators
-    const [risks] = await db.promise().query(`
+    // Get real risk alerts based on budget overages
+    const [budgetRisks] = await db.promise().query(`
       SELECT 
         'Budget overage' as title,
-        'Project spending exceeds 90% of allocated budget' as description,
-        CASE 
-          WHEN (SELECT COUNT(*) FROM client_projects WHERE actual_spent > budget * 0.9) > 0 THEN 'high'
-          ELSE 'medium'
-        END as level,
-        1 as id
-      UNION ALL
-      SELECT 
-        'Pending approvals' as title,
-        'Multiple items awaiting admin approval' as description,
-        CASE 
-          WHEN (SELECT COUNT(*) FROM client_projects WHERE status = 'pending') > 5 THEN 'critical'
-          WHEN (SELECT COUNT(*) FROM client_projects WHERE status = 'pending') > 2 THEN 'high'
-          ELSE 'medium'
-        END as level,
-        2 as id
-      UNION ALL
-      SELECT 
-        'System load' as title,
-        'High system resource usage detected' as description,
-        'low' as level,
-        3 as id
+        CONCAT('Project \"', project_name, '\" exceeds 90% of allocated budget') as description,
+        'high' as level,
+        id
+      FROM user_projects
+      WHERE actual_budget > estimated_budget * 0.9 AND deleted_at IS NULL
     `);
+
+    // Get real risks based on overdue tasks
+    const [taskRisks] = await db.promise().query(`
+      SELECT
+        'Overdue Task' as title,
+        CONCAT('Task \"', task_name, '\" is past due date') as description,
+        'medium' as level,
+        id
+      FROM project_tasks
+      WHERE due_date < NOW() AND status != 'completed' AND deleted_at IS NULL
+    `);
+
+    const allRisks = [...budgetRisks, ...taskRisks];
 
     res.json({
       success: true,
-      data: risks.map(r => ({
+      data: allRisks.map(r => ({
         id: r.id,
         title: r.title,
         description: r.description,
@@ -1260,33 +1315,18 @@ router.get('/document-summary', async (req, res) => {
 router.get('/kpi-metrics', async (req, res) => {
   try {
     const [metrics] = await db.promise().query(`
-      SELECT 
-        'Code Quality' as name,
-        COALESCE(pm.value, 85) as value,
-        'up' as trend
-      FROM performance_metrics pm
-      WHERE pm.metric_name = 'code_quality'
-      UNION ALL
-      SELECT 
-        'Task Completion' as name,
-        COALESCE(pm.value, 72) as value,
-        'up' as trend
-      FROM performance_metrics pm
-      WHERE pm.metric_name = 'task_completion'
-      UNION ALL
-      SELECT 
-        'Bug Rate' as name,
-        COALESCE(pm.value, 15) as value,
-        'down' as trend
-      FROM performance_metrics pm
-      WHERE pm.metric_name = 'bug_rate'
-      LIMIT 3
+      SELECT
+        metric_name as name,
+        value,
+        trend
+      FROM performance_metrics
+      LIMIT 10
     `);
 
     res.json({
       success: true,
-      data: metrics.map(m => ({
-        id: Math.random(),
+      data: metrics.map((m, idx) => ({
+        id: idx,
         name: m.name,
         value: `${m.value}%`,
         trend: m.trend
@@ -1367,16 +1407,31 @@ router.get('/crm-telemetry', async (req, res) => {
       LIMIT 5
     `);
 
+    const [pipelineData] = await db.promise().query(`
+      SELECT status, COUNT(*) as count
+      FROM user_projects
+      WHERE deleted_at IS NULL
+      GROUP BY status
+    `);
+
+    const statusMap = {
+      'planning': { label: 'Planning', color: 'bg-blue-100 text-blue-700' },
+      'in-progress': { label: 'Active', color: 'bg-green-100 text-green-700' },
+      'on-hold': { label: 'On Hold', color: 'bg-amber-100 text-amber-700' },
+      'completed': { label: 'Completed', color: 'bg-emerald-100 text-emerald-700' }
+    };
+
+    const pipeline = pipelineData.map(d => ({
+      stage: statusMap[d.status]?.label || d.status,
+      count: d.count,
+      color: statusMap[d.status]?.color || 'bg-slate-100 text-slate-700'
+    }));
+
     res.json({
       success: true,
       clients,
       opportunities,
-      pipeline: [
-        { stage: "New", count: clients.length, color: "bg-blue-100 text-blue-700" },
-        { stage: "Qualified", count: Math.floor(clients.length * 0.6), color: "bg-green-100 text-green-700" },
-        { stage: "Proposal", count: opportunities.length, color: "bg-amber-100 text-amber-700" },
-        { stage: "Closed", count: 0, color: "bg-emerald-100 text-emerald-700" },
-      ]
+      pipeline
     });
   } catch (error) {
     console.error('Error fetching CRM telemetry:', error);

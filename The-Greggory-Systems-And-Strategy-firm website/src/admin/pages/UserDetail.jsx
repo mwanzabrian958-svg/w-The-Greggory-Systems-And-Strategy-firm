@@ -66,7 +66,7 @@ export function UserDetail() {
                <p className="text-[7px] text-teal-500 font-black uppercase tracking-[0.3em] mt-1.5">{roleType?.toUpperCase()} NODE: {user.id}</p>
             </div>
          </div>
-         <button onClick={() => navigate(`/admin/users/manage/${user.id}`)} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all">
+         <button onClick={() => navigate(`/admin/users/manage/${user.id}?role_type=${roleType}`)} className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all">
             <Edit2 size={12} className="text-teal-400" /> Modify Node
          </button>
       </div>

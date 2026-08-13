@@ -1,47 +1,64 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { User, X, Save, RefreshCw, Shield } from "lucide-react";
-import { getApiUrl, API_BASE_URL } from "../../services/api";
+import { apiCall } from "../../services/api";
 
 export function UserForm() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Extract roleType from URL if possible, or default to user
+  // Expected path: /admin/users/detail/:id/:roleType -> edit link can pass state
+  const queryParams = new URLSearchParams(location.search);
+  const [roleType, setRoleType] = useState(queryParams.get('role_type') || 'client');
+
   const [form, setForm] = useState({
     first_name: "", last_name: "", email: "", password: "",
-    role: "user", admin_level: "admin", department: "", is_active: true
+    role: "user", admin_level: "admin", developer_level: "mid", department: "", mission_briefing: "", is_active: true
   });
 
   useEffect(() => {
     if (id) {
       const fetchUser = async () => {
         setLoading(true);
-        const res = await fetch(getApiUrl(`/api/admin/users/${id}?role_type=user`));
-        if (res.ok) {
-          const data = await res.json();
-          setForm({ ...form, ...data.user });
-        }
+        // We need to infer roleType from the source table in the list or passed state
+        // For simplicity, we try to get it from the URL or fallback
+        try {
+          const data = await apiCall(`/admin/users/${id}?role_type=${roleType}`);
+          if (data.success) {
+            setForm({
+              ...form,
+              ...data.user,
+              role: data.user.primary_role || data.user.role || 'user'
+            });
+          }
+        } catch (e) { console.error(e); }
         setLoading(false);
       };
       fetchUser();
     }
-  }, [id]);
+  }, [id, roleType]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const endpoint = id ? `/api/admin/users/${id}` : "/api/admin/create-admin";
-    const method = id ? 'PUT' : 'POST';
+    try {
+        const endpoint = id ? `/admin/users/${id}?role_type=${roleType}` : "/users/admin-create";
+        const method = id ? 'PUT' : 'POST';
 
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    });
-    if (res.ok) navigate('/admin/users');
-    setIsSubmitting(false);
+        const res = await apiCall(endpoint, {
+          method,
+          body: JSON.stringify(form)
+        });
+        if (res.success || res.userId) navigate('/admin/users');
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   if (loading) return <div className="fixed inset-0 bg-[#0f172a] flex items-center justify-center"><RefreshCw className="animate-spin text-teal-500" /></div>;
@@ -79,6 +96,9 @@ export function UserForm() {
                     <option value="developer" className="bg-[#0f172a]">Developer Node</option>
                  </select>
                  <input type="text" placeholder="Department / Group" value={form.department} onChange={(e) => setForm({...form, department: e.target.value})} className="bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm font-bold text-white outline-none" />
+                 {roleType === 'client' && (
+                   <textarea placeholder="Mission Briefing / tactical directive" value={form.mission_briefing} onChange={(e) => setForm({...form, mission_briefing: e.target.value})} className="bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm font-medium text-white outline-none h-32 resize-none" />
+                 )}
               </div>
            </div>
 

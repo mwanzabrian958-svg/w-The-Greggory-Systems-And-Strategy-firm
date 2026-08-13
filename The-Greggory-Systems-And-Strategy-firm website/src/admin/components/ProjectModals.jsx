@@ -8,23 +8,34 @@ import { FolderKanban, Calendar, DollarSign, Users, Building2, MapPin, Clock } f
  */
 export function CreateProjectModal({ isOpen, onClose, onCreate }) {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
+    project_name: '',
+    project_description: '',
     client_name: '',
     client_email: '',
     client_phone: '',
     project_type: 'consulting',
     status: 'planning',
     priority: 'medium',
-    budget: '',
+    estimated_budget: '',
     start_date: '',
     end_date: '',
-    team_members: [],
-    location: '',
+    user_id: '',
     notes: ''
   });
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  React.useEffect(() => {
+    if (isOpen) fetchUsers();
+  }, [isOpen]);
+
+  const fetchUsers = async () => {
+    try {
+      const data = await apiCall('/users');
+      if (data.success) setUsers(data.users || []);
+    } catch (e) { console.error(e); }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,19 +46,18 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
       await onCreate(formData);
       onClose();
       setFormData({
-        title: '',
-        description: '',
+        project_name: '',
+        project_description: '',
         client_name: '',
         client_email: '',
         client_phone: '',
         project_type: 'consulting',
         status: 'planning',
         priority: 'medium',
-        budget: '',
+        estimated_budget: '',
         start_date: '',
         end_date: '',
-        team_members: [],
-        location: '',
+        user_id: '',
         notes: ''
       });
     } catch (err) {
@@ -57,203 +67,101 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
     }
   };
 
-  const projectTypeOptions = [
-    { value: 'consulting', label: 'Consulting' },
-    { value: 'development', label: 'Development' },
-    { value: 'design', label: 'Design' },
-    { value: 'infrastructure', label: 'Infrastructure' },
-    { value: 'research', label: 'Research' },
-    { value: 'training', label: 'Training' },
-    { value: 'other', label: 'Other' }
-  ];
-
-  const statusOptions = [
-    { value: 'planning', label: 'Planning' },
-    { value: 'in_progress', label: 'In Progress' },
-    { value: 'on_hold', label: 'On Hold' },
-    { value: 'review', label: 'Under Review' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'cancelled', label: 'Cancelled' }
-  ];
-
-  const priorityOptions = [
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-    { value: 'urgent', label: 'Urgent' }
-  ];
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create New Project" size="xl">
-      <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+    <Modal isOpen={isOpen} onClose={onClose} title="Initialize Mission Node" size="xl">
+      <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+          <div className="bg-rose-50 border border-rose-100 rounded-xl p-4 text-[10px] font-black uppercase tracking-widest text-rose-600">
             {error}
           </div>
         )}
 
         {/* Basic Information */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <FolderKanban className="w-4 h-4" />
-            Basic Information
+        <div className="space-y-4">
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3 border-b border-slate-50 pb-2">
+            <FolderKanban size={14} className="text-teal-500" />
+            Operational Parameters
           </h3>
-          
-          <FormInput
-            label="Project Title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            required
-            icon={FolderKanban}
-          />
-          
-          <Textarea
-            label="Project Description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={3}
-            placeholder="Describe the project objectives and scope..."
-          />
-        </div>
 
-        {/* Client Information */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Building2 className="w-4 h-4" />
-            Client Information
-          </h3>
-          
-          <FormInput
-            label="Client Name"
-            value={formData.client_name}
-            onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-            required
-            icon={Building2}
-          />
-          
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4">
             <FormInput
-              label="Client Email"
-              type="email"
-              value={formData.client_email}
-              onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
+              label="Project Name"
+              value={formData.project_name}
+              onChange={(e) => setFormData({ ...formData, project_name: e.target.value })}
+              required
+              placeholder="e.g. Strategic Audit 2024"
             />
-            <FormInput
-              label="Client Phone"
-              value={formData.client_phone}
-              onChange={(e) => setFormData({ ...formData, client_phone: e.target.value })}
-              placeholder="+254 7XX XXX XXX"
+
+            <Textarea
+              label="Mission Briefing"
+              value={formData.project_description}
+              onChange={(e) => setFormData({ ...formData, project_description: e.target.value })}
+              rows={3}
+              placeholder="Detailed tactical objectives..."
             />
           </div>
         </div>
 
-        {/* Project Details */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            Project Details
+        {/* Client & Assignment */}
+        <div className="space-y-4">
+           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3 border-b border-slate-50 pb-2">
+            <Users size={14} className="text-blue-500" />
+            Personnel Assignment
           </h3>
-          
           <div className="grid grid-cols-2 gap-4">
             <Select
-              label="Project Type"
-              value={formData.project_type}
-              onChange={(e) => setFormData({ ...formData, project_type: e.target.value })}
-              options={projectTypeOptions}
+              label="Linked Client Account"
+              value={formData.user_id}
+              onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+              options={users.map(u => ({ value: u.id, label: u.display_name || u.email }))}
               required
             />
-            
-            <Select
-              label="Priority"
-              value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-              options={priorityOptions}
-              required
+            <FormInput
+              label="Client Direct Label"
+              value={formData.client_name}
+              onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+              placeholder="Display name for project"
             />
           </div>
-          
+        </div>
+
+        {/* Tactical Details */}
+        <div className="grid grid-cols-2 gap-4">
           <Select
-            label="Initial Status"
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-            options={statusOptions}
+            label="Project Classification"
+            value={formData.project_type}
+            onChange={(e) => setFormData({ ...formData, project_type: e.target.value })}
+            options={[
+              { value: 'consulting', label: 'Consulting' },
+              { value: 'development', label: 'Development' },
+              { value: 'infrastructure', label: 'Infrastructure' }
+            ]}
+            required
+          />
+          <Select
+            label="Priority Level"
+            value={formData.priority}
+            onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+            options={[
+              { value: 'Low', label: 'Low' },
+              { value: 'Medium', label: 'Medium' },
+              { value: 'High', label: 'High' },
+              { value: 'Critical', label: 'Critical' }
+            ]}
             required
           />
         </div>
 
-        {/* Timeline & Budget */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Timeline & Budget
-          </h3>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <FormInput
-              label="Start Date"
-              type="date"
-              value={formData.start_date}
-              onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-              icon={Calendar}
-            />
-            
-            <FormInput
-              label="End Date"
-              type="date"
-              value={formData.end_date}
-              onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-              icon={Calendar}
-            />
-          </div>
-          
-          <FormInput
-            label="Budget"
-            type="number"
-            value={formData.budget}
-            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-            placeholder="Enter project budget"
-            icon={DollarSign}
-          />
+        <div className="grid grid-cols-3 gap-4">
+            <FormInput label="Start Date" type="date" value={formData.start_date} onChange={(e) => setFormData({ ...formData, start_date: e.target.value })} />
+            <FormInput label="Deadline" type="date" value={formData.end_date} onChange={(e) => setFormData({ ...formData, end_date: e.target.value })} />
+            <FormInput label="Est. Budget (KSh)" type="number" value={formData.estimated_budget} onChange={(e) => setFormData({ ...formData, estimated_budget: e.target.value })} />
         </div>
 
-        {/* Additional Information */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <MapPin className="w-4 h-4" />
-            Additional Information
-          </h3>
-          
-          <FormInput
-            label="Project Location"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            placeholder="Physical location if applicable"
-            icon={MapPin}
-          />
-          
-          <Textarea
-            label="Project Notes"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={2}
-            placeholder="Any additional notes or special requirements..."
-          />
-        </div>
-
-        <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-blue-400 transition-colors font-medium"
-          >
-            {loading ? 'Creating...' : 'Create Project'}
+        <div className="flex gap-4 pt-6 border-t border-slate-50">
+          <button type="button" onClick={onClose} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all">Abort</button>
+          <button type="submit" disabled={loading} className="flex-[2] px-6 py-4 rounded-2xl bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 shadow-xl shadow-teal-900/20 disabled:opacity-50 transition-all">
+            {loading ? 'Synchronizing...' : 'Initialize Mission'}
           </button>
         </div>
       </form>
@@ -266,23 +174,32 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
  */
 export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
   const [formData, setFormData] = useState({
-    title: project?.title || '',
-    description: project?.description || '',
-    client_name: project?.client_name || '',
-    client_email: project?.client_email || '',
-    client_phone: project?.client_phone || '',
-    project_type: project?.project_type || 'consulting',
-    status: project?.status || 'planning',
-    priority: project?.priority || 'medium',
-    budget: project?.budget || '',
-    start_date: project?.start_date || '',
-    end_date: project?.end_date || '',
-    location: project?.location || '',
-    notes: project?.notes || '',
-    completion_percentage: project?.completion_percentage || 0
+    project_name: '',
+    project_description: '',
+    status: 'planning',
+    priority: 'Medium',
+    progress_percentage: 0,
+    actual_budget: 0,
+    estimated_budget: 0,
+    end_date: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  React.useEffect(() => {
+    if (project) {
+      setFormData({
+        project_name: project.project_name || '',
+        project_description: project.project_description || '',
+        status: project.status || 'planning',
+        priority: project.priority || 'Medium',
+        progress_percentage: project.progress_percentage || 0,
+        actual_budget: project.actual_budget || 0,
+        estimated_budget: project.estimated_budget || 0,
+        end_date: project.end_date ? project.end_date.split('T')[0] : ''
+      });
+    }
+  }, [project]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -299,220 +216,44 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
     }
   };
 
-  const projectTypeOptions = [
-    { value: 'consulting', label: 'Consulting' },
-    { value: 'development', label: 'Development' },
-    { value: 'design', label: 'Design' },
-    { value: 'infrastructure', label: 'Infrastructure' },
-    { value: 'research', label: 'Research' },
-    { value: 'training', label: 'Training' },
-    { value: 'other', label: 'Other' }
-  ];
-
-  const statusOptions = [
-    { value: 'planning', label: 'Planning' },
-    { value: 'in_progress', label: 'In Progress' },
-    { value: 'on_hold', label: 'On Hold' },
-    { value: 'review', label: 'Under Review' },
-    { value: 'completed', label: 'Completed' },
-    { value: 'cancelled', label: 'Cancelled' }
-  ];
-
-  const priorityOptions = [
-    { value: 'low', label: 'Low' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'high', label: 'High' },
-    { value: 'urgent', label: 'Urgent' }
-  ];
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Edit Project: ${project?.title}`} size="xl">
-      <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
-            {error}
-          </div>
-        )}
-
-        {/* Basic Information */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <FolderKanban className="w-4 h-4" />
-            Basic Information
-          </h3>
-          
-          <FormInput
-            label="Project Title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            required
-            icon={FolderKanban}
-          />
-          
-          <Textarea
-            label="Project Description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={3}
-            placeholder="Describe the project objectives and scope..."
-          />
+    <Modal isOpen={isOpen} onClose={onClose} title={`Recalibrate Node: ${project?.project_name}`} size="xl">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid gap-4">
+           <FormInput label="Project Name" value={formData.project_name} onChange={(e) => setFormData({...formData, project_name: e.target.value})} required />
+           <Textarea label="Briefing" value={formData.project_description} onChange={(e) => setFormData({...formData, project_description: e.target.value})} rows={3} />
         </div>
 
-        {/* Client Information */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Building2 className="w-4 h-4" />
-            Client Information
-          </h3>
-          
-          <FormInput
-            label="Client Name"
-            value={formData.client_name}
-            onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-            required
-            icon={Building2}
-          />
-          
-          <div className="grid grid-cols-2 gap-4">
-            <FormInput
-              label="Client Email"
-              type="email"
-              value={formData.client_email}
-              onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
-            />
-            <FormInput
-              label="Client Phone"
-              value={formData.client_phone}
-              onChange={(e) => setFormData({ ...formData, client_phone: e.target.value })}
-              placeholder="+254 7XX XXX XXX"
-            />
-          </div>
+        <div className="grid grid-cols-2 gap-4">
+           <Select label="Status" value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} options={[
+             { value: 'planning', label: 'Planning' },
+             { value: 'in-progress', label: 'Active' },
+             { value: 'on-hold', label: 'On Hold' },
+             { value: 'completed', label: 'Solidified' }
+           ]} />
+           <Select label="Priority" value={formData.priority} onChange={(e) => setFormData({...formData, priority: e.target.value})} options={[
+             { value: 'Low', label: 'Low' },
+             { value: 'Medium', label: 'Medium' },
+             { value: 'High', label: 'High' },
+             { value: 'Critical', label: 'Critical' }
+           ]} />
         </div>
 
-        {/* Project Details */}
         <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            Project Details
-          </h3>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Project Type"
-              value={formData.project_type}
-              onChange={(e) => setFormData({ ...formData, project_type: e.target.value })}
-              options={projectTypeOptions}
-              required
-            />
-            
-            <Select
-              label="Priority"
-              value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-              options={priorityOptions}
-              required
-            />
-          </div>
-          
-          <Select
-            label="Status"
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-            options={statusOptions}
-            required
-          />
-
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">Completion Percentage</label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={formData.completion_percentage}
-              onChange={(e) => setFormData({ ...formData, completion_percentage: parseInt(e.target.value) })}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>0%</span>
-              <span className="font-semibold">{formData.completion_percentage}%</span>
-              <span>100%</span>
-            </div>
-          </div>
+          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Progress: {formData.progress_percentage}%</label>
+          <input type="range" min="0" max="100" value={formData.progress_percentage} onChange={(e) => setFormData({...formData, progress_percentage: e.target.value})} className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-teal-600" />
         </div>
 
-        {/* Timeline & Budget */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Timeline & Budget
-          </h3>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <FormInput
-              label="Start Date"
-              type="date"
-              value={formData.start_date}
-              onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-              icon={Calendar}
-            />
-            
-            <FormInput
-              label="End Date"
-              type="date"
-              value={formData.end_date}
-              onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-              icon={Calendar}
-            />
-          </div>
-          
-          <FormInput
-            label="Budget"
-            type="number"
-            value={formData.budget}
-            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-            placeholder="Enter project budget"
-            icon={DollarSign}
-          />
+        <div className="grid grid-cols-3 gap-4">
+           <FormInput label="Est. Budget" type="number" value={formData.estimated_budget} onChange={(e) => setFormData({...formData, estimated_budget: e.target.value})} />
+           <FormInput label="Actual Spent" type="number" value={formData.actual_budget} onChange={(e) => setFormData({...formData, actual_budget: e.target.value})} />
+           <FormInput label="Deadline" type="date" value={formData.end_date} onChange={(e) => setFormData({...formData, end_date: e.target.value})} />
         </div>
 
-        {/* Additional Information */}
-        <div className="space-y-3">
-          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-            <MapPin className="w-4 h-4" />
-            Additional Information
-          </h3>
-          
-          <FormInput
-            label="Project Location"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            placeholder="Physical location if applicable"
-            icon={MapPin}
-          />
-          
-          <Textarea
-            label="Project Notes"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={2}
-            placeholder="Any additional notes or special requirements..."
-          />
-        </div>
-
-        <div className="flex gap-3 justify-end pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-blue-400 transition-colors font-medium"
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
+        <div className="flex gap-4 pt-6 border-t border-slate-50">
+          <button type="button" onClick={onClose} className="flex-1 px-6 py-4 rounded-2xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-500">Abort</button>
+          <button type="submit" disabled={loading} className="flex-[2] px-6 py-4 rounded-2xl bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 shadow-xl shadow-teal-900/20">
+            {loading ? 'Updating...' : 'Commit Changes'}
           </button>
         </div>
       </form>
