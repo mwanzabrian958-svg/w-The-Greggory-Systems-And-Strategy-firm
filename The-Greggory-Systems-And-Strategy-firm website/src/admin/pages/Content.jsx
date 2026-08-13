@@ -9,7 +9,7 @@ import {
   ChevronRight,
   RefreshCw,
 } from "lucide-react";
-import { getApiUrl } from "../../services/api";
+import { apiCall } from "../../services/api";
 
 /**
  * Content Management System - Blog Central
@@ -35,9 +35,8 @@ export function Content({ user }) {
   const fetchBlogs = async () => {
     try {
       setLoading(true);
-      const response = await fetch(getApiUrl("/api/blog-articles"));
-      if (response.ok) {
-        const data = await response.json();
+      const data = await apiCall("/blog-articles");
+      if (data.success) {
         setBlogs(data.articles || []);
       }
     } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -62,16 +61,13 @@ export function Content({ user }) {
     } catch (e) { console.error(e); } finally { setIsUpdating(false); }
   };
 
-  const handleDelete = (e, id) => {
-    e.stopPropagation(); // Prevent opening preview when deleting
+  const handleDelete = async (e, id) => {
+    e.stopPropagation();
     if (!window.confirm("Terminate this node?")) return;
-    const executeDelete = async () => {
-      try {
-        const response = await fetch(getApiUrl(`/api/blog-articles/${id}`), { method: "DELETE" });
-        if (response.ok) setBlogs(blogs.filter((b) => b.id !== id));
-      } catch (e) { console.error(e); }
-    };
-    executeDelete();
+    try {
+      const res = await apiCall(`/blog-articles/${id}`, { method: "DELETE" });
+      if (res.success) setBlogs(blogs.filter((b) => b.id !== id));
+    } catch (e) { console.error(e); }
   };
 
   const filteredBlogs = blogs.filter((b) => (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()));

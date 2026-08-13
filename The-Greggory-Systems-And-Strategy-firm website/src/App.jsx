@@ -16,6 +16,7 @@ import ProjectDetails from './pages/ProjectDetails'
 import Services from './pages/Services'
 import CaseStudies from './pages/CaseStudies'
 import Blog from './pages/Blog'
+import BlogDetails from './pages/BlogDetails'
 import Contact from './pages/Contact'
 import Companies from './pages/Companies'
 import Login from './pages/Login'
@@ -65,6 +66,8 @@ function Layout() {
           <Route path="/case-studies" element={<CaseStudies />} />
 
           <Route path="/blog" element={<Blog />} />
+
+          <Route path="/blog/:id" element={<BlogDetails />} />
 
           <Route path="/contact" element={<Contact />} />
 

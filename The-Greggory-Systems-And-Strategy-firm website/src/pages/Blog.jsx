@@ -16,7 +16,7 @@ const Blog = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const response = await fetch('/api/blog-articles')
+        const response = await fetch(getApiUrl('/api/blog-articles'))
         const result = await response.json()
         if (result.success) {
           setArticles(result.articles)
@@ -143,10 +143,10 @@ const Blog = () => {
                     )}
 
                     <p className="text-lg md:text-xl text-black font-medium leading-relaxed max-w-4xl border-l-4 border-[#8fb28a]/20 pl-8">
-                      {article.excerpt}
+                      {article.excerpt || "Strategic briefing excerpt pending Node synchronization."}
                     </p>
 
-                    <div className="text-base text-black leading-[1.8] max-w-4xl space-y-6" dangerouslySetInnerHTML={{ __html: article.content.substring(0, 500) + '...' }} />
+                    <div className="text-base text-black leading-[1.8] max-w-4xl space-y-6" dangerouslySetInnerHTML={{ __html: (article.content || "").substring(0, 500) + (article.content && article.content.length > 500 ? '...' : '') }} />
 
                     <div className="pt-10">
                       <Link
