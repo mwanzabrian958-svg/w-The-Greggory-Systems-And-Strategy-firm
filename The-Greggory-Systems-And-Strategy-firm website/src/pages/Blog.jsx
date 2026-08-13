@@ -106,60 +106,39 @@ const Blog = () => {
             <p className="text-black font-bold uppercase tracking-widest">No articles found in the repository.</p>
           </div>
         ) : (
-          <div className="space-y-40">
-            {articles.map((article, index) => (
-              <div key={article.id || article._id} className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-                <div className="lg:col-span-4">
-                  <div className="sticky top-40 space-y-6">
-                    <div className="flex items-center gap-4">
-                      <span className="text-xs font-black text-[#aa7d3f] uppercase tracking-[0.3em]">
-                        {new Date(article.published_date || article.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
-                      </span>
-                      <div className="h-px w-10 bg-[#aa7d3f]/30" />
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{article.category || 'Strategy'}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {articles.map((article) => (
+              <Link
+                key={article.id || article._id}
+                to={`/blog/${article.id || article._id}`}
+                className="group bg-white rounded-3xl border border-black/5 overflow-hidden hover:shadow-2xl transition-all duration-500 flex flex-col"
+              >
+                <div className="aspect-[4/3] overflow-hidden bg-slate-100">
+                  {article.image_url ? (
+                    <img
+                      src={article.image_url}
+                      alt={article.title}
+                      className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-200">
+                      <BookOpen size={40} />
                     </div>
-                    <h3 className="text-2xl font-bold text-black leading-tight group-hover:text-[#aa7d3f] transition-colors">
+                  )}
+                </div>
+                <div className="p-6 flex-1 flex flex-col justify-between">
+                  <div>
+                    <span className="text-[8px] font-black text-[#aa7d3f] uppercase tracking-widest mb-2 block">{article.category || 'Strategy'}</span>
+                    <h3 className="text-lg font-bold text-black leading-tight group-hover:text-[#aa7d3f] transition-colors line-clamp-2">
                       {article.title}
                     </h3>
-                    <div className="pt-4 flex items-center gap-3">
-                       <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-                          <User className="w-4 h-4 text-slate-400" />
-                       </div>
-                       <span className="text-xs font-bold text-black uppercase tracking-widest">{article.author || 'Firm Contributor'}</span>
-                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-black/5 flex items-center justify-between">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{new Date(article.published_date || article.created_at).toLocaleDateString()}</span>
+                    <ArrowRight className="w-4 h-4 text-black group-hover:translate-x-2 transition-transform" />
                   </div>
                 </div>
-
-                <div className="lg:col-span-8">
-                  <div className="space-y-10 group">
-                    {article.image_url && (
-                      <div className="relative w-full aspect-[21/9] overflow-hidden rounded-[80px_20px_100px_40px] mb-12 shadow-2xl">
-                         <img
-                           src={article.image_url}
-                           alt={article.title}
-                           className="w-full h-full object-cover grayscale brightness-110 contrast-110 transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105"
-                         />
-                      </div>
-                    )}
-
-                    <p className="text-lg md:text-xl text-black font-medium leading-relaxed max-w-4xl border-l-4 border-[#8fb28a]/20 pl-8">
-                      {article.excerpt || "Strategic briefing excerpt pending Node synchronization."}
-                    </p>
-
-                    <div className="text-base text-black leading-[1.8] max-w-4xl space-y-6" dangerouslySetInnerHTML={{ __html: (article.content || "").substring(0, 500) + (article.content && article.content.length > 500 ? '...' : '') }} />
-
-                    <div className="pt-10">
-                      <Link
-                        to={`/blog/${article.id || article._id}`}
-                        className="inline-flex items-center gap-4 text-sm font-black border-b-2 border-black pb-2 hover:gap-8 transition-all"
-                      >
-                        READ FULL PERSPECTIVE
-                        <ArrowRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

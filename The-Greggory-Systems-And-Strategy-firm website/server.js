@@ -3950,7 +3950,7 @@ app.get("/api/blog-articles", async (req, res) => {
 
     // 2. Fallback to MySQL
     const [articles] = await mainDb.query(
-      "SELECT id, title, excerpt, author, read_time, category, image_url, icon_class, is_published, published_date, created_at, image_blob IS NOT NULL as has_photo FROM blog_articles WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?",
+      "SELECT id, title, excerpt, content, author, read_time, category, image_url, icon_class, is_published, published_date, created_at, image_blob IS NOT NULL as has_photo FROM blog_articles WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?",
       [parseInt(limit), parseInt(offset)],
     );
 

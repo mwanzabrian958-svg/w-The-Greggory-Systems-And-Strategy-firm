@@ -50,7 +50,7 @@ const BlogDetails = () => {
 
   return (
     <div className="min-h-screen bg-[#fdfaf6] text-[#111] pt-32 pb-40 font-sans selection:bg-[#8fb28a] selection:text-white">
-      <div className="max-w-5xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
 
         {/* Navigation */}
         <button
@@ -61,77 +61,69 @@ const BlogDetails = () => {
           Back to Journal
         </button>
 
-        {/* Header Metadata */}
-        <div className="flex flex-wrap items-center gap-6 mb-12 text-[10px] font-black uppercase tracking-widest text-[#aa7d3f]">
-          <div className="flex items-center gap-2">
-            <CalendarDays className="w-4 h-4" />
-            {new Date(article.published_date || article.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
-          </div>
-          <div className="w-1.5 h-1.5 rounded-full bg-[#aa7d3f]/20" />
-          <div className="flex items-center gap-2">
-            <Tag className="w-4 h-4" />
-            {article.category || 'Strategy'}
-          </div>
-          <div className="w-1.5 h-1.5 rounded-full bg-[#aa7d3f]/20" />
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
-            {article.read_time || '5 min'} Read
-          </div>
-        </div>
-
-        {/* Title */}
-        <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tighter leading-[0.95] text-black mb-16">
+        {/* Title Node */}
+        <h1 className="text-4xl md:text-5xl lg:text-8xl font-bold tracking-tighter leading-[0.9] text-black mb-16 border-b border-black/5 pb-16">
           {article.title}
         </h1>
 
-        {/* Author Block */}
-        <div className="flex items-center justify-between py-10 border-y border-black/5 mb-16">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#111] flex items-center justify-center text-white">
-              <User className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Authored by</p>
-              <p className="text-sm font-bold text-black uppercase">{article.author || 'Firm Contributor'}</p>
+        <div className="flex flex-col lg:flex-row gap-16">
+          {/* Left Column: Image Asset */}
+          <div className="lg:w-1/3">
+            <div className="sticky top-40 space-y-8">
+              {article.image_url && (
+                <div className="relative w-full aspect-square overflow-hidden rounded-[40px] shadow-2xl bg-slate-100 border border-black/5">
+                  <img
+                    src={article.image_url}
+                    alt={article.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-6 pt-8 border-t border-black/5">
+                <div className="flex flex-col gap-2">
+                   <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-400">Node Identity</p>
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white"><User size={18} /></div>
+                      <p className="text-xs font-bold uppercase tracking-widest">{article.author || 'Firm Contributor'}</p>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                   <div className="bg-white p-4 rounded-2xl border border-black/5">
+                      <p className="text-[6px] font-black uppercase text-slate-400 mb-1">Timeline</p>
+                      <p className="text-[9px] font-bold uppercase">{new Date(article.published_date || article.created_at).toLocaleDateString()}</p>
+                   </div>
+                   <div className="bg-white p-4 rounded-2xl border border-black/5">
+                      <p className="text-[6px] font-black uppercase text-slate-400 mb-1">Sector</p>
+                      <p className="text-[9px] font-bold uppercase">{article.category || 'Strategy'}</p>
+                   </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex gap-4">
-            <button className="p-3 bg-white border border-black/5 rounded-2xl hover:bg-black hover:text-white transition-all">
-              <Share2 className="w-5 h-5" />
-            </button>
+
+          {/* Right Column: Narrative Content */}
+          <div className="lg:w-2/3">
+            <div className="max-w-3xl">
+              {article.excerpt && (
+                <p className="text-xl md:text-2xl font-medium leading-relaxed text-black mb-16 border-l-8 border-[#8fb28a]/20 pl-8 italic">
+                  {article.excerpt}
+                </p>
+              )}
+
+              <div
+                className="prose prose-lg prose-slate max-w-none prose-headings:text-black prose-p:text-[#111] prose-p:leading-[1.8] prose-p:font-normal prose-strong:font-bold prose-img:rounded-3xl"
+                dangerouslySetInnerHTML={{ __html: article.content }}
+              />
+
+              <div className="mt-32 pt-20 border-t border-black/5 flex flex-col items-center">
+                <div className="w-px h-20 bg-gradient-to-b from-black/20 to-transparent mb-12" />
+                <h4 className="text-xs font-black uppercase tracking-[0.5em] text-slate-400">End of Transmission</h4>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Hero Image */}
-        {article.image_url && (
-          <div className="relative w-full aspect-video md:aspect-[21/9] overflow-hidden rounded-[80px_20px_100px_40px] mb-24 shadow-2xl bg-slate-100">
-            <img
-              src={article.image_url}
-              alt={article.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        {/* Content */}
-        <article className="max-w-3xl mx-auto">
-          {article.excerpt && (
-            <p className="text-xl md:text-2xl font-medium leading-relaxed text-black mb-16 border-l-8 border-[#8fb28a]/20 pl-8 italic">
-              {article.excerpt}
-            </p>
-          )}
-
-          <div
-            className="prose prose-lg prose-slate max-w-none prose-headings:text-black prose-p:text-[#111] prose-p:leading-[1.8] prose-p:font-normal prose-strong:font-bold prose-img:rounded-3xl"
-            dangerouslySetInnerHTML={{ __html: article.content }}
-          />
-
-          {/* Post-content node */}
-          <div className="mt-32 pt-20 border-t border-black/5 flex flex-col items-center">
-            <div className="w-px h-20 bg-gradient-to-b from-black/20 to-transparent mb-12" />
-            <h4 className="text-xs font-black uppercase tracking-[0.5em] text-slate-400">End of Briefing</h4>
-          </div>
-        </article>
 
       </div>
     </div>
