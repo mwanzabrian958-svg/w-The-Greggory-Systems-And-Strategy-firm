@@ -191,7 +191,7 @@ export function BlogPreview() {
 
       {/* Footer Relay */}
       <footer className="bg-[#0f172a] border-t border-white/5 p-6 flex justify-between items-center flex-shrink-0">
-         <p className="text-[7px] font-black text-slate-500 uppercase tracking-[0.4em]">Property of Greggory Systems & Strategy Firm © 2024</p>
+         <p className="text-[7px] font-black text-slate-500 uppercase tracking-[0.4em]">Property of Greggory Systems & Strategy Firm © {new Date().getFullYear()}</p>
          <div className="flex gap-4">
            <button onClick={() => navigate(`/admin/content/create`)} className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-[8px] font-black uppercase tracking-widest transition-all">Edit Node</button>
            <button onClick={() => navigate('/admin/content')} className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[8px] font-black uppercase tracking-widest border border-white/10 transition-all">Back to Relay</button>

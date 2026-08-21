@@ -210,7 +210,7 @@ function AdminLayout({ user, children, onLogout }) {
 
             {/* Terminal Status Bar */}
             <div className="bg-[#0f172a] h-8 border-t border-white/5 flex items-center px-6 justify-between flex-shrink-0">
-               <p className="text-[6px] font-black text-slate-500 uppercase tracking-[0.4em]">Property of Greggory Systems & Strategy Firm © 2024</p>
+               <p className="text-[6px] font-black text-slate-500 uppercase tracking-[0.4em]">Property of Greggory Systems & Strategy Firm © {new Date().getFullYear()}</p>
                <p className="text-[6px] font-black text-slate-700 uppercase tracking-[0.6em]">SECURE ARCHITECTURE v4.0</p>
             </div>
           </div>

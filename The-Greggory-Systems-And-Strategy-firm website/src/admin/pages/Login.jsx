@@ -209,7 +209,7 @@ export function Login({ onLoginSuccess }) {
 
             {view === "platform" && (
               <div className="mt-auto text-center pt-8 border-t border-slate-50">
-                 <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.5em]">System Property of Greggory Systems & Strategy Firm © 2024</p>
+                 <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.5em]">System Property of Greggory Systems & Strategy Firm © {new Date().getFullYear()}</p>
               </div>
             )}
 

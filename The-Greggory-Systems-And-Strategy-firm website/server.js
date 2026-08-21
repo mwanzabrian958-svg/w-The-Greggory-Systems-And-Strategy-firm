@@ -4557,10 +4557,11 @@ const modularRoutes = [
   { path: "/api/applications", route: "./backend/routes/applications" },
   { path: "/api/properties", route: "./backend/routes/properties" },
   { path: "/api/management", route: "./backend/routes/management" },
-  // { path: "/api/admin", route: "./backend/routes/admin" }, // Unified in server.js for stability
+  { path: "/api/admin", route: "./backend/routes/admin" },
   // { path: "/api/admin-verification", route: "./backend/routes/admin-verification" }, // Handled in server.js for stability
   { path: "/api/mpesa", route: "./backend/routes/mpesa" },
 ];
+
 
 modularRoutes.forEach((item) => {
   try {
@@ -4588,21 +4589,6 @@ app.use((err, req, res, next) => {
 // Serve dashboard
 app.get("/dashboard", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "dashboard.html"));
-});
-
-// 404 handler
-app.use((req, res) => {
-  if (req.accepts("html")) {
-    res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
-  } else if (req.accepts("json")) {
-    res.status(404).json({
-      success: false,
-      message: "Endpoint not found",
-      path: req.path,
-    });
-  } else {
-    res.status(404).send("Not found");
-  }
 });
 
 // Start server
@@ -4690,6 +4676,21 @@ app.delete("/api/tasks/:taskId", async (req, res) => {
   } catch (error) {
     console.error("Error deleting task:", error);
     res.status(500).json({ success: false, message: "Error deleting task" });
+  }
+});
+
+// 404 handler (must be registered AFTER all routes)
+app.use((req, res) => {
+  if (req.accepts("html")) {
+    res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
+  } else if (req.accepts("json")) {
+    res.status(404).json({
+      success: false,
+      message: "Endpoint not found",
+      path: req.path,
+    });
+  } else {
+    res.status(404).send("Not found");
   }
 });
 

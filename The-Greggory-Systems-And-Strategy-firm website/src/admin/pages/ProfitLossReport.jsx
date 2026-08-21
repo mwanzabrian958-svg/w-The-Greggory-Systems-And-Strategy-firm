@@ -8,7 +8,59 @@ export function ProfitLossReport() {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const [data, setData] = useState({ revenue: 0, expenses: 0, net: 0, entries: [] });
+
+  // Group expenses by category for the breakdown panel
+  const expenseBreakdown = React.useMemo(() => {
+    const map = {};
+    data.entries
+      .filter(e => e.entry_type === 'expense')
+      .forEach(e => {
+        const cat = e.category_name || e.category || 'Uncategorized';
+        map[cat] = (map[cat] || 0) + parseFloat(e.amount || 0);
+      });
+    return Object.entries(map)
+      .map(([category, total]) => ({ category, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [data.entries]);
+
+  // Export the P&L ledger as a CSV audit file
+  const handleDownload = () => {
+    setDownloading(true);
+    try {
+      const rows = [
+        ['Profit & Loss Audit - The Greggory Systems & Strategy Firm'],
+        ['Generated', new Date().toISOString()],
+        ['Gross Revenue (KES)', data.revenue],
+        ['Total Expenses (KES)', data.expenses],
+        ['Net Profit (KES)', data.net],
+        [],
+        ['Date', 'Type', 'Category', 'Description', 'Amount (KES)'],
+        ...data.entries.map(e => [
+          e.entry_date ? new Date(e.entry_date).toISOString().split('T')[0] : '',
+          e.entry_type || '',
+          e.category_name || e.category || '',
+          (e.description || '').replace(/"/g, "'"),
+          e.amount || 0,
+        ]),
+      ];
+      const csv = rows.map(r => r.map(v => `"${String(v ?? '')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `greggory-pl-audit-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Audit download failed:', err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,28 +116,43 @@ export function ProfitLossReport() {
 
          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
             <div className="space-y-6">
-               <h4 className="text-[10px] font-black text-white uppercase tracking-[0.4em] border-b border-white/5 pb-4">Revenue Streams</h4>
-               {['invoice_payment', 'income'].map(type => {
-                 const amount = data.entries.filter(e => e.entry_type === type).reduce((s, e) => s + parseFloat(e.amount), 0);
-                 const p = data.revenue > 0 ? (amount / data.revenue) * 100 : 0;
-                 return (
-                   <div key={type} className="space-y-3">
-                      <div className="flex justify-between text-[10px] font-black uppercase text-slate-400"><span>{type}</span><span>{formatKSH(amount)}</span></div>
-                      <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 rounded-full" style={{ width: `${p}%` }}></div></div>
-                   </div>
-                 );
-               })}
+              <h4 className="text-[10px] font-black text-white uppercase tracking-[0.4em] border-b border-white/5 pb-4">Revenue Streams</h4>
+              {['invoice_payment', 'income'].map(type => {
+                const amount = data.entries.filter(e => e.entry_type === type).reduce((s, e) => s + parseFloat(e.amount), 0);
+                const p = data.revenue > 0 ? (amount / data.revenue) * 100 : 0;
+                return (
+                  <div key={type} className="space-y-3">
+                     <div className="flex justify-between text-[10px] font-black uppercase text-slate-400"><span>{type}</span><span>{formatKSH(amount)}</span></div>
+                     <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 rounded-full" style={{ width: `${p}%` }}></div></div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="space-y-6 text-center py-10 bg-white/2 rounded-[40px] border border-dashed border-white/5">
-               <FileText size={32} className="mx-auto text-slate-700 mb-4" />
-               <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em]">Extended Financial Report Generation Coming Soon</p>
+            <div className="space-y-6">
+              <h4 className="text-[10px] font-black text-white uppercase tracking-[0.4em] border-b border-white/5 pb-4">Expense Breakdown</h4>
+              {expenseBreakdown.length === 0 ? (
+                <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">No expense entries recorded yet</p>
+              ) : (
+                expenseBreakdown.map(item => {
+                  const p = data.expenses > 0 ? (item.total / data.expenses) * 100 : 0;
+                  return (
+                    <div key={item.category} className="space-y-3">
+                       <div className="flex justify-between text-[10px] font-black uppercase text-slate-400"><span>{item.category}</span><span>{formatKSH(item.total)} · {Math.round(p)}%</span></div>
+                       <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-rose-500 rounded-full" style={{ width: `${p}%` }}></div></div>
+                    </div>
+                  );
+                })
+              )}
             </div>
          </div>
       </div>
 
       <div className="bg-[#0f172a] p-10 border-t border-white/5 flex justify-between items-center flex-shrink-0">
-         <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.6em]">Property of Greggory Systems & Strategy Firm © 2024</p>
-         <button className="bg-white/5 text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-white/10 hover:bg-white/10 transition-all">Download Strategic Audit</button>
+         <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.6em]">Property of Greggory Systems & Strategy Firm © {new Date().getFullYear()}</p>
+         <button onClick={handleDownload} disabled={downloading} className="bg-white/5 text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-white/10 hover:bg-white/10 transition-all disabled:opacity-50 flex items-center gap-3">
+           {downloading ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
+           {downloading ? 'Generating...' : 'Download Audit (CSV)'}
+         </button>
       </div>
     </div>
   );
