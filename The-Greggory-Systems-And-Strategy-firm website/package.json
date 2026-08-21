@@ -4,11 +4,11 @@
   "description": "The-Greggory-Systems-And-Strategy-firm - Strategic Systems and Business Solutions",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n \"XAMPP,WORKSPACE,BACKEND,LEGACY_API,FRONTEND\" -c \"magenta,cyan,blue,yellow,green\" \"npm run start:xampp\" \"npm run open:workspace\" \"npm run server\" \"npm run server:legacy\" \"vite\"",
+    "dev": "concurrently -n \"XAMPP,WORKSPACE,BACKEND,FRONTEND\" -c \"magenta,cyan,blue,green\" \"npm run start:xampp\" \"npm run open:workspace\" \"npm run server\" \"vite\"",
     "dev:simple": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run server\" \"vite\"",
     "dev:frontend": "vite",
     "dev:backend": "nodemon server.js",
-    "server:legacy": "cross-env PORT=5001 nodemon backend/server.js",
+    "server:legacy": "echo 'Legacy server disabled. Use root server.js'",
     "start:xampp": "powershell -ExecutionPolicy Bypass -File scripts/start-xampp.ps1",
     "start:xampp:js": "node scripts/start-xampp-services.js",
     "open:phpmyadmin": "node scripts/open-phpmyadmin.js",

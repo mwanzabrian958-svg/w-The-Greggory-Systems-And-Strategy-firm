@@ -3551,6 +3551,51 @@ async function handleAdminAuth(req, res) {
   }
 }
 
+// ========== HARDENED ADMIN TELEMETRY ROUTES ==========
+
+app.get("/api/admin/live-users", async (req, res) => {
+  try {
+    const LIVE_THRESHOLD = '5 MINUTE';
+    const [liveUsers] = await mainDb.query(`
+      (SELECT id, display_name, email, 'client' as role_type, last_active_at, profile_photo_blob IS NOT NULL as has_photo FROM users WHERE last_active_at > DATE_SUB(NOW(), INTERVAL ${LIVE_THRESHOLD}) AND deleted_at IS NULL)
+      UNION ALL
+      (SELECT id, display_name, email, admin_level as role_type, last_active_at, profile_photo_blob IS NOT NULL as has_photo FROM admin_users WHERE last_active_at > DATE_SUB(NOW(), INTERVAL ${LIVE_THRESHOLD}) AND deleted_at IS NULL)
+      ORDER BY last_active_at DESC
+    `);
+    res.json({ success: true, count: liveUsers.length, users: liveUsers });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get("/api/admin/search", async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.length < 2) return res.json({ success: true, results: [] });
+    const searchTerm = `%${q}%`;
+    const [users] = await mainDb.query(
+      "(SELECT 'user' as type, id, display_name as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL) UNION ALL (SELECT 'user' as type, id, display_name as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL) LIMIT 10",
+      [searchTerm, searchTerm, searchTerm, searchTerm]
+    );
+    res.json({ success: true, results: users });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get("/api/admin/budget-overview", async (req, res) => {
+  try {
+    const [financialData] = await mainDb.query(
+      "SELECT COALESCE(SUM(CASE WHEN entry_type IN ('income', 'invoice_payment') THEN amount ELSE 0 END), 0) as revenue, COALESCE(SUM(CASE WHEN entry_type = 'expense' THEN amount ELSE 0 END), 0) as expenses FROM accounting_entries WHERE deleted_at IS NULL"
+    );
+    const revenue = financialData[0]?.revenue || 0;
+    const expenses = financialData[0]?.expenses || 0;
+    res.json({ success: true, data: { revenue, expenses, net_income: revenue - expenses } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Admin Authentication API
 app.post("/api/admin/authenticate", handleAdminAuth);
 
@@ -4512,9 +4557,8 @@ const modularRoutes = [
   { path: "/api/applications", route: "./backend/routes/applications" },
   { path: "/api/properties", route: "./backend/routes/properties" },
   { path: "/api/management", route: "./backend/routes/management" },
-  { path: "/api/admin", route: "./backend/routes/admin" },
+  // { path: "/api/admin", route: "./backend/routes/admin" }, // Unified in server.js for stability
   // { path: "/api/admin-verification", route: "./backend/routes/admin-verification" }, // Handled in server.js for stability
-  // { path: "/api/developer-verification", route: "./backend/routes/developer-verification" }, // Handled in server.js for stability
   { path: "/api/mpesa", route: "./backend/routes/mpesa" },
 ];
 
