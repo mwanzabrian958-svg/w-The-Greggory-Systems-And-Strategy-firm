@@ -162,85 +162,56 @@ function AdminLayout({ user, children, onLogout }) {
             {children}
           </div>
         ) : (
-          /* WORKSTATION OVERLAY SYSTEM (THE UI FROM 2 HRS AGO) */
-          <div className="fixed inset-0 bg-[#f8fafc] z-[1000] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
-            {/* Workstation Navbar */}
-            <div className="bg-[#0f172a] text-white px-8 py-4 flex items-center justify-between border-b border-white/5 shadow-2xl flex-shrink-0">
+          /* FULL-PAGE OPERATIONAL WORKSTATION */
+          <div className="fixed inset-0 bg-white z-[1000] flex flex-col animate-in fade-in duration-200">
+            {/* Workstation Navbar - Edge to Edge */}
+            <div className="bg-[#0f172a] text-white px-6 py-4 flex items-center justify-between border-b border-white/10 shadow-xl flex-shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white font-black text-lg border border-white/10 shadow-lg shadow-teal-500/20">GS</div>
+                <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white font-black text-lg border border-white/10 shadow-lg">GS</div>
                 <div>
                   <h2 className="text-xl font-black uppercase tracking-tighter leading-none">{workstationLabel}</h2>
                   <p className="text-[8px] text-teal-400 font-black uppercase tracking-[0.4em] mt-1.5">Operational Workstation Active</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-6">
                 <div className="hidden lg:flex flex-col text-right mr-4 border-r border-white/10 pr-6">
                    <p className="text-[7px] text-slate-500 font-black uppercase tracking-widest">Session Status</p>
                    <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">SECURE RELAY</p>
                 </div>
                 <button
                   onClick={() => navigate('/admin')}
-                  className="p-3 bg-white/5 hover:bg-rose-600 text-slate-400 hover:text-white rounded-2xl border border-white/10 transition-all group shadow-xl active:scale-95"
-                  title="Terminate Session"
+                  className="p-2.5 bg-white/5 hover:bg-rose-600 text-slate-400 hover:text-white rounded-xl border border-white/10 transition-all group shadow-xl active:scale-95"
+                  title="Close Workstation"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Workstation Content Frame - FORMAL DOCUMENT STYLE */}
-            <div className="flex-1 overflow-y-auto bg-slate-100 custom-scrollbar p-10">
-               <div className="max-w-[1400px] mx-auto min-h-screen bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
-                  {/* Formal Header Inside Workstation */}
-                  <div className="p-12 border-b-2 border-slate-50 flex justify-between items-start">
-                     <div className="flex items-start gap-4">
-                        <img src="/favicon.svg" alt="Logo" className="w-16 h-16 object-contain" />
-                        <div className="company-brand text-left">
-                           <div className="text-[#0d9488] text-2xl font-black uppercase tracking-tighter leading-none">Greggory Systems</div>
-                           <div className="text-[#0d9488] text-2xl font-black uppercase tracking-tighter leading-none" style={{ marginTop: '-4px' }}>& Strategy Firm</div>
-                           <div className="text-slate-500 text-[8px] font-black uppercase tracking-[0.4em] mt-1.5">Strategic Systems & Business Solutions</div>
-                        </div>
-                     </div>
-                     <div className="flex flex-col items-end">
-                        <div className="bg-[#0d9488]/10 px-6 py-2 rounded-xl border border-[#0d9488]/20 text-right mb-4">
-                           <p className="text-[10px] font-black text-[#0d9488] uppercase tracking-[0.4em]">{workstationLabel} Record</p>
-                        </div>
-                        <div className="relative">
-                           {!imageError && profilePhotoUrl ? (
-                             <img src={profilePhotoUrl} alt={displayName} onError={() => setImagePhotoError(true)} className="w-24 h-24 rounded-2xl object-cover border-4 border-slate-100 shadow-xl" />
-                           ) : (
-                             <div className="w-24 h-24 rounded-2xl bg-slate-100 flex items-center justify-center text-3xl font-black text-slate-300 border-4 border-slate-50">{initials}</div>
-                           )}
-                           <div className="absolute -bottom-2 -right-2 bg-emerald-500 p-1.5 rounded-lg border-4 border-white text-white shadow-lg"><ShieldCheck size={12} /></div>
-                        </div>
-                     </div>
+            {/* Workstation Content - Full Screen Edge-to-Edge */}
+            <div className="flex-1 overflow-y-auto bg-white custom-scrollbar">
+               {/* Internal Branding Strip */}
+               <div className="px-8 py-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                     <div className="text-teal-600 text-lg font-black uppercase tracking-tighter">Greggory Systems <span className="text-slate-400 font-medium">| Personnel Terminal</span></div>
                   </div>
+                  <div className="flex items-center gap-3">
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Node ID: {user?.id || 'MASTER'}</p>
+                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  </div>
+               </div>
 
-                  {/* Right Aligned Content Container */}
-                  <div className="flex-1 p-12 bg-white flex flex-col items-end">
-                     <div className="w-full flex flex-col items-end">
-                        {children}
-                     </div>
-                  </div>
-
-                  {/* Formal Footer */}
-                  <div className="p-10 border-t border-slate-50 flex justify-between items-center opacity-60">
-                     <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">© {new Date().getFullYear()} Greggory Systems & Strategy Firm</p>
-                     <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                        <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Secure Protocol Synchronized</p>
-                     </div>
-                  </div>
+               {/* MAIN CONTENT AREA: 100% WIDTH */}
+               <div className="w-full p-8 lg:p-12">
+                  {children}
                </div>
             </div>
 
             {/* Terminal Status Bar */}
-            <div className="bg-[#0f172a] h-10 border-t border-white/5 flex items-center px-8 justify-between flex-shrink-0">
-               <div className="flex items-center gap-6">
-                  <p className="text-[6px] font-black text-slate-500 uppercase tracking-[0.4em]">Node ID: {user?.id || 'MASTER'}</p>
-               </div>
-               <p className="text-[6px] font-black text-slate-700 uppercase tracking-[0.6em]">Property of Greggory Systems & Strategy Firm © 2024</p>
+            <div className="bg-[#0f172a] h-8 border-t border-white/5 flex items-center px-6 justify-between flex-shrink-0">
+               <p className="text-[6px] font-black text-slate-500 uppercase tracking-[0.4em]">Property of Greggory Systems & Strategy Firm © 2024</p>
+               <p className="text-[6px] font-black text-slate-700 uppercase tracking-[0.6em]">SECURE ARCHITECTURE v4.0</p>
             </div>
           </div>
         )}
