@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { TrendingUp, Clock, DollarSign, Users, CheckCircle, Rocket } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
+import { formatKSH } from '../utils/currencyUtils'
+
 const CaseStudies = () => {
   const { isAuthenticated, user } = useAuth()
   const canEdit = isAuthenticated && user && (user.role === 'employee' || user.role === 'developer')
@@ -25,7 +27,7 @@ const CaseStudies = () => {
         { icon: <TrendingUp />, metric: '35%', label: 'Increase in Delivery Speed' },
         { icon: <Clock />, metric: '90%', label: 'On-Time Project Completion' },
         { icon: <Users />, metric: '45%', label: 'Improved Team Satisfaction' },
-        { icon: <DollarSign />, metric: 'KES 25,000', label: 'Revenue Recovered in Year One' }
+        { icon: <DollarSign />, metric: formatKSH(25000), label: 'Revenue Recovered in Year One' }
       ],
       testimonial: {
         quote: 'The-Greggory-Systems-And-Strategy-firm transformed our approach to systems design and strategic planning. We now deliver consistently, and our team is happier than ever.',
@@ -48,7 +50,7 @@ const CaseStudies = () => {
       ],
       results: [
         { icon: <TrendingUp />, metric: '28%', label: 'Reduction in Operational Waste' },
-        { icon: <DollarSign />, metric: 'KES 25,000', label: 'Annual Cost Savings' },
+        { icon: <DollarSign />, metric: formatKSH(25000), label: 'Annual Cost Savings' },
         { icon: <CheckCircle />, metric: '62%', label: 'Decrease in Quality Defects' },
         { icon: <TrendingUp />, metric: '22%', label: 'Increase in Profit Margin' }
       ],
@@ -73,7 +75,7 @@ const CaseStudies = () => {
       ],
       results: [
         { icon: <CheckCircle />, metric: '100%', label: 'On-Time Completion' },
-        { icon: <DollarSign />, metric: 'KES 25,000', label: 'Under Budget' },
+        { icon: <DollarSign />, metric: formatKSH(25000), label: 'Under Budget' },
         { icon: <Users />, metric: '500+', label: 'Staff Successfully Trained' },
         { icon: <TrendingUp />, metric: '95%', label: 'User Adoption Rate in 30 Days' }
       ],
@@ -148,7 +150,7 @@ const CaseStudies = () => {
       results: [
         { icon: <TrendingUp />, metric: '17%', label: 'Schedule Adherence Improvement' },
         { icon: <Clock />, metric: '22%', label: 'Faster Issue Resolution' },
-        { icon: <DollarSign />, metric: 'KES 24,500', label: 'Budget Savings' },
+        { icon: <DollarSign />, metric: formatKSH(24500), label: 'Budget Savings' },
         { icon: <Users />, metric: '92%', label: 'Stakeholder Visibility Score' }
       ],
       testimonial: {

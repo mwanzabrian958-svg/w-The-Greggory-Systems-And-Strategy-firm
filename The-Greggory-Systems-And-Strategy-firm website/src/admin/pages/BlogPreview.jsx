@@ -49,6 +49,23 @@ export function BlogPreview() {
     );
   }
 
+  const previewContent = (() => {
+    if (!article.content || !article.content.trim()) return "";
+    const trimmed = article.content.trim();
+    const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(trimmed);
+
+    if (looksLikeHtml) {
+      return trimmed;
+    }
+
+    return trimmed
+      .split(/\n{2,}|\r\n\r\n/)
+      .map((block) => block.trim())
+      .filter(Boolean)
+      .map((block) => `<p>${block.replace(/\n/g, '<br />')}</p>`)
+      .join("");
+  })();
+
   return (
     <div className="fixed inset-0 bg-[#020617] z-[500] flex flex-col overflow-hidden font-sans">
       {/* Header Relay */}
@@ -113,9 +130,10 @@ export function BlogPreview() {
             </h1>
 
             <div className="prose prose-invert prose-sm max-w-none">
-              <div className="text-[11px] leading-relaxed text-slate-300 font-medium whitespace-pre-wrap">
-                {article.content}
-              </div>
+              <div
+                className="blog-preview-content text-[11px] leading-relaxed text-slate-300 font-medium"
+                dangerouslySetInnerHTML={{ __html: previewContent }}
+              />
             </div>
           </div>
 
@@ -126,6 +144,50 @@ export function BlogPreview() {
           </div>
         </article>
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .blog-preview-content {
+          color: #e2e8f0;
+          background: transparent;
+        }
+
+        .blog-preview-content p,
+        .blog-preview-content ul,
+        .blog-preview-content ol,
+        .blog-preview-content blockquote,
+        .blog-preview-content h1,
+        .blog-preview-content h2,
+        .blog-preview-content h3,
+        .blog-preview-content h4,
+        .blog-preview-content h5,
+        .blog-preview-content h6,
+        .blog-preview-content img,
+        .blog-preview-content figure,
+        .blog-preview-content iframe {
+          margin-top: 1rem;
+          margin-bottom: 1rem;
+        }
+
+        .blog-preview-content p,
+        .blog-preview-content li,
+        .blog-preview-content blockquote {
+          color: #e2e8f0;
+        }
+
+        .blog-preview-content a {
+          color: #67e8f9;
+          text-decoration: underline;
+        }
+
+        .blog-preview-content img,
+        .blog-preview-content iframe,
+        .blog-preview-content video {
+          display: block;
+          max-width: 100%;
+          height: auto;
+          border-radius: 16px;
+        }
+      `}} />
 
       {/* Footer Relay */}
       <footer className="bg-[#0f172a] border-t border-white/5 p-6 flex justify-between items-center flex-shrink-0">

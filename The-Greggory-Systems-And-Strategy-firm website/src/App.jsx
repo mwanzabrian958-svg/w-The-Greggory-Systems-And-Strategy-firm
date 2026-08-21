@@ -26,6 +26,8 @@ import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
 import ClientPortal from './pages/ClientPortal'
 import Pricing from './pages/Pricing'
+import ClientReports from './pages/ClientReports'
+import ClientAlerts from './pages/ClientAlerts'
 
 // Admin Module
 import { AdminRouter } from './admin/AdminRouter'
@@ -35,14 +37,13 @@ function Layout() {
   const authPages = ['/login', '/signup', '/forgot-password']
   const isAuthPage = authPages.includes(location.pathname)
   const isAdminPage = location.pathname.startsWith('/admin')
-  const isDeveloperPage = location.pathname === '/developer'
-  const isClientPortal = location.pathname === '/client-portal' || location.pathname.startsWith('/projects')
+  const isClientPortal = location.pathname === '/client-portal' || location.pathname === '/client-reports' || location.pathname === '/client-alerts' || location.pathname.startsWith('/projects')
 
   return (
 
     <div className="flex flex-col min-h-screen">
 
-      {!isAuthPage && !isAdminPage && !isDeveloperPage && !isClientPortal && (
+      {!isAuthPage && !isAdminPage && !isClientPortal && (
         <>
           <Navbar />
           <SiteTagline />
@@ -86,13 +87,31 @@ function Layout() {
           {/* Admin Routes - Using new modular admin system */}
           <Route path="/admin/*" element={<AdminRouter />} />
 
-          <Route 
-            path="/client-portal" 
+          <Route
+            path="/client-portal"
             element={
               <PrivateRoute>
-                <Projects />
+                <ClientPortal />
               </PrivateRoute>
-            } 
+            }
+          />
+
+          <Route
+            path="/client-reports"
+            element={
+              <PrivateRoute>
+                <ClientReports />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/client-alerts"
+            element={
+              <PrivateRoute>
+                <ClientAlerts />
+              </PrivateRoute>
+            }
           />
 
           <Route path="/pricing" element={<Pricing />} />
@@ -101,8 +120,8 @@ function Layout() {
 
       </main>
 
-      {!isAuthPage && !isAdminPage && !isDeveloperPage && !isClientPortal && <Footer />}
-      {!isAdminPage && !isDeveloperPage && !isClientPortal && <FloatingWhatsApp />}
+      {!isAuthPage && !isAdminPage && !isClientPortal && <Footer />}
+      <FloatingWhatsApp />
     </div>
 
   )
@@ -126,4 +145,3 @@ function App() {
 
 
 export default App
-

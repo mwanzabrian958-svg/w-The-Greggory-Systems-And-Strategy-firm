@@ -8,6 +8,24 @@ import { getApiUrl, API_BASE_URL } from "../../services/api";
  * Optimized with compact containers and technical-grade tiny typography.
  * Excerpt field removed as per user instruction.
  */
+const normalizeBlogContent = (rawContent) => {
+  if (!rawContent || !rawContent.trim()) return "";
+
+  const trimmed = rawContent.trim();
+  const looksLikeHtml = /<\/?[a-z][\s\S]*>/i.test(trimmed);
+
+  if (looksLikeHtml) {
+    return trimmed;
+  }
+
+  return trimmed
+    .split(/\n{2,}|\r\n\r\n/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => `<p>${block.replace(/\n/g, '<br />')}</p>`)
+    .join("");
+};
+
 export function CreateBlog() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -37,10 +55,11 @@ export function CreateBlog() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Auto-excerpt generation for database compatibility
+      const normalizedContent = normalizeBlogContent(form.content);
       const payload = {
         ...form,
-        excerpt: form.content.substring(0, 150).replace(/[#*`]/g, "") + "..."
+        content: normalizedContent,
+        excerpt: normalizedContent.replace(/<[^>]+>/g, "").substring(0, 150).replace(/[#*`]/g, "") + "..."
       };
       const response = await fetch(`${API_BASE_URL}/blog-articles`, {
         method: "POST",
@@ -101,7 +120,17 @@ export function CreateBlog() {
                 <div className="flex items-center gap-2 text-teal-500 border-b border-white/5 pb-2"><Type size={10} /><h4 className="text-[8px] font-black uppercase tracking-[0.2em]">Manuscript Data</h4></div>
                 <div className="grid gap-4">
                   <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Primary Title</label><input type="text" placeholder="Strategic title..." value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-teal-500" required /></div>
-                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Master Content</label><textarea placeholder="Write analysis..." value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-[9px] font-medium text-slate-300 outline-none h-[350px] resize-none leading-relaxed focus:border-teal-500" required /></div>
+                  <div>
+                    <label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Master Content</label>
+                    <textarea
+                      placeholder="Write plain text or paste HTML like <p>...</p> <h2>...</h2>"
+                      value={form.content}
+                      onChange={(e) => setForm({ ...form, content: e.target.value })}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-[9px] font-medium text-slate-300 outline-none h-[350px] resize-none leading-relaxed focus:border-teal-500"
+                      required
+                    />
+                    <p className="mt-2 text-[6px] font-black uppercase tracking-[0.25em] text-slate-500">HTML is supported. Plain text will be formatted into readable paragraphs.</p>
+                  </div>
                 </div>
               </section>
             </div>

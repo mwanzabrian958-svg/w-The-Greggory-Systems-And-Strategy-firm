@@ -4,7 +4,7 @@ import {
   CheckSquare, Plus, X, Save, RefreshCw, Trash2,
   Clock, AlertCircle, ChevronLeft, User, Calendar, Tag
 } from "lucide-react";
-import { getApiUrl, API_BASE_URL } from "../../services/api";
+import { apiCall } from "../../services/api";
 
 /**
  * ProjectTasks - Standalone Full-Screen Task Management Node
@@ -37,19 +37,11 @@ export function ProjectTasks() {
   const fetchProjectData = async () => {
     try {
       setLoading(true);
-      // Fetch specific project details
-      const pRes = await fetch(getApiUrl(`/api/user-projects/${projectId}`));
-      if (pRes.ok) {
-        const pData = await pRes.json();
-        setProject(pData);
-      }
+      const pRes = await apiCall(`/user-projects/${projectId}`);
+      if (pRes) setProject(pRes);
 
-      // Fetch tasks for this project
-      const tRes = await fetch(getApiUrl(`/api/projects/${projectId}/tasks`));
-      if (tRes.ok) {
-        const tData = await tRes.json();
-        setTasks(tData.tasks || []);
-      }
+      const tRes = await apiCall(`/projects/${projectId}/tasks`);
+      if (tRes) setTasks(tRes.tasks || []);
     } catch (e) {
       console.error("Relay Failure:", e);
     } finally {
@@ -59,70 +51,54 @@ export function ProjectTasks() {
 
   const fetchTeam = async () => {
     try {
-      const res = await fetch(getApiUrl("/api/users"));
-      if (res.ok) {
-        const data = await res.json();
-        // Filter for personnel who can be assigned tasks
-        setTeam(data.users || []);
-      }
-    } catch (e) {
-      console.error(e);
-    }
+      const data = await apiCall("/api/users");
+      if (data) setTeam(data.users || []);
+    } catch (e) { console.error(e); }
   };
 
   const handleAddTask = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch(getApiUrl(`/api/projects/${projectId}/tasks`), {
+      const res = await apiCall(`/projects/${projectId}/tasks`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTask)
       });
-      if (res.ok) {
+      if (res) {
         setShowAddForm(false);
         setNewTask({ task_name: "", task_description: "", assigned_to: "", status: "not_started", priority: "medium", due_date: "" });
         fetchProjectData();
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch (e) { console.error(e); } finally { setIsSubmitting(false); }
   };
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
-      const res = await fetch(getApiUrl(`/api/tasks/${taskId}/status`), {
+      const res = await apiCall(`/tasks/${taskId}/status`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus })
       });
-      if (res.ok) {
+      if (res) {
         setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
       }
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
   };
 
   const handleDeleteTask = async (taskId) => {
     if (!window.confirm("Terminate this task node?")) return;
     try {
-      const res = await fetch(getApiUrl(`/api/tasks/${taskId}`), { method: "DELETE" });
-      if (res.ok) {
+      const res = await apiCall(`/tasks/${taskId}`, { method: "DELETE" });
+      if (res) {
         setTasks(tasks.filter(t => t.id !== taskId));
       }
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
   };
 
   if (loading) return <div className="fixed inset-0 bg-[#0f172a] flex items-center justify-center"><RefreshCw className="animate-spin text-teal-500" size={24} /></div>;
 
   return (
     <div className="fixed inset-0 bg-[#0f172a] z-[500] flex flex-col overflow-hidden font-sans text-white">
-      {/* Tighter Header */}
+      {/* Header */}
       <div className="bg-[#0f172a] px-6 py-3 flex items-center justify-between border-b border-white/5 flex-shrink-0">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-teal-500/10 rounded-lg flex items-center justify-center text-teal-500 border border-teal-500/20">
@@ -224,7 +200,7 @@ export function ProjectTasks() {
         </div>
       </div>
 
-      {/* COMPACT TASK ADD FORM - FULL SCREEN SUB-WORKSPACE */}
+      {/* COMPACT TASK ADD FORM */}
       {showAddForm && (
         <div className="fixed inset-0 bg-[#0f172a] z-[600] animate-in fade-in duration-300 flex items-center justify-center p-6">
            <div className="bg-slate-900 border border-white/10 rounded-[40px] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col">
@@ -249,7 +225,7 @@ export function ProjectTasks() {
                        <label className="block text-[7px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Assign Actor Node</label>
                        <select value={newTask.assigned_to} onChange={(e) => setNewTask({...newTask, assigned_to: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[9px] font-bold outline-none">
                           <option value="" className="bg-[#0f172a]">Select Personnel...</option>
-                          {team.map(t => <option key={`${t.source_table}-${t.id}`} value={t.id} className="bg-[#0f172a]">{t.display_name}</option>)}
+                          {team.map(t => <option key={`${t.id}`} value={t.id} className="bg-[#0f172a]">{t.display_name}</option>)}
                        </select>
                     </div>
                     <div>

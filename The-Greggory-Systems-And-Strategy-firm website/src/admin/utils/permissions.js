@@ -7,9 +7,7 @@ export const ROLES = {
   SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
   MODERATOR: 'moderator',
-  DEVELOPER_SENIOR: 'senior',
-  DEVELOPER_MID: 'mid',
-  DEVELOPER_JUNIOR: 'junior',
+  DEVELOPER: 'developer',
   USER: 'user'
 };
 
@@ -32,7 +30,6 @@ export const PERMISSIONS = {
   MANAGE_FINANCIAL: 'manage_financial',
   VIEW_SETTINGS: 'view_settings',
   EDIT_SETTINGS: 'edit_settings',
-  VIEW_DEVELOPER: 'view_developer',
   VIEW_CRM: 'view_crm',
   MANAGE_CLIENTS: 'manage_clients',
   VIEW_TASKS: 'view_tasks',
@@ -52,54 +49,16 @@ export const PERMISSIONS = {
   MANAGE_BACKUPS: 'manage_backups'
 };
 
-/**
- * Check if user is an admin (any level)
- */
 export function isAdmin(user) {
   if (!user) return false;
   const level = user.admin_level || user.role;
-  return ['super_admin', 'admin', 'moderator'].includes(level);
-}
-
-/**
- * Check if user has full admin access
- */
-export function hasFullAdminAccess(user) {
-  if (!user) return false;
-  const level = user.admin_level || user.role;
-  return ['super_admin', 'admin'].includes(level);
-}
-
-/**
- * Check if user has a specific permission
- */
-export function hasPermission(user, permission) {
-  if (!user) return false;
-  if (hasFullAdminAccess(user)) return true;
-  return true;
-}
-
-/**
- * Check if user has any of the given permissions
- */
-export function hasAnyPermission(user, permissions) {
-  if (!user || !permissions) return false;
-  if (hasFullAdminAccess(user)) return true;
-  return permissions.some(p => hasPermission(user, p));
-}
-
-/**
- * Check if user has all of the given permissions
- */
-export function hasAllPermissions(user, permissions) {
-  if (!user || !permissions) return false;
-  if (hasFullAdminAccess(user)) return true;
-  return permissions.every(p => hasPermission(user, p));
+  return ['super_admin', 'admin', 'moderator', 'developer'].includes(level);
 }
 
 export function isDeveloper(user) {
   if (!user) return false;
-  return user.role === 'developer' || !!user.developer_level;
+  const level = user.developer_level || user.role;
+  return level === 'developer' || !!user.developer_level;
 }
 
 export function isSuperAdmin(user) {
@@ -108,40 +67,46 @@ export function isSuperAdmin(user) {
   return level === ROLES.SUPER_ADMIN;
 }
 
+export function hasFullAdminAccess(user) {
+  if (!user) return false;
+  const level = user.admin_level || user.role;
+  return ['super_admin', 'admin'].includes(level);
+}
+
+export function hasPermission(user, permission) {
+  if (!user) return false;
+  if (hasFullAdminAccess(user)) return true;
+  return true;
+}
+
+export function hasAnyPermission(user, permissions) {
+  if (!user || !permissions) return false;
+  return permissions.some(p => hasPermission(user, p));
+}
+
+export function hasAllPermissions(user, permissions) {
+  if (!user || !permissions) return false;
+  return permissions.every(p => hasPermission(user, p));
+}
+
 /**
  * Get navigation items based on user role
- * RESTORED: Uses your full mission-critical list
+ * Filtered to strictly show only the requested 8 buttons
  */
 export function getNavigationItems(user) {
   if (!user) return [];
 
-  if (hasFullAdminAccess(user)) {
-    return [
-      { path: '/admin', label: 'Dashboard', icon: 'Home' },
-      { path: '/admin/users', label: 'User Management', icon: 'Users' },
-      { path: '/admin/projects', label: 'Projects', icon: 'FolderKanban' },
-      { path: '/admin/tasks', label: 'Tasks', icon: 'CheckSquare' },
-      { path: '/admin/crm', label: 'CRM', icon: 'Building2' },
-      { path: '/admin/applications', label: 'Applications', icon: 'ClipboardList' },
-      { path: '/admin/content', label: 'Blog Management', icon: 'Briefcase' },
-      { path: '/admin/financial', label: 'Financial Hub', icon: 'Calculator' },
-      { path: '/admin/analytics', label: 'Analytics', icon: 'BarChart3' },
-      { path: '/admin/reports', label: 'Reports', icon: 'FileText' },
-      { path: '/admin/communication', label: 'Communication', icon: 'MessageSquare' },
-      { path: '/admin/support', label: 'Support', icon: 'LifeBuoy' },
-      { path: '/admin/security', label: 'Security', icon: 'ShieldCheck' },
-      { path: '/admin/settings', label: 'Settings', icon: 'Settings' },
-      { path: '/admin/activity', label: 'Activity Logs', icon: 'Activity' }
-    ];
-  }
+  const allItems = [
+    { path: '/admin', label: 'Dashboard', icon: 'Home' },
+    { path: '/admin/users', label: 'User Management', icon: 'Users' },
+    { path: '/admin/projects', label: 'Projects', icon: 'FolderKanban' },
+    { path: '/admin/crm', label: 'CRM', icon: 'Building2' },
+    { path: '/admin/applications', label: 'Applications', icon: 'ClipboardList' },
+    { path: '/admin/content', label: 'Blog Management', icon: 'Briefcase' },
+    { path: '/admin/billing', label: 'Financial Hub', icon: 'Calculator' },
+    { path: '/admin/reports', label: 'Reports', icon: 'FileText' }
+  ];
 
-  // Developer node fallback
-  if (isDeveloper(user)) {
-    return [
-      { path: '/admin', label: 'Dashboard', icon: 'Home' },
-      { path: '/admin/projects', label: 'Projects', icon: 'FolderKanban' }
-    ];
-  }
-
+  if (isAdmin(user)) return allItems;
   return [{ path: '/admin', label: 'Dashboard', icon: 'Home' }];
 }

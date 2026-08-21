@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Calculator, Check, CheckCircle2, DollarSign, Headphones, Shield, Star, TrendingUp, Users, X, Zap } from 'lucide-react'
+import { formatKSH } from '../utils/currencyUtils'
 
 const Pricing = () => {
   const [billingCycle, setBillingCycle] = useState('monthly')
@@ -69,7 +70,7 @@ const Pricing = () => {
             <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
               Flexible support for organizations at different stages.
             </h1>
-            <p className="mt-5 text-base text-slate-300 sm:text-lg">
+            <p className="mt-5 text-base text-slate-600 dark:text-slate-300 sm:text-lg">
               Choose a structured engagement or request a tailored proposal for a more complex initiative.
             </p>
 
@@ -94,16 +95,16 @@ const Pricing = () => {
                 </div>
               )}
               <h2 className="text-2xl font-black text-slate-900 dark:text-white">{plan.name}</h2>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{plan.description}</p>
+              <p className="mt-2 text-sm text-slate-700 dark:text-slate-100">{plan.description}</p>
               <div className="mt-8 flex items-end gap-2">
-                <span className="text-4xl font-black text-slate-900 dark:text-white">KES {plan.price.toLocaleString()}</span>
+                <span className="text-4xl font-black text-slate-900 dark:text-white">{formatKSH(plan.price)}</span>
                 <span className="pb-1 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">/ {billingCycle}</span>
               </div>
               <button onClick={() => setSelectedPlan(plan.id)} className={`mt-6 rounded-2xl px-4 py-3 text-sm font-semibold transition ${selectedPlan === plan.id ? 'bg-[#4c6a4d] text-white' : 'bg-[#f6ece1] text-slate-800 hover:bg-[#efe0cf] dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'}`}>
                 {selectedPlan === plan.id ? 'Selected' : 'Choose plan'}
               </button>
 
-              <ul className="mt-8 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+              <ul className="mt-8 space-y-3 text-sm text-slate-700 dark:text-slate-100">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-[#4c6a4d]" />
@@ -127,7 +128,7 @@ const Pricing = () => {
           <div className="soft-card p-8 sm:p-10">
             <p className="eyebrow">Custom proposal</p>
             <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-900 dark:text-white">Estimate a more tailored engagement.</h2>
-            <p className="mt-4 text-base text-slate-600 dark:text-slate-300">
+            <p className="mt-4 text-base text-slate-700 dark:text-slate-100">
               Use the calculator below to get a practical estimate for a custom initiative based on scope, duration, and complexity.
             </p>
 
@@ -180,7 +181,7 @@ const Pricing = () => {
                 <div className="rounded-3xl border border-[#e3d2bb] bg-[#f8efe6] p-6 dark:border-slate-800 dark:bg-slate-900/60">
                   <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Estimated value</p>
                   <div className="mt-3 flex items-end gap-2">
-                    <span className="text-4xl font-black text-slate-900 dark:text-white">KES {calculateCustomPrice().toLocaleString()}</span>
+                    <span className="text-4xl font-black text-slate-900 dark:text-white">{formatKSH(calculateCustomPrice())}</span>
                     <span className="pb-1 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">estimated</span>
                   </div>
                 </div>
@@ -190,7 +191,7 @@ const Pricing = () => {
                     <Shield className="h-4 w-4 text-[#4c6a4d]" />
                     Included in a typical proposal
                   </div>
-                  <ul className="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                  <ul className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-100">
                     <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-[#4c6a4d]" /> Strategic planning and delivery oversight</li>
                     <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-[#4c6a4d]" /> Scheduled check-ins and progress reporting</li>
                     <li className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 text-[#4c6a4d]" /> Documented next steps and implementation support</li>
@@ -214,7 +215,7 @@ const Pricing = () => {
                 <item.icon className="h-5 w-5" />
               </div>
               <h3 className="mt-4 text-lg font-black text-slate-900 dark:text-white">{item.title}</h3>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{item.text}</p>
+              <p className="mt-2 text-sm text-slate-700 dark:text-slate-100">{item.text}</p>
             </div>
           ))}
         </div>

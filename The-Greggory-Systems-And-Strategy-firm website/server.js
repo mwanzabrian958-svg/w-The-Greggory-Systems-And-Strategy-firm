@@ -5,6 +5,9 @@ const rateLimit = require("express-rate-limit");
 const mysql = require("mysql2/promise");
 const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
+const { createClient } = require('redis');
+const PDFDocument = require('pdfkit');
+const { OAuth2Client } = require('google-auth-library');
 const connectMongoDB = require("./server/config/mongodb");
 const models = require("./server/models");
 const {
@@ -18,7 +21,13 @@ const crypto = require("crypto");
 const bcryptjs = require("bcryptjs");
 const { buildClientPortalPayload } = require("./server/utils/clientPortalData");
 const { sendWhatsAppToUser } = require("./backend/services/whatsappService");
+const { sendInvoiceEmail } = require("./backend/services/emailService");
 require("dotenv").config();
+
+// Initialize Security & Auth Clients
+const redis = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
+redis.connect().catch(err => console.warn('[REDIS] Not connected, using memory fallback.'));
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // ── AUTH MIDDLEWARE ──────────────────────────────────────────
 
@@ -114,22 +123,32 @@ function verifyAdminSessionToken(token) {
 const memoryStore = new Map();
 
 // Security Helper Functions
+const isAccountLocked = async (email) => {
+  const lockoutKey = `admin_account_locked_${email}`;
+  if (redis.isOpen) {
+    const isLocked = await redis.get(lockoutKey);
+    return isLocked === "true";
+  } else {
+    const lockout = memoryStore.get(lockoutKey);
+    return lockout && lockout.expires > Date.now();
+  }
+};
+
 const trackFailedLogin = async (email, ip) => {
   const attemptsKey = `admin_failed_attempts_${email}`;
   const lockoutKey = `admin_account_locked_${email}`;
   const rateLimitKey = `admin_login_attempts_${ip}`;
 
   try {
-    // Try Redis first, fallback to memory
     let failedAttempts;
-    if (redis) {
-      failedAttempts = (await redis.incr(attemptsKey)) || 1;
-      await redis.expire(attemptsKey, 3600); // 1 hour expiry
+    if (redis.isOpen) {
+      failedAttempts = await redis.incr(attemptsKey);
+      await redis.expire(attemptsKey, 3600);
       await redis.incr(rateLimitKey);
-      await redis.expire(rateLimitKey, 900); // 15 minutes expiry
+      await redis.expire(rateLimitKey, 900);
 
       if (failedAttempts >= 5) {
-        await redis.set(lockoutKey, "true", "EX", 1800); // 30 minutes lockout
+        await redis.set(lockoutKey, "true", { EX: 1800 });
       }
     } else {
       // Memory fallback
@@ -157,9 +176,7 @@ const trackFailedLogin = async (email, ip) => {
     }
 
     if (failedAttempts >= 5) {
-      console.log(
-        `[SECURITY] Account locked for 30 minutes: ${email} from IP: ${ip}`,
-      );
+      console.warn(`[SECURITY] Account locked: ${email} from IP: ${ip}`);
     }
   } catch (error) {
     console.error("Security tracking error:", error);
@@ -168,12 +185,11 @@ const trackFailedLogin = async (email, ip) => {
 
 const clearFailedAttempts = async (email, ip) => {
   try {
-    if (redis) {
+    if (redis.isOpen) {
       await redis.del(`admin_failed_attempts_${email}`);
       await redis.del(`admin_account_locked_${email}`);
       await redis.del(`admin_login_attempts_${ip}`);
     } else {
-      // Memory fallback
       memoryStore.delete(`admin_failed_attempts_${email}`);
       memoryStore.delete(`admin_account_locked_${email}`);
       memoryStore.delete(`admin_login_attempts_${ip}`);
@@ -210,95 +226,74 @@ function isLocalAdminIp(raw) {
   );
 }
 
-// PDF Generation Helper Function
-function generatePDFContent(type, document) {
-  // Simple PDF content generation (in production, use a proper PDF library like puppeteer or pdfkit)
-  let content = "";
+// PDF Generation Helper Function (Pro Upgrade)
+async function generatePDFContent(type, document) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50 });
+    let chunks = [];
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
 
-  if (type === "invoices") {
-    content = `
-INVOICE
+    // Header / Branding
+    doc.fontSize(20).text('THE GREGGORY SYSTEMS', { align: 'right' });
+    doc.fontSize(10).text('Strategic Systems & Strategy Firm', { align: 'right' });
+    doc.moveDown();
+    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+    doc.moveDown();
 
-Invoice Number: ${document.invoice_number}
-Date: ${document.issue_date}
-Due Date: ${document.due_date}
+    const title = type.toUpperCase().replace(/S$/, '');
+    doc.fontSize(25).fillColor('#0ea5e9').text(title, { underline: true });
+    doc.fillColor('black').fontSize(10);
+    doc.moveDown();
 
-Bill To:
-${document.client_name}
-${document.client_company || ""}
-${document.client_address || ""}
-${document.client_email || ""}
-${document.client_phone || ""}
+    if (type === "invoices") {
+      doc.text(`Invoice Number: ${document.invoice_number}`);
+      doc.text(`Date: ${document.issue_date}`);
+      doc.text(`Due Date: ${document.due_date}`);
+    } else if (type === "quotes") {
+      doc.text(`Quote Number: ${document.quote_number}`);
+      doc.text(`Valid Until: ${document.valid_until}`);
+    }
 
-Description:
-${document.description || ""}
+    doc.moveDown();
+    doc.fontSize(14).text('Bill To:', { underline: true });
+    doc.fontSize(10).text(document.client_name);
+    doc.text(document.client_email || '');
+    doc.text(document.client_phone || '');
+    doc.moveDown();
 
-Amount: KES ${document.total_amount_kes || document.total_amount}
-Status: ${document.payment_status}
+    // Line Items Table logic would go here in a full implementation
+    doc.fontSize(12).text('Description:', { underline: true });
+    doc.fontSize(10).text(document.description || 'Service delivery as per agreement');
+    doc.moveDown();
 
-Payment Method: ${document.payment_method}
-Payment Phone: ${document.payment_phone}
+    doc.fontSize(16).fillColor('#0ea5e9').text(`TOTAL AMOUNT: KES ${document.total_amount || document.amount}`, { align: 'right' });
 
-Notes: ${document.notes || ""}
-    `;
-  } else if (type === "quotes") {
-    content = `
-QUOTE
+    doc.moveDown(4);
+    doc.fillColor('gray').fontSize(8).text('Thank you for choosing The Greggory Systems. Payments via M-Pesa Business 174379.', { align: 'center' });
 
-Quote Number: ${document.quote_number}
-Date: ${document.issue_date}
-Valid Until: ${document.valid_until}
-
-Quote To:
-${document.client_name}
-${document.client_company || ""}
-${document.client_address || ""}
-${document.client_email || ""}
-${document.client_phone || ""}
-
-Description:
-${document.description || ""}
-
-Amount: KES ${document.total_amount_kes || document.total_amount}
-Status: ${document.status}
-
-Priority: ${document.priority}
-Type: ${document.quote_type}
-
-Payment Terms: ${document.payment_terms || ""}
-Delivery Timeline: ${document.delivery_timeline || ""}
-
-Notes: ${document.notes || ""}
-    `;
-  } else if (type === "transactions" || type === "receipt") {
-    content = `
-PAYMENT RECEIPT
-
-Transaction ID: ${document.transaction_id}
-Date: ${document.transaction_date}
-Amount: KES ${document.amount}
-Status: ${document.status}
-
-Payment Details:
-Method: ${document.payment_method}
-Phone: ${document.phone_number}
-Business Number: ${document.business_number}
-Account Reference: ${document.account_reference}
-
-Client: ${document.client_name}
-Email: ${document.client_email}
-Phone: ${document.client_phone}
-
-Notes: ${document.notes || ""}
-    `;
-  }
-
-  // Return as Buffer (in production, generate actual PDF)
-  return Buffer.from(content, "utf-8");
+    doc.end();
+  });
 }
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+const formatMpesaPhoneNumber = (phoneNumber) => {
+  if (!phoneNumber) return null;
+  const normalized = String(phoneNumber).replace(/\s+/g, '').replace(/[^\d]/g, '');
+  if (!normalized) return null;
+  if (normalized.startsWith('254')) return normalized;
+  if (normalized.startsWith('0')) return `254${normalized.slice(1)}`;
+  if (normalized.startsWith('+254')) return normalized.replace('+', '');
+  return normalized;
+};
+
+const buildMpesaPassword = (shortcode, passkey, timestamp) => {
+  const raw = `${shortcode}${passkey}${timestamp}`;
+  return Buffer.from(raw, 'utf8').toString('base64');
+};
 
 // Middleware
 // CORS configuration - allow frontend to access API
@@ -334,6 +329,44 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(express.static("public"));
 
+// ── LIVE USER TRACKING MIDDLEWARE ────────────────────────────
+app.use(async (req, res, next) => {
+  try {
+    const authHeader = req.header('authorization') || req.header('Authorization') || "";
+    let token = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.slice(7).trim();
+    } else if (authHeader) {
+      token = authHeader.trim();
+    }
+
+    if (token) {
+      // 1. Check for Admin Session Token (Custom HMAC)
+      const adminPayload = verifyAdminSessionToken(token);
+      if (adminPayload && adminPayload.uid) {
+        // Fire and forget updates to both admin and developer tables
+        mainDb.query("UPDATE admin_users SET last_active_at = NOW() WHERE id = ?", [adminPayload.uid]).catch(() => {});
+        mainDb.query("UPDATE developer_users SET last_active_at = NOW() WHERE id = ?", [adminPayload.uid]).catch(() => {});
+      } else {
+        // 2. Check for Standard JWT (Regular Users)
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || '***REMOVED***');
+          const userId = decoded.userId || decoded.id || decoded.user?.id;
+          if (userId) {
+            mainDb.query("UPDATE users SET last_active_at = NOW() WHERE id = ?", [userId]).catch(() => {});
+          }
+        } catch (jwtErr) {
+          // Token might be invalid or for another part of the system, ignore
+        }
+      }
+    }
+  } catch (err) {
+    // Middleware should never crash the app
+    console.error('[LIVE TRACKER] Error:', err.message);
+  }
+  next();
+});
+
 // Multer configuration for profile photo uploads
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -366,6 +399,11 @@ const mainDb = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+});
+
+mainDb.on('error', (err) => {
+  console.error('[DATABASE] Unexpected error on idle client', err);
+  process.exit(-1);
 });
 
 // Alias db to mainDb for legacy compatibility in this monolithic file
@@ -405,6 +443,115 @@ app.get("/api/test-mongodb", async (req, res) => {
       success: false,
       message: "MongoDB connection test failed",
       error: error.message
+    });
+  }
+});
+
+app.post('/api/mpesa/callback', (req, res) => {
+  console.log('[MPESA] callback received:', JSON.stringify(req.body || {}));
+  res.status(200).json({
+    ResultCode: 0,
+    ResultDesc: 'Accepted'
+  });
+});
+
+app.post('/api/mpesa/stkpush', async (req, res) => {
+  try {
+    const {
+      phoneNumber,
+      amount,
+      accountReference,
+      description,
+      userId,
+    } = req.body || {};
+
+    const consumerKey = process.env.MPESA_CONSUMER_KEY;
+    const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
+    const passkey = process.env.MPESA_PASSKEY;
+    const shortcode = process.env.MPESA_SHORTCODE || '174379';
+    const callbackUrl = process.env.MPESA_CALLBACK_URL || 'http://localhost:3000/api/mpesa/callback';
+
+    if (!consumerKey || !consumerSecret || !passkey) {
+      return res.status(500).json({
+        success: false,
+        message: 'M-Pesa credentials are not configured on the server. Set MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_PASSKEY, and MPESA_SHORTCODE first.'
+      });
+    }
+
+    if (!phoneNumber || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number and amount are required.'
+      });
+    }
+
+    const formattedPhone = formatMpesaPhoneNumber(phoneNumber);
+    if (!formattedPhone || formattedPhone.length < 12) {
+      return res.status(400).json({
+        success: false,
+        message: 'Enter a valid phone number in the format 07xxxxxxxx or 2547xxxxxxxx.'
+      });
+    }
+
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z').slice(0, 14);
+    const password = buildMpesaPassword(shortcode, passkey, timestamp);
+
+    const authResponse = await fetch('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
+      method: 'GET',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
+      },
+    });
+
+    const authData = await authResponse.json();
+    if (!authResponse.ok) {
+      throw new Error(authData?.error_description || 'Failed to authenticate with Safaricom');
+    }
+
+    const accessToken = authData.access_token;
+    const payload = {
+      BusinessShortCode: Number(shortcode),
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: 'CustomerPayBillOnline',
+      Amount: Number(amount),
+      PartyA: Number(formattedPhone),
+      PartyB: Number(shortcode),
+      PhoneNumber: Number(formattedPhone),
+      CallBackURL: callbackUrl,
+      AccountReference: String(accountReference || 'TheGreggory'),
+      TransactionDesc: String(description || `Payment from ${userId || 'client'}`)
+    };
+
+    const stkResponse = await fetch('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const stkData = await stkResponse.json();
+
+    if (!stkResponse.ok) {
+      throw new Error(stkData?.errorMessage || stkData?.requestDescription || 'Safaricom STK push request failed');
+    }
+
+    console.log('[MPESA] STK push accepted:', JSON.stringify(stkData));
+
+    return res.json({
+      success: true,
+      message: 'M-Pesa prompt sent to your phone. Enter your PIN to complete payment.',
+      data: stkData,
+      customerMessage: 'M-Pesa prompt sent to your phone. Enter your PIN to complete payment.'
+    });
+  } catch (error) {
+    console.error('[MPESA] STK push failed:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to send M-Pesa PIN request.',
+      error: error.message,
     });
   }
 });
@@ -527,11 +674,11 @@ app.get("/api/users", async (req, res) => {
   try {
     // Union all identity tables to provide a master view for the admin panel
     const [users] = await mainDb.query(`
-      SELECT id, email, first_name, last_name, display_name, primary_role AS role, whatsapp_auth_key, whatsapp_verified, created_at, 'client' as source_table FROM users WHERE deleted_at IS NULL
+      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, primary_role AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, 'client' as source_table FROM users WHERE deleted_at IS NULL
       UNION ALL
-      SELECT id, email, first_name, last_name, display_name, admin_level AS role, whatsapp_auth_key, whatsapp_verified, created_at, 'admin' as source_table FROM admin_users WHERE deleted_at IS NULL
+      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, admin_level AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, 'admin' as source_table FROM admin_users WHERE deleted_at IS NULL
       UNION ALL
-      SELECT id, email, first_name, last_name, display_name, developer_level AS role, whatsapp_auth_key, whatsapp_verified, created_at, 'developer' as source_table FROM developer_users WHERE deleted_at IS NULL
+      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, developer_level AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, 'developer' as source_table FROM developer_users WHERE deleted_at IS NULL
       ORDER BY created_at DESC
     `);
     res.json({ success: true, users });
@@ -1193,20 +1340,20 @@ app.get("/api/users/projects/:id", authenticateUser, async (req, res) => {
 
 app.post("/api/users/google-auth", async (req, res) => {
   try {
-    const {
-      email,
-      first_name,
-      last_name,
-      display_name,
-      google_id,
-      profile_photo_url,
-    } = req.body;
+    const { credential } = req.body;
 
-    if (!email) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Email is required" });
+    if (!credential) {
+      return res.status(400).json({ success: false, message: "Google credential token is required" });
     }
+
+    // Secure Verification
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const { email, given_name, family_name, sub: google_id, picture } = payload;
 
     // Check if user already exists
     const [existingUsers] = await mainDb.query(
@@ -1215,10 +1362,16 @@ app.post("/api/users/google-auth", async (req, res) => {
     );
 
     if (existingUsers.length > 0) {
-      // User exists - return their data
       const user = existingUsers[0];
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, role: 'user' },
+        process.env.JWT_SECRET || '***REMOVED***',
+        { expiresIn: '7d' }
+      );
+
       return res.json({
         success: true,
+        token,
         user: {
           id: user.id,
           email: user.email,
@@ -1226,46 +1379,32 @@ app.post("/api/users/google-auth", async (req, res) => {
           last_name: user.last_name,
           role: "user",
         },
-        message: "Login successful",
       });
     }
 
-    // Create new user from Google data
+    // Create new user from verified Google data
     const [result] = await mainDb.query(
       "INSERT INTO users (email, first_name, last_name, display_name, google_id, email_verified, is_active) VALUES (?, ?, ?, ?, ?, TRUE, TRUE)",
-      [
-        email,
-        first_name || "",
-        last_name || "",
-        display_name || `${first_name} ${last_name}`,
-        google_id || null,
-      ],
+      [email, given_name, family_name, `${given_name} ${family_name}`, google_id],
     );
 
     const userId = result.insertId;
+    await mainDb.query("INSERT INTO user_roles (user_id, role_id) VALUES (?, 2)", [userId]);
 
-    // Assign default user role
-    await mainDb.query(
-      "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)",
-      [userId, 2], // 2 = user role
+    const token = jwt.sign(
+      { userId, email, role: 'user' },
+      process.env.JWT_SECRET || '***REMOVED***',
+      { expiresIn: '7d' }
     );
 
     res.json({
       success: true,
-      user: {
-        id: userId,
-        email,
-        first_name,
-        last_name,
-        role: "user",
-      },
+      token,
+      user: { id: userId, email, first_name: given_name, last_name: family_name, role: "user" },
     });
   } catch (error) {
-    console.error("[USER REGISTER] Error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Registration failed: " + error.message,
-    });
+    console.error("[GOOGLE AUTH] Verification failed:", error.message);
+    res.status(401).json({ success: false, message: "Invalid Google token" });
   }
 });
 
@@ -1280,6 +1419,16 @@ app.post("/api/users/admin-create", async (req, res) => {
       role = "user",
       admin_level = "admin",
       developer_level = "mid",
+      phone_number,
+      physical_address,
+      id_number,
+      alt_phone,
+      expertise,
+      private_notes,
+      manual_projects,
+      emergency_contact_name,
+      emergency_contact_phone,
+      department
     } = req.body;
 
     console.log(`[ADMIN CREATE] Received registration request:`, {
@@ -1287,8 +1436,6 @@ app.post("/api/users/admin-create", async (req, res) => {
       last_name,
       email,
       role,
-      admin_level,
-      developer_level,
     });
 
     // Validate required fields
@@ -1307,105 +1454,58 @@ app.post("/api/users/admin-create", async (req, res) => {
     let userId;
     let tableUsed;
 
+    const commonCols = `
+      email, password_hash, first_name, last_name, phone_number,
+      physical_address, id_number, alt_phone, expertise,
+      private_notes, manual_projects, emergency_contact_name, emergency_contact_phone,
+      is_active, email_verified
+    `;
+    const commonPlaceholders = `?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, TRUE`;
+    const commonVals = [
+      email, hashedPassword, first_name, last_name, phone_number || null,
+      physical_address || null, id_number || null, alt_phone || null, expertise || null,
+      private_notes || null, manual_projects || null, emergency_contact_name || null, emergency_contact_phone || null
+    ];
+
     // Create user in appropriate table based on role
     if (role === "admin") {
       tableUsed = "admin_users";
-      // Check if email already exists in admin_users
-      const [existing] = await mainDb.query(
-        "SELECT id FROM admin_users WHERE email = ?",
-        [email],
-      );
-      if (existing.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: "Admin user with this email already exists",
-        });
-      }
+      const [existing] = await mainDb.query("SELECT id FROM admin_users WHERE email = ?", [email]);
+      if (existing.length > 0) return res.status(409).json({ success: false, message: "Admin user with this email already exists" });
 
-      // Insert into admin_users table
       [result] = await mainDb.query(
-        `INSERT INTO admin_users (
-          email, password_hash, first_name, last_name,
-          admin_level, access_level, is_active, email_verified
-        ) VALUES (?, ?, ?, ?, ?, 'full', TRUE, TRUE)`,
-        [email, hashedPassword, first_name, last_name, admin_level],
+        `INSERT INTO admin_users (${commonCols}, admin_level, access_level, department) VALUES (${commonPlaceholders}, ?, 'full', ?)`,
+        [...commonVals, admin_level, department || 'General']
       );
       userId = result.insertId;
-
-      console.log(
-        `[ADMIN CREATE] Admin user created: ${email}, ID: ${userId}, Level: ${admin_level}, Table: ${tableUsed}`,
-      );
     } else if (role === "developer") {
       tableUsed = "developer_users";
-      // Check if email already exists in developer_users
-      const [existing] = await mainDb.query(
-        "SELECT id FROM developer_users WHERE email = ?",
-        [email],
-      );
-      if (existing.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: "Developer user with this email already exists",
-        });
-      }
+      const [existing] = await mainDb.query("SELECT id FROM developer_users WHERE email = ?", [email]);
+      if (existing.length > 0) return res.status(409).json({ success: false, message: "Developer user with this email already exists" });
 
-      // Insert into developer_users table
       [result] = await mainDb.query(
-        `INSERT INTO developer_users (
-          email, password_hash, first_name, last_name,
-          developer_level, is_active, email_verified
-        ) VALUES (?, ?, ?, ?, ?, TRUE, TRUE)`,
-        [email, hashedPassword, first_name, last_name, developer_level],
+        `INSERT INTO developer_users (${commonCols}, developer_level) VALUES (${commonPlaceholders}, ?)`,
+        [...commonVals, developer_level]
       );
       userId = result.insertId;
-
-      console.log(
-        `[ADMIN CREATE] Developer user created: ${email}, ID: ${userId}, Level: ${developer_level}, Table: ${tableUsed}`,
-      );
     } else {
       tableUsed = "users";
-      // Regular user - insert into users table with primary role
-      // Check if email already exists
-      const [existing] = await mainDb.query(
-        "SELECT id FROM users WHERE email = ? AND deleted_at IS NULL",
-        [email],
-      );
-      if (existing.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: "User with this email already exists",
-        });
-      }
+      const [existing] = await mainDb.query("SELECT id FROM users WHERE email = ? AND deleted_at IS NULL", [email]);
+      if (existing.length > 0) return res.status(409).json({ success: false, message: "User with this email already exists" });
 
-      // Insert into users table
       [result] = await mainDb.query(
-        "INSERT INTO users (email, password_hash, first_name, last_name, primary_role) VALUES (?, ?, ?, ?, ?)",
-        [email, hashedPassword, first_name, last_name, role],
+        `INSERT INTO users (${commonCols}, primary_role) VALUES (${commonPlaceholders}, ?)`,
+        [...commonVals, role]
       );
       userId = result.insertId;
 
-      // If role is not 'user', add to user_roles junction table
       if (role !== "user") {
-        const [roleRows] = await mainDb.query(
-          "SELECT id FROM roles WHERE name = ?",
-          [role],
-        );
+        const [roleRows] = await mainDb.query("SELECT id FROM roles WHERE name = ?", [role]);
         if (roleRows.length > 0) {
-          await mainDb.query(
-            "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)",
-            [userId, roleRows[0].id],
-          );
+          await mainDb.query("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", [userId, roleRows[0].id]);
         }
       }
-
-      console.log(
-        `[ADMIN CREATE] Regular user created: ${email}, ID: ${userId}, Role: ${role}, Table: ${tableUsed}`,
-      );
     }
-
-    console.log(
-      `[ADMIN CREATE] Response: success=true, userId=${userId}, role=${role}, table=${tableUsed}`,
-    );
 
     res.json({
       success: true,
@@ -1697,6 +1797,7 @@ app.post("/api/accounting/entries", async (req, res) => {
       invoice_id,
       receipt_id,
       contract_id,
+      client_email
     } = req.body;
 
     const userId = req.user?.id || 1; // Default to user 1 for demo
@@ -1707,35 +1808,36 @@ app.post("/api/accounting/entries", async (req, res) => {
         transaction_date, transaction_reference, payment_method, payment_status,
         description, notes, budget_category, budget_period, is_billable, billable_percentage,
         tax_rate, tax_exempt, tax_region, project_id, invoice_id, receipt_id, contract_id,
-        created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        client_email, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const [result] = await db.execute(query, [
       entry_type,
       category,
-      subcategory,
+      subcategory || null,
       parseFloat(amount),
       parseFloat(tax_amount || 0),
       currency,
       parseFloat(exchange_rate || 1),
       transaction_date,
-      transaction_reference,
+      transaction_reference || null,
       payment_method,
       payment_status,
       description,
-      notes,
-      budget_category,
-      budget_period,
-      is_billable,
+      notes || null,
+      budget_category || null,
+      budget_period || null,
+      is_billable || null,
       parseFloat(billable_percentage || 100),
       parseFloat(tax_rate || 0),
-      tax_exempt,
-      tax_region,
-      project_id,
-      invoice_id,
-      receipt_id,
-      contract_id,
+      tax_exempt || null,
+      tax_region || null,
+      project_id || null,
+      invoice_id || null,
+      receipt_id || null,
+      contract_id || null,
+      client_email || null,
       userId,
     ]);
 
@@ -1751,6 +1853,26 @@ app.post("/api/accounting/entries", async (req, res) => {
       message: "Failed to create accounting entry",
       error: error.message,
     });
+  }
+});
+
+app.put("/api/accounting/entries/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { entry_type, category, amount, description, transaction_date, client_email } = req.body;
+    const userId = req.authUser?.uid || 1;
+
+    await db.execute(
+      `UPDATE accounting_entries SET
+        entry_type = ?, category = ?, amount = ?, description = ?,
+        transaction_date = ?, client_email = ?, updated_at = NOW(), updated_by = ?
+      WHERE id = ?`,
+      [entry_type, category, parseFloat(amount), description, transaction_date, client_email, userId, id]
+    );
+
+    res.json({ success: true, message: "Ledger entry updated successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -1974,11 +2096,11 @@ app.post("/api/invoices", async (req, res) => {
     `;
 
     const [result] = await db.execute(query, [
-      project_id,
+      project_id || null,
       invoiceNumber,
       invoice_type,
       title,
-      description,
+      description || title,
       parseFloat(subtotal),
       parseFloat(tax_rate || 0),
       currency,
@@ -1990,18 +2112,37 @@ app.post("/api/invoices", async (req, res) => {
       client_name,
       client_email,
       client_phone,
-      client_address,
+      client_address || null,
       JSON.stringify(items || []),
-      notes,
-      payment_terms,
-      terms_conditions,
+      notes || null,
+      payment_terms || null,
+      terms_conditions || null,
       userId,
     ]);
 
+    const invoiceId = result.insertId;
+
+    // AUTOMATIC LEDGER SYNC
+    const ledgerQuery = `
+      INSERT INTO accounting_entries (
+        entry_type, category, amount, currency, exchange_rate,
+        transaction_date, description, client_email, invoice_id, payment_status, created_by
+      ) VALUES ('income', 'Sales', ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+    `;
+    const totalAmount = parseFloat(subtotal) * (1 + parseFloat(tax_rate || 0) / 100);
+    await db.execute(ledgerQuery, [
+      totalAmount, currency, parseFloat(exchange_rate || 1),
+      issue_date, `Invoice ${invoiceNumber}: ${title}`, client_email, invoiceId, userId
+    ]);
+
+    // Send Email Notification to client_email
+    await sendInvoiceEmail(client_email, { invoice_number: invoiceNumber, title, subtotal, due_date });
+    await db.execute("UPDATE invoices SET email_sent = 1, email_sent_at = NOW() WHERE id = ?", [invoiceId]);
+
     res.json({
       success: true,
-      message: "Invoice created successfully",
-      invoiceId: result.insertId,
+      message: "Invoice deployed and synced to global ledger. Client notified via email relay.",
+      invoiceId: invoiceId,
       invoiceNumber: invoiceNumber,
     });
   } catch (error) {
@@ -3338,114 +3479,75 @@ app.post("/api/currencies/convert", async (req, res) => {
 });
 
 // Admin Authentication handler - EXACTLY like developer auth
+// Admin Authentication handler - Surgical Fix for "Unexpected end of JSON"
 async function handleAdminAuth(req, res) {
   try {
     const { email, password } = req.body;
-    const clientIP = getClientIpForAdmin(req);
-    console.log(`[ADMIN LOGIN] Querying admin_users table for: ${email}`);
-    const [admins] = await mainDb.query(
-      "SELECT * FROM admin_users WHERE email = ? AND is_active = TRUE AND deleted_at IS NULL",
-      [email],
-    );
-    console.log(`[ADMIN LOGIN] Query result: ${admins.length} admin(s) found`);
 
-    if (admins.length === 0) {
-      console.log(`[SECURITY] Admin not found: ${email}`);
-      return res.status(401).json({
-        success: false,
-        message: "Admin account not found",
-      });
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: "Email and password are required" });
+    }
+
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    // 1. Fetch Admin with precise SQL
+    const [admins] = await mainDb.query(
+      "SELECT id, email, password_hash, first_name, last_name, admin_level FROM admin_users WHERE LOWER(email) = ? AND is_active = 1 AND deleted_at IS NULL LIMIT 1",
+      [normalizedEmail]
+    );
+
+    if (!admins || admins.length === 0) {
+      return res.status(401).json({ success: false, message: "Invalid admin credentials" });
     }
 
     const admin = admins[0];
-    console.log(
-      `[ADMIN LOGIN] Found admin: ${admin.email}, ID: ${admin.id}, checking password...`,
-    );
 
-    // Verify password
-    const isPasswordValid = await bcryptjs.compare(
-      password,
-      admin.password_hash,
-    );
-    console.log(
-      `[ADMIN LOGIN] Password validation: ${isPasswordValid ? "VALID" : "INVALID"}`,
-    );
+    // 2. Verified Password Match Protocol
+    let isMatch = false;
+    const storedHash = admin.password_hash || "";
 
-    if (!isPasswordValid) {
-      console.log(`[SECURITY] Invalid admin password: ${email}`);
-      return res.status(401).json({
-        success: false,
-        message: "Invalid password",
-      });
+    try {
+      if (storedHash.startsWith("$")) {
+        isMatch = await bcryptjs.compare(password, storedHash);
+      } else {
+        isMatch = (password === storedHash);
+      }
+    } catch (bcryptErr) {
+      console.error("[AUTH] Bcrypt failure:", bcryptErr);
+      isMatch = (password === storedHash); // Fallback to plain text if bcrypt fails on non-hash
     }
 
-    // Update last login
-    await mainDb.query(
-      "UPDATE admin_users SET last_login_at = NOW(), last_login_ip = ? WHERE id = ?",
-      [clientIP, admin.id],
-    );
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Invalid admin credentials" });
+    }
 
-    console.log(`[SECURITY] Successful admin login: ${email}`);
-
+    // 3. Generate Session Token
     const token = signAdminSessionToken(admin.id);
 
-    res.json({
+    // 4. Send Guaranteed JSON Response
+    return res.status(200).json({
       success: true,
-      message: "Admin authentication successful",
+      message: "Authentication successful",
       token,
       user: {
         id: admin.id,
-        first_name: admin.first_name,
-        last_name: admin.last_name,
-        display_name: admin.display_name,
         email: admin.email,
-        phone: admin.phone_number,
+        name: `${admin.first_name} ${admin.last_name}`,
         role: "admin",
-        department: admin.department,
-        position: admin.position,
-        profile_photo: admin.profile_photo_blob ? true : false,
-        profile_photo_id: admin.profile_photo_id,
-        whatsapp_verified: true,
-        last_login: new Date().toISOString(),
-      },
+        admin_level: admin.admin_level
+      }
     });
+
   } catch (error) {
-    console.error("[SECURITY] Admin authentication error:", error);
-    console.error("[SECURITY] Error stack:", error.stack);
-
-    // Provide more specific error messages based on the error type
-    let errorMessage = "Server error. Please try again in a moment.";
-    let statusCode = 500;
-
-    if (
-      error.code === "ER_NO_SUCH_TABLE" ||
-      error.code === "ER_BAD_TABLE_ERROR"
-    ) {
-      errorMessage =
-        "Database configuration error: Required tables are missing";
-      console.error(
-        "[SECURITY] Database tables missing. Please run database migrations.",
-      );
-    } else if (
-      error.code === "ECONNREFUSED" ||
-      error.code === "ER_BAD_DB_ERROR"
-    ) {
-      errorMessage =
-        "Database connection failed. Please check database configuration";
-    } else if (error.code === "ER_DUP_ENTRY") {
-      errorMessage = "Email already exists";
-      statusCode = 409;
-    } else if (error.message && error.message.includes("bcrypt")) {
-      errorMessage = "Password verification system error";
-    } else if (error.message && error.message.includes("crypto")) {
-      errorMessage = "Security token generation error";
+    console.error("[CRITICAL] Admin Auth Logic Error:", error);
+    // Ensure we always return JSON, never empty
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        message: "System handshake failed",
+        error: error.message
+      });
     }
-
-    res.status(statusCode).json({
-      success: false,
-      message: errorMessage,
-      errorId: Date.now().toString(36), // For tracking in logs
-    });
   }
 }
 
@@ -3455,131 +3557,7 @@ app.post("/api/admin/authenticate", handleAdminAuth);
 // Frontend-compatible endpoint
 app.post("/api/admin-verification/authenticate-enhanced", handleAdminAuth);
 
-// Developer Authentication API
-app.post("/api/developer/authenticate", handleDeveloperAuth);
-
-// Frontend-compatible endpoint
-app.post("/api/developer-verification/authenticate", handleDeveloperAuth);
-
-// Developer Authentication handler
-async function handleDeveloperAuth(req, res) {
-  try {
-    const { email, password } = req.body;
-    const clientIP = getClientIpForAdmin(req);
-    console.log(`[DEV LOGIN] Querying developer_users table for: ${email}`);
-    const [developers] = await mainDb.query(
-      "SELECT * FROM developer_users WHERE email = ? AND is_active = TRUE AND deleted_at IS NULL",
-      [email],
-    );
-    console.log(
-      `[DEV LOGIN] Query result: ${developers.length} developer(s) found`,
-    );
-
-    if (developers.length === 0) {
-      console.log(`[SECURITY] Developer not found: ${email}`);
-      return res.status(401).json({
-        success: false,
-        message: "Developer account not found",
-      });
-    }
-
-    const user = developers[0];
-    console.log(
-      `[DEV LOGIN] Found developer: ${user.email}, ID: ${user.id}, checking password...`,
-    );
-
-    // Verify password
-    const isPasswordValid = await bcryptjs.compare(
-      password,
-      user.password_hash,
-    );
-    console.log(
-      `[DEV LOGIN] Password validation: ${isPasswordValid ? "VALID" : "INVALID"}`,
-    );
-
-    if (!isPasswordValid) {
-      console.log(`[SECURITY] Invalid developer password: ${email}`);
-      return res.status(401).json({
-        success: false,
-        message: "Invalid password",
-      });
-    }
-
-    // Update last login
-    await mainDb.query(
-      "UPDATE developer_users SET last_login_at = NOW(), last_login_ip = ? WHERE id = ?",
-      [clientIP, user.id],
-    );
-
-    console.log(`[SECURITY] Successful developer login: ${email}`);
-
-    const token = signAdminSessionToken(user.id);
-
-    res.json({
-      success: true,
-      message: "Developer authentication successful",
-      token,
-      user: {
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        display_name: user.display_name,
-        email: user.email,
-        phone: user.phone_number,
-        role: "developer",
-        developer_level: user.developer_level,
-        tech_stack: user.tech_stack,
-        profile_photo: user.profile_photo_blob ? true : false,
-        profile_photo_id: user.profile_photo_id,
-        whatsapp_verified: true,
-        last_login: new Date().toISOString(),
-      },
-    });
-  } catch (error) {
-    console.error("[SECURITY] Developer authentication error:", error);
-    console.error("[SECURITY] Error stack:", error.stack);
-
-    // Provide more specific error messages based on the error type
-    let errorMessage = "Server error. Please try again in a moment.";
-    let statusCode = 500;
-
-    if (
-      error.code === "ER_NO_SUCH_TABLE" ||
-      error.code === "ER_BAD_TABLE_ERROR"
-    ) {
-      errorMessage =
-        "Database configuration error: Required tables are missing";
-      console.error(
-        "[SECURITY] Database tables missing. Please run database migrations.",
-      );
-    } else if (
-      error.code === "ECONNREFUSED" ||
-      error.code === "ER_BAD_DB_ERROR"
-    ) {
-      errorMessage =
-        "Database connection failed. Please check database configuration";
-    } else if (error.code === "ER_DUP_ENTRY") {
-      errorMessage = "Email already exists";
-      statusCode = 409;
-    } else if (error.message && error.message.includes("bcrypt")) {
-      errorMessage = "Password verification system error";
-    } else if (error.message && error.message.includes("crypto")) {
-      errorMessage = "Security token generation error";
-    }
-
-    res.status(statusCode).json({
-      success: false,
-      message: errorMessage,
-      errorId: Date.now().toString(36), // For tracking in logs
-    });
-  }
-}
-
-// Developer Authentication API
-app.post("/api/developer/authenticate", handleDeveloperAuth);
-
-// Frontend-compatible endpoint
-app.post("/api/developer-verification/authenticate", handleDeveloperAuth);
+// Developer Authentication removed as per architectural update
 
 // Admin/Developer registration (frontend expects this endpoint)
 app.post("/api/admin-verification/register", async (req, res) => {
@@ -3645,82 +3623,47 @@ app.post("/api/admin-verification/register", async (req, res) => {
     let result;
     let userId;
 
-    if (role === "admin") {
-      // Check if email already exists in admin_users
-      const [existing] = await mainDb.query(
-        "SELECT id FROM admin_users WHERE email = ? AND deleted_at IS NULL",
-        [email],
-      );
-      if (existing.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: "Admin user with this email already exists",
-        });
-      }
-
-      // Insert into admin_users table with profile photo BLOB
-      [result] = await mainDb.query(
-        `INSERT INTO admin_users (
-          email, password_hash, first_name, last_name,
-          admin_level, access_level, is_active, email_verified,
-          profile_photo_blob, profile_photo_mime_type, profile_photo_file_name
-        ) VALUES (?, ?, ?, ?, ?, 'full', 1, 1, ?, ?, ?)`,
-        [
-          email,
-          hashedPassword,
-          first_name,
-          last_name,
-          "admin",
-          profilePhotoBlob,
-          photoMimeType,
-          photoFileName,
-        ],
-      );
-      userId = result.insertId;
-      console.log(
-        `[ADMIN-VERIFICATION] Admin created: ${email}, ID: ${userId}, Photo: ${profilePhotoBlob ? profilePhotoBlob.length + " bytes" : "none"}`,
-      );
-    } else if (role === "developer") {
-      // Check if email already exists in developer_users
-      const [existing] = await mainDb.query(
-        "SELECT id FROM developer_users WHERE email = ? AND deleted_at IS NULL",
-        [email],
-      );
-      if (existing.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: "Developer user with this email already exists",
-        });
-      }
-
-      // Insert into developer_users table with profile photo BLOB
-      [result] = await mainDb.query(
-        `INSERT INTO developer_users (
-          email, password_hash, first_name, last_name,
-          developer_level, is_active, email_verified,
-          profile_photo_blob, profile_photo_mime_type, profile_photo_file_name
-        ) VALUES (?, ?, ?, ?, ?, 1, 1, ?, ?, ?)`,
-        [
-          email,
-          hashedPassword,
-          first_name,
-          last_name,
-          "mid",
-          profilePhotoBlob,
-          photoMimeType,
-          photoFileName,
-        ],
-      );
-      userId = result.insertId;
-      console.log(
-        `[ADMIN-VERIFICATION] Developer created: ${email}, ID: ${userId}, Photo: ${profilePhotoBlob ? profilePhotoBlob.length + " bytes" : "none"}`,
-      );
-    } else {
+    if (role !== "admin") {
       return res.status(400).json({
         success: false,
-        message: 'Role must be "admin" or "developer"',
+        message: 'Registration is restricted to the Administrator tier.',
       });
     }
+
+    // Check if email already exists in admin_users
+    const [existing] = await mainDb.query(
+      "SELECT id FROM admin_users WHERE email = ? AND deleted_at IS NULL",
+      [email],
+    );
+    if (existing.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: "Admin user with this email already exists",
+      });
+    }
+
+    // Insert into admin_users table with profile photo BLOB
+    [result] = await mainDb.query(
+      `INSERT INTO admin_users (
+        email, password_hash, first_name, last_name,
+        admin_level, access_level, is_active, email_verified,
+        profile_photo_blob, profile_photo_mime_type, profile_photo_file_name
+      ) VALUES (?, ?, ?, ?, ?, 'full', 1, 1, ?, ?, ?)`,
+      [
+        email,
+        hashedPassword,
+        first_name,
+        last_name,
+        "admin",
+        profilePhotoBlob,
+        photoMimeType,
+        photoFileName,
+      ],
+    );
+    userId = result.insertId;
+    console.log(
+      `[ADMIN-VERIFICATION] Admin created: ${email}, ID: ${userId}, Photo: ${profilePhotoBlob ? profilePhotoBlob.length + " bytes" : "none"}`,
+    );
 
     res.json({
       success: true,
@@ -4564,14 +4507,14 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Modular Routes Integration (for missing features)
+// Modular Routes Integration (Centralized Control)
 const modularRoutes = [
   { path: "/api/applications", route: "./backend/routes/applications" },
   { path: "/api/properties", route: "./backend/routes/properties" },
   { path: "/api/management", route: "./backend/routes/management" },
   { path: "/api/admin", route: "./backend/routes/admin" },
-  { path: "/api/admin-verification", route: "./backend/routes/admin-verification" },
-  { path: "/api/developer-verification", route: "./backend/routes/developer-verification" },
+  // { path: "/api/admin-verification", route: "./backend/routes/admin-verification" }, // Handled in server.js for stability
+  // { path: "/api/developer-verification", route: "./backend/routes/developer-verification" }, // Handled in server.js for stability
   { path: "/api/mpesa", route: "./backend/routes/mpesa" },
 ];
 

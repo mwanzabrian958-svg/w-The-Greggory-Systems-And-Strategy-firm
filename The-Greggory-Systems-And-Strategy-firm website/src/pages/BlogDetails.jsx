@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Clock, User, CalendarDays, Share2, Tag, MessageSquare } from 'lucide-react'
+import { ArrowLeft, User } from 'lucide-react'
 import { getApiUrl } from '../services/api'
 
 const BlogDetails = () => {
@@ -18,114 +18,222 @@ const BlogDetails = () => {
         if (result.success) {
           setArticle(result.article)
         } else {
-          setError('Article not found')
+          setError('Data Node Missing')
         }
       } catch (err) {
-        console.error('Error fetching blog article:', err)
-        setError('An error occurred while fetching the article')
+        setError('Relay Failure')
       } finally {
         setLoading(false)
       }
     }
-
     fetchArticle()
   }, [id])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#fdfaf6] flex items-center justify-center pt-32">
-        <div className="w-10 h-10 border-t-2 border-[#8fb28a] rounded-full animate-spin" />
-      </div>
-    )
-  }
+  if (loading) return <div style={{ background: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'black', fontWeight: 'bold' }}>Synchronizing Archive Node...</p></div>
+  if (error || !article) return <div style={{ background: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'black', fontWeight: 'bold' }}>Archive Node Offline</p></div>
 
-  if (error || !article) {
-    return (
-      <div className="min-h-screen bg-[#fdfaf6] text-center pt-60 px-6">
-        <h2 className="text-2xl font-bold mb-4">{error || 'Article not found'}</h2>
-        <Link to="/blog" className="text-[#8fb28a] font-bold hover:underline">Back to Journal</Link>
-      </div>
-    )
-  }
+  const articleBody = article.content
+    ? /<\/?[a-z][\s\S]*>/i.test(article.content)
+      ? article.content
+      : article.content.replace(/(?:\r\n|\r|\n)/g, '<br />')
+    : ''
 
   return (
-    <div className="min-h-screen bg-[#fdfaf6] text-[#111] pt-32 pb-40 font-sans selection:bg-[#8fb28a] selection:text-white">
-      <div className="max-w-7xl mx-auto px-6">
+    <div style={{ backgroundColor: 'white', minHeight: '100vh', width: '100%', color: 'black', paddingTop: '80px', paddingBottom: '60px', fontFamily: 'sans-serif' }}>
 
-        {/* Navigation */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+
+        {/* Navigation - Public Hub Return */}
         <button
           onClick={() => navigate('/blog')}
-          className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.4em] mb-12 opacity-60 hover:opacity-100 transition-opacity"
+          style={{ marginBottom: '40px', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '4px', cursor: 'pointer', border: 'none', background: 'none', color: 'black' }}
         >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-2 transition-transform" />
-          Back to Journal
+          ← BACK TO JOURNAL
         </button>
 
-        {/* Title Node */}
-        <h1 className="text-4xl md:text-5xl lg:text-8xl font-bold tracking-tighter leading-[0.9] text-black mb-16 border-b border-black/5 pb-16">
-          {article.title}
-        </h1>
+        {/* MASTER ARCHIVE BLOCK - TOTAL THEME ISOLATION */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '28px',
+          background: '#FFFFFF',
+          border: '6px solid #000000',
+          borderRadius: '28px',
+          padding: '28px',
+          boxShadow: '18px 18px 0px 0px rgba(0,0,0,0.03)',
+          color: '#000000'
+        }} className="manuscript-block-mobile">
 
-        <div className="flex flex-col lg:flex-row gap-16">
-          {/* Left Column: Image Asset */}
-          <div className="lg:w-1/3">
-            <div className="sticky top-40 space-y-8">
-              {article.image_url && (
-                <div className="relative w-full aspect-square overflow-hidden rounded-[40px] shadow-2xl bg-slate-100 border border-black/5">
-                  <img
-                    src={article.image_url}
-                    alt={article.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
+          {/* LEFT CONTEXT HUB: ASSETS & TELEMETRY */}
+          <div style={{ width: '32%', display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
-              <div className="space-y-6 pt-8 border-t border-black/5">
-                <div className="flex flex-col gap-2">
-                   <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-400">Node Identity</p>
-                   <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white"><User size={18} /></div>
-                      <p className="text-xs font-bold uppercase tracking-widest">{article.author || 'Firm Contributor'}</p>
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="bg-white p-4 rounded-2xl border border-black/5">
-                      <p className="text-[6px] font-black uppercase text-slate-400 mb-1">Timeline</p>
-                      <p className="text-[9px] font-bold uppercase">{new Date(article.published_date || article.created_at).toLocaleDateString()}</p>
-                   </div>
-                   <div className="bg-white p-4 rounded-2xl border border-black/5">
-                      <p className="text-[6px] font-black uppercase text-slate-400 mb-1">Sector</p>
-                      <p className="text-[9px] font-bold uppercase">{article.category || 'Strategy'}</p>
-                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Narrative Content */}
-          <div className="lg:w-2/3">
-            <div className="max-w-3xl">
-              {article.excerpt && (
-                <p className="text-xl md:text-2xl font-medium leading-relaxed text-black mb-16 border-l-8 border-[#8fb28a]/20 pl-8 italic">
-                  {article.excerpt}
-                </p>
-              )}
-
-              <div
-                className="prose prose-lg prose-slate max-w-none prose-headings:text-black prose-p:text-[#111] prose-p:leading-[1.8] prose-p:font-normal prose-strong:font-bold prose-img:rounded-3xl"
-                dangerouslySetInnerHTML={{ __html: article.content }}
+            {/* 1. IMAGE ASSET */}
+            {article.image_url && (
+              <img
+                src={article.image_url}
+                alt="Tactical Asset"
+                style={{ width: '100%', borderRadius: '24px', border: '5px solid #000000', display: 'block', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
               />
+            )}
 
-              <div className="mt-32 pt-20 border-t border-black/5 flex flex-col items-center">
-                <div className="w-px h-20 bg-gradient-to-b from-black/20 to-transparent mb-12" />
-                <h4 className="text-xs font-black uppercase tracking-[0.5em] text-slate-400">End of Transmission</h4>
+            {/* 2. TELEMETRY NODE (UNDER IMAGE) */}
+            <div style={{ padding: '14px 0', borderTop: '2px solid #000000', borderBottom: '2px solid #000000' }}>
+               <p style={{ margin: '0 0 4px 0', fontSize: '12px', fontWeight: '900', color: '#000000' }}>
+                 {new Date(article.published_date || article.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
+               </p>
+               <p style={{ margin: '0 0 4px 0', fontSize: '12px', fontWeight: '900', textTransform: 'uppercase', color: '#666666' }}>
+                 {article.category}
+               </p>
+               <p style={{ margin: '0', fontSize: '12px', fontWeight: '900', color: '#000000' }}>
+                 {article.read_time || '5 MIN'} READ
+               </p>
+            </div>
+
+            {/* 3. STRATEGIC BRIEF (INTRO) */}
+            <div style={{
+              fontStyle: 'italic',
+              fontSize: '15px',
+              fontWeight: '700',
+              lineHeight: '1.5',
+              color: '#000000',
+              borderLeft: '7px solid #000000',
+              paddingLeft: '18px',
+              backgroundColor: '#FAFAFA',
+              padding: '18px 16px'
+            }}>
+               {article.excerpt}
+            </div>
+
+          </div>
+
+          {/* RIGHT NARRATIVE HUB: THE MANUSCRIPT */}
+          <div style={{ width: '68%', borderLeft: '1px solid #EEEEEE', paddingLeft: '28px' }} className="content-pad-mobile">
+
+            {/* COMPACT HEADER NODE */}
+            <header style={{ marginBottom: '26px' }}>
+              <h1 style={{ fontSize: '26px', fontWeight: '900', lineHeight: '1.15', textTransform: 'uppercase', marginBottom: '10px', color: '#000000', letterSpacing: '-0.5px' }}>
+                {article.title}
+              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '24px', height: '24px', background: '#000', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                  <User size={12} strokeWidth={3} />
+                </div>
+                <p style={{ fontSize: '11px', fontWeight: '900', color: '#888888', textTransform: 'uppercase', letterSpacing: '2px' }}>
+                  By: <span style={{ color: '#000000' }}>{article.author || 'ADMINISTRATOR'}</span>
+                </p>
               </div>
+            </header>
+
+            {/* TACTICAL DIVIDER */}
+            <div style={{ width: '100%', height: '4px', backgroundColor: '#000000', marginBottom: '26px' }}></div>
+
+            {/* FULL BRIEFING FLOW */}
+            <div
+              className="blog-article-body"
+              dangerouslySetInnerHTML={{ __html: articleBody }}
+              style={{
+                fontSize: '15px',
+                lineHeight: '1.7',
+                fontWeight: '500',
+                color: '#000000',
+                fontFamily: 'serif',
+                textAlign: 'justify',
+                background: '#ffffff'
+              }}
+            />
+
+            {/* TERMINATION NODE */}
+            <div style={{ marginTop: '50px', paddingTop: '18px', borderTop: '2px solid #EEEEEE', textAlign: 'center' }}>
+               <div style={{ width: '40px', height: '4px', background: '#000', margin: '0 auto 20px auto' }}></div>
+               <p style={{ fontSize: '10px', fontWeight: '900', letterSpacing: '12px', color: '#CCCCCC', textTransform: 'uppercase' }}>
+                 End of Briefing
+               </p>
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .blog-article-body {
+          color: #000000;
+          background: #ffffff;
+        }
+
+        .blog-article-body > *:first-child {
+          margin-top: 0;
+        }
+
+        .blog-article-body > *:last-child {
+          margin-bottom: 0;
+        }
+
+        .blog-article-body p,
+        .blog-article-body ul,
+        .blog-article-body ol,
+        .blog-article-body blockquote,
+        .blog-article-body pre,
+        .blog-article-body table,
+        .blog-article-body img,
+        .blog-article-body iframe,
+        .blog-article-body figure {
+          margin: 0.9rem 0;
+        }
+
+        .blog-article-body p,
+        .blog-article-body li,
+        .blog-article-body blockquote {
+          color: #000000;
+          font-size: 15px;
+          line-height: 1.7;
+        }
+
+        .blog-article-body h1,
+        .blog-article-body h2,
+        .blog-article-body h3,
+        .blog-article-body h4,
+        .blog-article-body h5,
+        .blog-article-body h6 {
+          color: #000000;
+          margin: 1.2rem 0 0.7rem;
+          line-height: 1.2;
+          font-weight: 800;
+        }
+
+        .blog-article-body img,
+        .blog-article-body iframe,
+        .blog-article-body video,
+        .blog-article-body figure {
+          display: block;
+          max-width: 100%;
+          height: auto;
+          border-radius: 18px;
+          background: #ffffff;
+        }
+
+        .blog-article-body a {
+          color: #000000;
+          text-decoration: underline;
+          text-underline-offset: 4px;
+        }
+
+        .blog-article-body ul,
+        .blog-article-body ol {
+          padding-left: 2rem;
+        }
+
+        .blog-article-body blockquote {
+          border-left: 5px solid #000000;
+          padding-left: 1.25rem;
+          font-style: italic;
+        }
+
+        @media (max-width: 1024px) {
+          .manuscript-block-mobile { flex-direction: column !important; padding: 20px !important; border-radius: 20px !important; }
+          .manuscript-block-mobile > div { width: 100% !important; padding-left: 0 !important; border-left: none !important; }
+          .content-pad-mobile { margin-top: 20px; padding-top: 20px; border-top: 1px solid #EEE; }
+        }
+      `}} />
     </div>
   )
 }

@@ -25,7 +25,7 @@ We manage the entire lifecycle of mission-critical projects in areas such as:
 
 ### 2. Strategic Business Consultations
 Our consultation services are designed for executive-level decision-making across all areas of industry:
-- **Financial Intelligence Node**: Advanced revenue tracking, profitability forecasting, and KSh-integrated ledger auditing.
+- **Financial Intelligence Node**: Advanced revenue tracking, profitability forecasting, and KSH-integrated ledger auditing.
 - **Risk Mitigation & Cybersecurity**: High-level security scoring, 2FA management protocols, and multi-tier audit trails.
 - **Operational Framework Design**: Hardening internal business processes to ensure high-uptime and maximum efficiency.
 - **Client Relationship Management (CRM)**: Utilizing our proprietary "Satisfaction Matrix" to manage global client portfolios with precision.

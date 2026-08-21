@@ -90,7 +90,6 @@ export function SettingsForm({ settings, onSave, user }) {
 
   const defaultRoleOptions = [
     { value: 'user', label: 'Regular User' },
-    { value: 'developer', label: 'Developer' },
     { value: 'admin', label: 'Admin' }
   ];
 

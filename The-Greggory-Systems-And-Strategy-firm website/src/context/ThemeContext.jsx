@@ -2,7 +2,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 
 const ThemeContext = createContext({
   darkMode: true,
-  setDarkMode: () => {},
   toggleTheme: () => {}
 })
 
@@ -10,7 +9,6 @@ export const ThemeProvider = ({ children }) => {
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('tgf_dark_mode')
-      // Strictly default to true (Dark) if no preference is set
       return saved === 'false' ? false : true
     }
     return true
@@ -29,7 +27,7 @@ export const ThemeProvider = ({ children }) => {
   const toggleTheme = () => setDarkMode(prev => !prev)
 
   return (
-    <ThemeContext.Provider value={{ darkMode, setDarkMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   )

@@ -3,42 +3,65 @@
 
 export const API_BASE_URL = '/api';
 
-export const getApiUrl = (path) => path;
-
 /**
  * Hardened API Relay
+ * Automatically injects authentication tokens and handles malformed JSON.
  */
 export const apiCall = async (endpoint, options = {}) => {
   try {
+    const { headers = {}, ...restOptions } = options;
+
+    // 1. Resolve Token Telemetry
+    const sessionStr = localStorage.getItem("gf_admin_session") || sessionStorage.getItem("gf_admin_session");
+    const session = sessionStr ? JSON.parse(sessionStr) : null;
+    const token = session?.token || localStorage.getItem("gf_admin_session_token");
+
+    // 2. Construct Protocol Header
+    const authHeaders = {
+      "Content-Type": "application/json",
+      ...headers
+    };
+    if (token) authHeaders["Authorization"] = `Bearer ${token}`;
+
+    // 3. Resolve Endpoint URL
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+
+    // 4. Execute Secure Handshake
     const response = await fetch(url, {
-      headers: { "Content-Type": "application/json", ...options.headers },
-      ...options,
+      headers: authHeaders,
+      ...restOptions,
     });
 
+    // 5. Handle Response Payload
     const text = await response.text();
-    if (!text) {
-        if (!response.ok) throw new Error(`Node Relay Error: ${response.status}`);
-        return { success: true };
+
+    // Handle Empty Response
+    if (!text || text.trim() === "") {
+        if (!response.ok) throw new Error(`Protocol Error: ${response.status}`);
+        return { success: true, empty: true };
     }
 
     let data = null;
     try {
       data = JSON.parse(text);
     } catch (e) {
+      // If it's not JSON, it might be an error page or raw text
+      if (!response.ok) throw new Error(`Server Error (${response.status}): ${text.substring(0, 100)}`);
       data = { message: text, success: response.ok };
     }
 
     if (!response.ok) {
-      throw new Error(data?.message || data?.error || `Protocol Error: ${response.status}`);
+      throw new Error(data?.message || data?.error || `Node Relay Failure: ${response.status}`);
     }
 
-    return data || {};
+    return data;
   } catch (error) {
-    console.error("MISSION CRITICAL: API Relay Failure:", error);
+    console.error("MISSION CRITICAL: Secure Relay Failure:", error.message);
     throw error;
   }
 };
+
+export const getApiUrl = (path) => path;
 
 // M-Pesa API
 export const mpesaAPI = {
@@ -67,24 +90,9 @@ export const invoicesAPI = {
 export const usersAPI = {
   login: (credentials) => apiCall("/users/login", { method: "POST", body: JSON.stringify(credentials) }),
   register: (userData) => apiCall("/users/register", { method: "POST", body: JSON.stringify(userData) }),
+  googleAuth: (data) => apiCall("/users/google-auth", { method: "POST", body: JSON.stringify(data) }),
   getAll: () => apiCall("/users"),
   getById: (id) => apiCall(`/users/${id}`),
-};
-
-// Communication Hub API
-export const communicationAPI = {
-  getMessages: () => apiCall('/communication/messages'),
-  sendMessage: (data) => apiCall('/communication/messages', { method: 'POST', body: JSON.stringify(data) }),
-  getAnnouncements: () => apiCall('/communication/announcements'),
-};
-
-// Content API (Blog/Articles)
-export const contentAPI = {
-  getArticles: () => apiCall('/blog-articles'),
-  getArticleById: (id) => apiCall(`/blog-articles/${id}`),
-  createArticle: (data) => apiCall('/blog-articles', { method: 'POST', body: JSON.stringify(data) }),
-  updateArticle: (id, data) => apiCall(`/blog-articles/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteArticle: (id) => apiCall(`/blog-articles/${id}`, { method: 'DELETE' }),
 };
 
 export default {
@@ -92,7 +100,5 @@ export default {
   mpesa: mpesaAPI,
   projects: projectsAPI,
   invoices: invoicesAPI,
-  users: usersAPI,
-  communication: communicationAPI,
-  content: contentAPI
+  users: usersAPI
 };

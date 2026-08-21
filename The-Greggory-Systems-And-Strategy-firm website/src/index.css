@@ -3,12 +3,13 @@
 @tailwind utilities;
 
 :root {
+  /* Light theme — conservative, higher-contrast defaults */
   --bg-primary: #f8efe6;
   --bg-secondary: #f3e7d8;
-  --text-primary: #1f2937;
-  --text-secondary: #5e6b71;
-  --border-primary: #dccbb3;
-  --accent-primary: #4c6a4d;
+  --text-primary: #0f1720; /* darker for improved legibility */
+  --text-secondary: #475569; /* slightly darker secondary text */
+  --border-primary: #c8b6a3; /* subtle but more visible */
+  --accent-primary: #39543b; /* richer accent for links/buttons */
   --accent-secondary: #aa7d3f;
   --card-bg: rgba(255, 251, 247, 0.92);
 }
@@ -18,7 +19,7 @@
   --bg-secondary: #161d1a;
   --text-primary: #f5efe9;
   --text-secondary: #c8b9a7;
-  --border-primary: rgba(255, 255, 255, 0.12);
+  --border-primary: rgba(255, 255, 255, 0.20); /* slightly stronger borders */
   --accent-primary: #8fb28a;
   --accent-secondary: #d1a257;
   --card-bg: rgba(28, 35, 31, 0.92);
@@ -159,3 +160,5 @@ html {
     display: none !important;
   }
 }
+
+

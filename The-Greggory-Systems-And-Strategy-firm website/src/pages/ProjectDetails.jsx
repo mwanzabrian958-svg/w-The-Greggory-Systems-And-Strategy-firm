@@ -156,7 +156,7 @@ const ProjectDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white pt-[140px] relative overflow-hidden">
+    <div className="min-h-screen bg-[#0f172a] text-white relative overflow-hidden">
       {/* Immersive Background Elements */}
       <div className="absolute inset-0 z-0">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,_rgba(245,158,11,0.08),_transparent_50%)]" />

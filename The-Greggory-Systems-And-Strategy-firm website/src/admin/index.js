@@ -12,7 +12,6 @@ export { Users } from './pages/Users';
 export { Content } from './pages/Content';
 export { Projects } from './pages/Projects';
 export { Applications } from './pages/Applications';
-export { Developer } from './pages/Developer';
 export { ActivityLogs } from './pages/Activity';
 export { Settings as SettingsPage } from './pages/Settings';
 export { Login } from './pages/Login';

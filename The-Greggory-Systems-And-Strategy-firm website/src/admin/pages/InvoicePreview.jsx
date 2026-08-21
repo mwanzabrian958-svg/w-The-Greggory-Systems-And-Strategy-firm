@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Download, Printer, X, QrCode, RefreshCw } from "lucide-react";
 import { getApiUrl } from "../../services/api";
+import { formatKSH } from "../../utils/currencyUtils";
 
 export function InvoicePreview() {
   const { id } = useParams();
@@ -85,7 +86,7 @@ export function InvoicePreview() {
                   <thead>
                      <tr className="text-left text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 border-b-4 border-slate-900">
                         <th className="py-6">Service Deployment Description</th>
-                        <th className="py-6 text-right">Commitment (KSh)</th>
+                        <th className="py-6 text-right">Commitment (KSH)</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -94,7 +95,7 @@ export function InvoicePreview() {
                            <p className="font-black text-slate-900 text-xl uppercase tracking-tight">{invoice.title}</p>
                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4 leading-relaxed italic">Strategic systems architecture and operational oversight<br/>authorized under firm protocol version 7.2</p>
                         </td>
-                        <td className="py-16 text-right font-black text-slate-900 text-2xl">KSh {parseFloat(invoice.subtotal).toLocaleString()}</td>
+                        <td className="py-16 text-right font-black text-slate-900 text-2xl">{formatKSH(invoice.subtotal)}</td>
                      </tr>
                   </tbody>
                </table>
@@ -103,10 +104,10 @@ export function InvoicePreview() {
             <div className="flex justify-between items-end">
                <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100"><QrCode size={100} className="text-[#0f172a]" /></div>
                <div className="w-80 space-y-6">
-                  <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-slate-400"><span>Ledger Subtotal</span><span>KSh {parseFloat(invoice.subtotal).toLocaleString()}</span></div>
+                  <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest text-slate-400"><span>Ledger Subtotal</span><span>{formatKSH(invoice.subtotal)}</span></div>
                   <div className="flex justify-between items-center pt-8 border-t-8 border-slate-900">
                      <span className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-900">NET COMMITMENT</span>
-                     <span className="text-4xl font-black text-slate-900 tracking-tighter underline decoration-teal-500 decoration-8 underline-offset-[12px]">KSh {parseFloat(invoice.total_amount_kes).toLocaleString()}</span>
+                     <span className="text-4xl font-black text-slate-900 tracking-tighter underline decoration-teal-500 decoration-8 underline-offset-[12px]">{formatKSH(invoice.total_amount_kes)}</span>
                   </div>
                </div>
             </div>

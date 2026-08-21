@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiCall } from "../../services/api";
-import { Filter, UserPlus, Shield, Code, User, CheckCircle, Download, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Users as UsersIcon, Trash2, AlertCircle } from "lucide-react";
+import { Filter, UserPlus, Shield, User, CheckCircle, Download, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Users as UsersIcon, Trash2, AlertCircle, Activity } from "lucide-react";
 
 export function Users({ user }) {
   const navigate = useNavigate();
@@ -81,9 +81,9 @@ export function Users({ user }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Total Assets", value: users.length, icon: UsersIcon, color: "text-blue-500", bg: "bg-blue-50" },
+          { label: "Live Now", value: users.filter(u => u.last_active_at && (new Date() - new Date(u.last_active_at)) < 300000).length, icon: Activity, color: "text-rose-500", bg: "bg-rose-50" },
           { label: "Active Nodes", value: users.filter(u => u.is_active).length, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-50" },
           { label: "Admins", value: users.filter(u => u.source_table === "admin").length, icon: Shield, color: "text-purple-500", bg: "bg-purple-50" },
-          { label: "Dev Nodes", value: users.filter(u => u.source_table === "developer").length, icon: Code, color: "text-teal-500", bg: "bg-teal-50" },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-xl p-3 border border-slate-100 shadow-md flex items-center justify-between">
             <div>
@@ -101,7 +101,6 @@ export function Users({ user }) {
             <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[8px] font-black uppercase text-white outline-none">
               <option value="all" className="bg-[#0f172a]">All Roles</option>
               <option value="admin" className="bg-[#0f172a]">Admins</option>
-              <option value="developer" className="bg-[#0f172a]">Developers</option>
               <option value="client" className="bg-[#0f172a]">Clients</option>
             </select>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[8px] font-black uppercase text-white outline-none">
@@ -113,33 +112,40 @@ export function Users({ user }) {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-        {paginatedUsers.length > 0 ? paginatedUsers.map((u) => (
-          <div key={`${u.source_table}-${u.id}`} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-md hover:scale-[1.03] transition-all group flex flex-col cursor-pointer" onClick={() => navigateToDetail(u)}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-[#0f172a] flex items-center justify-center text-white font-black text-sm">{(u.display_name || u.name || "U")[0]}</div>
-              <div className="min-w-0 flex-1">
-                <h4 className="font-black text-slate-900 text-[10px] uppercase truncate group-hover:text-teal-600">{u.display_name || u.name}</h4>
-                <p className="text-[7px] text-slate-400 font-bold uppercase truncate">{u.email}</p>
+        {paginatedUsers.length > 0 ? paginatedUsers.map((u) => {
+          const isOnline = u.last_active_at && (new Date() - new Date(u.last_active_at)) < 300000;
+          return (
+            <div key={`${u.source_table}-${u.id}`} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-md hover:scale-[1.03] transition-all group flex flex-col cursor-pointer" onClick={() => navigateToDetail(u)}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-lg bg-[#0f172a] flex items-center justify-center text-white font-black text-sm">{(u.display_name || u.name || "U")[0]}</div>
+                  {isOnline && <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full animate-pulse"></div>}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-black text-slate-900 text-[10px] uppercase truncate group-hover:text-teal-600">{u.display_name || u.name}</h4>
+                  <p className="text-[7px] text-slate-400 font-bold uppercase truncate">{u.email}</p>
+                  {u.phone_number && <p className="text-[6.5px] text-teal-600 font-black uppercase mt-0.5 tracking-tighter">{u.phone_number}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4">
+                 <div className="flex justify-between items-center px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[6px] font-black uppercase tracking-widest text-slate-400">Node</span>
+                    <span className="text-[7px] font-black uppercase text-slate-900">{u.role || u.primary_role || 'User'}</span>
+                 </div>
+                 <div className="flex justify-between items-center px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <span className="text-[6px] font-black uppercase tracking-widest text-slate-400">Status</span>
+                    <span className={`text-[7px] font-black uppercase ${isOnline ? 'text-emerald-500' : 'text-slate-400'}`}>{isOnline ? 'Live Now' : 'Standby'}</span>
+                 </div>
+              </div>
+
+              <div className="mt-auto pt-3 border-t border-slate-50 flex gap-2">
+                 <button onClick={(e) => { e.stopPropagation(); navigateToDetail(u); }} className="flex-1 bg-slate-900 text-white py-2 rounded-lg text-[7px] font-black uppercase tracking-widest hover:bg-black transition-all">Analyze</button>
+                 <button onClick={(e) => { e.stopPropagation(); setDeletingUser(u); setShowDeleteModal(true); }} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-600 hover:text-white transition-all"><Trash2 size={12} /></button>
               </div>
             </div>
-
-            <div className="space-y-2 mb-4">
-               <div className="flex justify-between items-center px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
-                  <span className="text-[6px] font-black uppercase tracking-widest text-slate-400">Node</span>
-                  <span className="text-[7px] font-black uppercase text-slate-900">{u.role || u.primary_role || 'User'}</span>
-               </div>
-               <div className="flex justify-between items-center px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
-                  <span className="text-[6px] font-black uppercase tracking-widest text-slate-400">Status</span>
-                  <span className={`text-[7px] font-black uppercase ${u.is_active ? 'text-emerald-500' : 'text-rose-500'}`}>{u.is_active ? 'Active' : 'Offline'}</span>
-               </div>
-            </div>
-
-            <div className="mt-auto pt-3 border-t border-slate-50 flex gap-2">
-               <button onClick={(e) => { e.stopPropagation(); navigateToDetail(u); }} className="flex-1 bg-slate-900 text-white py-2 rounded-lg text-[7px] font-black uppercase tracking-widest hover:bg-black transition-all">Analyze</button>
-               <button onClick={(e) => { e.stopPropagation(); setDeletingUser(u); setShowDeleteModal(true); }} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-600 hover:text-white transition-all"><Trash2 size={12} /></button>
-            </div>
-          </div>
-        )) : (
+          );
+        }) : (
           <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
              <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">No Authorized Nodes Detected</p>
           </div>

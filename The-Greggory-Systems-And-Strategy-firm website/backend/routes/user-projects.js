@@ -37,16 +37,36 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { user_id, project_name, project_description, project_type, status, priority, start_date, end_date, estimated_budget, actual_budget, client_id, client_name, client_email, client_phone, project_manager_id, team_members, deliverables, milestones, documents, progress_percentage, notes } = req.body;
+    const {
+      user_id, project_name, project_description, project_type, status,
+      priority, start_date, end_date, estimated_budget, actual_budget,
+      client_id, client_name, client_email, client_phone, client_id_number,
+      project_manager_id, team_members, deliverables, milestones, documents,
+      progress_percentage, notes
+    } = req.body;
 
     if (!user_id || !project_name) {
       return res.status(400).json({ error: 'User ID and project name are required' });
     }
 
     const [result] = await db.promise().query(
-      `INSERT INTO user_projects (user_id, project_name, project_description, project_type, status, priority, start_date, end_date, estimated_budget, actual_budget, client_id, client_name, client_email, client_phone, project_manager_id, team_members, deliverables, milestones, documents, progress_percentage, notes, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user_id, project_name, project_description || null, project_type || 'consulting', status || 'planning', priority || 'medium', start_date || null, end_date || null, estimated_budget || 0, actual_budget || 0, client_id || null, client_name || null, client_email || null, client_phone || null, project_manager_id || null, team_members ? JSON.stringify(team_members) : null, deliverables ? JSON.stringify(deliverables) : null, milestones ? JSON.stringify(milestones) : null, documents ? JSON.stringify(documents) : null, progress_percentage || 0, notes || null, req.body.created_by || user_id]
+      `INSERT INTO user_projects (
+        user_id, project_name, project_description, project_type, status,
+        priority, start_date, end_date, estimated_budget, actual_budget,
+        client_id, client_name, client_email, client_phone, client_id_number,
+        project_manager_id, team_members, deliverables, milestones, documents,
+        progress_percentage, notes, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        user_id, project_name, project_description || null, project_type || 'consulting',
+        status || 'planning', priority || 'medium', start_date || null, end_date || null,
+        estimated_budget || 0, actual_budget || 0, client_id || null, client_name || null,
+        client_email || null, client_phone || null, client_id_number || null,
+        project_manager_id || null, team_members ? JSON.stringify(team_members) : null,
+        deliverables ? JSON.stringify(deliverables) : null, milestones ? JSON.stringify(milestones) : null,
+        documents ? JSON.stringify(documents) : null, progress_percentage || 0,
+        notes || null, req.body.created_by || user_id
+      ]
     );
 
     // REAL-LIFE NOTIF: Notify user of new project assignment
@@ -62,13 +82,33 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { project_name, project_description, project_type, status, priority, start_date, end_date, estimated_budget, actual_budget, client_id, client_name, client_email, client_phone, project_manager_id, team_members, deliverables, milestones, documents, progress_percentage, notes } = req.body;
+    const {
+      project_name, project_description, project_type, status, priority,
+      start_date, end_date, estimated_budget, actual_budget, client_id,
+      client_name, client_email, client_phone, client_id_number,
+      project_manager_id, team_members, deliverables, milestones, documents,
+      progress_percentage, notes
+    } = req.body;
 
     const [result] = await db.promise().query(
       `UPDATE user_projects
-       SET project_name = ?, project_description = ?, project_type = ?, status = ?, priority = ?, start_date = ?, end_date = ?, estimated_budget = ?, actual_budget = ?, client_id = ?, client_name = ?, client_email = ?, client_phone = ?, project_manager_id = ?, team_members = ?, deliverables = ?, milestones = ?, documents = ?, progress_percentage = ?, notes = ?, updated_at = NOW(), updated_by = ?
+       SET project_name = ?, project_description = ?, project_type = ?, status = ?,
+           priority = ?, start_date = ?, end_date = ?, estimated_budget = ?,
+           actual_budget = ?, client_id = ?, client_name = ?, client_email = ?,
+           client_phone = ?, client_id_number = ?, project_manager_id = ?,
+           team_members = ?, deliverables = ?, milestones = ?, documents = ?,
+           progress_percentage = ?, notes = ?, updated_at = NOW(), updated_by = ?
        WHERE id = ? AND deleted_at IS NULL`,
-      [project_name, project_description || null, project_type || 'consulting', status || 'planning', priority || 'medium', start_date || null, end_date || null, estimated_budget || 0, actual_budget || 0, client_id || null, client_name || null, client_email || null, client_phone || null, project_manager_id || null, team_members ? JSON.stringify(team_members) : null, deliverables ? JSON.stringify(deliverables) : null, milestones ? JSON.stringify(milestones) : null, documents ? JSON.stringify(documents) : null, progress_percentage || 0, notes || null, req.body.updated_by || 1, id]
+      [
+        project_name, project_description || null, project_type || 'consulting',
+        status || 'planning', priority || 'medium', start_date || null, end_date || null,
+        estimated_budget || 0, actual_budget || 0, client_id || null, client_name || null,
+        client_email || null, client_phone || null, client_id_number || null,
+        project_manager_id || null, team_members ? JSON.stringify(team_members) : null,
+        deliverables ? JSON.stringify(deliverables) : null, milestones ? JSON.stringify(milestones) : null,
+        documents ? JSON.stringify(documents) : null, progress_percentage || 0,
+        notes || null, req.body.updated_by || 1, id
+      ]
     );
 
     if (result.affectedRows === 0) {

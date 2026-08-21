@@ -69,7 +69,7 @@ const Terms = () => {
           <div className="max-w-3xl">
             <p className="eyebrow">Terms of use</p>
             <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">A clear framework for working together.</h1>
-            <p className="mt-5 text-base text-slate-300">
+            <p className="mt-5 text-base text-slate-100">
               These terms outline the expectations for how the firm and its clients engage with our services, systems, and shared materials.
             </p>
           </div>
@@ -82,7 +82,7 @@ const Terms = () => {
             <button key={topic.id} onClick={() => setActiveTopic(topic)} className="soft-card p-6 text-left">
               <topic.icon className="h-7 w-7 text-[#4c6a4d]" />
               <h2 className="mt-4 text-lg font-black text-slate-900 dark:text-white">{topic.label}</h2>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{topic.title}</p>
+              <p className="mt-2 text-sm text-slate-700 dark:text-slate-100">{topic.title}</p>
               <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#4c6a4d]">
                 Open section
                 <ArrowLeft className="h-4 w-4 rotate-180" />
@@ -105,12 +105,12 @@ const Terms = () => {
                   <h3 className="text-xl font-black text-slate-900 dark:text-white">{activeTopic.title}</h3>
                 </div>
               </div>
-              <button onClick={() => setActiveTopic(null)} className="rounded-full border border-[#e3d2bb] p-2 text-slate-700 transition hover:bg-[#f0e2d0] dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+              <button onClick={() => setActiveTopic(null)} className="rounded-full border border-[#e3d2bb] p-2 text-slate-700 transition hover:bg-[#f0e2d0] dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="mt-6 max-h-[55vh] overflow-y-auto pr-2 text-sm text-slate-600 dark:text-slate-300">
+            <div className="mt-6 max-h-[55vh] overflow-y-auto pr-2 text-sm text-slate-700 dark:text-slate-100">
               <p className="leading-7">{activeTopic.content}</p>
               {activeTopic.restrictions && (
                 <ul className="mt-6 space-y-2">
@@ -137,7 +137,7 @@ const Terms = () => {
         <div className="soft-card p-8 text-center sm:p-10">
           <Mail className="mx-auto h-8 w-8 text-[#4c6a4d]" />
           <h2 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">Questions about these terms?</h2>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">Email our team at thegreggorysystemsandstrategyf@gmail.com.</p>
+          <p className="mt-3 text-sm text-slate-700 dark:text-slate-100">Email our team at thegreggorysystemsandstrategyf@gmail.com.</p>
         </div>
       </section>
     </div>

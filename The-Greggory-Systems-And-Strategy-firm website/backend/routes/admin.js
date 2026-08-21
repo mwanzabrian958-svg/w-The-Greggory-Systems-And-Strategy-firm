@@ -1,11 +1,49 @@
 // Admin Management Routes
-// Handles admin, developer, and user management from separate tables
+// Handles admin and user management from separate tables
 
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const { formatActivityLog } = require('../utils/activityLogFormatter');
+
+// =============================================
+// GET LIVE USERS (Who's Online)
+// =============================================
+router.get('/live-users', async (req, res) => {
+  try {
+    // Define "Live" as activity within the last 5 minutes
+    const LIVE_THRESHOLD = '5 MINUTE';
+
+    const [liveUsers] = await db.promise().query(`
+      (SELECT id, display_name, email, 'client' as role_type, last_active_at, profile_photo_blob IS NOT NULL as has_photo
+       FROM users
+       WHERE last_active_at > DATE_SUB(NOW(), INTERVAL ${LIVE_THRESHOLD}) AND deleted_at IS NULL)
+      UNION ALL
+      (SELECT id, display_name, email, admin_level as role_type, last_active_at, profile_photo_blob IS NOT NULL as has_photo
+       FROM admin_users
+       WHERE last_active_at > DATE_SUB(NOW(), INTERVAL ${LIVE_THRESHOLD}) AND deleted_at IS NULL)
+      UNION ALL
+      (SELECT id, display_name, email, developer_level as role_type, last_active_at, profile_photo_blob IS NOT NULL as has_photo
+       FROM developer_users
+       WHERE last_active_at > DATE_SUB(NOW(), INTERVAL ${LIVE_THRESHOLD}) AND deleted_at IS NULL)
+      ORDER BY last_active_at DESC
+    `);
+
+    res.json({
+      success: true,
+      count: liveUsers.length,
+      users: liveUsers.map(u => ({
+        ...u,
+        online: true,
+        last_active: u.last_active_at
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching live users:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // =============================================
 // GLOBAL SEARCH TELEMETRY
@@ -19,24 +57,20 @@ router.get('/search', async (req, res) => {
     const isDeep = deep === 'true';
     const limit = isDeep ? 20 : 5;
 
-    // 1. Search Personnel (Users, Admins, Developers)
+    // 1. Search Personnel (Users, Admins) - PURGED DEVELOPERS
     const personnelQuery = isDeep
       ? `(SELECT 'user' as type, id, display_name as title, email, phone_number as phone, primary_role as role, is_active, created_at as metadata, CONCAT('/admin/users/detail/', id, '/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ? OR phone_number LIKE ?) AND deleted_at IS NULL)
          UNION ALL
          (SELECT 'user' as type, id, display_name as title, email, phone_number as phone, admin_level as role, is_active, created_at as metadata, CONCAT('/admin/users/detail/', id, '/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ? OR phone_number LIKE ?) AND deleted_at IS NULL)
-         UNION ALL
-         (SELECT 'user' as type, id, display_name as title, email, phone_number as phone, developer_level as role, is_active, created_at as metadata, CONCAT('/admin/users/detail/', id, '/developer') as link FROM developer_users WHERE (display_name LIKE ? OR email LIKE ? OR phone_number LIKE ?) AND deleted_at IS NULL)
          LIMIT ?`
       : `(SELECT 'user' as type, id, display_name as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL)
          UNION ALL
          (SELECT 'user' as type, id, display_name as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL)
-         UNION ALL
-         (SELECT 'user' as type, id, display_name as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/developer') as link FROM developer_users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL)
          LIMIT ?`;
 
     const personnelParams = isDeep
-      ? [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, limit]
-      : [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, limit];
+      ? [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, limit]
+      : [searchTerm, searchTerm, searchTerm, searchTerm, limit];
 
     const [users] = await db.promise().query(personnelQuery, personnelParams);
 
@@ -49,7 +83,7 @@ router.get('/search', async (req, res) => {
 
     // 3. Search Ledger
     const [ledger] = await db.promise().query(
-      "SELECT 'ledger' as type, id, description as title, CONCAT('KSh ', amount) as subtitle, '/admin/billing' as link FROM accounting_entries WHERE (description LIKE ? OR transaction_reference LIKE ?) AND deleted_at IS NULL LIMIT ?",
+      "SELECT 'ledger' as type, id, description as title, CONCAT('KSH ', FORMAT(amount, 2)) as subtitle, '/admin/billing' as link FROM accounting_entries WHERE (description LIKE ? OR transaction_reference LIKE ?) AND deleted_at IS NULL LIMIT ?",
       [searchTerm, searchTerm, limit]
     );
 
@@ -81,17 +115,28 @@ router.get('/admin-users', async (req, res) => {
         au.first_name,
         au.last_name,
         au.display_name,
+        au.phone_number,
+        au.physical_address,
+        au.id_number,
+        au.alt_phone,
+        au.expertise,
+        au.private_notes,
+        au.manual_projects,
+        au.emergency_contact_name,
+        au.emergency_contact_phone,
         au.admin_level,
         au.access_level,
         au.department,
         au.is_active,
         au.last_login_at,
         au.last_login_ip,
+        au.last_active_at,
         au.whatsapp_verified,
         au.whatsapp_auth_key,
         au.created_at,
         au.updated_at
       FROM admin_users au
+      WHERE au.deleted_at IS NULL
       ORDER BY au.created_at DESC
     `);
 
@@ -112,52 +157,6 @@ router.get('/admin-users', async (req, res) => {
 });
 
 // =============================================
-// GET ALL DEVELOPER USERS
-// =============================================
-router.get('/developer-users', async (req, res) => {
-  try {
-    const [developerUsers] = await db.promise().query(`
-      SELECT 
-        du.id,
-        du.email,
-        du.first_name,
-        du.last_name,
-        du.display_name,
-        du.developer_level,
-        du.access_level,
-        du.tech_stack,
-        du.specialization,
-        du.team_id,
-        du.github_username,
-        du.linkedin_url,
-        du.is_active,
-        du.last_login_at,
-        du.last_login_ip,
-        du.whatsapp_verified,
-        du.whatsapp_auth_key,
-        du.created_at,
-        du.updated_at
-      FROM developer_users du
-      ORDER BY du.created_at DESC
-    `);
-
-    res.json({
-      success: true,
-      users: developerUsers,
-      count: developerUsers.length
-    });
-
-  } catch (error) {
-    console.error('Error fetching developer users:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch developer users',
-      error: error.message
-    });
-  }
-});
-
-// =============================================
 // GET ALL REGULAR USERS
 // =============================================
 router.get('/users', async (req, res) => {
@@ -169,10 +168,20 @@ router.get('/users', async (req, res) => {
         u.first_name,
         u.last_name,
         u.display_name,
+        u.phone_number,
+        u.physical_address,
+        u.id_number,
+        u.alt_phone,
+        u.expertise,
+        u.private_notes,
+        u.manual_projects,
+        u.emergency_contact_name,
+        u.emergency_contact_phone,
         u.primary_role,
         u.is_active,
         u.last_login_at,
         u.last_login_ip,
+        u.last_active_at,
         u.whatsapp_verified,
         u.whatsapp_auth_key,
         u.created_at,
@@ -181,6 +190,7 @@ router.get('/users', async (req, res) => {
         tm.role as job_role
       FROM users u
       LEFT JOIN team_members tm ON u.job_id = tm.id
+      WHERE u.deleted_at IS NULL
       ORDER BY u.created_at DESC
     `);
 
@@ -278,76 +288,84 @@ router.post('/create-admin', async (req, res) => {
 });
 
 // =============================================
-// CREATE DEVELOPER USER
+// EXPORT USER PROFILE AS PDF
 // =============================================
-router.post('/create-developer', async (req, res) => {
+router.get('/users/:id/export-pdf', async (req, res) => {
   try {
-    const {
-      first_name,
-      last_name,
-      email,
-      password,
-      developer_level = 'mid',
-      access_level = 'limited',
-      tech_stack = [],
-      specialization = 'General',
-      team_id = null,
-      github_username = '',
-      linkedin_url = ''
-    } = req.body;
+    const { id } = req.params;
+    const { role_type } = req.query;
 
-    // Basic validation
-    if (!first_name || !last_name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide all required fields'
-      });
+    let query;
+    if (role_type === 'admin') {
+      query = 'SELECT * FROM admin_users WHERE id = ? AND deleted_at IS NULL';
+    } else if (role_type === 'developer') {
+      query = 'SELECT * FROM developer_users WHERE id = ? AND deleted_at IS NULL';
+    } else {
+      query = 'SELECT * FROM users WHERE id = ? AND deleted_at IS NULL';
     }
 
-    // Check if user already exists in developer table
-    const [existingDeveloper] = await db.promise().query(
-      'SELECT id FROM developer_users WHERE email = ?',
-      [email]
-    );
+    const [users] = await db.promise().query(query, [id]);
+    if (users.length === 0) return res.status(404).send('User not found');
 
-    if (existingDeveloper.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Developer user with this email already exists'
-      });
-    }
+    const user = users[0];
+    const name = user.display_name || `${user.first_name} ${user.last_name}`;
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Simple Text-based PDF Relay (In production, use a library like PDFKit)
+    const profileText = `
+==================================================
+GREGGORY SYSTEMS & STRATEGY FIRM
+OFFICIAL PERSONNEL IDENTITY REPORT
+==================================================
+Generated: ${new Date().toLocaleString()}
+Node ID: ${user.id}
+Status: ${user.is_active ? 'ACTIVE' : 'INACTIVE'}
+Role: ${user.admin_level || user.primary_role || 'Personnel'}
 
-    // Create developer user
-    const [result] = await db.promise().query(`
-      INSERT INTO developer_users (
-        email, password_hash, first_name, last_name, developer_level,
-        access_level, tech_stack, specialization, team_id,
-        github_username, linkedin_url, is_active, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-    `, [
-      email, hashedPassword, first_name, last_name, developer_level,
-      access_level, JSON.stringify(tech_stack), specialization, team_id,
-      github_username, linkedin_url, 1
-    ]);
+[ IDENTITY PHOTO ATTACHED IN DIGITAL PORTAL ]
+--------------------------------------------------
 
-    res.status(201).json({
-      success: true,
-      message: 'Developer user created successfully',
-      userId: result.insertId,
-      developer_level: developer_level,
-      access_level: access_level
-    });
+PRIMARY IDENTIFICATION:
+Full Name: ${name}
+Primary Email: ${user.email}
+Secure Line: ${user.phone_number || 'NOT RECORDED'}
+Backup Phone: ${user.alt_phone || 'NOT RECORDED'}
+ID/Passport: ${user.id_number || 'NOT RECORDED'}
+
+PROFESSIONAL MATRIX:
+Department: ${user.department || 'Operations'}
+Expertise: ${user.expertise || 'General'}
+Joined: ${new Date(user.created_at).toLocaleDateString()}
+
+PHYSICAL ADDRESS:
+${user.physical_address || 'NOT RECORDED'}
+
+EMERGENCY CONTACT:
+Name: ${user.emergency_contact_name || 'NOT RECORDED'}
+Phone: ${user.emergency_contact_phone || 'NOT RECORDED'}
+
+MISSION BRIEFING & DIRECTIVES:
+${user.mission_briefing || 'No specific directive assigned.'}
+
+INTERNAL COMPANY NOTES (RESTRICTED ACCESS):
+${user.private_notes || 'None recorded.'}
+
+--------------------------------------------------
+END OF IDENTITY REPORT
+© 2024 Greggory Systems & Strategy Firm
+CONFIDENTIAL - INTERNAL USE ONLY
+==================================================
+    `;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="PROFILE_${name.replace(/\s+/g, '_')}.pdf"`);
+
+    // For now, sending as a plain text buffer that opens in PDF viewers
+    // In a real environment, we'd pipe through a PDF generator
+    res.send(Buffer.from(profileText, 'utf-8'));
 
   } catch (error) {
-    console.error('Error creating developer user:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create developer user',
-      error: error.message
-    });
+    console.error('Export Error:', error);
+    res.status(500).send('Export synchronization failed');
   }
 });
 
@@ -357,28 +375,41 @@ router.post('/create-developer', async (req, res) => {
 router.put('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { first_name, last_name, email, role, admin_level, developer_level, department, mission_briefing, is_active } = req.body;
+    const {
+      first_name, last_name, email, role, admin_level, department,
+      mission_briefing, is_active, phone_number, physical_address,
+      id_number, alt_phone, expertise, private_notes, manual_projects,
+      emergency_contact_name, emergency_contact_phone
+    } = req.body;
 
-    // We need to know which table to update.
-    // Usually the frontend should provide role_type, or we can infer from current role.
-    const roleType = req.query.role_type || (role === 'admin' ? 'admin' : (role === 'developer' ? 'developer' : 'client'));
+    const roleType = req.query.role_type || (role === 'admin' ? 'admin' : 'client');
 
     let tableName;
     let updates = [];
     let params = [];
 
+    const commonUpdates = [
+      'first_name = ?', 'last_name = ?', 'email = ?', 'phone_number = ?',
+      'physical_address = ?', 'id_number = ?', 'alt_phone = ?', 'expertise = ?',
+      'private_notes = ?', 'manual_projects = ?', 'emergency_contact_name = ?',
+      'emergency_contact_phone = ?', 'is_active = ?'
+    ];
+
+    const commonParams = [
+      first_name, last_name, email, phone_number || null,
+      physical_address || null, id_number || null, alt_phone || null, expertise || null,
+      private_notes || null, manual_projects || null, emergency_contact_name || null,
+      emergency_contact_phone || null, is_active ? 1 : 0
+    ];
+
     if (roleType === 'admin') {
       tableName = 'admin_users';
-      updates = ['first_name = ?', 'last_name = ?', 'email = ?', 'admin_level = ?', 'department = ?', 'is_active = ?'];
-      params = [first_name, last_name, email, admin_level || 'admin', department || 'General', is_active ? 1 : 0];
-    } else if (roleType === 'developer') {
-      tableName = 'developer_users';
-      updates = ['first_name = ?', 'last_name = ?', 'email = ?', 'developer_level = ?', 'is_active = ?'];
-      params = [first_name, last_name, email, developer_level || 'mid', is_active ? 1 : 0];
+      updates = [...commonUpdates, 'admin_level = ?', 'department = ?'];
+      params = [...commonParams, admin_level || 'admin', department || 'General'];
     } else {
       tableName = 'users';
-      updates = ['first_name = ?', 'last_name = ?', 'email = ?', 'primary_role = ?', 'mission_briefing = ?', 'is_active = ?'];
-      params = [first_name, last_name, email, role || 'user', mission_briefing || null, is_active ? 1 : 0];
+      updates = [...commonUpdates, 'primary_role = ?', 'mission_briefing = ?'];
+      params = [...commonParams, role || 'user', mission_briefing || null];
     }
 
     params.push(id);
@@ -420,8 +451,6 @@ router.put('/users/:id/status', async (req, res) => {
     let tableName;
     if (role_type === 'admin') {
       tableName = 'admin_users';
-    } else if (role_type === 'developer') {
-      tableName = 'developer_users';
     } else {
       tableName = 'users';
     }
@@ -473,8 +502,6 @@ router.delete('/users/:id', async (req, res) => {
     let tableName;
     if (role_type === 'admin') {
       tableName = 'admin_users';
-    } else if (role_type === 'developer') {
-      tableName = 'developer_users';
     } else {
       tableName = 'users';
     }
@@ -529,29 +556,24 @@ router.get('/users/:id', async (req, res) => {
       query = `
         SELECT 
           au.id, au.email, au.first_name, au.last_name, au.display_name,
-          au.admin_level, au.access_level, au.department,
+          au.phone_number, au.physical_address, au.id_number, au.alt_phone,
+          au.expertise, au.private_notes, au.manual_projects,
+          au.emergency_contact_name, au.emergency_contact_phone,
+          au.admin_level, au.access_level, au.department, au.mission_briefing,
           au.is_active, au.last_login_at, au.last_login_ip,
           au.created_at, au.updated_at, au.deleted_at
         FROM admin_users au
         WHERE au.id = ? AND au.deleted_at IS NULL
       `;
-    } else if (role_type === 'developer') {
-      query = `
-        SELECT 
-          du.id, du.email, du.first_name, du.last_name, du.display_name,
-          du.developer_level, du.access_level, du.tech_stack,
-          du.specialization, du.team_id, du.github_username, du.linkedin_url,
-          du.is_active, du.last_login_at, du.last_login_ip,
-          du.created_at, du.updated_at, du.deleted_at
-        FROM developer_users du
-        WHERE du.id = ? AND du.deleted_at IS NULL
-      `;
     } else {
       query = `
         SELECT 
           u.id, u.email, u.first_name, u.last_name, u.display_name,
-          u.primary_role, u.is_active, u.last_login_at, u.last_login_ip,
-          u.created_at, u.updated_at, u.deleted_at,
+          u.phone_number, u.physical_address, u.id_number, u.alt_phone,
+          u.expertise, u.private_notes, u.manual_projects,
+          u.emergency_contact_name, u.emergency_contact_phone,
+          u.primary_role, u.mission_briefing, u.is_active, u.last_login_at,
+          u.last_login_ip, u.created_at, u.updated_at, u.deleted_at,
           tm.name as job_title, tm.role as job_role
         FROM users u
         LEFT JOIN team_members tm ON u.job_id = tm.id
@@ -644,13 +666,9 @@ router.get('/activity-logs', async (req, res) => {
 // =============================================
 router.get('/dashboard', async (req, res) => {
   try {
-    // Get counts from all tables
+    // Get counts from necessary tables - PURGED DEVELOPERS
     const [adminCount] = await db.promise().query(
       'SELECT COUNT(*) as count FROM admin_users WHERE is_active = 1 AND deleted_at IS NULL'
-    );
-    
-    const [developerCount] = await db.promise().query(
-      'SELECT COUNT(*) as count FROM developer_users WHERE is_active = 1 AND deleted_at IS NULL'
     );
     
     const [userCount] = await db.promise().query(
@@ -660,17 +678,23 @@ router.get('/dashboard', async (req, res) => {
     const [verifiedCount] = await db.promise().query(`
       SELECT
         (SELECT COUNT(*) FROM users WHERE whatsapp_verified = 1 AND deleted_at IS NULL) +
-        (SELECT COUNT(*) FROM admin_users WHERE whatsapp_verified = 1 AND deleted_at IS NULL) +
-        (SELECT COUNT(*) FROM developer_users WHERE whatsapp_verified = 1 AND deleted_at IS NULL) as count
+        (SELECT COUNT(*) FROM admin_users WHERE whatsapp_verified = 1 AND deleted_at IS NULL) as count
     `);
 
     const [activeProjectsCount] = await db.promise().query(
-      "SELECT COUNT(*) as count FROM user_projects WHERE status = 'in-progress' AND deleted_at IS NULL"
+      "SELECT COUNT(*) as count FROM user_projects WHERE status IN ('in-progress', 'active') AND deleted_at IS NULL"
     );
 
     const [pendingApprovalsCount] = await db.promise().query(
-      "SELECT COUNT(*) as count FROM user_projects WHERE status = 'planning' AND deleted_at IS NULL"
+      "SELECT COUNT(*) as count FROM user_projects WHERE status IN ('planning', 'pending') AND deleted_at IS NULL"
     );
+
+    const [liveUsersCount] = await db.promise().query(`
+      SELECT
+        (SELECT COUNT(*) FROM users WHERE last_active_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE) AND deleted_at IS NULL) +
+        (SELECT COUNT(*) FROM admin_users WHERE last_active_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE) AND deleted_at IS NULL) +
+        (SELECT COUNT(*) FROM developer_users WHERE last_active_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE) AND deleted_at IS NULL) as count
+    `);
 
     // Get recent activity
     const [recentActivity] = await db.promise().query(`
@@ -680,17 +704,7 @@ router.get('/dashboard', async (req, res) => {
         last_login_at as timestamp,
         'Admin logged in' as description
        FROM admin_users 
-       WHERE last_login_at IS NOT NULL 
-       ORDER BY last_login_at DESC 
-       LIMIT 5)
-      UNION ALL
-      (SELECT 
-        'developer_login' as type,
-        display_name as user_name,
-        last_login_at as timestamp,
-        'Developer logged in' as description
-       FROM developer_users 
-       WHERE last_login_at IS NOT NULL 
+       WHERE last_login_at IS NOT NULL
        ORDER BY last_login_at DESC 
        LIMIT 5)
       UNION ALL
@@ -741,10 +755,10 @@ router.get('/dashboard', async (req, res) => {
       dashboard: {
         userCounts: {
           admins: adminCount[0].count,
-          developers: developerCount[0].count,
           users: userCount[0].count,
           verified: verifiedCount[0].count,
-          total: adminCount[0].count + developerCount[0].count + userCount[0].count,
+          live: liveUsersCount[0].count,
+          total: adminCount[0].count + userCount[0].count,
           total_active_projects: activeProjectsCount[0].count
         },
         pending_count: pendingApprovalsCount[0].count,
@@ -758,79 +772,6 @@ router.get('/dashboard', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch dashboard data',
-      error: error.message
-    });
-  }
-});
-
-// =============================================
-// GET DEVELOPER DASHBOARD DATA
-// =============================================
-router.get('/developer-dashboard', async (req, res) => {
-  try {
-    // Get developer-specific data
-    const [taskStats] = await db.promise().query(`
-      SELECT 
-        COUNT(*) as total_tasks,
-        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_tasks,
-        SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress_tasks,
-        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_tasks
-      FROM project_tasks
-      WHERE deleted_at IS NULL
-    `);
-
-    const [recentCommits] = await db.promise().query(`
-      SELECT 
-        pt.id,
-        pt.task_name,
-        pt.status,
-        pt.updated_at,
-        p.project_name
-      FROM project_tasks pt
-      LEFT JOIN user_projects p ON pt.project_id = p.id
-      WHERE pt.deleted_at IS NULL
-      ORDER BY pt.updated_at DESC
-      LIMIT 10
-    `);
-
-    const [systemHealth] = await db.promise().query(`
-      SELECT 
-        'database' as component,
-        'operational' as status,
-        NOW() as last_check
-      UNION ALL
-      SELECT 
-        'api' as component,
-        'operational' as status,
-        NOW() as last_check
-      UNION ALL
-      SELECT 
-        'messaging' as component,
-        'operational' as status,
-        NOW() as last_check
-    `);
-
-    res.json({
-      success: true,
-      dashboard: {
-        tasks: {
-          total: taskStats[0]?.total_tasks || 0,
-          completed: taskStats[0]?.completed_tasks || 0,
-          inProgress: taskStats[0]?.in_progress_tasks || 0,
-          pending: taskStats[0]?.pending_tasks || 0
-        },
-        recentActivity: recentCommits,
-        systemHealth: systemHealth,
-        notifications: [],
-        timestamp: new Date().toISOString()
-      }
-    });
-
-  } catch (error) {
-    console.error('Error fetching developer dashboard data:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch developer dashboard data',
       error: error.message
     });
   }
@@ -854,26 +795,58 @@ router.get('/budget-overview', async (req, res) => {
     // 2. Ledger-based Financial Telemetry
     const [financialData] = await db.promise().query(`
       SELECT
-        COALESCE(SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END), 0) as revenue,
+        COALESCE(SUM(CASE WHEN entry_type IN ('income', 'invoice_payment') THEN amount ELSE 0 END), 0) as revenue,
         COALESCE(SUM(CASE WHEN entry_type = 'expense' THEN amount ELSE 0 END), 0) as expenses
       FROM accounting_entries
       WHERE deleted_at IS NULL AND payment_status = 'completed'
     `);
 
+    const [activeProjectsCount] = await db.promise().query(
+      "SELECT COUNT(*) as count FROM user_projects WHERE status IN ('in-progress', 'active') AND deleted_at IS NULL"
+    );
+
     const revenue = financialData[0]?.revenue || 0;
     const expenses = financialData[0]?.expenses || 0;
     const net_income = revenue - expenses;
+    const active_count = activeProjectsCount[0]?.count || 0;
+
+    // LEDGER-STRICT TELEMETRY:
+    // We now only report data from real ledger entries. Project budget metadata is ignored for "Spent".
+    const real_spent = expenses;
+    const planned = projectBudgetData[0]?.planned || 0;
+
+    // Only show remaining/forecast if there is actual ledger activity
+    const remaining = Math.max(0, planned - real_spent);
+    const forecast = real_spent > 0 ? (real_spent * 1.1) : 0;
+
+    // MISSION CRITICAL: Persist this telemetry snapshot to the database for historical audit
+    // Only record if there is actual movement to avoid empty row bloat
+    if (revenue > 0 || expenses > 0 || active_count > 0) {
+      try {
+        await db.promise().query(`
+          INSERT INTO firm_financial_telemetry (
+            total_revenue, total_expenses, net_income,
+            total_planned_budget, total_spent_budget,
+            forecasted_burn, remaining_capital, active_projects_count
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [revenue, expenses, net_income, planned, real_spent, forecast, remaining, active_count]
+        );
+      } catch (telemetryErr) {
+        console.warn('[TELEMETRY] Failed to commit snapshot:', telemetryErr.message);
+      }
+    }
 
     res.json({
       success: true,
       data: {
-        planned: projectBudgetData[0]?.planned || 0,
-        spent: projectBudgetData[0]?.spent || 0,
-        forecast: projectBudgetData[0]?.forecast || 0,
+        planned,
+        spent: real_spent,
+        forecast,
         revenue,
         expenses,
         net_income,
-        remaining: (projectBudgetData[0]?.planned || 0) - (projectBudgetData[0]?.spent || 0)
+        active_projects: active_count,
+        remaining: real_spent > 0 ? remaining : 0
       }
     });
   } catch (error) {
@@ -930,16 +903,16 @@ router.get('/pending-approvals', async (req, res) => {
 // =============================================
 router.get('/pending-invoices', async (req, res) => {
   try {
-    // Get pending invoices from applications or financial records
+    // Get pending invoices from the invoices table
     const [invoices] = await db.promise().query(`
       SELECT 
-        a.id,
-        a.application_id as project,
-        COALESCE(a.estimated_budget, 0) as amount,
-        a.created_at as date
-      FROM applications a
-      WHERE a.status = 'pending' AND a.deleted_at IS NULL
-      ORDER BY a.created_at DESC
+        i.id,
+        i.title as project,
+        i.total_amount_kes as amount,
+        i.created_at as date
+      FROM invoices i
+      WHERE i.status != 'paid' AND i.deleted_at IS NULL
+      ORDER BY i.created_at DESC
       LIMIT 5
     `);
 
@@ -947,7 +920,7 @@ router.get('/pending-invoices', async (req, res) => {
       success: true,
       data: invoices.map(inv => ({
         id: inv.id,
-        project: inv.project || 'Application',
+        project: inv.project || 'Invoice',
         amount: inv.amount,
         date: inv.date
       }))
@@ -967,16 +940,19 @@ router.get('/pending-invoices', async (req, res) => {
 // =============================================
 router.get('/client-feedback', async (req, res) => {
   try {
-    // Get client feedback from the new user_feedback table
+    // Get client feedback with user details
     const [feedback] = await db.promise().query(`
       SELECT 
-        id,
-        feedback_type as type,
-        rating,
-        created_at as date
-      FROM user_feedback
-      WHERE deleted_at IS NULL
-      ORDER BY created_at DESC
+        uf.id,
+        uf.feedback_type as type,
+        uf.rating,
+        uf.created_at as date,
+        u.display_name as user_name,
+        uf.title
+      FROM user_feedback uf
+      LEFT JOIN users u ON uf.user_id = u.id
+      WHERE uf.deleted_at IS NULL
+      ORDER BY uf.created_at DESC
       LIMIT 5
     `);
 
@@ -986,7 +962,9 @@ router.get('/client-feedback', async (req, res) => {
         id: f.id,
         type: f.type || 'Client',
         rating: f.rating,
-        date: f.date
+        date: f.date,
+        user: f.user_name || 'Anonymous',
+        title: f.title || 'Service Feedback'
       }))
     });
   } catch (error) {
@@ -1053,7 +1031,7 @@ router.get('/ledger', async (req, res) => {
     // Metadata for filters
     const [clients] = await db.promise().query("SELECT id, display_name as name FROM users WHERE deleted_at IS NULL");
     const [projects] = await db.promise().query("SELECT id, project_name as name FROM user_projects WHERE deleted_at IS NULL");
-    const [team] = await db.promise().query("SELECT id, display_name as name FROM users WHERE primary_role IN ('admin', 'developer') AND deleted_at IS NULL");
+    const [team] = await db.promise().query("SELECT id, display_name as name FROM users WHERE primary_role IN ('admin') AND deleted_at IS NULL");
 
     res.json({
       success: true,
@@ -1119,263 +1097,10 @@ router.get('/risk-alerts', async (req, res) => {
 });
 
 // =============================================
-// GET ASSIGNED TASKS (DEVELOPER DASHBOARD)
+// GET ASSIGNED TASKS - PURGED
 // =============================================
 router.get('/assigned-tasks', async (req, res) => {
-  try {
-    const [tasks] = await db.promise().query(`
-      SELECT 
-        pt.id,
-        pt.task_name as title,
-        pt.project_id as project,
-        pt.assigned_to as assignee,
-        pt.priority,
-        pt.status,
-        pt.progress_percentage as progress
-      FROM project_tasks pt
-      WHERE pt.deleted_at IS NULL
-      ORDER BY pt.created_at DESC
-      LIMIT 5
-    `);
-
-    res.json({
-      success: true,
-      data: tasks.map(t => ({
-        id: t.id,
-        title: t.title,
-        project: t.project || 'Project',
-        assignee: t.assignee || 'Developer',
-        priority: t.priority || 'Medium',
-        status: t.status || 'pending',
-        progress: t.progress || 0
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching assigned tasks:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch assigned tasks',
-      error: error.message
-    });
-  }
-});
-
-// =============================================
-// GET MILESTONES (DEVELOPER DASHBOARD)
-// =============================================
-router.get('/milestones', async (req, res) => {
-  try {
-    const [milestones] = await db.promise().query(`
-      SELECT 
-        pm.id,
-        pm.milestone_name as name,
-        pm.due_date,
-        pm.status,
-        pm.completion_percentage as progress
-      FROM project_milestones pm
-      WHERE pm.deleted_at IS NULL
-      ORDER BY pm.due_date ASC
-      LIMIT 5
-    `);
-
-    res.json({
-      success: true,
-      data: milestones.map(m => ({
-        id: m.id,
-        name: m.name,
-        dueDate: m.due_date,
-        status: m.status || 'pending',
-        progress: m.progress || 0
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching milestones:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch milestones',
-      error: error.message
-    });
-  }
-});
-
-// =============================================
-// GET RESOURCE ALLOCATIONS (DEVELOPER DASHBOARD)
-// =============================================
-router.get('/resource-allocations', async (req, res) => {
-  try {
-    const [resources] = await db.promise().query(`
-      SELECT 
-        pr.id,
-        pr.resource_name as name,
-        pr.role,
-        pr.allocated_quantity,
-        pr.used_quantity,
-        pr.availability_status as availability
-      FROM project_resources pr
-      WHERE pr.deleted_at IS NULL
-      LIMIT 5
-    `);
-
-    res.json({
-      success: true,
-      data: resources.map(r => ({
-        id: r.id,
-        name: r.name,
-        role: r.role || 'Team Member',
-        availability: r.availability || 'Available',
-        utilization: r.allocated_quantity > 0 ? Math.round((r.used_quantity / r.allocated_quantity) * 100) : 0
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching resource allocations:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch resource allocations',
-      error: error.message
-    });
-  }
-});
-
-// =============================================
-// GET QA CHECKPOINTS (DEVELOPER DASHBOARD)
-// =============================================
-router.get('/qa-checkpoints', async (req, res) => {
-  try {
-    const [qaData] = await db.promise().query(`
-      SELECT 
-        qa.id,
-        qa.checkpoint_name as name,
-        qa.status,
-        qa.issues_found as issuesFound,
-        qa.issues_resolved as issuesResolved
-      FROM quality_assurance qa
-      WHERE qa.deleted_at IS NULL
-      ORDER BY qa.created_at DESC
-      LIMIT 5
-    `);
-
-    res.json({
-      success: true,
-      data: qaData.map(q => ({
-        id: q.id,
-        name: q.name,
-        status: q.status || 'pending',
-        issuesFound: q.issuesFound || 0,
-        issuesResolved: q.issuesResolved || 0
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching QA checkpoints:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch QA checkpoints',
-      error: error.message
-    });
-  }
-});
-
-// =============================================
-// GET DOCUMENT SUMMARY (DEVELOPER DASHBOARD)
-// =============================================
-router.get('/document-summary', async (req, res) => {
-  try {
-    const [docs] = await db.promise().query(`
-      SELECT 
-        cd.id,
-        cd.document_name as name,
-        cd.document_type as type,
-        cd.created_at
-      FROM client_documents cd
-      WHERE cd.deleted_at IS NULL
-      ORDER BY cd.created_at DESC
-      LIMIT 5
-    `);
-
-    res.json({
-      success: true,
-      data: docs.map(d => ({
-        id: d.id,
-        name: d.name,
-        type: d.type || 'Document'
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching document summary:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch document summary',
-      error: error.message
-    });
-  }
-});
-
-// =============================================
-// GET KPI METRICS (DEVELOPER DASHBOARD)
-// =============================================
-router.get('/kpi-metrics', async (req, res) => {
-  try {
-    const [metrics] = await db.promise().query(`
-      SELECT
-        metric_name as name,
-        value,
-        trend
-      FROM performance_metrics
-      LIMIT 10
-    `);
-
-    res.json({
-      success: true,
-      data: metrics.map((m, idx) => ({
-        id: idx,
-        name: m.name,
-        value: `${m.value}%`,
-        trend: m.trend
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching KPI metrics:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch KPI metrics',
-      error: error.message
-    });
-  }
-});
-
-// =============================================
-// GET PROJECT TIMELINE (DEVELOPER DASHBOARD)
-// =============================================
-router.get('/project-timeline', async (req, res) => {
-  try {
-    const [timeline] = await db.promise().query(`
-      SELECT 
-        pt.id,
-        pt.task_name as name,
-        pt.end_date as dueDate,
-        pt.progress_percentage as progress
-      FROM project_tasks pt
-      WHERE pt.deleted_at IS NULL
-      ORDER BY pt.end_date ASC
-      LIMIT 5
-    `);
-
-    res.json({
-      success: true,
-      data: timeline.map(t => ({
-        id: t.id,
-        name: t.name,
-        dueDate: t.dueDate,
-        progress: t.progress || 0
-      }))
-    });
-  } catch (error) {
-    console.error('Error fetching project timeline:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch project timeline',
-      error: error.message
-    });
-  }
+  res.json({ success: true, data: [] });
 });
 
 // =============================================
@@ -1436,6 +1161,88 @@ router.get('/crm-telemetry', async (req, res) => {
   } catch (error) {
     console.error('Error fetching CRM telemetry:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =============================================
+// PROJECT REPORTS (POSTING AREA)
+// =============================================
+router.get('/projects/all', async (req, res) => {
+  try {
+    const [projects] = await db.promise().query(
+      'SELECT id, project_name FROM user_projects WHERE deleted_at IS NULL ORDER BY project_name ASC'
+    );
+    res.json({ success: true, projects });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch projects' });
+  }
+});
+
+router.post('/reports', async (req, res) => {
+  try {
+    const { project_id, title, summary, file_data, file_type, file_name, file_size, admin_id } = req.body;
+
+    if (!project_id || !title || !file_data) {
+      return res.status(400).json({ success: false, message: 'Project, Title, and File are required' });
+    }
+
+    const buffer = Buffer.from(file_data.split(',')[1] || file_data, 'base64');
+
+    const [result] = await db.promise().query(`
+      INSERT INTO project_reports (
+        project_id, title, summary, file_data, file_type, file_size,
+        report_date, status, created_by, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, NOW(), 'final', ?, NOW())
+    `, [project_id, title, summary, buffer, file_type || 'application/pdf', file_size || 0, admin_id || 1]);
+
+    res.status(201).json({
+      success: true,
+      message: 'Report published successfully to project node',
+      reportId: result.insertId
+    });
+  } catch (error) {
+    console.error('Report Publication Error:', error);
+    res.status(500).json({ success: false, message: 'Internal server failure during publication' });
+  }
+});
+
+// =============================================
+// ALERT RELAY (SYSTEM UPDATES WITH MEDIA)
+// =============================================
+router.post('/relay-alert', async (req, res) => {
+  try {
+    const { project_name, user_identity, title, message, media_data, media_type, media_name, priority } = req.body;
+
+    const [userRows] = await db.promise().query(
+      'SELECT id FROM users WHERE email = ? OR display_name = ? LIMIT 1',
+      [user_identity, user_identity]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Unique user identity not found in node' });
+    }
+
+    const userId = userRows[0].id;
+    let buffer = null;
+    if (media_data) {
+      buffer = Buffer.from(media_data.split(',')[1] || media_data, 'base64');
+    }
+
+    const finalMessage = `[Project: ${project_name}] ${message}`;
+
+    const [result] = await db.promise().query(`
+      INSERT INTO notifications (
+        user_id, notification_type, title, message, priority,
+        attachment_data, attachment_type, attachment_name,
+        created_at, status
+      ) VALUES (?, 'system', ?, ?, ?, ?, ?, ?, NOW(), 'unread')
+    `, [userId, title, finalMessage, priority || 'normal', buffer, media_type, media_name]);
+
+    res.json({ success: true, message: 'Strategic alert relayed successfully', id: result.insertId });
+
+  } catch (error) {
+    console.error('Relay Error:', error);
+    res.status(500).json({ success: false, message: 'Relay link failed' });
   }
 });
 

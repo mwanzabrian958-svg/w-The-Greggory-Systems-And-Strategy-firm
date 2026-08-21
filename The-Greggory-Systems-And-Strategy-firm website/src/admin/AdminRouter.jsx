@@ -11,7 +11,6 @@ import { Applications } from './pages/Applications';
 import { ActivityLogs } from './pages/Activity';
 import { Settings } from './pages/Settings';
 import { CRM } from './pages/CRM';
-import { Communication } from './pages/Communication';
 import { Support } from './pages/Support';
 import { Security } from './pages/Security';
 import { Reports } from './pages/Reports';
@@ -89,7 +88,6 @@ export function AdminRouter() {
               <Route path="crm" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_CRM}><CRM user={user} /></AdminRoute>} />
               <Route path="content" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_CONTENT}><Content user={user} /></AdminRoute>} />
               <Route path="applications" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_APPLICATIONS}><Applications user={user} /></AdminRoute>} />
-              <Route path="communication" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_COMMUNICATION}><Communication user={user} /></AdminRoute>} />
               <Route path="support" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_SUPPORT}><Support user={user} /></AdminRoute>} />
               <Route path="security" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_SECURITY}><Security user={user} /></AdminRoute>} />
               <Route path="reports" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_REPORTS}><Reports user={user} /></AdminRoute>} />

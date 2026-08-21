@@ -1,23 +1,25 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import * as LucideIcons from "lucide-react";
 import {
   LogOut, Search, Bell, X, ChevronRight, HelpCircle,
   Home, Users, FolderKanban, Calculator, Building2,
-  Briefcase, MessageSquare, LifeBuoy, BarChart3, ShieldCheck, Activity, ClipboardList
+  Briefcase, MessageSquare, LifeBuoy, BarChart3, ShieldCheck, Activity, ClipboardList,
+  FileText
 } from "lucide-react";
 import { apiCall } from "../../services/api";
 import { getNavigationItems } from "../utils/permissions";
 
-/**
- * AdminLayout - Mission Control Framing
- */
+const ICON_MAP = {
+  Home, Users, FolderKanban, Calculator, Building2,
+  Briefcase, MessageSquare, LifeBuoy, BarChart3, ShieldCheck, Activity, ClipboardList,
+  FileText, Search, Bell, LogOut, X, ChevronRight, HelpCircle
+};
+
 function AdminLayout({ user, children, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [profilePhotoUrl, setProfilePhotoUrl] = useState(null);
   const [imageError, setImagePhotoError] = useState(false);
-
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -25,11 +27,11 @@ function AdminLayout({ user, children, onLogout }) {
   const searchRef = useRef(null);
 
   const navItems = getNavigationItems(user);
-  const displayName = user?.display_name || user?.name || [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.email || "Admin";
-  const initials = displayName.split(" ").map(s => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+  const displayName = user?.display_name || user?.name || (user?.first_name ? `${user.first_name} ${user.last_name}` : "Admin");
+  const initials = displayName.split(" ").map(s => s ? s[0] : "").filter(Boolean).slice(0, 2).join("").toUpperCase();
 
   const IconComponent = ({ name, ...props }) => {
-    const Icon = LucideIcons[name] || HelpCircle;
+    const Icon = ICON_MAP[name] || HelpCircle;
     return <Icon {...props} />;
   };
 
@@ -45,19 +47,9 @@ function AdminLayout({ user, children, onLogout }) {
         setIsSearching(true);
         try {
           const data = await apiCall(`/admin/search?q=${searchQuery}`);
-          if (data.success) {
-            setSearchResults(data.results || []);
-            setShowResults(true);
-          }
-        } catch (e) {
-          console.error("Search failure", e);
-        } finally {
-          setIsSearching(false);
-        }
-      } else {
-        setSearchResults([]);
-        setShowResults(false);
-      }
+          if (data.success) { setSearchResults(data.results || []); setShowResults(true); }
+        } catch (e) { console.error("Search failure", e); } finally { setIsSearching(false); }
+      } else { setSearchResults([]); setShowResults(false); }
     }, 400);
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery]);
@@ -71,7 +63,7 @@ function AdminLayout({ user, children, onLogout }) {
 
   useEffect(() => {
     if (user?.id) {
-      let role = user.role === "developer" || user.developer_level ? "developer" : "admin";
+      const role = user.role === 'developer' ? 'developer' : 'admin';
       setProfilePhotoUrl(`/api/admin/profile-photo/${role}/${user.id}?v=${Date.now()}`);
       setImagePhotoError(false);
     }
@@ -79,10 +71,7 @@ function AdminLayout({ user, children, onLogout }) {
 
   const handleLogoutClick = () => {
     if (onLogout) onLogout();
-    else {
-      sessionStorage.clear(); localStorage.clear();
-      navigate("/admin/login", { replace: true });
-    }
+    else { sessionStorage.clear(); localStorage.clear(); navigate("/admin/login", { replace: true }); }
   };
 
   const isActive = (path) => {
@@ -90,23 +79,20 @@ function AdminLayout({ user, children, onLogout }) {
     return location.pathname.startsWith(path);
   };
 
+  const isDashboard = location.pathname === '/admin' || location.pathname === '/admin/';
+  const activeNavItem = navItems.find(item => isActive(item.path) && item.path !== '/admin');
+  const workstationLabel = activeNavItem ? activeNavItem.label : "Management";
+
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col overflow-hidden">
       <header className="bg-[#0f172a] border-b border-white/10 sticky top-0 z-50 flex-shrink-0 shadow-2xl">
         <div className="max-w-[1600px] mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="cursor-pointer group relative" onClick={() => navigate('/admin/settings')}>
-              {!imageError && profilePhotoUrl ? (
-                <img src={profilePhotoUrl} alt={displayName} onError={() => setImagePhotoError(true)} className="w-12 h-12 rounded-full object-cover border-2 border-teal-500 bg-slate-800 shadow-xl" />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg border-2 border-white/20 shadow-xl">{initials}</div>
-              )}
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-[#0f172a] rounded-full shadow-sm"></div>
-            </div>
-            <div className="hidden md:block">
-              <p className="text-sm font-bold text-white leading-none">{displayName}</p>
-              <p className="text-[9px] text-teal-400 font-black uppercase tracking-[0.2em] mt-1.5">{user?.role === 'developer' ? 'Technical Node' : 'Systems Admin'}</p>
-            </div>
+          <div className="flex items-center gap-4 cursor-pointer" onClick={() => navigate('/admin')}>
+             <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white font-black text-lg border border-white/10 shadow-lg">GS</div>
+             <div className="hidden md:block">
+                <p className="text-sm font-bold text-white leading-none uppercase tracking-tighter">Greggory Systems</p>
+                <p className="text-[7px] text-teal-400 font-black uppercase tracking-[0.3em] mt-1.5">Management Portal</p>
+             </div>
           </div>
 
           <div className="flex-1 max-w-2xl mx-10 relative" ref={searchRef}>
@@ -125,33 +111,35 @@ function AdminLayout({ user, children, onLogout }) {
               <div className="absolute top-full left-0 right-0 mt-3 bg-[#1e293b] border border-white/10 rounded-[24px] shadow-2xl overflow-hidden z-[60] animate-in fade-in zoom-in-95 duration-200">
                 <div className="p-2 max-h-[400px] overflow-y-auto custom-scrollbar">
                   {searchResults.length > 0 ? (
-                    <>
-                      {searchResults.map((result, idx) => (
-                        <button key={`${result.type}-${result.id}-${idx}`} onClick={() => { navigate(result.link); setShowResults(false); setSearchQuery(""); }} className="w-full flex items-center gap-4 p-4 hover:bg-white/5 rounded-xl text-left border-b border-white/5 last:border-0 transition-all group">
-                          <div className="bg-teal-500/10 p-2 rounded-lg group-hover:bg-teal-500/20"><IconComponent name={result.type === 'user' ? 'Users' : result.type === 'project' ? 'FolderKanban' : result.type === 'task' ? 'CheckSquare' : 'Calculator'} size={18} className="text-teal-400" /></div>
-                          <div><p className="text-sm font-bold text-white leading-tight">{result.title}</p><p className="text-[9px] font-black text-slate-500 uppercase mt-1">{result.subtitle}</p></div>
-                        </button>
-                      ))}
-                      <button
-                        onClick={() => { navigate(`/admin/search?q=${encodeURIComponent(searchQuery)}`); setShowResults(false); }}
-                        className="w-full p-4 text-[9px] font-black text-teal-400 uppercase tracking-widest hover:bg-white/5 transition-all text-center border-t border-white/5"
-                      >
-                        Deep Scan Database for "{searchQuery}"
+                    searchResults.map((result, idx) => (
+                      <button key={`${result.id}-${idx}`} onClick={() => { navigate(result.link); setShowResults(false); setSearchQuery(""); }} className="w-full flex items-center gap-4 p-4 hover:bg-white/5 rounded-xl text-left border-b border-white/5 last:border-0 transition-all group">
+                        <div className="bg-teal-500/10 p-2 rounded-lg group-hover:bg-teal-500/20"><IconComponent name={result.type === 'user' ? 'Users' : 'FolderKanban'} size={18} className="text-teal-400" /></div>
+                        <div><p className="text-sm font-bold text-white leading-tight">{result.title}</p><p className="text-[9px] font-black text-slate-500 uppercase mt-1">{result.subtitle}</p></div>
                       </button>
-                    </>
-                  ) : (
-                    <div className="p-10 text-center text-slate-600 uppercase font-black text-[9px] tracking-widest">No Matches Found</div>
-                  )}
+                    ))
+                  ) : <div className="p-10 text-center text-slate-600 uppercase font-black text-[9px] tracking-widest">No Nodes Found</div>}
                 </div>
               </div>
             )}
           </div>
 
-          <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/admin/activity')} className="p-3 text-slate-400 hover:text-white rounded-2xl transition-all relative group"><Bell className="h-5 w-5 group-hover:scale-110 transition-transform" /><span className="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#0f172a]"></span></button>
-            <button onClick={handleLogoutClick} className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-rose-600/10 text-rose-500 hover:bg-rose-600 hover:text-white font-black text-[9px] uppercase tracking-widest border border-rose-600/20 shadow-xl shadow-rose-900/10 transition-all active:scale-95">
-              <LogOut size={14} /> Logout
-            </button>
+          <div className="flex items-center gap-6">
+            <button onClick={() => navigate('/admin/activity')} className="p-2 text-slate-400 hover:text-white rounded-xl transition-all relative group"><Bell className="h-5 w-5" /><span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#0f172a]"></span></button>
+            <div className="flex items-center gap-3">
+               <div className="text-right hidden sm:block">
+                  <p className="text-[10px] font-bold text-white leading-none">{displayName}</p>
+                  <p className="text-[7px] text-slate-500 font-black uppercase tracking-widest mt-1">Verified Node</p>
+               </div>
+               <div className="relative cursor-pointer" onClick={() => navigate('/admin/settings')}>
+                  {!imageError && profilePhotoUrl ? (
+                    <img src={profilePhotoUrl} alt={displayName} onError={() => setImagePhotoError(true)} className="w-10 h-10 rounded-full object-cover border-2 border-teal-500 shadow-lg" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-xs border border-white/10 shadow-lg">{initials}</div>
+                  )}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#0f172a] rounded-full shadow-sm"></div>
+               </div>
+            </div>
+            <button onClick={handleLogoutClick} className="p-2.5 text-slate-400 hover:text-rose-500 transition-colors" title="Logout"><LogOut size={18} /></button>
           </div>
         </div>
       </header>
@@ -167,10 +155,95 @@ function AdminLayout({ user, children, onLogout }) {
         </div>
       </nav>
 
-      <main className="flex-1 overflow-y-auto bg-slate-50">
-        <div className="max-w-[1600px] mx-auto px-6 py-10">
-          {children}
-        </div>
+      <main className="flex-1 overflow-y-auto bg-slate-50 relative">
+        {/* DASHBOARD VIEW */}
+        {isDashboard ? (
+          <div className="max-w-[1600px] mx-auto px-6 py-10">
+            {children}
+          </div>
+        ) : (
+          /* WORKSTATION OVERLAY SYSTEM (THE UI FROM 2 HRS AGO) */
+          <div className="fixed inset-0 bg-[#f8fafc] z-[1000] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300">
+            {/* Workstation Navbar */}
+            <div className="bg-[#0f172a] text-white px-8 py-4 flex items-center justify-between border-b border-white/5 shadow-2xl flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white font-black text-lg border border-white/10 shadow-lg shadow-teal-500/20">GS</div>
+                <div>
+                  <h2 className="text-xl font-black uppercase tracking-tighter leading-none">{workstationLabel}</h2>
+                  <p className="text-[8px] text-teal-400 font-black uppercase tracking-[0.4em] mt-1.5">Operational Workstation Active</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="hidden lg:flex flex-col text-right mr-4 border-r border-white/10 pr-6">
+                   <p className="text-[7px] text-slate-500 font-black uppercase tracking-widest">Session Status</p>
+                   <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">SECURE RELAY</p>
+                </div>
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="p-3 bg-white/5 hover:bg-rose-600 text-slate-400 hover:text-white rounded-2xl border border-white/10 transition-all group shadow-xl active:scale-95"
+                  title="Terminate Session"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Workstation Content Frame - FORMAL DOCUMENT STYLE */}
+            <div className="flex-1 overflow-y-auto bg-slate-100 custom-scrollbar p-10">
+               <div className="max-w-[1400px] mx-auto min-h-screen bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
+                  {/* Formal Header Inside Workstation */}
+                  <div className="p-12 border-b-2 border-slate-50 flex justify-between items-start">
+                     <div className="flex items-start gap-4">
+                        <img src="/favicon.svg" alt="Logo" className="w-16 h-16 object-contain" />
+                        <div className="company-brand text-left">
+                           <div className="text-[#0d9488] text-2xl font-black uppercase tracking-tighter leading-none">Greggory Systems</div>
+                           <div className="text-[#0d9488] text-2xl font-black uppercase tracking-tighter leading-none" style={{ marginTop: '-4px' }}>& Strategy Firm</div>
+                           <div className="text-slate-500 text-[8px] font-black uppercase tracking-[0.4em] mt-1.5">Strategic Systems & Business Solutions</div>
+                        </div>
+                     </div>
+                     <div className="flex flex-col items-end">
+                        <div className="bg-[#0d9488]/10 px-6 py-2 rounded-xl border border-[#0d9488]/20 text-right mb-4">
+                           <p className="text-[10px] font-black text-[#0d9488] uppercase tracking-[0.4em]">{workstationLabel} Record</p>
+                        </div>
+                        <div className="relative">
+                           {!imageError && profilePhotoUrl ? (
+                             <img src={profilePhotoUrl} alt={displayName} onError={() => setImagePhotoError(true)} className="w-24 h-24 rounded-2xl object-cover border-4 border-slate-100 shadow-xl" />
+                           ) : (
+                             <div className="w-24 h-24 rounded-2xl bg-slate-100 flex items-center justify-center text-3xl font-black text-slate-300 border-4 border-slate-50">{initials}</div>
+                           )}
+                           <div className="absolute -bottom-2 -right-2 bg-emerald-500 p-1.5 rounded-lg border-4 border-white text-white shadow-lg"><ShieldCheck size={12} /></div>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Right Aligned Content Container */}
+                  <div className="flex-1 p-12 bg-white flex flex-col items-end">
+                     <div className="w-full flex flex-col items-end">
+                        {children}
+                     </div>
+                  </div>
+
+                  {/* Formal Footer */}
+                  <div className="p-10 border-t border-slate-50 flex justify-between items-center opacity-60">
+                     <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">© {new Date().getFullYear()} Greggory Systems & Strategy Firm</p>
+                     <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Secure Protocol Synchronized</p>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            {/* Terminal Status Bar */}
+            <div className="bg-[#0f172a] h-10 border-t border-white/5 flex items-center px-8 justify-between flex-shrink-0">
+               <div className="flex items-center gap-6">
+                  <p className="text-[6px] font-black text-slate-500 uppercase tracking-[0.4em]">Node ID: {user?.id || 'MASTER'}</p>
+               </div>
+               <p className="text-[6px] font-black text-slate-700 uppercase tracking-[0.6em]">Property of Greggory Systems & Strategy Firm © 2024</p>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

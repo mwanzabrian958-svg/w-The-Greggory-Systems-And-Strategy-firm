@@ -95,9 +95,8 @@ export function Content({ user }) {
       {activeTab === "blogs" ? (
         <>
           <div className="bg-[#0f172a] rounded-2xl p-4 border border-white/10 shadow-xl flex justify-between items-center">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={12} />
-              <input type="text" placeholder="Filter manuscripts..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-[9px] font-bold text-white outline-none focus:border-teal-500" />
+            <div className="text-[7px] font-black uppercase text-teal-400 tracking-[0.4em] px-2">
+               Manuscript Repository Matrix
             </div>
             <div className="px-3 text-[7px] font-black uppercase text-slate-500 tracking-widest whitespace-nowrap">Active Nodes: {blogs.length}</div>
           </div>

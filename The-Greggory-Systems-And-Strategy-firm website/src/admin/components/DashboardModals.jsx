@@ -66,7 +66,6 @@ function AddUserQuickForm({ onSubmit, onCancel, loading, setLoading, error, setE
 
   const roleOptions = [
     { value: 'user', label: 'Regular User' },
-    { value: 'developer', label: 'Developer' },
     { value: 'admin', label: 'Admin' }
   ];
 

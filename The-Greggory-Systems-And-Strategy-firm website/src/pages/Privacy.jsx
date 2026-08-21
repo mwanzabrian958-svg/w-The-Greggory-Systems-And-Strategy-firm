@@ -20,7 +20,7 @@ const Privacy = () => {
             Back to sign up
           </Link>
           <h1 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl">Privacy protocol</h1>
-          <p className="mt-4 max-w-3xl text-base text-slate-300">
+          <p className="mt-4 max-w-3xl text-base text-slate-700 dark:text-slate-100">
             We believe privacy should feel straightforward and respectful. This policy explains the basics of how we handle information on our site and through our service delivery work.
           </p>
         </div>
@@ -34,7 +34,7 @@ const Privacy = () => {
                 <section.icon className="h-5 w-5" />
               </div>
               <h2 className="mt-5 text-xl font-black text-slate-900 dark:text-white">{section.title}</h2>
-              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{section.content}</p>
+              <p className="mt-3 text-sm text-slate-700 dark:text-slate-100">{section.content}</p>
             </div>
           ))}
         </div>
@@ -43,17 +43,17 @@ const Privacy = () => {
       <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
         <div className="soft-card p-8 sm:p-10">
           <h2 className="text-2xl font-black text-slate-900 dark:text-white">Contact our data team</h2>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">If you want to ask about your data, correct an issue, or request details about our approach, reach out to us directly.</p>
+          <p className="mt-3 text-sm text-slate-700 dark:text-slate-100">If you want to ask about your data, correct an issue, or request details about our approach, reach out to us directly.</p>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             <div className="rounded-2xl border border-[#e3d2bb] bg-[#fbf3e8] p-4 dark:border-slate-800 dark:bg-slate-900/60">
               <Mail className="h-5 w-5 text-[#4c6a4d]" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">Email</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">thegreggorysystemsandstrategyf@gmail.com</p>
+              <p className="mt-1 text-sm text-slate-700 dark:text-slate-100">thegreggorysystemsandstrategyf@gmail.com</p>
             </div>
             <div className="rounded-2xl border border-[#e3d2bb] bg-[#fbf3e8] p-4 dark:border-slate-800 dark:bg-slate-900/60">
               <Phone className="h-5 w-5 text-[#4c6a4d]" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">Phone</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">+254 715 312 251</p>
+              <p className="mt-1 text-sm text-slate-700 dark:text-slate-100">+254 715 312 251</p>
             </div>
           </div>
         </div>

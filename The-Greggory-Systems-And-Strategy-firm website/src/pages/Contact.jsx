@@ -117,7 +117,7 @@ const Contact = () => {
               <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
                 Let’s talk about your next move.
               </h1>
-              <p className="mt-5 max-w-xl text-base text-slate-300 sm:text-lg">
+              <p className="mt-5 max-w-xl text-base text-slate-100 sm:text-lg">
                 Share a few details and we’ll follow up with the right next step for your organization.
               </p>
 
@@ -127,7 +127,7 @@ const Contact = () => {
                     <div className="mt-0.5 rounded-xl bg-[#8fb28a]/15 p-2 text-[#8fb28a]">{item.icon}</div>
                     <div>
                       <p className="text-sm font-semibold text-white">{item.title}</p>
-                      <p className="text-sm text-slate-300">{item.content}</p>
+                      <p className="text-sm text-slate-100">{item.content}</p>
                     </div>
                   </a>
                 ))}
@@ -139,7 +139,7 @@ const Contact = () => {
               <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
                 We’ll reply with a practical next step.
               </h2>
-              <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+              <p className="mt-3 text-sm text-slate-700 dark:text-slate-100">
                 Whether you want a proposal, a system review, or a quick strategy conversation, we can help you get started.
               </p>
 

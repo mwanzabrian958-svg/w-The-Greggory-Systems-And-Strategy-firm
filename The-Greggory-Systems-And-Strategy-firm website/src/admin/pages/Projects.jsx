@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiCall } from "../../services/api";
+import { formatKSH } from "../../utils/currencyUtils";
 import { CreateProjectModal, EditProjectModal } from "../components/ProjectModals";
-import { FolderKanban, Plus, Search, Edit2, Trash2, Calendar, User, DollarSign, Clock, MoreVertical, Filter, TrendingUp, RefreshCw, LayoutDashboard, BarChart3, ChevronRight, CheckSquare } from "lucide-react";
+import { FolderKanban, Plus, Search, Edit2, Trash2, Calendar, User, DollarSign, Clock, MoreVertical, Filter, TrendingUp, RefreshCw, LayoutDashboard, BarChart3, ChevronRight, CheckSquare, X } from "lucide-react";
 
 /**
  * Projects - Mission Node Management
@@ -19,6 +20,7 @@ export function Projects({ user }) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [focusedCategory, setFocusedCategory] = useState(null);
 
   useEffect(() => { fetchProjects(); }, []);
 
@@ -114,116 +116,108 @@ export function Projects({ user }) {
       </div>
 
       <div className="flex gap-4 items-center">
-         <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-            <input type="text" placeholder="Search mission nodes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-100 bg-white shadow-sm text-[11px] font-bold outline-none focus:ring-2 focus:ring-teal-500/20 transition-all" />
+         <div className="flex-1 px-4 py-2.5 bg-slate-100 rounded-xl text-[7px] font-black text-slate-500 uppercase tracking-widest border border-slate-200/50">
+            Use Global Strategic Search to locate specific mission nodes
          </div>
-         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest outline-none shadow-sm">
-            <option value="all">All Sectors</option>
+         <select
+            value={statusFilter}
+            onChange={(e) => {
+              const val = e.target.value;
+              setStatusFilter(val);
+              if (val !== 'all') {
+                const category = columns.find(c => c.id === val);
+                setFocusedCategory(category);
+              }
+            }}
+            className="bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest outline-none shadow-sm cursor-pointer hover:border-teal-500 transition-colors"
+          >
+            <option value="all">Select Sector to Monitor...</option>
             {columns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
          </select>
       </div>
 
-      {viewMode === "kanban" && (
-        <div className="flex gap-4 overflow-x-auto pb-6 no-scrollbar">
-          {columns.map(col => {
-            const colProjects = filteredProjects.filter(p => (p.status || 'planning') === col.id);
-            return (
-              <div key={col.id} className="flex-shrink-0 w-80">
-                <div className="bg-slate-100/50 rounded-2xl p-4 border border-slate-100 min-h-[500px]">
-                  <div className="flex items-center justify-between mb-6 px-1">
-                    <div className="flex items-center gap-2">
-                       <div className={`w-2 h-2 rounded-full ${col.color}`} />
-                       <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{col.title}</h3>
-                    </div>
-                    <span className="bg-white px-3 py-1 rounded-lg text-[8px] font-black text-slate-400 border border-slate-100 shadow-sm">{colProjects.length}</span>
-                  </div>
-                  <div className="space-y-4">
-                    {colProjects.length > 0 ? colProjects.map(p => (
-                      <div key={p.id} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer group relative overflow-hidden" onClick={() => { setSelectedProject(p); setIsEditModalOpen(true); }}>
-                        <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                           <button onClick={(e) => { e.stopPropagation(); handleDeleteProject(p.id); }} className="p-1.5 hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded-lg transition-all"><Trash2 size={12} /></button>
-                        </div>
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h4 className="text-[10px] font-black text-slate-900 uppercase leading-tight group-hover:text-teal-600 transition-colors">{p.project_name}</h4>
-                            <p className="text-[8px] text-slate-400 font-bold mt-1 uppercase tracking-widest">{p.client_name || 'Generic Asset'}</p>
-                          </div>
-                          <button onClick={(e) => { e.stopPropagation(); navigate(`/admin/projects/${p.id}/tasks`); }} className="p-1.5 bg-slate-50 hover:bg-teal-50 text-slate-400 hover:text-teal-600 rounded-lg transition-all border border-slate-100"><CheckSquare size={14} /></button>
-                        </div>
-                        <div className="space-y-3">
-                           <div className="h-1 w-full bg-slate-50 rounded-full overflow-hidden">
-                              <div className="h-full bg-teal-500 rounded-full transition-all duration-1000" style={{ width: `${p.progress_percentage || 0}%` }} />
-                           </div>
-                           <div className="flex justify-between items-center text-[7px] font-black uppercase text-slate-400 tracking-widest">
-                              <span className="flex items-center gap-1.5"><TrendingUp size={10} className="text-teal-500" /> {p.progress_percentage || 0}% SYNC</span>
-                              <span className="flex items-center gap-1.5"><Clock size={10} /> {new Date(p.created_at).toLocaleDateString()}</span>
-                           </div>
-                        </div>
-                      </div>
-                    )) : (
-                      <div className="py-20 text-center opacity-20"><FolderKanban size={24} className="mx-auto mb-3" /><p className="text-[8px] font-black uppercase tracking-[0.4em]">Sector Clear</p></div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+      {/* Main Display: Sector Isolation Standby */}
+      {!focusedCategory && (
+        <div className="py-40 text-center bg-white rounded-[40px] border border-dashed border-slate-200">
+           <BarChart3 size={48} className="mx-auto text-slate-200 mb-6" />
+           <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.4em]">Strategic Sectors Standby</h3>
+           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2">Select a Sector from the Deployment Node to initiate full-screen monitoring</p>
         </div>
       )}
 
-      {viewMode === "list" && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-               <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-100">
-                    <th className="px-6 py-4 text-[8px] font-black uppercase text-slate-400 tracking-widest">Mission Node</th>
-                    <th className="px-6 py-4 text-[8px] font-black uppercase text-slate-400 tracking-widest">Client Identity</th>
-                    <th className="px-6 py-4 text-[8px] font-black uppercase text-slate-400 tracking-widest">Telemetry</th>
-                    <th className="px-6 py-4 text-[8px] font-black uppercase text-slate-400 tracking-widest">Valuation</th>
-                    <th className="px-6 py-4 text-[8px] font-black uppercase text-slate-400 tracking-widest text-right">Actions</th>
-                  </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-50">
-                  {filteredProjects.length > 0 ? filteredProjects.map(p => (
-                    <tr key={p.id} className="hover:bg-slate-50/50 transition-all cursor-pointer group" onClick={() => { setSelectedProject(p); setIsEditModalOpen(true); }}>
-                       <td className="px-6 py-5">
-                          <p className="text-[10px] font-black text-slate-900 uppercase group-hover:text-teal-600 transition-colors">{p.project_name}</p>
-                          <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-1">ID: PRJ-{p.id.toString().padStart(4, '0')}</p>
-                       </td>
-                       <td className="px-6 py-5">
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-[10px] font-black">{p.client_name?.[0] || 'G'}</div>
-                             <p className="text-[9px] font-bold text-slate-600 uppercase tracking-tighter">{p.client_name || 'Generic Asset'}</p>
+      {focusedCategory && (
+        <div className="fixed inset-0 bg-[#f8fafc] z-[1000] flex flex-col animate-in fade-in zoom-in-95 duration-300">
+          {/* Fullscreen Navbar */}
+          <div className="bg-[#0f172a] text-white px-8 py-4 flex items-center justify-between border-b border-white/5 shadow-2xl">
+            <div className="flex items-center gap-4">
+              <div className={`w-3 h-3 rounded-full ${focusedCategory.color} animate-pulse shadow-[0_0_15px_rgba(255,255,255,0.2)]`} />
+              <div>
+                <h2 className="text-xl font-black uppercase tracking-tighter leading-none">{focusedCategory.title} Sector</h2>
+                <p className="text-[8px] text-teal-500 font-black uppercase tracking-[0.4em] mt-1">Full-Screen Strategic View</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-6">
+               <div className="hidden md:flex gap-8">
+                  <div className="text-right">
+                    <p className="text-[7px] text-slate-500 font-black uppercase tracking-widest">Active Assets</p>
+                    <p className="text-lg font-black">{filteredProjects.filter(p => (p.status || 'planning') === focusedCategory.id).length}</p>
+                  </div>
+               </div>
+               <button
+                onClick={() => {
+                  setFocusedCategory(null);
+                  setStatusFilter('all');
+                }}
+                className="p-3 bg-white/5 hover:bg-rose-600 text-slate-400 hover:text-white rounded-2xl border border-white/10 transition-all group"
+               >
+                <X className="w-6 h-6" />
+               </button>
+            </div>
+          </div>
+
+          {/* Fullscreen Content */}
+          <div className="flex-1 overflow-y-auto p-12 bg-slate-50">
+             <div className="max-w-[1600px] mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                   {filteredProjects.filter(p => (p.status || 'planning') === focusedCategory.id).length > 0 ? (
+                     filteredProjects.filter(p => (p.status || 'planning') === focusedCategory.id).map(p => (
+                      <div
+                        key={p.id}
+                        className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all cursor-pointer group relative overflow-hidden"
+                        onClick={() => { setSelectedProject(p); setIsEditModalOpen(true); }}
+                      >
+                        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <button onClick={(e) => { e.stopPropagation(); handleDeleteProject(p.id); }} className="p-2 hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded-xl transition-all"><Trash2 size={16} /></button>
+                        </div>
+
+                        <div className="mb-8">
+                          <h4 className="text-sm font-black text-slate-900 uppercase group-hover:text-teal-600 transition-colors mb-2">{p.project_name}</h4>
+                          <div className="flex items-center gap-2 mb-4">
+                            <span className="text-[9px] bg-slate-100 text-slate-500 px-3 py-1 rounded-full font-black uppercase tracking-widest">{p.client_name || 'Internal'}</span>
+                            <span className="text-[9px] text-teal-600 font-bold">{formatKSH(p.estimated_budget)}</span>
                           </div>
-                       </td>
-                       <td className="px-6 py-5">
-                          <div className="flex items-center gap-3">
-                             <span className={`inline-flex px-3 py-1 rounded-full text-[7px] font-black uppercase tracking-widest border ${p.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : p.status === 'on-hold' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>{columns.find(c => c.id === p.status)?.title || 'Planning'}</span>
-                             <div className="flex flex-col gap-1 w-20">
-                                <div className="h-1 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-teal-500 transition-all duration-1000" style={{ width: `${p.progress_percentage}%` }} /></div>
-                                <span className="text-[6px] font-black text-slate-400 text-right">{p.progress_percentage}%</span>
-                             </div>
-                          </div>
-                       </td>
-                       <td className="px-6 py-5">
-                          <p className="font-black text-[10px] text-slate-900">KSh {parseFloat(p.estimated_budget || 0).toLocaleString()}</p>
-                          <p className="text-[7px] text-slate-400 font-black uppercase mt-1">Estimated Cost</p>
-                       </td>
-                       <td className="px-6 py-5 text-right" onClick={e => e.stopPropagation()}>
-                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => navigate(`/admin/projects/${p.id}/tasks`)} className="p-2 hover:bg-white rounded-xl text-teal-600 shadow-sm border border-slate-100" title="Tasks"><CheckSquare size={14} /></button>
-                            <button onClick={() => { setSelectedProject(p); setIsEditModalOpen(true); }} className="p-2 hover:bg-white rounded-xl text-blue-500 shadow-sm border border-slate-100"><Edit2 size={14} /></button>
-                            <button onClick={() => handleDeleteProject(p.id)} className="p-2 hover:bg-white rounded-xl text-rose-500 shadow-sm border border-slate-100"><Trash2 size={14} /></button>
-                          </div>
-                       </td>
-                    </tr>
-                  )) : (
-                    <tr><td colSpan="5" className="py-40 text-center opacity-20 uppercase font-black text-[12px] tracking-[0.5em]">No Mission Project Nodes Synchronized</td></tr>
-                  )}
-               </tbody>
-            </table>
+                        </div>
+
+                        <div className="space-y-6">
+                           <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-teal-500 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(20,184,166,0.3)]" style={{ width: `${p.progress_percentage || 0}%` }} />
+                           </div>
+                           <div className="flex justify-between items-center text-[8px] font-black uppercase text-slate-400 tracking-widest">
+                              <span className="flex items-center gap-2"><TrendingUp size={12} className="text-teal-500" /> {p.progress_percentage || 0}% SYNC</span>
+                              <button onClick={(e) => { e.stopPropagation(); navigate(`/admin/projects/${p.id}/tasks`); }} className="flex items-center gap-2 text-teal-600 hover:text-teal-700 transition-colors"><CheckSquare size={12} /> Access Tasks</button>
+                           </div>
+                        </div>
+                      </div>
+                     ))
+                   ) : (
+                    <div className="col-span-full py-40 text-center opacity-20 flex flex-col items-center">
+                       <FolderKanban size={64} className="mb-6 text-slate-400" />
+                       <h3 className="text-2xl font-black uppercase tracking-[0.5em] text-slate-900">{focusedCategory.title} Sector Clear</h3>
+                       <p className="text-sm font-bold uppercase tracking-widest mt-4">Zero synchronized assets in this node.</p>
+                    </div>
+                   )}
+                </div>
+             </div>
           </div>
         </div>
       )}

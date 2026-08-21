@@ -114,7 +114,7 @@ export function UserProfileDropdown({ user, onLogout, onViewProfile, onChangePas
       </div>
       <div className="text-left hidden md:block">
         <p className="text-sm font-medium text-gray-900">{displayName}</p>
-        <p className="text-xs text-gray-500 capitalize">{user?.admin_level || user?.developer_level || user?.primary_role || 'User'}</p>
+        <p className="text-xs text-gray-500 capitalize">{user?.admin_level || user?.primary_role || 'User'}</p>
       </div>
       <ChevronDown className="w-4 h-4 text-gray-400 hidden md:block" />
     </button>

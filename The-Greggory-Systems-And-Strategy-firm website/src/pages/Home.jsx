@@ -110,7 +110,7 @@ const Home = () => {
             <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Our Core Services</h2>
             <div className="h-1 w-16 bg-gold-500 mx-auto rounded-full" />
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {services.map((service, index) => (
               <div key={index} className="group p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 hover:shadow-2xl hover:shadow-slate-200 dark:hover:shadow-none transition-all duration-300">
@@ -179,178 +179,100 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── SUPREME TERMS OF USE FRAMEWORK (FORMAL GSS PROTOCOL) ── */}
-      <section className="py-24 bg-white dark:bg-[#050b14] relative transition-colors border-y border-slate-200 dark:border-white/5">
-        <div className="max-w-5xl mx-auto px-6 sm:px-8">
-
-          <div className="mb-16 border-l-4 border-gold-500 pl-8">
-            <h2 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-4">Terms of Use</h2>
-            <p className="text-lg text-slate-500 dark:text-slate-400 font-medium uppercase tracking-[0.2em]">The Greggory Systems & Strategy Group — Internal Management System</p>
+      {/* Terms of Use Section - Formal Legal Order */}
+      <section className="py-16 bg-white dark:bg-[#0f172a] text-slate-900 dark:text-white transition-colors">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10 max-w-4xl mx-auto">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-gold-600 dark:text-gold-500 mb-3">Terms of Use</p>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4 tracking-tight">A formal framework for working together</h2>
+            <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+              These Terms of Use govern the use of our services, systems, digital resources, and strategic engagement framework between The-Greggory-Systems-And-Strategy-firm and the parties using our solutions.
+            </p>
           </div>
 
-          <div className="space-y-16 text-slate-600 dark:text-slate-300">
-
-            <div className="prose prose-invert max-w-none">
-              <p className="text-lg leading-relaxed font-medium italic mb-10">
-                These Terms of Use ("Terms") govern access to and use of the internal management system operated by The Greggory Systems & Strategy Group ("the Company," "we," "us," or "our"), including all associated modules, dashboards, data, and administrative tools (collectively, the "System"). By accessing or using the System, you ("User," "you," or "your") agree to be bound by these Terms in full.
-              </p>
-
-              <div className="space-y-12">
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">01.</span> Definitions
-                  </h3>
-                  <ul className="list-disc pl-6 space-y-2 font-medium">
-                    <li><strong>"System"</strong> means the internal management platform described in these Terms, including all modules, dashboards, databases, and administrative tools operated by the Company.</li>
-                    <li><strong>"User"</strong> means any individual granted access to the System, including employees, contractors, and other authorized personnel.</li>
-                    <li><strong>"General Admin Account"</strong> means the master administrative account with full authority to manage users, departments, and System-wide data.</li>
-                    <li><strong>"Confidential Information"</strong> means any non-public information accessible through the System, including client records, financial data, personnel records, and internal communications.</li>
-                    <li><strong>"Company Policy"</strong> means any related internal policy referenced in or supplementing these Terms, including data protection, security, and acceptable use policies.</li>
-                  </ul>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">02.</span> Acceptance of Terms
-                  </h3>
-                  <p className="leading-relaxed font-medium">
-                    Access to the System is granted solely to authorized personnel, contractors, and other individuals expressly approved by the Company. By logging into or otherwise using the System, you confirm that you have read, understood, and agree to comply with these Terms, along with any related policies referenced herein (including data protection, acceptable use, and security policies).
-                  </p>
-                  <p className="mt-4 leading-relaxed font-medium">
-                    If you do not agree to these Terms, you must not access or use the System. Continued use of the System following any update to these Terms constitutes acceptance of the revised Terms.
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">03.</span> Description of the System
-                  </h3>
-                  <p className="leading-relaxed font-medium">
-                    The System is a proprietary, internally developed platform used to support the day-to-day management, coordination, and oversight of Company operations, including but not limited to: client and engagement management, financial record-keeping, departmental workflows, document storage, internal communications, risk and compliance tracking, and administrative account management.
-                  </p>
-                  <p className="mt-4 leading-relaxed font-medium">
-                    The System is provided strictly for legitimate Company business purposes. It is not a public product or service, and no part of it is intended for use by members of the public.
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">04.</span> Eligibility and Account Access
-                  </h3>
-                  <ul className="list-disc pl-6 space-y-2 font-medium">
-                    <li>Access is provisioned only by an authorized administrator ("General Admin Account") or a person with equivalent delegated authority.</li>
-                    <li>You may not create, share, transfer, or use an account other than the one specifically issued to you.</li>
-                    <li>You are responsible for maintaining the confidentiality of your login credentials, including your password and any device-binding or session tokens associated with your account.</li>
-                    <li>You must notify the Company immediately if you suspect unauthorized access to your account or any breach of security.</li>
-                  </ul>
-                  <p className="mt-4 leading-relaxed font-medium">
-                    The Company reserves the right to suspend, restrict, or terminate any account at its sole discretion, including where an account is inactive, where credentials have been compromised, or where these Terms have been violated.
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">05.</span> Acceptable Use
-                  </h3>
-                  <p className="mb-4 font-medium italic">You agree to use the System only for its intended business purposes and in compliance with all applicable laws and Company policy. Without limiting the foregoing, you agree not to:</p>
-                  <ul className="list-disc pl-6 space-y-2 font-medium">
-                    <li>Access, view, copy, or export data outside the scope of your assigned role or departmental responsibilities;</li>
-                    <li>Attempt to bypass, disable, or interfere with any authentication, permission, or security control within the System;</li>
-                    <li>Introduce malicious code, conduct unauthorized testing, or attempt to probe, scan, or compromise the System’s infrastructure;</li>
-                    <li>Use the System to harass, defame, or otherwise harm another individual;</li>
-                    <li>Share System credentials, session access, or exported data with any unauthorized third party;</li>
-                    <li>Use the System for any purpose unrelated to your employment, engagement, or authorized role with the Company.</li>
-                  </ul>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">06.</span> Data, Confidentiality, and Privacy
-                  </h3>
-                  <p className="leading-relaxed font-medium">
-                    All information processed through the System — including client records, financial data, internal communications, and personnel information — is confidential and proprietary to the Company and, where applicable, its clients. You agree to handle all such information in accordance with the Company’s data protection and confidentiality obligations, and applicable data protection law (including, where relevant, the Kenya Data Protection Act, 2019).
-                  </p>
-                  <p className="mt-4 leading-relaxed font-medium">
-                    You must not disclose, transmit, or make available any data obtained through the System to any person or entity not authorized to receive it. This obligation survives the termination of your access to the System.
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">07.</span> Intellectual Property
-                  </h3>
-                  <p className="leading-relaxed font-medium">
-                    The System, including its software, design, workflows, documentation, and underlying architecture, is the exclusive property of the Company (or its licensors) and is protected by applicable intellectual property laws. Nothing in these Terms grants you any ownership interest in the System.
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">08.</span> Third-Party Services and Integrations
-                  </h3>
-                  <p className="leading-relaxed font-medium">
-                    The System may connect to or integrate with certain third-party services in support of Company operations, including but not limited to email providers, payment and mobile money platforms, financial data providers, and government/statutory compliance portals. Use of these integrations is subject to the applicable third-party provider’s own terms.
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">09.</span> Security Obligations
-                  </h3>
-                  <ul className="list-disc pl-6 space-y-2 font-medium">
-                    <li>You must use only Company-approved devices and networks to access the System where such policy applies.</li>
-                    <li>You must not attempt to disable, remove, or circumvent any security feature, including multi-factor authentication, device binding, or session locks.</li>
-                    <li>Any security vulnerability discovered within the System must be reported promptly to the appropriate administrator.</li>
-                  </ul>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">10.</span> Account Suspension and Termination
-                  </h3>
-                  <p className="leading-relaxed font-medium">
-                    The Company reserves the right to suspend or terminate your access to the System at any time, with or without notice, including in cases of suspected policy violation, security concern, or at the Company’s sole business discretion.
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">11.</span> Disclaimers
-                  </h3>
-                  <p className="leading-relaxed font-medium italic">
-                    The System is provided on an "as is" and "as available" basis. While the Company endeavors to maintain accurate, reliable, and continuously available service, the Company makes no warranty, express or implied, that the System will be uninterrupted, error-free, or free of defects.
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">12.</span> Limitation of Liability
-                  </h3>
-                  <p className="leading-relaxed font-medium">
-                    To the fullest extent permitted by applicable law, the Company shall not be liable for any indirect, incidental, special, or consequential damages arising out of or in connection with your use of, or inability to use, the System, including but not limited to loss of data or loss of business opportunity.
-                  </p>
-                </section>
-
-                <section>
-                  <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-4">
-                    <span className="text-gold-500">13.</span> Governing Law
-                  </h3>
-                  <p className="leading-relaxed font-medium">
-                    These Terms shall be governed by and construed in accordance with the laws of the Republic of Kenya, without regard to conflict of law principles.
-                  </p>
-                </section>
-
-                <div className="pt-12 border-t border-slate-100 dark:border-white/10 text-center">
-                  <Mail className="mx-auto h-10 w-10 text-gold-500 mb-6" />
-                  <h4 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-2">Framework Inquiries</h4>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium mb-6">Reach out to our compliance team for clarification.</p>
-                  <a href="mailto:thegreggorysystemsandstrategyf@gmail.com" className="text-lg font-black text-gold-600 dark:text-gold-500 hover:text-gold-700 transition-colors uppercase tracking-widest">
-                    thegreggorysystemsandstrategyf@gmail.com
-                  </a>
-                </div>
+          <div className="space-y-8 max-w-3xl mx-auto">
+            <div>
+              <div className="mb-2 flex items-center gap-3">
+                <div className="text-2xl font-black text-gold-600 dark:text-gold-500">1.</div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">Acceptance of Terms</h3>
               </div>
+              <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-7 ml-8">
+                By accessing or using the services, systems, content, reports, or materials made available by The-Greggory-Systems-And-Strategy-firm, you acknowledge that you have read, understood, and agree to be bound by these Terms of Use. Continued use of our platform or professional services after changes have been published constitutes your acceptance of the updated terms.
+              </p>
             </div>
 
+            <div>
+              <div className="mb-2 flex items-center gap-3">
+                <div className="text-2xl font-black text-gold-600 dark:text-gold-500">2.</div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">Scope of Services</h3>
+              </div>
+              <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-7 ml-8">
+                The firm provides strategic systems design, implementation support, operational oversight, and related advisory services according to the agreed scope of work, service timetable, communication channels, and responsibilities defined between the parties. We reserve the right to pause or discontinue services when work exceeds the agreed scope, fails to meet project standards, or conflicts with the agreed terms of engagement.
+              </p>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center gap-3">
+                <div className="text-2xl font-black text-gold-600 dark:text-gold-500">3.</div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">Accounts and Authorized Access</h3>
+              </div>
+              <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-7 ml-8">
+                Access to our services and administrative systems is limited to authorized users only. Each user is responsible for maintaining the security of their credentials, using the platform only for approved purposes, and ensuring that all access and activity associated with their account remains compliant with these terms and all applicable operational policies.
+              </p>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center gap-3">
+                <div className="text-2xl font-black text-gold-600 dark:text-gold-500">4.</div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">Confidentiality and Data Protection</h3>
+              </div>
+              <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-7 ml-8">
+                All information exchanged through our client engagements, platforms, and support channels shall be treated as confidential unless otherwise explicitly agreed in writing. This includes proprietary business information, operational data, personal information, and any materials disclosed in the course of the engagement. The firm will handle such information with appropriate discretion and in accordance with applicable legal and professional obligations.
+              </p>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center gap-3">
+                <div className="text-2xl font-black text-gold-600 dark:text-gold-500">5.</div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">Intellectual Property</h3>
+              </div>
+              <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-7 ml-8">
+                All proprietary systems, frameworks, strategy documents, designs, methods, reports, and digital materials created by The-Greggory-Systems-And-Strategy-firm remain the property of the firm unless a separate written agreement expressly transfers ownership. No party may redistribute, resell, copy, repurpose, or reverse-engineer such materials without prior written permission.
+              </p>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center gap-3">
+                <div className="text-2xl font-black text-gold-600 dark:text-gold-500">6.</div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">Limitation of Liability</h3>
+              </div>
+              <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-7 ml-8">
+                The firm endeavors to provide reliable, professional, and high-quality services; however, it shall not be liable for indirect, incidental, consequential, or special damages arising from service delays, third-party changes, unforeseen operational disruptions, external market conditions, or force majeure events outside its reasonable control. This includes losses related to business interruption, operational delay, loss of data, or missed opportunity, to the extent permitted by applicable law.
+              </p>
+            </div>
+
+            <div>
+              <div className="mb-2 flex items-center gap-3">
+                <div className="text-2xl font-black text-gold-600 dark:text-gold-500">7.</div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">Termination and Enforcement</h3>
+              </div>
+              <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-7 ml-8">
+                The firm may suspend or terminate access to services, platforms, or project materials where misuse, policy violations, operational risk, or non-compliance with agreed responsibilities are identified. In circumstances requiring immediate action, access may be withdrawn without prior notice in order to protect the integrity of the system, the security of client information, or the continued delivery of services.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-12 max-w-3xl mx-auto">
+            <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-7">
+              These terms are intended to preserve the integrity of the professional relationship, protect confidential information, and define the lawful basis upon which services and access are provided. For the full legal framework and any additional detail, please refer to the complete Terms of Use page.
+            </p>
+          </div>
+
+          <div className="mt-12 text-center">
+            <Link to="/terms" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gold-500 px-6 py-3 text-sm font-black text-slate-950 shadow-lg shadow-gold-500/20 hover:bg-gold-400 transition-all">
+              Read Full Terms of Use
+              <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </section>
@@ -375,7 +297,7 @@ const Home = () => {
           <svg className="w-10 h-10 text-gold-500/20 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
             <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
           </svg>
-          <blockquote className="text-lg sm:text-xl text-slate-800 dark:text-slate-300 font-medium mb-6 italic leading-relaxed transition-colors">
+          <blockquote className="text-lg sm:text-xl text-slate-800 dark:text-slate-100 font-medium mb-6 italic leading-relaxed transition-colors">
             "At {SITE_NAME}, we are committed to handle projects by designing, creating, and maintaining them. We transform complex organizational challenges into practical systems and clear strategies that build lasting confidence."
           </blockquote>
           <div className="flex flex-col items-center">

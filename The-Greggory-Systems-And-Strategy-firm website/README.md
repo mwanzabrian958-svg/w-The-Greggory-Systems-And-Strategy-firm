@@ -8,7 +8,7 @@ The digital interface of **The Greggory Systems And Strategy Firm**, a global co
 
 - **Mission Control (Admin Dashboard)**: A sophisticated management interface designed for high-density data visualization and system oversight.
 - **Client Portal (Business Blueprint)**: Provides clients with transparent, live data regarding their projects, tasks, invoices, and communication.
-- **Financial Telemetry**: Real-time revenue tracking, expense categorization, and Profit/Loss reporting in KSh.
+- **Financial Telemetry**: Real-time revenue tracking, expense categorization, and Profit/Loss reporting in KSH.
 - **Global Search Relay**: Deep scan database telemetry for personnel, projects, and ledger entries.
 - **Integrated Communications**: Built-in SMS and WhatsApp relays for seamless team and client collaboration.
 

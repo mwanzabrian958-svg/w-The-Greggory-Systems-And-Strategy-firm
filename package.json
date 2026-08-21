@@ -10,6 +10,9 @@
     "install:all": "npm install && npm install --prefix \"The-Greggory-Systems-And-Strategy-firm website\" && npm install --prefix \"The-Greggory-Systems-And-Strategy-firm website/backend\""
   },
   "dependencies": {
-    "mongoose": "^9.9.1"
+    "google-auth-library": "^11.0.2",
+    "mongoose": "^9.9.1",
+    "pdfkit": "^0.19.1",
+    "redis": "^6.2.1"
   }
 }

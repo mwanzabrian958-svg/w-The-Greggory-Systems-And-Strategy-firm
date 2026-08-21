@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { Link, useNavigate } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
+import { formatKSH } from '../utils/currencyUtils'
 import {
   Home, FolderKanban, CheckSquare, Users, DollarSign, FileText,
   MessageSquare, Bell, Star, Shield, BarChart2, Lock, Map, Plug,
@@ -54,7 +55,7 @@ const Modal = ({ open, onClose, title, children }) => {
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="text-slate-600 dark:text-slate-300">
+        <div className="text-slate-700 dark:text-slate-100">
           {children}
         </div>
       </div>
@@ -246,8 +247,8 @@ const OverviewSection = ({ user, data = null, notifs = [], isLoading = false }) 
         {[
           { label: 'Active Deployments', val: realProjects.filter(p => p.status === 'active' || p.status === 'in-progress').length, color: 'text-gold-500' },
           { label: 'Global Progress', val: `${avgProgress}%`, color: 'text-teal-400' },
-          { label: 'Total Allocation', val: `KES ${(totalBudget / 1000).toFixed(0)}K`, color: 'text-emerald-400' },
-          { label: 'Resource Burn', val: `KES ${(totalSpent / 1000).toFixed(0)}K`, color: 'text-rose-400' }
+          { label: 'Total Allocation', val: formatKSH(totalBudget), color: 'text-emerald-400' },
+          { label: 'Resource Burn', val: formatKSH(totalSpent), color: 'text-rose-400' }
         ].map((stat, i) => (
           <div key={i} className="bg-white dark:bg-white/5 backdrop-blur-xl rounded-2xl px-6 py-6 border border-slate-200 dark:border-white/10 flex-1 min-w-[160px] hover:bg-slate-50 dark:hover:bg-white/10 transition-colors shadow-xl dark:shadow-2xl">
             <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">{stat.label}</p>
@@ -260,7 +261,7 @@ const OverviewSection = ({ user, data = null, notifs = [], isLoading = false }) 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <KpiCard icon={FolderKanban} label="Portfolio Units" value={realProjects.length} delta={0} deltaLabel="Live Project Nodes" color="bg-gold-500/10 text-gold-500 border-gold-500/20" />
         <KpiCard icon={Star} label="Satisfaction Relay" value={data?.kpiMetrics?.find(m => m.label === 'Satisfaction Index')?.value || '5.0/5'} delta={0} deltaLabel="Performance Index" color="bg-teal-500/10 text-teal-500 border-teal-500/20" />
-        <KpiCard icon={AlertCircle} label="Resource Overruns" value={data?.budgetOverview?.variance > 0 ? `KES ${(data.budgetOverview.variance/1000).toFixed(0)}K` : 'Normal'} delta={0} deltaLabel="Capital Delta" color="bg-rose-500/10 text-rose-500 border-rose-500/20" />
+        <KpiCard icon={AlertCircle} label="Resource Overruns" value={data?.budgetOverview?.variance > 0 ? formatKSH(data.budgetOverview.variance) : 'Normal'} delta={0} deltaLabel="Capital Delta" color="bg-rose-500/10 text-rose-500 border-rose-500/20" />
       </div>
 
       {/* Project Summary Cards */}
@@ -304,11 +305,11 @@ const OverviewSection = ({ user, data = null, notifs = [], isLoading = false }) 
                   <div className="grid grid-cols-2 gap-4 py-4 border-y border-white/5">
                     <div>
                       <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Allocated</p>
-                      <p className="text-xs font-black text-slate-900 dark:text-slate-300">KES {(p.plannedBudget || 0).toLocaleString()}</p>
+                      <p className="text-xs font-black text-slate-900 dark:text-slate-100">{formatKSH(p.plannedBudget)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Expended</p>
-                      <p className="text-xs font-black text-emerald-400">KES {(p.actualBudget || 0).toLocaleString()}</p>
+                      <p className="text-xs font-black text-emerald-400">{formatKSH(p.actualBudget)}</p>
                     </div>
                   </div>
 
@@ -494,11 +495,11 @@ const ProjectsSection = ({ projects = [], onView, onEdit }) => {
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
                           <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Asset Value</p>
-                          <p className="text-xs font-black text-white">KES {p.plannedBudget.toLocaleString()}</p>
+                          <p className="text-xs font-black text-white">{formatKSH(p.plannedBudget)}</p>
                         </div>
                         <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
                           <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Burn Rate</p>
-                          <p className="text-xs font-black text-emerald-400">KES {p.actualBudget.toLocaleString()}</p>
+                          <p className="text-xs font-black text-emerald-400">{formatKSH(p.actualBudget)}</p>
                         </div>
                       </div>
 
@@ -546,10 +547,10 @@ const BillingSection = ({ projects = [], invoices = [], budget = null }) => {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <KpiCard icon={DollarSign} label="Total Allocation" value={`KES ${(totalBudget / 1000).toFixed(0)}K`} color="bg-gold-500/10 text-gold-500 border-gold-500/20" />
-            <KpiCard icon={TrendingUp} label="Actual Burn" value={`KES ${(totalSpent / 1000).toFixed(0)}K`} delta={utilPct} deltaLabel="Utilization Index" color="bg-sky-500/10 text-sky-400 border-sky-500/20" />
-            <KpiCard icon={CheckCircle} label="Reserve Capital" value={`KES ${(remaining / 1000).toFixed(0)}K`} color="bg-emerald-500/10 text-emerald-400 border-emerald-500/20" />
-            <KpiCard icon={AlertCircle} label="Risk Exposure" value="KES 0.0" color="bg-rose-500/10 text-rose-500 border-rose-500/20" />
+            <KpiCard icon={DollarSign} label="Total Allocation" value={formatKSH(totalBudget)} color="bg-gold-500/10 text-gold-500 border-gold-500/20" />
+            <KpiCard icon={TrendingUp} label="Actual Burn" value={formatKSH(totalSpent)} delta={utilPct} deltaLabel="Utilization Index" color="bg-sky-500/10 text-sky-400 border-sky-500/20" />
+            <KpiCard icon={CheckCircle} label="Reserve Capital" value={formatKSH(remaining)} color="bg-emerald-500/10 text-emerald-400 border-emerald-500/20" />
+            <KpiCard icon={AlertCircle} label="Risk Exposure" value={formatKSH(0)} color="bg-rose-500/10 text-rose-500 border-rose-500/20" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -560,7 +561,7 @@ const BillingSection = ({ projects = [], invoices = [], budget = null }) => {
                   <div key={p.id}>
                     <div className="flex justify-between mb-4">
                        <span className="text-sm font-black text-white uppercase">{p.name}</span>
-                       <span className="text-xs font-black text-slate-300">KES {p.actualBudget.toLocaleString()} / KES {p.plannedBudget.toLocaleString()}</span>
+                       <span className="text-xs font-black text-slate-300">{formatKSH(p.actualBudget)} / {formatKSH(p.plannedBudget)}</span>
                     </div>
                     <GradientBar value={p.actualBudget} max={p.plannedBudget} />
                   </div>
@@ -581,7 +582,7 @@ const BillingSection = ({ projects = [], invoices = [], budget = null }) => {
                     {invoices.map(inv => (
                       <tr key={inv.id}>
                         <td className="py-4 text-xs font-black text-gold-500 font-mono">{inv.invoiceNumber || inv.id}</td>
-                        <td className="py-4 text-xs font-black text-white">KES {inv.amount.toLocaleString()}</td>
+                        <td className="py-4 text-xs font-black text-white">{formatKSH(inv.amount)}</td>
                         <td className="py-4"><StatusBadge status={inv.status} /></td>
                       </tr>
                     ))}
@@ -1099,7 +1100,7 @@ const Projects = () => {
               const Icon = section.icon
               const isActive = activeSection === section.id
               return (
-                <button key={section.id} onClick={() => setActiveSection(section.id)} className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl transition-all duration-300 border flex-shrink-0 group ${isActive ? 'bg-gold-500 text-slate-950 border-gold-500 shadow-xl shadow-gold-500/20' : 'bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-gold-600 dark:hover:text-gold-500'}`}>
+                <button key={section.id} onClick={() => setActiveSection(section.id)} className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl transition-all duration-300 border flex-shrink-0 group ${isActive ? 'bg-gold-500 text-slate-950 border-gold-500 shadow-xl shadow-gold-500/20' : 'bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-100 border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 hover:text-gold-600 dark:hover:text-gold-500'}`}>
                   <Icon size={18} className={`${isActive ? 'text-slate-950' : 'text-slate-400 dark:text-slate-500 group-hover:text-gold-500'}`} />
                   <span className="text-[11px] font-black uppercase tracking-[0.2em] whitespace-nowrap">{section.label}</span>
                   {section.id === 'notifications' && unreadNotifCount > 0 && <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${isActive ? 'bg-slate-950 text-white' : 'bg-rose-500 text-white'}`}>{unreadNotifCount}</span>}

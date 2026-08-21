@@ -1,12 +1,8 @@
-import { API_BASE_URL } from '../services/api'
+import { apiCall } from '../services/api'
 
 const TOKEN_KEY = 'gf_admin_session_token'
 
 const LEGACY_KEYS = ['admin_authenticated', 'admin_code_validated', 'admin_user', 'admin_session']
-
-// Note: We no longer clear tokens on page load to allow session persistence
-// Admin/Developer sessions are now maintained across page refreshes
-// To properly logout, use the logout button
 
 export function clearLegacyAdminStorage() {
   LEGACY_KEYS.forEach((k) => {
@@ -63,60 +59,44 @@ export async function verifyAdminSession() {
     return { ok: false, user: null }
   }
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/session`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok || !data.success || !data.user) {
+    // Use apiCall for built-in error handling and consistency
+    const data = await apiCall('/admin/session')
+
+    if (!data.success || !data.user) {
       clearAdminSession()
       return { ok: false, user: null }
     }
     return { ok: true, user: data.user }
-  } catch {
+  } catch (err) {
+    console.error('[SESSION VERIFY] failure:', err)
     clearAdminSession()
     return { ok: false, user: null }
   }
 }
 
 export async function adminAuthenticate(credentials) {
-  console.log(`[ADMIN AUTH] Sending request to ${API_BASE_URL}/admin/authenticate`, credentials.email)
   try {
-    const res = await fetch(`${API_BASE_URL}/admin/authenticate`, {
+    const data = await apiCall('/admin/authenticate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials)
     })
-    console.log(`[ADMIN AUTH] Response status: ${res.status}`)
-    const data = await res.json().catch((e) => {
-      console.error(`[ADMIN AUTH] JSON parse error:`, e)
-      return {}
-    })
-    console.log(`[ADMIN AUTH] Response data:`, { success: data.success, hasToken: !!data.token, message: data.message })
-    return { ok: res.ok && data.success === true, data }
+    return { ok: data.success === true, data }
   } catch (err) {
-    console.error(`[ADMIN AUTH] Network error:`, err)
-    return { ok: false, data: { message: 'Network error. Please check your connection.' } }
+    console.error(`[ADMIN AUTH] error:`, err)
+    return { ok: false, data: { message: err.message || 'Authentication system failure.' } }
   }
 }
 
 // Developer authentication
 export async function developerAuthenticate(credentials) {
-  console.log(`[DEV AUTH] Sending request to ${API_BASE_URL}/developer/authenticate`, credentials.email)
   try {
-    const res = await fetch(`${API_BASE_URL}/developer/authenticate`, {
+    const data = await apiCall('/developer/authenticate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials)
     })
-    console.log(`[DEV AUTH] Response status: ${res.status}`)
-    const data = await res.json().catch((e) => {
-      console.error(`[DEV AUTH] JSON parse error:`, e)
-      return {}
-    })
-    console.log(`[DEV AUTH] Response data:`, { success: data.success, hasToken: !!data.token, message: data.message })
-    return { ok: res.ok && data.success === true, data }
+    return { ok: data.success === true, data }
   } catch (err) {
-    console.error(`[DEV AUTH] Network error:`, err)
-    return { ok: false, data: { message: 'Network error. Please check your connection.' } }
+    console.error(`[DEV AUTH] error:`, err)
+    return { ok: false, data: { message: err.message || 'Authentication system failure.' } }
   }
 }

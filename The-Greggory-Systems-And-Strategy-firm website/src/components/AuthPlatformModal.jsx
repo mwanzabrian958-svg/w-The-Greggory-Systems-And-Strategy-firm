@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { hasAdminToken } from "../utils/adminSession";
-import { getApiUrl } from "../services/api";
+import { apiCall, getApiUrl } from "../services/api";
 
 /**
  * Full "Authentication platform" experience: gradient header, member sign-in/up, admin console path.
@@ -31,8 +31,8 @@ export default function AuthPlatformModal({
     hasAdminToken(),
   );
 
-  // Admin/Developer registration state
-  const [regRole, setRegRole] = useState(""); // 'admin' or 'developer'
+  // Admin registration state
+  const [regRole, setRegRole] = useState("admin");
   const [regStep, setRegStep] = useState(1); // 1: credentials, 2: success
   const [regData, setRegData] = useState({
     first_name: "",
@@ -47,12 +47,12 @@ export default function AuthPlatformModal({
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState(null);
 
-  // Admin/Developer login state
+  // Admin login state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
-  const [loginRole, setLoginRole] = useState("admin"); // 'admin' or 'developer'
+  const [loginRole, setLoginRole] = useState("admin");
 
   useEffect(() => {
     const sync = () => setHasAdminSessionToken(hasAdminToken());
@@ -63,17 +63,13 @@ export default function AuthPlatformModal({
   useEffect(() => {
     if (!isOpen) {
       setView("platform");
-      setRegRole(""); // Reset role when closed
       return;
     }
-    // Auto-set role based on which platform is opened
     if (startOnAdminStep) {
       setView("admin");
-      setRegRole("admin"); // Auto-select admin role
     } else {
       setView("platform");
     }
-    // Clear profile photo when modal opens
     setProfilePhoto(null);
     setProfilePhotoPreview(null);
   }, [isOpen, startOnAdminStep]);
@@ -97,19 +93,12 @@ export default function AuthPlatformModal({
   };
 
   const handleCredentialsSuccess = () => {
-    // Keep platforms completely separate - no collision
-    if (loginRole === "developer") {
-      window.location.href = "/admin"; // Redirect to admin instead of missing developer page
-    } else if (loginRole === "admin") {
-      // Admin uses callback
-      onAdminSuccess?.();
-      handleClose();
-    }
+    onAdminSuccess?.();
+    handleClose();
   };
 
-  // Admin/Developer registration handlers
-  const handleRegisterStart = (role) => {
-    setRegRole(role);
+  const handleRegisterStart = () => {
+    setRegRole("admin");
     setRegStep(1);
     setRegData({
       first_name: "",
@@ -138,12 +127,7 @@ export default function AuthPlatformModal({
     e.preventDefault();
     setRegError("");
 
-    if (
-      !regData.first_name ||
-      !regData.last_name ||
-      !regData.email ||
-      !regData.password
-    ) {
+    if (!regData.first_name || !regData.last_name || !regData.email || !regData.password) {
       setRegError("All fields are required");
       return;
     }
@@ -161,7 +145,7 @@ export default function AuthPlatformModal({
         last_name: regData.last_name,
         email: regData.email,
         password: regData.password,
-        role: regRole,
+        role: "admin",
       };
 
       if (profilePhoto) {
@@ -170,19 +154,13 @@ export default function AuthPlatformModal({
         registerData.profile_photo_file_name = profilePhoto.name || "profile.jpg";
       }
 
-      const response = await fetch(
-        getApiUrl("/api/admin-verification/register"),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(registerData),
-        },
-      );
-
-      const data = await response.json();
+      const data = await apiCall("/admin-verification/register", {
+        method: "POST",
+        body: JSON.stringify(registerData),
+      });
 
       if (data.success) {
-        setRegStep(3); // Success
+        setRegStep(3);
       } else {
         setRegError(data.message || "Registration failed");
       }
@@ -193,33 +171,18 @@ export default function AuthPlatformModal({
     }
   };
 
-  // Handle admin/developer login
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
     setLoginLoading(true);
 
     try {
-      const endpoint =
-        loginRole === "developer"
-          ? getApiUrl("/api/developer-verification/authenticate")
-          : getApiUrl("/api/admin-verification/authenticate-enhanced");
-
-      const response = await fetch(endpoint, {
+      // Switch to standard apiCall for better error handling and JSON stability
+      const data = await apiCall("/admin-verification/authenticate-enhanced", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || data.error || `Authentication failed (${response.status})`,
-        );
-      }
-
-      // Store session
       const session = {
         token: data.token,
         user: data.user,
@@ -231,14 +194,15 @@ export default function AuthPlatformModal({
 
       login({
         ...data.user,
-        role: loginRole,
+        role: "admin",
         token: data.token
       });
 
       window.dispatchEvent(new Event("gf-admin-session-changed"));
       handleCredentialsSuccess();
     } catch (err) {
-      setLoginError(err.message || "Failed to connect to server.");
+      console.error("[AUTH HANDSHAKE FAILURE]", err);
+      setLoginError(err.message || "Credential verification handshake failed.");
     } finally {
       setLoginLoading(false);
     }
@@ -314,7 +278,7 @@ export default function AuthPlatformModal({
                   </label>
                 </div>
                 <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
-                  Admin & Developer Access
+                  Administrative Access
                 </h2>
                 <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mt-2">
                   Initialize Secure Access Protocol
@@ -329,13 +293,6 @@ export default function AuthPlatformModal({
               )}
 
               <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Mission Context</label>
-                  <select value={loginRole} onChange={(e) => setLoginRole(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold outline-none focus:ring-1 focus:ring-purple-500">
-                    <option value="admin">ADMINISTRATOR</option>
-                    <option value="developer">DEVELOPER</option>
-                  </select>
-                </div>
                 <div>
                   <label className="block text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Email Node</label>
                   <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="admin@thegreggoryfirm.org" />
@@ -354,10 +311,7 @@ export default function AuthPlatformModal({
 
               <div className="mt-6 pt-6 border-t border-gray-100">
                 <p className="text-center text-[8px] font-black text-gray-400 uppercase tracking-widest mb-4">Request New Authorization Node?</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button onClick={() => handleRegisterStart("admin")} className="px-4 py-2 border border-purple-200 text-purple-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-purple-50 transition-all">Register Admin</button>
-                  <button onClick={() => handleRegisterStart("developer")} className="px-4 py-2 border border-indigo-200 text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-all">Register Dev</button>
-                </div>
+                <button onClick={handleRegisterStart} className="w-full px-4 py-2 border border-purple-200 text-purple-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-purple-50 transition-all">Register Admin Node</button>
               </div>
             </div>
           )}
@@ -373,7 +327,7 @@ export default function AuthPlatformModal({
                   <label className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer hover:bg-green-600 shadow-md"><span className="text-white text-sm font-bold">+</span><input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" /></label>
                 </div>
                 <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Identity Initialization</h2>
-                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-2">{regRole === "admin" ? "ADMINISTRATOR" : "DEVELOPER"} NODE</p>
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-2">ADMINISTRATOR NODE</p>
               </div>
 
               {regError && <div className="mb-4 p-3 bg-red-50 text-red-700 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-red-100">{regError}</div>}

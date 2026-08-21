@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Zap
 } from "lucide-react";
-import { getApiUrl } from "../../services/api";
+import { apiCall } from "../../services/api";
 
 /**
  * ActivityLogs - Strategic Operations Log
@@ -32,9 +32,8 @@ export function ActivityLogs({ user }) {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const res = await fetch(getApiUrl("/api/admin/activity-logs"));
-      if (res.ok) {
-        const data = await res.json();
+      const data = await apiCall("/admin/activity-logs");
+      if (data) {
         setLogs(Array.isArray(data) ? data : []);
       }
     } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -66,9 +65,8 @@ export function ActivityLogs({ user }) {
 
       {/* Tighter Log Controls */}
       <div className="bg-[#0f172a] rounded-xl p-3 border border-white/10 shadow-xl flex flex-col md:flex-row justify-between items-center gap-3">
-        <div className="flex-1 w-full relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-          <input type="text" placeholder="Filter audit stream..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[9px] font-bold text-white outline-none focus:ring-1 focus:ring-teal-500 transition-all" />
+        <div className="flex-1 w-full px-4 text-[7px] font-black text-slate-500 uppercase tracking-[0.3em]">
+           Global Operational Audit Active - Use System Query for Deep Search
         </div>
         <div className="flex gap-3">
            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[8px] font-black uppercase text-white outline-none">

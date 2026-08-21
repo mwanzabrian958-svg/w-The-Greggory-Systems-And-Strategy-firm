@@ -138,9 +138,8 @@ export function Communication({ user }) {
         <div className="p-5">
           {activeTab === "messages" && (
             <div className="space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                <input type="text" placeholder="Search relay nodes..." className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[9px] font-bold outline-none focus:ring-1 focus:ring-teal-500" />
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-[7px] font-black text-slate-400 uppercase tracking-widest text-center">
+                 Secure Relay Stream Active
               </div>
               <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                 {MESSAGES.map((msg) => (

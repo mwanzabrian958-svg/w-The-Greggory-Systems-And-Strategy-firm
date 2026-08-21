@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { FormInput, Select, Textarea } from './FormInput';
 import { FolderKanban, Calendar, DollarSign, Users, Building2, MapPin, Clock } from 'lucide-react';
+import { apiCall } from '../../services/api';
 
 /**
  * Create Project Modal
@@ -13,6 +14,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
     client_name: '',
     client_email: '',
     client_phone: '',
+    client_id_number: '',
     project_type: 'consulting',
     status: 'planning',
     priority: 'medium',
@@ -35,6 +37,24 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
       const data = await apiCall('/users');
       if (data.success) setUsers(data.users || []);
     } catch (e) { console.error(e); }
+  };
+
+  const handleClientChange = (e) => {
+    const selectedUserId = e.target.value;
+    const selectedUser = users.find(u => String(u.id) === String(selectedUserId));
+
+    if (selectedUser) {
+      setFormData({
+        ...formData,
+        user_id: selectedUserId,
+        client_name: selectedUser.display_name || `${selectedUser.first_name} ${selectedUser.last_name}`,
+        client_email: selectedUser.email || '',
+        client_phone: selectedUser.phone_number || '',
+        client_id_number: selectedUser.id_number || ''
+      });
+    } else {
+      setFormData({ ...formData, user_id: selectedUserId });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -112,15 +132,40 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
             <Select
               label="Linked Client Account"
               value={formData.user_id}
-              onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+              onChange={handleClientChange}
               options={users.map(u => ({ value: u.id, label: u.display_name || u.email }))}
               required
             />
             <FormInput
-              label="Client Direct Label"
+              label="Client Name"
               value={formData.client_name}
               onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-              placeholder="Display name for project"
+              placeholder="Full Name"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <FormInput
+              label="Client ID Number"
+              value={formData.client_id_number}
+              onChange={(e) => setFormData({ ...formData, client_id_number: e.target.value })}
+              placeholder="ID/Passport"
+              required
+            />
+            <FormInput
+              label="Client Email"
+              type="email"
+              value={formData.client_email}
+              onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
+              placeholder="Email Relay"
+              required
+            />
+            <FormInput
+              label="Client Phone"
+              value={formData.client_phone}
+              onChange={(e) => setFormData({ ...formData, client_phone: e.target.value })}
+              placeholder="Contact Line"
+              required
             />
           </div>
         </div>
@@ -155,7 +200,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
         <div className="grid grid-cols-3 gap-4">
             <FormInput label="Start Date" type="date" value={formData.start_date} onChange={(e) => setFormData({ ...formData, start_date: e.target.value })} />
             <FormInput label="Deadline" type="date" value={formData.end_date} onChange={(e) => setFormData({ ...formData, end_date: e.target.value })} />
-            <FormInput label="Est. Budget (KSh)" type="number" value={formData.estimated_budget} onChange={(e) => setFormData({ ...formData, estimated_budget: e.target.value })} />
+            <FormInput label="Est. Budget (KSH)" type="number" value={formData.estimated_budget} onChange={(e) => setFormData({ ...formData, estimated_budget: e.target.value })} />
         </div>
 
         <div className="flex gap-4 pt-6 border-t border-slate-50">
@@ -176,6 +221,10 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
   const [formData, setFormData] = useState({
     project_name: '',
     project_description: '',
+    client_name: '',
+    client_email: '',
+    client_phone: '',
+    client_id_number: '',
     status: 'planning',
     priority: 'Medium',
     progress_percentage: 0,
@@ -191,6 +240,10 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
       setFormData({
         project_name: project.project_name || '',
         project_description: project.project_description || '',
+        client_name: project.client_name || '',
+        client_email: project.client_email || '',
+        client_phone: project.client_phone || '',
+        client_id_number: project.client_id_number || '',
         status: project.status || 'planning',
         priority: project.priority || 'Medium',
         progress_percentage: project.progress_percentage || 0,
@@ -200,6 +253,24 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
       });
     }
   }, [project]);
+
+  const handleClientChange = (e) => {
+    const selectedUserId = e.target.value;
+    const selectedUser = users.find(u => String(u.id) === String(selectedUserId));
+
+    if (selectedUser) {
+      setFormData({
+        ...formData,
+        user_id: selectedUserId,
+        client_name: selectedUser.display_name || `${selectedUser.first_name} ${selectedUser.last_name}`,
+        client_email: selectedUser.email || '',
+        client_phone: selectedUser.phone_number || '',
+        client_id_number: selectedUser.id_number || ''
+      });
+    } else {
+      setFormData({ ...formData, user_id: selectedUserId });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -218,10 +289,22 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Recalibrate Node: ${project?.project_name}`} size="xl">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto pr-2 custom-scrollbar">
         <div className="grid gap-4">
            <FormInput label="Project Name" value={formData.project_name} onChange={(e) => setFormData({...formData, project_name: e.target.value})} required />
            <Textarea label="Briefing" value={formData.project_description} onChange={(e) => setFormData({...formData, project_description: e.target.value})} rows={3} />
+        </div>
+
+        <div className="bg-slate-50 p-4 rounded-2xl space-y-4">
+           <h4 className="text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-2">Client Parameters</h4>
+           <div className="grid grid-cols-2 gap-4">
+              <FormInput label="Client Name" value={formData.client_name} onChange={(e) => setFormData({...formData, client_name: e.target.value})} required />
+              <FormInput label="ID Number" value={formData.client_id_number} onChange={(e) => setFormData({...formData, client_id_number: e.target.value})} required />
+           </div>
+           <div className="grid grid-cols-2 gap-4">
+              <FormInput label="Email" type="email" value={formData.client_email} onChange={(e) => setFormData({...formData, client_email: e.target.value})} required />
+              <FormInput label="Phone" value={formData.client_phone} onChange={(e) => setFormData({...formData, client_phone: e.target.value})} required />
+           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

@@ -10,22 +10,39 @@ const GoogleSignIn = ({ buttonText = 'Sign up with Google', isSignUp = true }) =
 
   const handleSuccess = async (credentialResponse) => {
     try {
-      const decoded = jwtDecode(credentialResponse.credential);
-      
-      // Call your backend to authenticate or register the user
+      // Call backend to verify and authenticate
       const response = await usersAPI.googleAuth({
-        token: credentialResponse.credential,
-        isSignUp,
+        credential: credentialResponse.credential,
+        isSignUp
       });
 
-      // Login the user
-      login(response.data.token, response.data.user);
+      if (!response.success) throw new Error(response.message || 'Authentication failed');
+
+      const userData = response.user;
+      const userInfo = {
+        role: userData.role || 'user',
+        name: userData.display_name || (userData.first_name && userData.last_name
+          ? `${userData.first_name} ${userData.last_name}`
+          : userData.email.split('@')[0]),
+        email: userData.email,
+        userId: userData.id,
+        id: userData.id,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        display_name: userData.display_name,
+        token: response.token,
+        has_photo: !!userData.has_photo,
+        whatsapp_verified: true
+      };
+
+      // Store in auth context
+      login(userInfo);
       
-      // Redirect to dashboard or intended page
-      navigate('/dashboard');
+      // Redirect to home/dashboard
+      navigate('/');
     } catch (error) {
-      console.error('Google Sign-In Error:', error);
-      alert('Failed to sign in with Google. Please try again.');
+      console.error('MISSION CRITICAL: Google Auth Protocol Failure:', error);
+      alert(error.message || 'Failed to authorize via Google Secure Relay.');
     }
   };
 

@@ -1,72 +1,66 @@
 import { useState, useEffect, useCallback } from "react";
-import { API_BASE_URL } from "../../services/api";
+import { apiCall } from "../../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || API_BASE_URL;
-
+/**
+ * useAuth - Restored Session & Identity Protocol
+ */
 export function useAuth() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check for existing session on mount
-  useEffect(() => {
-    checkAuth();
+  const logout = useCallback(() => {
+    sessionStorage.removeItem("gf_admin_session");
+    localStorage.removeItem("gf_admin_session");
+    localStorage.removeItem("gf_admin_session_token");
+    setUser(null);
+    setIsAuthenticated(false);
   }, []);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
-      const sessionData = sessionStorage.getItem("gf_admin_session");
-      if (sessionData) {
-        const session = JSON.parse(sessionData);
-        // Verify session is still valid with backend
-        const response = await fetch(`${API_URL}/admin/verify-session`, {
-          headers: {
-            Authorization: `Bearer ${session.token}`,
-          },
-        });
+      const sessionStr = sessionStorage.getItem("gf_admin_session") || localStorage.getItem("gf_admin_session");
+      if (!sessionStr) { setIsLoading(false); return; }
 
-        if (response.ok) {
-          setUser(session.user);
-          setIsAuthenticated(true);
-        } else {
-          // Session expired
-          logout();
-        }
+      const session = JSON.parse(sessionStr);
+      const data = await apiCall("/admin/session"); // Using hardened relay (auto-token)
+
+      if (data.success && data.user) {
+        setUser(data.user);
+        setIsAuthenticated(true);
+      } else {
+        logout();
       }
     } catch (error) {
-      console.error("Auth check error:", error);
+      console.error("Identity Handshake Failure:", error.message);
+      logout();
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [logout]);
+
+  useEffect(() => { checkAuth(); }, [checkAuth]);
 
   const login = useCallback(async (email, password) => {
     try {
-      const response = await fetch(
-        `${API_URL}/admin-verification/authenticate-enhanced`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        },
-      );
+      const data = await apiCall("/admin-verification/authenticate-enhanced", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Authentication failed");
-      }
-
-      // Store session
       const session = {
         user: data.user,
         token: data.token,
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
       };
 
       sessionStorage.setItem("gf_admin_session", JSON.stringify(session));
+      localStorage.setItem("gf_admin_session", JSON.stringify(session));
+      localStorage.setItem("gf_admin_session_token", data.token);
+
       setUser(data.user);
       setIsAuthenticated(true);
+      window.dispatchEvent(new Event("gf-admin-session-changed"));
 
       return { success: true, user: data.user };
     } catch (error) {
@@ -74,44 +68,21 @@ export function useAuth() {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    sessionStorage.removeItem("gf_admin_session");
-    setUser(null);
-    setIsAuthenticated(false);
-  }, []);
-
   const refreshUser = useCallback(async () => {
     try {
-      const sessionData = sessionStorage.getItem("gf_admin_session");
-      if (!sessionData) return;
-
-      const session = JSON.parse(sessionData);
-      const response = await fetch(`${API_URL}/users/${session.user.id}`, {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-        },
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        const updatedSession = { ...session, user: userData };
-        sessionStorage.setItem(
-          "gf_admin_session",
-          JSON.stringify(updatedSession),
-        );
-        setUser(userData);
+      const data = await apiCall("/admin/session");
+      if (data.success && data.user) {
+        setUser(data.user);
+        const sessionStr = localStorage.getItem("gf_admin_session") || sessionStorage.getItem("gf_admin_session");
+        if (sessionStr) {
+           const session = JSON.parse(sessionStr);
+           const updated = { ...session, user: data.user };
+           sessionStorage.setItem("gf_admin_session", JSON.stringify(updated));
+           localStorage.setItem("gf_admin_session", JSON.stringify(updated));
+        }
       }
-    } catch (error) {
-      console.error("Refresh user error:", error);
-    }
+    } catch (error) { console.error("Node Refresh Failure:", error); }
   }, []);
 
-  return {
-    user,
-    isLoading,
-    isAuthenticated,
-    login,
-    logout,
-    refreshUser,
-  };
+  return { user, isLoading, isAuthenticated, login, logout, refreshUser };
 }

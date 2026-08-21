@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { FormInput, EmailInput, PasswordInput, Select, Textarea } from './FormInput';
 import { ROLES, PERMISSIONS } from '../utils/permissions';
-import { User, Shield, Code, Building2 } from 'lucide-react';
+import { User, Shield, Building2 } from 'lucide-react';
 
 /**
  * Create User Modal
@@ -15,7 +15,6 @@ export function CreateUserModal({ isOpen, onClose, onCreate, user }) {
     password: '',
     role: 'user',
     admin_level: 'admin',
-    developer_level: 'mid',
     department: '',
     phone_number: '',
     is_active: true
@@ -39,7 +38,6 @@ export function CreateUserModal({ isOpen, onClose, onCreate, user }) {
         password: '',
         role: 'user',
         admin_level: 'admin',
-        developer_level: 'mid',
         department: '',
         phone_number: '',
         is_active: true
@@ -55,9 +53,6 @@ export function CreateUserModal({ isOpen, onClose, onCreate, user }) {
     { value: 'super_admin', label: 'Super Admin' },
     { value: 'admin', label: 'Admin' },
     { value: 'moderator', label: 'Moderator' },
-    { value: 'senior', label: 'Senior Developer' },
-    { value: 'mid', label: 'Developer' },
-    { value: 'junior', label: 'Junior Developer' },
     { value: 'user', label: 'Regular User' }
   ];
 
@@ -65,12 +60,6 @@ export function CreateUserModal({ isOpen, onClose, onCreate, user }) {
     { value: 'super_admin', label: 'Super Admin' },
     { value: 'admin', label: 'Admin' },
     { value: 'moderator', label: 'Moderator' }
-  ];
-
-  const developerLevelOptions = [
-    { value: 'senior', label: 'Senior Developer' },
-    { value: 'mid', label: 'Developer' },
-    { value: 'junior', label: 'Junior Developer' }
   ];
 
   const departmentOptions = [
@@ -141,14 +130,7 @@ export function CreateUserModal({ isOpen, onClose, onCreate, user }) {
             options={adminLevelOptions}
             icon={Shield}
           />
-        ) : formData.role === 'senior' || formData.role === 'mid' || formData.role === 'junior' ? (
-          <Select
-            label="Developer Level"
-            value={formData.developer_level}
-            onChange={(e) => setFormData({ ...formData, developer_level: e.target.value })}
-            options={developerLevelOptions}
-            icon={Code}
-          />
+
         ) : null}
 
         <Select
@@ -195,9 +177,8 @@ export function EditUserModal({ isOpen, onClose, onUpdate, user, currentUser }) 
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     email: user?.email || '',
-    role: user?.primary_role || user?.admin_level || user?.developer_level || 'user',
+    role: user?.primary_role || user?.admin_level || 'user',
     admin_level: user?.admin_level || 'admin',
-    developer_level: user?.developer_level || 'mid',
     department: user?.department || '',
     phone_number: user?.phone_number || '',
     is_active: user?.is_active ?? true
@@ -224,9 +205,6 @@ export function EditUserModal({ isOpen, onClose, onUpdate, user, currentUser }) 
     { value: 'super_admin', label: 'Super Admin' },
     { value: 'admin', label: 'Admin' },
     { value: 'moderator', label: 'Moderator' },
-    { value: 'senior', label: 'Senior Developer' },
-    { value: 'mid', label: 'Developer' },
-    { value: 'junior', label: 'Junior Developer' },
     { value: 'user', label: 'Regular User' }
   ];
 
@@ -234,12 +212,6 @@ export function EditUserModal({ isOpen, onClose, onUpdate, user, currentUser }) 
     { value: 'super_admin', label: 'Super Admin' },
     { value: 'admin', label: 'Admin' },
     { value: 'moderator', label: 'Moderator' }
-  ];
-
-  const developerLevelOptions = [
-    { value: 'senior', label: 'Senior Developer' },
-    { value: 'mid', label: 'Developer' },
-    { value: 'junior', label: 'Junior Developer' }
   ];
 
   const departmentOptions = [
@@ -303,14 +275,6 @@ export function EditUserModal({ isOpen, onClose, onUpdate, user, currentUser }) 
             onChange={(e) => setFormData({ ...formData, admin_level: e.target.value })}
             options={adminLevelOptions}
             icon={Shield}
-          />
-        ) : formData.role === 'senior' || formData.role === 'mid' || formData.role === 'junior' ? (
-          <Select
-            label="Developer Level"
-            value={formData.developer_level}
-            onChange={(e) => setFormData({ ...formData, developer_level: e.target.value })}
-            options={developerLevelOptions}
-            icon={Code}
           />
         ) : null}
 

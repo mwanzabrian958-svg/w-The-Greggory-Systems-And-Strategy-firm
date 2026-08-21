@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PieChart, X, ArrowUpRight, ArrowDownRight, FileText, Download, RefreshCw } from "lucide-react";
 import { getApiUrl } from "../../services/api";
+import { formatKSH } from "../../utils/currencyUtils";
 
 export function ProfitLossReport() {
   const navigate = useNavigate();
@@ -46,12 +47,12 @@ export function ProfitLossReport() {
          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="space-y-2 p-8 bg-white/2 rounded-[40px] border border-white/5">
               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Gross Revenue</p>
-              <p className="text-5xl font-black text-emerald-500">KSh {data.revenue.toLocaleString()}</p>
+              <p className="text-5xl font-black text-emerald-500">{formatKSH(data.revenue)}</p>
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-600/50 mt-4 uppercase"><ArrowUpRight size={14} /><span>Ledger Inflow</span></div>
             </div>
             <div className="space-y-2 p-8 bg-white/2 rounded-[40px] border border-white/5">
               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Operational Burn</p>
-              <p className="text-5xl font-black text-rose-500">KSh {data.expenses.toLocaleString()}</p>
+              <p className="text-5xl font-black text-rose-500">{formatKSH(data.expenses)}</p>
               <div className="flex items-center gap-2 text-xs font-bold text-rose-600/50 mt-4 uppercase"><ArrowDownRight size={14} /><span>Total Outflow</span></div>
             </div>
             <div className="space-y-2 p-8 bg-blue-600/10 rounded-[40px] border border-blue-500/20 shadow-2xl shadow-blue-900/20">
@@ -69,7 +70,7 @@ export function ProfitLossReport() {
                  const p = data.revenue > 0 ? (amount / data.revenue) * 100 : 0;
                  return (
                    <div key={type} className="space-y-3">
-                      <div className="flex justify-between text-[10px] font-black uppercase text-slate-400"><span>{type}</span><span>KSh {amount.toLocaleString()}</span></div>
+                      <div className="flex justify-between text-[10px] font-black uppercase text-slate-400"><span>{type}</span><span>{formatKSH(amount)}</span></div>
                       <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 rounded-full" style={{ width: `${p}%` }}></div></div>
                    </div>
                  );

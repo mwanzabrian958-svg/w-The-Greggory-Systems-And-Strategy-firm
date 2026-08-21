@@ -96,7 +96,7 @@ const Footer = () => {
                     <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Secure Relay</p>
                     <a
                       href="mailto:thegreggorysystemsandstrategyf@gmail.com"
-                      className="text-xs font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-wider"
+                      className="text-xs font-bold text-slate-100 hover:text-white transition-colors uppercase tracking-wider"
                     >
                       thegreggorysystemsandstrategyf@gmail.com
                     </a>
@@ -112,7 +112,7 @@ const Footer = () => {
                       href="https://wa.me/254715312251"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-wider"
+                      className="text-xs font-bold text-slate-100 hover:text-white transition-colors uppercase tracking-wider"
                     >
                       +254 715 312 251
                     </a>
@@ -128,7 +128,7 @@ const Footer = () => {
                       href="https://www.google.com/maps/search/?api=1&query=RAFIKI+KABARAK,+KABARAK"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs font-bold text-slate-300 hover:text-white transition-colors uppercase tracking-wider"
+                      className="text-xs font-bold text-slate-100 hover:text-white transition-colors uppercase tracking-wider"
                     >
                       RAFIKI KABARAK, KABARAK
                     </a>

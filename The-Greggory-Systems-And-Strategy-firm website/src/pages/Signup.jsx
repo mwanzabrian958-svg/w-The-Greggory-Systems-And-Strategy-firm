@@ -32,6 +32,7 @@ const Signup = () => {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [showProtocols, setShowProtocols] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const navigate = useNavigate()
 
@@ -141,26 +142,118 @@ const Signup = () => {
 
           <div className="flex items-center gap-3 px-1">
             <input type="checkbox" id="terms" checked={agreedToTerms} onChange={(e) => setAgreedToTerms(e.target.checked)} className="w-4 h-4 rounded border-white/10 bg-white/5 text-gold-500" />
-            <label htmlFor="terms" className="text-[8px] text-slate-500 font-black uppercase tracking-widest">Consent to Protocols</label>
+            <div className="flex items-center gap-2">
+              <label htmlFor="terms" className="text-[9px] text-slate-500 font-black uppercase tracking-widest cursor-pointer">I agree to the</label>
+              <button type="button" onClick={() => setShowProtocols(true)} className="text-[9px] text-gold-500 font-black uppercase tracking-widest hover:underline decoration-gold-500/50 underline-offset-2">Systems Protocols</button>
+            </div>
           </div>
+
+          {showProtocols && (
+            <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[150] p-6 md:p-20 overflow-y-auto flex items-center justify-center">
+              <div className="max-w-2xl w-full bg-slate-900 border border-white/10 p-8 md:p-12 rounded-[2rem] shadow-2xl relative">
+                <button onClick={() => setShowProtocols(false)} className="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors">
+                  <span className="text-[10px] font-black uppercase tracking-widest border border-white/10 px-3 py-1 rounded-full">Close [ESC]</span>
+                </button>
+                <div className="space-y-8 font-mono text-[11px] leading-relaxed text-slate-300">
+                  <div className="border-b border-white/10 pb-6">
+                    <h3 className="text-xl font-bold text-white uppercase tracking-tighter mb-2">Systems Engagement Protocol</h3>
+                    <p className="text-gold-500 opacity-60">Status: MANDATORY / INTERNAL USE ONLY</p>
+                  </div>
+
+                  <section className="space-y-4">
+                    <h4 className="text-white font-bold uppercase tracking-widest border-l-2 border-gold-500 pl-4">01 / Data Integrity</h4>
+                    <p>Users agree to provide high-fidelity data nodes during account initialization. Any obfuscation of identity may result in immediate node termination.</p>
+                  </section>
+
+                  <section className="space-y-4">
+                    <h4 className="text-white font-bold uppercase tracking-widest border-l-2 border-gold-500 pl-4">02 / Systemic Resonance</h4>
+                    <p>Engagement with the firm's digital resources must follow the established architectural blueprints. Users are stewards of the firm's kinetic velocity and must not introduce structural friction.</p>
+                  </section>
+
+                  <section className="space-y-4">
+                    <h4 className="text-white font-bold uppercase tracking-widest border-l-2 border-gold-500 pl-4">03 / Confidentiality</h4>
+                    <p>The technical specifications and strategic innovations previewed within the member portal are strictly classified. Distribution of internal telemetry data is prohibited.</p>
+                  </section>
+
+                  <div className="pt-8 border-t border-white/10 flex justify-between items-center">
+                    <p className="text-[8px] opacity-40 uppercase tracking-[0.2em]">© {new Date().getFullYear()} G.S.S.F. ARCHITECTURAL UNIT</p>
+                    <button onClick={() => { setAgreedToTerms(true); setShowProtocols(false); }} className="px-6 py-2 bg-gold-500 text-slate-950 font-black uppercase text-[10px] rounded-lg shadow-lg hover:bg-yellow-400 transition-all">Acknowledge & Close</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {errors.submit && <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-[8px] text-rose-400 font-bold rounded-lg text-center uppercase">{errors.submit}</div>}
 
-          <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-gold-500 to-yellow-500 text-slate-950 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">
-            {isLoading ? 'Relaying Data...' : 'Initialize Node'}
+          <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-gold-500 to-yellow-500 text-slate-950 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 disabled:opacity-50">
+            {isLoading ? 'Relaying Data...' : 'Register'}
           </button>
 
           <p className="text-center text-[8px] font-black text-slate-500 uppercase tracking-widest">Node exists? <Link to="/login" className="text-gold-500">Access Login</Link></p>
         </form>
+
+        <div className="relative py-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-white/5"></div>
+          </div>
+          <div className="relative flex justify-center text-[8px] font-black tracking-[0.4em]">
+            <span className="px-4 bg-[#0f172a] text-slate-700">OR</span>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <GoogleSignIn isSignUp={true} buttonText="Sign up with Google" />
+        </div>
       </div>
 
       {(isLoading || showSuccess) && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] flex items-center justify-center">
-          <div className="bg-slate-900 border border-white/10 rounded-[40px] p-10 flex flex-col items-center space-y-6">
-            <div className="w-16 h-16 rounded-full border-4 border-gold-500/10 border-t-gold-500 animate-spin flex items-center justify-center">
-              {showSuccess && <CheckCircle className="w-10 h-10 text-emerald-500 animate-bounce" />}
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex items-center justify-center">
+          <div className="relative flex flex-col items-center">
+            {/* High-Tech Loading Hexagon/Ring System */}
+            <div className="relative w-32 h-32 flex items-center justify-center">
+              {/* Outer Scanning Ring */}
+              <div className="absolute inset-0 border-2 border-gold-500/20 rounded-full"></div>
+              <div className="absolute inset-0 border-t-2 border-gold-500 rounded-full animate-spin"></div>
+
+              {/* Inner Pulsing Ring */}
+              <div className="absolute inset-4 border border-cyan-500/30 rounded-full animate-pulse"></div>
+
+              {/* Center Status Icon */}
+              <div className="relative z-10">
+                {showSuccess ? (
+                  <CheckCircle className="w-12 h-12 text-emerald-500 animate-[bounce_1s_infinite]" />
+                ) : (
+                  <div className="w-8 h-8 bg-gold-500/10 rounded-lg flex items-center justify-center animate-pulse">
+                    <div className="w-2 h-2 bg-gold-500 rounded-full animate-ping"></div>
+                  </div>
+                )}
+              </div>
+
+              {/* Orbiting Nodes */}
+              {!showSuccess && (
+                <>
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gold-500 rounded-full shadow-[0_0_10px_#eab308]"></div>
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-cyan-500 rounded-full shadow-[0_0_10px_#06b6d4]"></div>
+                </>
+              )}
             </div>
-            <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">{showSuccess ? 'Node Solidified' : 'Deploying Identity'}</p>
+
+            <div className="mt-12 text-center space-y-4">
+              <h3 className="text-white text-[12px] font-black uppercase tracking-[0.5em] animate-pulse">
+                {showSuccess ? 'Node Solidified' : 'Deploying Identity'}
+              </h3>
+              {!showSuccess && (
+                <div className="flex gap-1 justify-center">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="w-1 h-1 bg-gold-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.2}s` }}></div>
+                  ))}
+                </div>
+              )}
+              <p className="text-[8px] text-slate-500 font-mono uppercase tracking-widest">
+                {showSuccess ? 'Redirecting to secure terminal...' : 'Authorizing systemic credentials...'}
+              </p>
+            </div>
           </div>
         </div>
       )}

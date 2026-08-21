@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ClipboardList, CheckCircle, XCircle, Clock, Search, Filter, RefreshCw, ChevronRight } from "lucide-react";
-import { getApiUrl } from "../../services/api";
+import { apiCall } from "../../services/api";
 
 /**
  * Applications - Inbound Request Telemetry
@@ -15,9 +15,8 @@ export function Applications({ user }) {
     const fetchApps = async () => {
       try {
         setLoading(true);
-        const res = await fetch(getApiUrl("/api/admin/pending-invoices"));
-        if (res.ok) {
-          const data = await res.json();
+        const data = await apiCall("/admin/pending-invoices");
+        if (data) {
           setApps(data.data || []);
         }
         setLoading(false);
@@ -42,11 +41,10 @@ export function Applications({ user }) {
         </div>
       </div>
 
-      <div className="bg-[#0f172a] rounded-xl p-4 border border-white/10 shadow-xl">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Filter by mission ID..." className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-[9px] font-bold text-white outline-none focus:ring-1 focus:ring-teal-500 transition-all" />
-        </div>
+      <div className="bg-[#0f172a] rounded-xl p-3 border border-white/10 shadow-xl">
+        <p className="text-[7px] font-black text-slate-500 uppercase tracking-[0.4em] text-center">
+           Awaiting Verification Stream - Deep Scan via Global System Query
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

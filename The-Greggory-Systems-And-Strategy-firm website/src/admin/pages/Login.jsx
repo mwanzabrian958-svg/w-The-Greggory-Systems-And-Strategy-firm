@@ -1,40 +1,43 @@
-import React, { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Shield, Eye, EyeOff, Lock, Mail, AlertCircle, RefreshCw } from "lucide-react";
-import { API_BASE_URL } from "../../services/api";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Shield, X, UserPlus, Eye, EyeOff,
+  ArrowLeft, CheckCircle, RefreshCw
+} from "lucide-react";
+import { apiCall } from "../../services/api";
 
-const API_URL = import.meta.env.VITE_API_URL || API_BASE_URL;
-
+/**
+ * RESTORED: Authentication Platform UI
+ * Strictly follows the "3 dots -> Purple Block" protocol.
+ */
 export function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [view, setView] = useState("platform"); // 'platform' or 'admin' or 'register'
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // Login State
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loginRole, setLoginRole] = useState("admin");
 
-  const from = location.state?.from?.pathname || "/admin";
+  // Register State
+  const [regStep, setRegStep] = useState(1);
+  const [regData, setRegData] = useState({
+    first_name: "", last_name: "", email: "",
+    password: "", confirmPassword: ""
+  });
 
-  const handleSubmit = async (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const endpoint = loginRole === "developer"
-          ? `${API_URL}/developer-verification/authenticate`
-          : `${API_URL}/admin-verification/authenticate-enhanced`;
-
-      const response = await fetch(endpoint, {
+      const data = await apiCall("/admin-verification/authenticate-enhanced", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Authentication failed");
 
       const session = {
         user: data.user,
@@ -45,63 +48,173 @@ export function Login({ onLoginSuccess }) {
       localStorage.setItem("gf_admin_session", JSON.stringify(session));
       localStorage.setItem("gf_admin_session_token", data.token);
 
-      if (typeof onLoginSuccess === 'function') onLoginSuccess(data.user);
-
+      if (onLoginSuccess) onLoginSuccess(data.user);
       window.dispatchEvent(new Event("gf-admin-session-changed"));
-
-      // Redirect to MISSION CONTROL
       navigate("/admin", { replace: true });
 
     } catch (err) {
-      console.error("Login Error:", err);
-      setError(err.message || "Failed to reach protocol relay.");
+      setError(err.message || "Credential verification failure.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (regData.password !== regData.confirmPassword) return setError("Passwords do not match");
+
+    setLoading(true);
+    try {
+      const data = await apiCall("/admin-verification/register", {
+        method: "POST",
+        body: JSON.stringify({
+          ...regData,
+          role: "admin"
+        }),
+      });
+      if (data.success) setRegStep(3);
+      else setError(data.message || "Registration failure.");
+    } catch (err) {
+      setError(err.message || "Network relay failure.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center px-4 font-sans">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-400/20"><Shield className="w-10 h-10 text-white" /></div>
-          <h1 className="text-2xl font-black text-white uppercase tracking-tight">Systems Access</h1>
-          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.3em] mt-2">Firmware Relay Initialization</p>
-        </div>
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center px-4 font-sans relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/20 blur-[120px] rounded-full"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-900/20 blur-[120px] rounded-full"></div>
 
-        {error && (
-          <div className="mb-6 bg-rose-500/10 border border-rose-500/30 rounded-xl p-4 flex items-start">
-            <AlertCircle className="w-4 h-4 text-rose-500 mr-3 flex-shrink-0 mt-0.5" />
-            <p className="text-[9px] font-black uppercase text-rose-400 tracking-widest">{error}</p>
-          </div>
-        )}
+      <div className="w-full max-w-lg relative z-10">
+        <div className="bg-[#0f172a] rounded-[32px] border border-white/10 shadow-2xl overflow-hidden flex flex-col min-h-[500px]">
 
-        <form onSubmit={handleSubmit} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-[32px] p-8 shadow-2xl space-y-6">
-          <div>
-            <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Mission Context</label>
-            <select value={loginRole} onChange={(e) => setLoginRole(e.target.value)} className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-bold text-white outline-none focus:border-blue-500">
-              <option value="admin">SYSTEM ADMINISTRATOR</option>
-              <option value="developer">TECHNICAL DEVELOPER</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Identity Relay</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-bold text-white outline-none focus:border-blue-500" placeholder="node@relay.gss" />
-          </div>
-
-          <div>
-            <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Access Key</label>
-            <div className="relative">
-              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-bold text-white outline-none focus:border-blue-500" placeholder="••••••••" />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-slate-500">{showPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+          {/* HEADER: THE PURPLE BLOCK */}
+          <section className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white border-b border-purple-400/40 px-8 pt-12 pb-10">
+            <div className="flex items-start gap-4 mb-8">
+              <div className="p-3 rounded-2xl bg-white/10 border border-white/20 shadow-xl">
+                <Shield className="w-8 h-8 text-purple-300" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-purple-300">Authentication platform</p>
+                <h1 className="text-xl font-black uppercase tracking-tight mt-1">Command Relay Node</h1>
+              </div>
             </div>
-          </div>
 
-          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] shadow-xl flex items-center justify-center">
-            {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Initialize Node Access"}
-          </button>
-        </form>
+            {view === "platform" && (
+               <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <p className="text-sm text-slate-300 leading-relaxed mb-8">
+                    Secure identity verification protocol for administrative console access.
+                    Initialize secure handshake to proceed.
+                  </p>
+                  <button
+                    onClick={() => setView("admin")}
+                    className="w-full flex items-center justify-center gap-3 bg-purple-500 hover:bg-purple-400 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all shadow-xl shadow-purple-900/40"
+                  >
+                    <Shield size={16} /> Access Admin Console
+                  </button>
+               </div>
+            )}
+          </section>
+
+          {/* DYNAMIC CONTENT AREA */}
+          <div className="flex-1 bg-white p-8 sm:p-10 relative">
+
+            {view !== "platform" && (
+              <button
+                onClick={() => { setView("platform"); setError(""); }}
+                className="absolute left-8 top-8 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
+
+            {view === "admin" && (
+              <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Identity Handshake</h2>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Authorized Personnel Only</p>
+                </div>
+
+                {error && (
+                  <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-rose-500 shrink-0" />
+                    <span className="text-rose-700 text-[10px] font-black uppercase tracking-widest leading-tight">{error}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Identity Relay (Email)</label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all" placeholder="node@relay.gss" />
+                  </div>
+                  <div>
+                    <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Secure Key</label>
+                    <div className="relative">
+                      <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all pr-12" placeholder="••••••••" />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-purple-500 transition-colors">
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+                    {loading ? <RefreshCw className="animate-spin" size={16} /> : "Verify Identity"}
+                  </button>
+                </form>
+
+                <div className="mt-10 pt-8 border-t border-slate-100 text-center">
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-4">Unregistered Personnel Node?</p>
+                   <button onClick={() => setView("register")} className="text-[10px] font-black text-purple-600 uppercase tracking-widest hover:underline">Initialize New Admin Node</button>
+                </div>
+              </div>
+            )}
+
+            {view === "register" && (
+              <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Node Creation</h2>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Initialize Administrator Credentials</p>
+                </div>
+
+                {regStep === 3 ? (
+                  <div className="text-center py-10">
+                    <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-100 shadow-inner">
+                      <CheckCircle className="w-10 h-10 text-emerald-500" />
+                    </div>
+                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-2">Node Solidified!</h3>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-8">Your identity has been synced to the matrix.</p>
+                    <button onClick={() => setView("admin")} className="w-full bg-slate-900 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">Proceed to Handshake</button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <input type="text" placeholder="First Name" value={regData.first_name} onChange={(e) => setRegData({...regData, first_name: e.target.value})} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
+                      <input type="text" placeholder="Last Name" value={regData.last_name} onChange={(e) => setRegData({...regData, last_name: e.target.value})} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
+                    </div>
+                    <input type="email" placeholder="Identity Relay (Email)" value={regData.email} onChange={(e) => setRegData({...regData, email: e.target.value})} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
+                    <input type="password" placeholder="Access Key" value={regData.password} onChange={(e) => setRegData({...regData, password: e.target.value})} required minLength={6} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
+                    <input type="password" placeholder="Confirm Key" value={regData.confirmPassword} onChange={(e) => setRegData({...regData, confirmPassword: e.target.value})} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
+
+                    {error && <p className="text-[8px] font-black text-rose-500 uppercase text-center">{error}</p>}
+
+                    <button type="submit" disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] shadow-xl transition-all">
+                      {loading ? <RefreshCw className="animate-spin" size={16} /> : "Solidify Admin Node"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {view === "platform" && (
+              <div className="mt-auto text-center pt-8 border-t border-slate-50">
+                 <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.5em]">System Property of Greggory Systems & Strategy Firm © 2024</p>
+              </div>
+            )}
+
+          </div>
+        </div>
       </div>
     </div>
   );
