@@ -29,7 +29,7 @@ const redis = createClient({ url: process.env.REDIS_URL || 'redis://localhost:63
 redis.connect().catch(err => console.warn('[REDIS] Not connected, using memory fallback.'));
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// ── AUTH MIDDLEWARE ──────────────────────────────────────────
+// ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ AUTH MIDDLEWARE ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬
 
 const authenticateUser = (req, res, next) => {
   const authHeader = req.header('authorization') || req.header('Authorization');
@@ -226,56 +226,223 @@ function isLocalAdminIp(raw) {
   );
 }
 
-// PDF Generation Helper Function (Pro Upgrade)
-async function generatePDFContent(type, document) {
+// == Branded PDF Generator (invoices / quotes / receipts) ==
+const BRAND = {
+  teal: '#0D9488',
+  tealDark: '#0F766E',
+  gold: '#EAB308',
+  navy: '#0F172A',
+  slate: '#64748B',
+  zebra: '#F8FAFC',
+  border: '#E2E8F0',
+};
+const COMPANY_PDF = {
+  name1: 'THE GREGGORY SYSTEMS',
+  name2: '& STRATEGY FIRM',
+  tagline: 'Strategic Systems - Practical Strategy - Lasting Confidence',
+  phone: '+254 715 312 251',
+  email: 'thegreggorysystemsandstrategyf@gmail.com',
+};
+const fmtKESpdf = (n) =>
+  'KES ' +
+  Number(n || 0).toLocaleString('en-KE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+const fmtDatePdf = (d) => {
+  try {
+    return d
+      ? new Date(d).toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' })
+      : '-';
+  } catch {
+    return '-';
+  }
+};
+
+async function generatePDFContent(type, document, lineItems = []) {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 50 });
-    let chunks = [];
-    doc.on('data', chunk => chunks.push(chunk));
+    const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: true });
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    // Header / Branding
-    doc.fontSize(20).text('THE GREGGORY SYSTEMS', { align: 'right' });
-    doc.fontSize(10).text('Strategic Systems & Strategy Firm', { align: 'right' });
-    doc.moveDown();
-    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-    doc.moveDown();
+    const W = doc.page.width;
+    const isReceipt = type === 'receipt' || type === 'transactions';
+    const title = isReceipt ? 'PAYMENT RECEIPT' : type.toUpperCase().replace(/S$/, '');
 
-    const title = type.toUpperCase().replace(/S$/, '');
-    doc.fontSize(25).fillColor('#0ea5e9').text(title, { underline: true });
-    doc.fillColor('black').fontSize(10);
-    doc.moveDown();
+    const drawFooters = () => {
+      const range = doc.bufferedPageRange();
+      for (let i = range.start; i < range.start + range.count; i++) {
+        doc.switchToPage(i);
+        const fy = doc.page.height - 58;
+        doc.moveTo(40, fy).lineTo(W - 40, fy).lineWidth(0.6).strokeColor(BRAND.border).stroke();
+        doc.font('Helvetica').fontSize(7).fillColor(BRAND.slate);
+        doc.text(COMPANY_PDF.name1 + ' ' + COMPANY_PDF.name2 + '   |   ' + COMPANY_PDF.phone + '   |   ' + COMPANY_PDF.email, 40, fy + 8);
+        doc.text('Page ' + (i - range.start + 1) + ' of ' + range.count, 40, fy + 8, { width: W - 80, align: 'right', lineBreak: false });
+        doc.text('Generated ' + new Date().toLocaleString('en-KE'), 40, fy + 19);
+      }
+    };
 
-    if (type === "invoices") {
-      doc.text(`Invoice Number: ${document.invoice_number}`);
-      doc.text(`Date: ${document.issue_date}`);
-      doc.text(`Due Date: ${document.due_date}`);
-    } else if (type === "quotes") {
-      doc.text(`Quote Number: ${document.quote_number}`);
-      doc.text(`Valid Until: ${document.valid_until}`);
+    // Header band (teal) with gold accent rule
+    doc.rect(0, 0, W, 92).fill(BRAND.teal);
+    doc.rect(0, 92, W, 3.5).fill(BRAND.gold);
+    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(19).text(COMPANY_PDF.name1, 40, 24);
+    doc.fontSize(13).text(COMPANY_PDF.name2, 40, 47);
+    doc.font('Helvetica').fontSize(7.5).fillColor('#CCFBF1').text(COMPANY_PDF.tagline, 40, 70);
+    doc.font('Helvetica').fontSize(8.5).fillColor('#FFFFFF');
+    doc.text(COMPANY_PDF.phone, 340, 30, { width: 215, align: 'right' });
+    doc.text(COMPANY_PDF.email, 340, 44, { width: 215, align: 'right' });
+
+    // Document title + meta grid
+    let y = 124;
+    doc.font('Helvetica-Bold').fontSize(24).fillColor(BRAND.navy).text(title, 40, y);
+    const meta =
+      type === 'invoices'
+        ? [['Invoice No', document.invoice_number], ['Issue Date', fmtDatePdf(document.issue_date)], ['Due Date', fmtDatePdf(document.due_date)], ['Status', String(document.status || '').toUpperCase()]]
+        : type === 'quotes'
+        ? [['Quote No', document.quote_number], ['Issue Date', fmtDatePdf(document.issue_date)], ['Valid Until', fmtDatePdf(document.valid_until)], ['Status', String(document.status || '').toUpperCase()]]
+        : [['Receipt No', document.mpesa_receipt || document.transaction_id || '-'], ['Date', fmtDatePdf(document.created_at)], ['Phone', document.phone_number || '-'], ['Status', String(document.status || '').toUpperCase()]];
+    meta.forEach(function (pair, idx) {
+      doc.font('Helvetica').fontSize(8.5).fillColor(BRAND.slate).text(String(pair[0]), 330, 126 + idx * 14, { width: 90, align: 'right' });
+      doc.font('Helvetica-Bold').fontSize(8.5).fillColor(BRAND.navy).text(String(pair[1] == null ? '-' : pair[1]), 425, 126 + idx * 14, { width: 130, align: 'right' });
+    });
+
+    // Client panel
+    y += 44;
+    doc.roundedRect(40, y, 280, 88, 8).fillAndStroke(BRAND.zebra, BRAND.border);
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(BRAND.teal).text('BILL TO', 56, y + 12);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(BRAND.navy).text(document.client_name || '-', 56, y + 30, { width: 250 });
+    doc.font('Helvetica').fontSize(8.5).fillColor(BRAND.slate);
+    if (!isReceipt && document.title) {
+      doc.font('Helvetica-Bold').fontSize(10).fillColor(BRAND.navy).text(String(document.title), 340, y + 12, { width: 215 });
+      doc.font('Helvetica').fontSize(8.5).fillColor(BRAND.slate).text(String(document.description || '').slice(0, 240), 340, y + 30, { width: 215 });
+    }
+    doc.text(document.client_email || '', 56, y + 50, { width: 250 });
+    doc.text([document.client_phone, document.client_address].filter(Boolean).join('  |  '), 56, y + 64, { width: 250 });
+    y += 108;
+
+    const refLabel = type === 'quotes' ? 'Quote No ' + (document.quote_number || '') : 'Invoice No ' + (document.invoice_number || '');
+
+    if (isReceipt) {
+      doc.roundedRect(40, y, W - 80, 70, 8).fillAndStroke('#ECFDF5', '#10B981');
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('#059669').text('AMOUNT RECEIVED', 60, y + 12);
+      doc.font('Helvetica-Bold').fontSize(22).fillColor('#065F46').text(fmtKESpdf(document.amount), 60, y + 28);
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('#065F46').text(String(document.status || '').toUpperCase(), 300, y + 28, { width: 235, align: 'right' });
+      y += 90;
+      doc.roundedRect(40, y, W - 80, 96, 8).fillAndStroke('#FFFFFF', BRAND.border);
+      const rRows = [
+        ['M-PESA Receipt', document.mpesa_receipt || '-'],
+        ['Paid By', document.phone_number || '-'],
+        ['Reference', document.account_reference || '-'],
+        ['Description', document.description || 'Payment'],
+      ];
+      rRows.forEach(function (pair, idx) {
+        doc.font('Helvetica').fontSize(9).fillColor(BRAND.slate).text(String(pair[0]), 60, y + 12 + idx * 20);
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(BRAND.navy).text(String(pair[1]), 200, y + 12 + idx * 20, { width: 320 });
+      });
+      y += 116;
+      doc.font('Helvetica-Oblique').fontSize(9).fillColor(BRAND.teal)
+        .text('This receipt confirms payment received via M-Pesa Send Money to ' + COMPANY_PDF.phone + '.', 40, y, { width: W - 80, align: 'center' });
+    } else {
+      let items = Array.isArray(lineItems) ? lineItems : [];
+      if (!items.length) {
+        try {
+          const parsed = typeof document.items === 'string' ? JSON.parse(document.items) : document.items;
+          if (Array.isArray(parsed) && parsed.length) {
+            items = parsed.map(function (it) {
+              return {
+                item_description: it.item_description || it.description || it.name || 'Service item',
+                quantity: it.quantity == null ? 1 : it.quantity,
+                unit_price: it.unit_price == null ? (it.price || 0) : it.unit_price,
+                line_total: it.line_total == null ? ((it.quantity || 1) * (it.unit_price || it.price || 0)) : it.line_total,
+              };
+            });
+          }
+        } catch (e) {}
+      }
+      if (!items.length) {
+        const amt = document.total_amount_kes || document.total_amount || document.amount || 0;
+        items = [{ item_description: document.description || 'Service delivery as per agreement', quantity: 1, unit_price: amt, line_total: amt }];
+      }
+      const rowH = 24;
+      doc.rect(40, y, W - 80, rowH).fill(BRAND.teal);
+      const cols = [
+        { label: 'DESCRIPTION', x: 46, w: 250, align: 'left' },
+        { label: 'QTY', x: 296, w: 50, align: 'right' },
+        { label: 'UNIT PRICE', x: 346, w: 100, align: 'right' },
+        { label: 'TOTAL', x: 446, w: 105, align: 'right' },
+      ];
+      cols.forEach(function (c) {
+        doc.font('Helvetica-Bold').fontSize(7.5).fillColor('#FFFFFF').text(c.label, c.x, y + 8, { width: c.w, align: c.align });
+      });
+      y += rowH;
+      items.forEach(function (it, idx) {
+        if (y > doc.page.height - 170) { doc.addPage(); y = 60; }
+        if (idx % 2 === 1) doc.rect(40, y, W - 80, rowH).fill(BRAND.zebra);
+        doc.font('Helvetica').fontSize(8.5).fillColor(BRAND.navy);
+        doc.text(String(it.item_description || it.description || 'Item'), cols[0].x, y + 8, { width: cols[0].w });
+        doc.text(String(it.quantity == null ? 1 : it.quantity), cols[1].x, y + 8, { width: cols[1].w, align: 'right' });
+        doc.text(fmtKESpdf(it.unit_price), cols[2].x, y + 8, { width: cols[2].w, align: 'right' });
+        doc.font('Helvetica-Bold');
+        doc.text(fmtKESpdf(it.line_total), cols[3].x, y + 8, { width: cols[3].w, align: 'right' });
+        y += rowH;
+      });
+
+      // Totals block
+      y += 14;
+      const bx = 315;
+      const bw = 240;
+      const subtotalVal = document.subtotal != null ? Number(document.subtotal) : Number(document.total_amount || document.amount || 0) - Number(document.tax_amount || 0);
+      doc.font('Helvetica').fontSize(9).fillColor(BRAND.slate).text('Subtotal', bx + 10, y);
+      doc.font('Helvetica-Bold').fontSize(9).fillColor(BRAND.navy).text(fmtKESpdf(subtotalVal), bx + 10, y, { width: bw - 20, align: 'right' });
+      y += 18;
+      if (document.tax_amount != null && Number(document.tax_amount) > 0) {
+        doc.font('Helvetica').fontSize(9).fillColor(BRAND.slate).text('Tax (' + (document.tax_rate || 16) + '%)', bx + 10, y);
+        doc.font('Helvetica-Bold').fontSize(9).fillColor(BRAND.navy).text(fmtKESpdf(document.tax_amount), bx + 10, y, { width: bw - 20, align: 'right' });
+        y += 18;
+      }
+      doc.rect(bx, y, bw, 26).fill(BRAND.gold);
+      doc.font('Helvetica-Bold').fontSize(10).fillColor(BRAND.navy).text('TOTAL', bx + 10, y + 8);
+      doc.fontSize(11).text(fmtKESpdf(document.total_amount_kes || document.total_amount || document.amount), bx + 10, y + 8, { width: bw - 20, align: 'right' });
+      y += 44;
     }
 
-    doc.moveDown();
-    doc.fontSize(14).text('Bill To:', { underline: true });
-    doc.fontSize(10).text(document.client_name);
-    doc.text(document.client_email || '');
-    doc.text(document.client_phone || '');
-    doc.moveDown();
+    // HOW TO PAY - M-PESA SEND MONEY (company has no paybill; send money only)
+    if (!isReceipt) {
+      if (y > doc.page.height - 210) { doc.addPage(); y = 60; }
+      doc.roundedRect(40, y, W - 80, 88, 8).fillAndStroke('#F0FDFA', BRAND.teal);
+      doc.font('Helvetica-Bold').fontSize(9).fillColor(BRAND.tealDark).text('HOW TO PAY - M-PESA SEND MONEY', 56, y + 10);
+      doc.font('Helvetica').fontSize(9).fillColor(BRAND.navy);
+      doc.text('1. Open your M-Pesa menu and select Send Money.', 56, y + 26);
+      doc.text('2. Send the exact total to: ' + COMPANY_PDF.phone + ' (' + COMPANY_PDF.name1 + ' ' + COMPANY_PDF.name2 + ')', 56, y + 38);
+      doc.text('3. Use "' + refLabel.trim() + '" as the transaction reason.', 56, y + 50);
+      doc.text('4. Forward the confirmation SMS to our phone or email so we receipt your account.', 56, y + 62);
+      y += 104;
 
-    // Line Items Table logic would go here in a full implementation
-    doc.fontSize(12).text('Description:', { underline: true });
-    doc.fontSize(10).text(document.description || 'Service delivery as per agreement');
-    doc.moveDown();
+      if (document.notes || document.payment_terms || document.terms_conditions) {
+        const noteTxt = String(document.notes || '').slice(0, 200);
+        const termTxt = String(document.payment_terms || document.terms_conditions || '').slice(0, 260);
+        if (noteTxt) {
+          doc.font('Helvetica-Bold').fontSize(8).fillColor(BRAND.slate).text('NOTES', 40, y);
+          doc.font('Helvetica').fontSize(8).fillColor(BRAND.slate).text(noteTxt, 40, y + 11, { width: W - 80 });
+          y += 34;
+        }
+        if (termTxt) {
+          doc.font('Helvetica-Bold').fontSize(8).fillColor(BRAND.slate).text('TERMS', 40, y);
+          doc.font('Helvetica').fontSize(8).fillColor(BRAND.slate).text(termTxt, 40, y + 11, { width: W - 80 });
+          y += 34;
+        }
+      }
+      doc.font('Helvetica-Oblique').fontSize(9).fillColor(BRAND.teal)
+        .text('Thank you for your business - The Greggory Systems & Strategy Firm.', 40, y + 4, { width: W - 80, align: 'center' });
+    }
 
-    doc.fontSize(16).fillColor('#0ea5e9').text(`TOTAL AMOUNT: KES ${document.total_amount || document.amount}`, { align: 'right' });
-
-    doc.moveDown(4);
-    doc.fillColor('gray').fontSize(8).text('Thank you for choosing The Greggory Systems. Payments via M-Pesa Business 174379.', { align: 'center' });
-
+    drawFooters();
     doc.end();
   });
 }
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -329,7 +496,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(express.static("public"));
 
-// ── LIVE USER TRACKING MIDDLEWARE ────────────────────────────
+// ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ LIVE USER TRACKING MIDDLEWARE ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬
 app.use(async (req, res, next) => {
   try {
     const authHeader = req.header('authorization') || req.header('Authorization') || "";
@@ -472,9 +639,21 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
     const callbackUrl = process.env.MPESA_CALLBACK_URL || 'http://localhost:3000/api/mpesa/callback';
 
     if (!consumerKey || !consumerSecret || !passkey) {
-      return res.status(500).json({
-        success: false,
-        message: 'M-Pesa credentials are not configured on the server. Set MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_PASSKEY, and MPESA_SHORTCODE first.'
+      // Simulation mode - Daraja credentials not configured yet.
+      const simId = 'sim-' + Date.now();
+      try {
+        await mainDb.query(
+          "INSERT INTO mpesa_transactions (transaction_id, amount, phone_number, account_reference, status, response_data, created_by, created_at) VALUES (?, ?, ?, ?, 'pending', ?, ?, NOW())",
+          [simId, amount, formatMpesaPhoneNumber(phoneNumber) || phoneNumber, accountReference || 'GSS-FIRM', JSON.stringify({ simulated: true }), userId || 1]
+        );
+      } catch (dbErr) {
+        console.warn('[MPESA SIM] Could not log simulated transaction:', dbErr.message);
+      }
+      return res.json({
+        success: true,
+        simulated: true,
+        message: 'Simulation mode: request acknowledged. Live M-Pesa prompts activate once Daraja credentials are configured.',
+        checkoutRequestId: simId
       });
     }
 
@@ -513,7 +692,7 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
       BusinessShortCode: Number(shortcode),
       Password: password,
       Timestamp: timestamp,
-      TransactionType: 'CustomerPayBillOnline',
+      TransactionType: process.env.MPESA_TRANSACTION_TYPE || 'CustomerBuyGoodsOnline',
       Amount: Number(amount),
       PartyA: Number(formattedPhone),
       PartyB: Number(shortcode),
@@ -3002,8 +3181,17 @@ app.get("/api/documents/:type/:id/pdf", async (req, res) => {
       });
     }
 
-    // Generate PDF content (simplified version)
-    const pdfContent = generatePDFContent(type, document);
+    // Fetch line items where applicable
+    // NOTE: invoice_line_items belongs to client_invoices; regular invoices carry items as JSON.
+    let pdfLineItems = [];
+    try {
+      if (type === "quotes") {
+        [pdfLineItems] = await db.execute("SELECT item_description, quantity, unit_price, line_total FROM quote_items WHERE quote_id = ? ORDER BY display_order ASC, id ASC", [id]);
+      }
+    } catch (liErr) {
+      console.warn("Line items fetch skipped:", liErr.message);
+    }
+    const pdfContent = await generatePDFContent(type, document, pdfLineItems);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
@@ -3065,8 +3253,17 @@ app.post("/api/documents/generate/:type/:id", async (req, res) => {
       );
     }
 
-    // Generate PDF content
-    const pdfContent = generatePDFContent(type, document);
+    // Fetch line items where applicable
+    // NOTE: invoice_line_items belongs to client_invoices; regular invoices carry items as JSON.
+    let pdfLineItems = [];
+    try {
+      if (type === "quotes") {
+        [pdfLineItems] = await db.execute("SELECT item_description, quantity, unit_price, line_total FROM quote_items WHERE quote_id = ? ORDER BY display_order ASC, id ASC", [id]);
+      }
+    } catch (liErr) {
+      console.warn("Line items fetch skipped:", liErr.message);
+    }
+    const pdfContent = await generatePDFContent(type, document, pdfLineItems);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
@@ -3733,7 +3930,7 @@ app.post("/api/admin-verification/register", async (req, res) => {
   }
 });
 
-// Validate admin session token (required for admin UI — not forgeable without server secret)
+// Validate admin session token (required for admin UI ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â not forgeable without server secret)
 app.get("/api/admin/session", async (req, res) => {
   try {
     const auth = req.headers.authorization || "";

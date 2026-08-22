@@ -70,7 +70,7 @@ async function initiateSTKPush(phoneNumber, amount, accountReference, transactio
     BusinessShortCode: MPESA_SHORTCODE,
     Password: password,
     Timestamp: timestamp,
-    TransactionType: 'CustomerPayBillOnline',
+    TransactionType: process.env.MPESA_TRANSACTION_TYPE || 'CustomerBuyGoodsOnline',
     Amount: Math.round(amount),
     PartyA: formattedPhone,
     PartyB: MPESA_SHORTCODE,
