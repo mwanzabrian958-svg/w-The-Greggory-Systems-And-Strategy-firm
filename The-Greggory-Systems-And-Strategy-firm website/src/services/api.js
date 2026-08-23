@@ -1,7 +1,16 @@
 // API service for connecting to backend
 // Hardened for Strategic Mission Control
-
-export const API_BASE_URL = '/api';
+//
+// Base URL resolution:
+//   - Local dev: leave VITE_API_BASE_URL unset -> falls back to '/api'
+//     (the Vite dev server proxies '/api' to http://localhost:3000)
+//   - Production: set VITE_API_BASE_URL to your deployed backend origin
+//     INCLUDING the /api mount, e.g. https://api.yourdomain.com/api
+//     (set it in Netlify/Vercel/host UI so it's baked in at build time;
+//      see netlify.toml and env.example for details)
+const RAW_BASE = import.meta.env?.VITE_API_BASE_URL || "";
+export const API_BASE_URL =
+  String(RAW_BASE).trim().replace(/\/+$/, "") || "/api";
 
 /**
  * Hardened API Relay
@@ -23,8 +32,8 @@ export const apiCall = async (endpoint, options = {}) => {
     };
     if (token) authHeaders["Authorization"] = `Bearer ${token}`;
 
-    // 3. Resolve Endpoint URL
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+    // 3. Resolve Endpoint URL (normalized; tolerates endpoints that already include '/api')
+    const url = /^https?:\/\//i.test(endpoint) ? endpoint : getApiUrl(endpoint);
 
     // 4. Execute Secure Handshake
     const response = await fetch(url, {
@@ -61,7 +70,21 @@ export const apiCall = async (endpoint, options = {}) => {
   }
 };
 
-export const getApiUrl = (path) => path;
+/**
+ * Resolve a full API URL from a path.
+ * Tolerates paths that already include a legacy "/api" prefix so callers
+ * never produce doubled prefixes like "/api/api/...".
+ */
+export const getApiUrl = (path) => {
+  const p = String(path ?? "").trim();
+  if (/^https?:\/\//i.test(p)) return p;
+  let clean = p.startsWith("/") ? p : `/${p}`;
+  // Normalize legacy callers that already include the "/api" prefix
+  if (clean === "/api") clean = "";
+  else if (clean.startsWith("/api/")) clean = clean.slice(4);
+  clean = clean.replace(/\/+$/, "");
+  return `${API_BASE_URL}${clean}`;
+};
 
 // M-Pesa API
 export const mpesaAPI = {

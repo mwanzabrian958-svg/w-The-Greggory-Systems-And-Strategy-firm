@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 
 import Navbar from './components/Navbar'
@@ -8,29 +9,46 @@ import PrivateRoute from './components/PrivateRoute'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 
-// Public Pages
+// Landing page stays eager: it's the most common entry point, so we avoid
+// an extra network round-trip before first meaningful paint.
 import Home from './pages/Home'
-import About from './pages/About'
-import Projects from './pages/Projects'
-import ProjectDetails from './pages/ProjectDetails'
-import Services from './pages/Services'
-import CaseStudies from './pages/CaseStudies'
-import Blog from './pages/Blog'
-import BlogDetails from './pages/BlogDetails'
-import Contact from './pages/Contact'
-import Companies from './pages/Companies'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-import ForgotPassword from './pages/ForgotPassword'
-import Terms from './pages/Terms'
-import Privacy from './pages/Privacy'
-import ClientPortal from './pages/ClientPortal'
-import Pricing from './pages/Pricing'
-import ClientReports from './pages/ClientReports'
-import ClientAlerts from './pages/ClientAlerts'
 
-// Admin Module
-import { AdminRouter } from './admin/AdminRouter'
+// All other routes are code-split: each page downloads only when visited,
+// keeping the initial bundle small (the admin module alone was ~half the app).
+const About = lazy(() => import('./pages/About'))
+const Projects = lazy(() => import('./pages/Projects'))
+const ProjectDetails = lazy(() => import('./pages/ProjectDetails'))
+const Services = lazy(() => import('./pages/Services'))
+const CaseStudies = lazy(() => import('./pages/CaseStudies'))
+const Blog = lazy(() => import('./pages/Blog'))
+const BlogDetails = lazy(() => import('./pages/BlogDetails'))
+const Contact = lazy(() => import('./pages/Contact'))
+const Companies = lazy(() => import('./pages/Companies'))
+const Login = lazy(() => import('./pages/Login'))
+const Signup = lazy(() => import('./pages/Signup'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const Terms = lazy(() => import('./pages/Terms'))
+const Privacy = lazy(() => import('./pages/Privacy'))
+const ClientPortal = lazy(() => import('./pages/ClientPortal'))
+const Pricing = lazy(() => import('./pages/Pricing'))
+const ClientReports = lazy(() => import('./pages/ClientReports'))
+const ClientAlerts = lazy(() => import('./pages/ClientAlerts'))
+
+// Admin Module (heavy) — split into its own chunk(s), loaded on demand.
+// AdminRouter is a named export, so adapt it to the default shape React.lazy expects.
+const AdminRouter = lazy(() =>
+  import('./admin/AdminRouter').then((m) => ({ default: m.AdminRouter }))
+)
+
+// Minimal themed loading state shown while a route chunk is downloading.
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]" role="status" aria-live="polite">
+      <div className="h-10 w-10 rounded-full border-4 border-white/10 border-t-teal-500 animate-spin" />
+      <span className="sr-only">Loading…</span>
+    </div>
+  )
+}
 
 function Layout() {
   const location = useLocation()
@@ -52,7 +70,8 @@ function Layout() {
 
       <main className="flex-grow">
 
-        <Routes>
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
 
           <Route path="/" element={<Home />} />
 
@@ -116,7 +135,8 @@ function Layout() {
 
           <Route path="/pricing" element={<Pricing />} />
 
-        </Routes>
+          </Routes>
+        </Suspense>
 
       </main>
 

@@ -2,10 +2,43 @@
   command = "npm run build"
   publish = "dist"
 
+# ==========================================================================
+# DEPLOYMENT CHECKLIST (this is a full-stack app!)
+#
+# Netlify serves only the static frontend. The Express/MySQL/MongoDB/Redis
+# backend (website/server.js) must run elsewhere (Railway, Render, Fly.io,
+# or a VPS). Then:
+#
+#   1. Deploy the backend and note its public URL.
+#   2. Netlify UI -> Site configuration -> Environment variables:
+#        VITE_API_BASE_URL = https://<your-backend-host>/api
+#      (unset it falls back to '/api', which will NOT work on static hosting)
+#   3. Trigger a redeploy so the variable is baked into the JS bundle.
+#   4. On the backend, set CORS to allow this Netlify domain and set
+#      FRONTEND_URL accordingly.
+# ==========================================================================
+
+# Fail loud: if the frontend still calls same-origin /api/* on Netlify,
+# return a real 404 instead of silently serving index.html as JSON.
+# (Remove this redirect only if you later add Netlify Functions under /api.)
+[[redirects]]
+  from = "/api/*"
+  to = "/api-misconfigured"
+  status = 404
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
 [build.environment]
   NODE_VERSION = "20"
