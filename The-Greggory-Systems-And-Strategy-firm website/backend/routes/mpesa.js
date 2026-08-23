@@ -23,6 +23,16 @@ router.post('/stkpush', async (req, res) => {
     );
 
     if (result.success) {
+      // Resolve a valid creator: prefer the acting user, fall back to any
+      // existing account, else NULL (column is nullable for system entries).
+      let createdBy = Number(userId) || null;
+      if (!createdBy) {
+        try {
+          const [u] = await db.promise().query("SELECT id FROM users ORDER BY id LIMIT 1");
+          createdBy = u?.[0]?.id ?? null;
+        } catch (_) { /* leave null */ }
+      }
+
       // Record transaction as pending in MySQL
       try {
         await db.promise().query(
@@ -36,7 +46,7 @@ router.post('/stkpush', async (req, res) => {
             phoneNumber,
             accountReference || 'GSS-FIRM',
             JSON.stringify(result),
-            userId || 1
+            createdBy
           ]
         );
       } catch (dbErr) {
