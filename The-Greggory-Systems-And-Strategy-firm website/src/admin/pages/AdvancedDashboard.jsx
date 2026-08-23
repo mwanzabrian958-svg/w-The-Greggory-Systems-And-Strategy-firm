@@ -92,6 +92,15 @@ export function AdvancedDashboard({ user }) {
 
   const verifiedPercentage = stats.totalUsers > 0 ? Math.round((stats.verifiedUsers / stats.totalUsers) * 100) : 0;
 
+  const timeAgo = (t) => {
+    const secs = Math.floor((Date.now() - new Date(t).getTime()) / 1000);
+    if (!Number.isFinite(secs)) return "";
+    if (secs < 60) return `${secs}s ago`;
+    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
+    if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+    return `${Math.floor(secs / 86400)}d ago`;
+  };
+
   const statCards = [
     { label: "Active Projects", value: stats.activeProjects, icon: Briefcase, color: "text-sky-400", bg: "bg-sky-500/10", path: "/admin/projects" },
     { label: "Live Now", value: stats.liveUsers, icon: Activity, color: "text-rose-400", bg: "bg-rose-500/10", path: "/admin/users" },
@@ -120,6 +129,22 @@ export function AdvancedDashboard({ user }) {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "New Invoice", icon: DollarSign, path: "/admin/billing", tone: "text-emerald-600 bg-emerald-50" },
+          { label: "Add Personnel", icon: UserCheck, path: "/admin/users", tone: "text-sky-600 bg-sky-50" },
+          { label: "Content Hub", icon: MessageSquare, path: "/admin/content", tone: "text-violet-600 bg-violet-50" },
+          { label: "Run Reports", icon: BarChart3, path: "/admin/reports", tone: "text-orange-600 bg-orange-50" },
+        ].map((a) => (
+          <button key={a.label} onClick={() => navigate(a.path)} className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm flex items-center gap-3 hover:border-teal-500/40 hover:shadow-md transition-all group text-left">
+            <span className={`p-2 rounded-lg ${a.tone}`}><a.icon size={14} /></span>
+            <span className="text-[8px] font-black uppercase tracking-widest text-slate-700 group-hover:text-teal-700">{a.label}</span>
+            <ChevronRight size={12} className="ml-auto text-slate-300 group-hover:text-teal-500 transition-colors" />
+          </button>
+        ))}
       </div>
 
       {/* Primary Stats Grid */}
@@ -168,6 +193,40 @@ export function AdvancedDashboard({ user }) {
         </div>
       </div>
 
+      {/* Identity & Trust Telemetry */}
+      <div className="bg-[#0f172a] rounded-2xl shadow-2xl p-5 border border-white/5">
+        <div className="flex items-center justify-between mb-5 border-b border-white/5 pb-3">
+          <div className="flex items-center gap-3">
+            <UserCheck size={14} className="text-teal-400" />
+            <h3 className="text-[9px] font-black text-white uppercase tracking-widest">Identity &amp; Trust</h3>
+          </div>
+          <button onClick={() => navigate('/admin/users')} className="text-[7px] font-black text-teal-400 uppercase tracking-widest hover:text-white transition-colors">Manage Users</button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+          <div className="flex items-center gap-4">
+            <div className="relative w-14 h-14 shrink-0">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="10" className="text-white/5" />
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="currentColor" strokeWidth="10" strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * verifiedPercentage) / 100} strokeLinecap="round" className="text-teal-400 transition-all duration-700" />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white">{verifiedPercentage}%</div>
+            </div>
+            <div>
+              <p className="text-[6px] text-slate-500 font-black uppercase tracking-widest">Verified</p>
+              <p className="text-sm font-black text-white">{stats.verifiedUsers}<span className="text-slate-600 text-[9px]"> / {stats.totalUsers}</span></p>
+            </div>
+          </div>
+          <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5 text-center">
+            <p className="text-[6px] text-slate-500 font-black uppercase tracking-widest">Live Right Now</p>
+            <p className="text-lg font-black text-rose-400">{stats.liveUsers}</p>
+          </div>
+          <div className="bg-white/[0.03] rounded-xl p-3 border border-white/5 text-center">
+            <p className="text-[6px] text-slate-500 font-black uppercase tracking-widest">Node Uptime</p>
+            <p className="text-xs font-black text-emerald-500 mt-0.5">{stats.systemUptime}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Activity and Validations */}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="bg-[#0f172a] rounded-2xl shadow-2xl p-5 border border-white/5 relative overflow-hidden">
@@ -193,7 +252,7 @@ export function AdvancedDashboard({ user }) {
                 <div className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0"><Clock size={10} className="text-slate-500 group-hover:text-teal-400" /></div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-bold text-[9px] truncate">{act.action}</p>
-                  <p className="text-slate-600 text-[6px] font-black uppercase tracking-widest mt-0.5">{new Date(act.timestamp).toLocaleTimeString()}</p>
+                  <p className="text-slate-600 text-[6px] font-black uppercase tracking-widest mt-0.5" title={new Date(act.timestamp).toLocaleString()}>{timeAgo(act.timestamp)}</p>
                 </div>
               </div>
             )) : <div className="py-10 text-center opacity-20"><Activity size={24} className="mx-auto mb-2" /><p className="text-[7px] font-black uppercase">Silent Mode</p></div>}
