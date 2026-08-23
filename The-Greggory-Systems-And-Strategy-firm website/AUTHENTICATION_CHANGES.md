@@ -81,7 +81,7 @@ This will:
 Add to your `.env` file:
 ```env
 # Admin access code (required)
-ADMIN_CODE=***REMOVED***
+ADMIN_CODE=<your-admin-code>
 
 # Optional: Separate developer code
 DEV_CODE=GF-DEV-2024-SECURE
@@ -103,8 +103,8 @@ node server.js
 2. Click "Admin access" in the auth platform
 3. Enter:
    - Email: `brianmwanza651@gmail.com`
-   - Password: `***REMOVED***` (or whatever you set)
-   - Admin Code: `***REMOVED***` (or your configured code)
+   - Password: `<your-admin-password>` (or whatever you set)
+   - Admin Code: `<your-admin-code>` (or your configured code)
 
 ## Authentication Flow
 
@@ -206,7 +206,7 @@ SHOW TABLES LIKE '%developer%';
 ### Reset admin password
 ```javascript
 const bcrypt = require('bcryptjs');
-const hash = await bcrypt.hash('***REMOVED***', 10);
+const hash = await bcrypt.hash('<new-password>', 10);
 // Then update in database
 ```
 

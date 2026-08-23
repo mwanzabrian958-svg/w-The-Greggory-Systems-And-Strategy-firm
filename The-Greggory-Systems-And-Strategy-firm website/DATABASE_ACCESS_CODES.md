@@ -31,8 +31,8 @@ CREATE TABLE access_codes (
 ### Default Codes (Auto-Created)
 | Type | Code | Status |
 |------|------|--------|
-| admin | ***REMOVED*** | Active, unlimited uses |
-| developer | ***REMOVED*** | Active, unlimited uses |
+| admin | <YOUR_ADMIN_CODE> | Active, unlimited uses |
+| developer | <YOUR_DEV_CODE> | Active, unlimited uses |
 
 ## API Endpoints
 
@@ -43,8 +43,8 @@ CREATE TABLE access_codes (
 POST /api/admin/authenticate
 Body: {
   "email": "admin@example.com",
-  "password": "***REMOVED***",
-  "adminCode": "***REMOVED***"  ← Validated against database
+  "password": "<password>",
+  "adminCode": "<YOUR_ADMIN_CODE>"  ← Validated against database
 }
 ```
 
@@ -53,8 +53,8 @@ Body: {
 POST /api/developer/authenticate
 Body: {
   "email": "dev@example.com",
-  "password": "***REMOVED***",
-  "devCode": "***REMOVED***"  ← Validated against database
+  "password": "<password>",
+  "devCode": "<YOUR_DEV_CODE>"  ← Validated against database
 }
 ```
 
@@ -69,7 +69,7 @@ Response: {
     {
       "id": 1,
       "code_type": "admin",
-      "code_value": "***REMOVED***",
+      "code_value": "<YOUR_ADMIN_CODE>",
       "is_active": true,
       "expires_at": null,
       "max_uses": null,
@@ -144,7 +144,7 @@ SELECT * FROM active_access_codes;
 ```sql
 UPDATE access_codes 
 SET is_active = FALSE 
-WHERE code_value = '***REMOVED***';
+WHERE code_value = '<YOUR_ADMIN_CODE>';
 ```
 
 ### Check Code Usage
@@ -167,9 +167,9 @@ WHERE deleted_at IS NULL;
 Remove or keep as fallback in `.env`:
 ```env
 # REMOVE THESE (no longer needed):
-# ADMIN_ACCESS_CODE=***REMOVED***
-# ADMIN_CODE=***REMOVED***
-# DEV_CODE=***REMOVED***
+# ADMIN_ACCESS_CODE=<YOUR_ADMIN_CODE>
+# ADMIN_CODE=<YOUR_ADMIN_CODE>
+# DEV_CODE=<YOUR_DEV_CODE>
 
 # KEEP THESE:
 ADMIN_SESSION_TIMEOUT=1800
@@ -230,8 +230,8 @@ curl -X POST http://localhost:8080/api/admin/authenticate \
   -H "Content-Type: application/json" \
   -d '{
     "email": "brianmwanza651@gmail.com",
-    "password": "***REMOVED***",
-    "adminCode": "***REMOVED***"
+    "password": "<your-admin-password>",
+    "adminCode": "<YOUR_ADMIN_CODE>"
   }'
 ```
 
@@ -241,8 +241,8 @@ curl -X POST http://localhost:8080/api/developer/authenticate \
   -H "Content-Type: application/json" \
   -d '{
     "email": "dev@example.com",
-    "password": "***REMOVED***",
-    "devCode": "***REMOVED***"
+    "password": "<your-dev-password>",
+    "devCode": "<YOUR_DEV_CODE>"
   }'
 ```
 
@@ -281,7 +281,7 @@ SELECT
     ELSE 'active'
   END as status
 FROM access_codes 
-WHERE code_value = '***REMOVED***';
+WHERE code_value = '<YOUR_ADMIN_CODE>';
 ```
 
 ### Reset Code Usage
@@ -289,7 +289,7 @@ WHERE code_value = '***REMOVED***';
 -- Reset usage counter
 UPDATE access_codes 
 SET current_uses = 0 
-WHERE code_value = '***REMOVED***';
+WHERE code_value = '<YOUR_ADMIN_CODE>';
 ```
 
 ### View All Codes

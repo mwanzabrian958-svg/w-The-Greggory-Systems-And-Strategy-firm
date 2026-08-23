@@ -501,7 +501,7 @@ Borders: Subtle borders with #334155 (Slate 700)
 │          │  │     },                                          │ │ │
 │          │  │     body: JSON.stringify({                      │ │
 │          │  │       email: 'user@example.com',                │ │
-│          │  │       password: '***REMOVED***'                    │ │
+│          │  │       password: '<password>'                    │ │
 │          │  │     })                                          │ │
 │          │  │   }                                             │ │
 │          │  │ );                                              │ │

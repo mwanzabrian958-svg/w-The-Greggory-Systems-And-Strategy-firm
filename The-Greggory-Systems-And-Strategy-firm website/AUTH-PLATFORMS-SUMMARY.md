@@ -135,8 +135,8 @@ DB_PASSWORD=
 DB_NAME=the_greggory_systems_and_strategy_firm_db_main
 
 # Access Codes
-ADMIN_CODE=***REMOVED***
-DEV_CODE=***REMOVED***
+ADMIN_CODE=<YOUR_ADMIN_CODE>
+DEV_CODE=<YOUR_DEV_CODE>
 
 # Session Secrets
 JWT_SECRET=your_jwt_secret_here

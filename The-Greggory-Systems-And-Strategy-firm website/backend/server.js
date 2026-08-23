@@ -4,6 +4,15 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+// Fail fast in production if auth secrets are missing — prevents any chance of
+// falling back to publicly-known signing keys.
+['JWT_SECRET', 'ADMIN_SESSION_SECRET'].forEach((key) => {
+  if (!process.env[key] && process.env.NODE_ENV === 'production') {
+    console.error(`[FATAL] ${key} must be set when NODE_ENV=production. Refusing to start.`);
+    process.exit(1);
+  }
+});
+
 const db = require('./config/database');
 
 const app = express();

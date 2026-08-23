@@ -31,7 +31,7 @@ const authenticateUser = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || '***REMOVED***');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.authUser = decoded;
     req.userId = decoded.userId || decoded.id;
     next();

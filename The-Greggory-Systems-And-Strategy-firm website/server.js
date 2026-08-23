@@ -16,6 +16,15 @@ const { sendWhatsAppToUser } = require("./backend/services/whatsappService");
 const { sendInvoiceEmail } = require("./backend/services/emailService");
 require("dotenv").config();
 
+// Fail fast in production if auth secrets are missing. This removes any chance
+// of tokens being signed with a known/default key.
+["JWT_SECRET", "ADMIN_SESSION_SECRET"].forEach((key) => {
+  if (!process.env[key] && process.env.NODE_ENV === "production") {
+    console.error(`[FATAL] ${key} must be set when NODE_ENV=production. Refusing to start.`);
+    process.exit(1);
+  }
+});
+
 // Initialize Security & Auth Clients
 const redis = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
 redis.connect().catch(err => console.warn('[REDIS] Not connected, using memory fallback.'));
@@ -42,7 +51,7 @@ const authenticateUser = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || '***REMOVED***');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.authUser = decoded;
     req.userId = decoded.userId || decoded.id || decoded.user?.id;
 
@@ -509,7 +518,7 @@ app.use(async (req, res, next) => {
       } else {
         // 2. Check for Standard JWT (Regular Users)
         try {
-          const decoded = jwt.verify(token, process.env.JWT_SECRET || '***REMOVED***');
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
           const userId = decoded.userId || decoded.id || decoded.user?.id;
           if (userId) {
             mainDb.query("UPDATE users SET last_active_at = NOW() WHERE id = ?", [userId]).catch(() => {});
@@ -912,7 +921,7 @@ app.post("/api/users/login", async (req, res) => {
 
     const sqlToken = jwt.sign(
       { userId: sqlUser.id, email: sqlUser.email, role: 'user' },
-      process.env.JWT_SECRET || '***REMOVED***',
+      process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
@@ -1450,7 +1459,7 @@ app.post("/api/users/google-auth", async (req, res) => {
       const user = existingUsers[0];
       const token = jwt.sign(
         { userId: user.id, email: user.email, role: 'user' },
-        process.env.JWT_SECRET || '***REMOVED***',
+        process.env.JWT_SECRET,
         { expiresIn: '7d' }
       );
 
@@ -1478,7 +1487,7 @@ app.post("/api/users/google-auth", async (req, res) => {
 
     const token = jwt.sign(
       { userId, email, role: 'user' },
-      process.env.JWT_SECRET || '***REMOVED***',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 

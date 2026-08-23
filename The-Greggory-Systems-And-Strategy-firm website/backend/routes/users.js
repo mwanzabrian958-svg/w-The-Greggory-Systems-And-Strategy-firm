@@ -36,7 +36,7 @@ const authenticateUser = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || '***REMOVED***');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.authUser = decoded;
     req.userId = decoded.userId || decoded.id || decoded.user?.id;
 
@@ -191,7 +191,7 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
       profilePhotoData = `data:${user.profile_photo_type || 'image/jpeg'};base64,${base64}`;
     }
     
-    const authToken = jwt.sign({ userId: user.id, email: user.email, role: 'user' }, process.env.JWT_SECRET || '***REMOVED***', { expiresIn: '7d' });
+    const authToken = jwt.sign({ userId: user.id, email: user.email, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     return res.json({
       id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name,

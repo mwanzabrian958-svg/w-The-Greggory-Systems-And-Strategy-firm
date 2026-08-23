@@ -28,7 +28,7 @@ Login for regular users.
 ```json
 {
   "email": "user@example.com",
-  "password": "user***REMOVED***"
+  "password": "user<password>"
 }
 ```
 
@@ -101,8 +101,8 @@ Login for admin users with access code.
 ```json
 {
   "email": "admin@example.com",
-  "password": "***REMOVED***",
-  "adminCode": "***REMOVED***"
+  "password": "<your-admin-password>",
+  "adminCode": "<YOUR_ADMIN_CODE>"
 }
 ```
 
@@ -149,8 +149,8 @@ Login for developer users with access code.
 ```json
 {
   "email": "dev@example.com",
-  "password": "***REMOVED***",
-  "devCode": "***REMOVED***"
+  "password": "<your-dev-password>",
+  "devCode": "<YOUR_DEV_CODE>"
 }
 ```
 
@@ -899,7 +899,7 @@ Authorization: Bearer <admin_token>
     {
       "id": 1,
       "code_type": "admin",
-      "code_value": "***REMOVED***",
+      "code_value": "<YOUR_ADMIN_CODE>",
       "is_active": true,
       "max_uses": null,
       "current_uses": 5,
@@ -1085,14 +1085,14 @@ curl http://localhost:8080/api/db/status
 ```bash
 curl -X POST http://localhost:8080/api/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"***REMOVED***"}'
+  -d '{"email":"user@example.com","password":"<password>"}'
 ```
 
 **Test Admin Login:**
 ```bash
 curl -X POST http://localhost:8080/api/admin/authenticate \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"***REMOVED***","adminCode":"***REMOVED***"}'
+  -d '{"email":"admin@example.com","password":"<your-admin-password>","adminCode":"<YOUR_ADMIN_CODE>"}'
 ```
 
 ### Using Postman

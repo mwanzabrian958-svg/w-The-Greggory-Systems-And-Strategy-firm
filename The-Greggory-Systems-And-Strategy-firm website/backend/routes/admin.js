@@ -234,12 +234,16 @@ router.post('/create-admin', async (req, res) => {
       });
     }
 
-    // Validate admin code if provided
-    if (admin_code && admin_code !== '***REMOVED***') {
-      return res.status(403).json({
-        success: false,
-        message: 'Invalid admin code for admin account creation'
-      });
+    // Validate admin code if provided (must match ADMIN_CODE configured in .env).
+    // Fail-closed: if ADMIN_CODE is not configured, no code can pass.
+    if (admin_code) {
+      const expected = process.env.ADMIN_CODE;
+      if (!expected || admin_code !== expected) {
+        return res.status(403).json({
+          success: false,
+          message: 'Invalid admin code for admin account creation'
+        });
+      }
     }
 
     // Check if user already exists in admin table

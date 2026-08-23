@@ -52,7 +52,7 @@ JWT_EXPIRES_IN=7d
 ADMIN_SESSION_SECRET=your_long_random_admin_session_secret_change_this
 
 # Admin Access Code (for admin panel login)
-ADMIN_CODE=***REMOVED***
+ADMIN_CODE=<YOUR_ADMIN_CODE>
 
 # Frontend URL
 FRONTEND_URL=http://localhost:5173

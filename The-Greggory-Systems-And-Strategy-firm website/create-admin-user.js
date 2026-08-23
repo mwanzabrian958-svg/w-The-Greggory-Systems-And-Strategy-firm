@@ -15,15 +15,25 @@ const dbConfig = {
   port: process.env.DB_PORT || 3306
 };
 
+const crypto = require("crypto");
+
+// Credentials come from env or CLI args — never hardcoded.
+// Usage: node create-admin-user.js <email> [password]
 const adminUser = {
-  email: 'brianmwanza651@gmail.com',
-  password: '***REMOVED***',  // Change this!
+  email: process.env.ADMIN_EMAIL || process.argv[2],
+  password: process.env.ADMIN_PASSWORD || process.argv[3] || crypto.randomBytes(12).toString("base64url"),
   first_name: 'Brian',
   last_name: 'Mwanza',
   phone_number: '+254799789956',
   admin_level: 'super_admin',
   access_level: 'full'
 };
+
+if (!adminUser.email) {
+  console.error('Usage: node create-admin-user.js <email> [password]');
+  console.error('(or set ADMIN_EMAIL / ADMIN_PASSWORD environment variables)');
+  process.exit(1);
+}
 
 async function createAdminUser() {
   let connection;

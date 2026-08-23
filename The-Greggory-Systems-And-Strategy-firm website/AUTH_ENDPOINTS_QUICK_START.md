@@ -91,7 +91,7 @@ curl -X POST http://localhost:3000/api/users/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "testuser@example.com",
-    "password": "***REMOVED***",
+    "password": "<test-password>",
     "first_name": "Test",
     "last_name": "User"
   }'
@@ -113,7 +113,7 @@ curl -X POST http://localhost:3000/api/users/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "testuser@example.com",
-    "password": "***REMOVED***"
+    "password": "<test-password>"
   }'
 ```
 
@@ -137,7 +137,7 @@ curl -X POST http://localhost:3000/api/users/admin-create \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@greggory.org",
-    "password": "***REMOVED***",
+    "password": "<your-admin-password>",
     "first_name": "Admin",
     "last_name": "User",
     "role": "admin",
@@ -161,7 +161,7 @@ curl -X POST http://localhost:3000/api/admin-verification/authenticate-enhanced 
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@greggory.org",
-    "password": "***REMOVED***"
+    "password": "<your-admin-password>"
   }'
 ```
 
@@ -186,7 +186,7 @@ curl -X POST http://localhost:3000/api/users/admin-create \
   -H "Content-Type: application/json" \
   -d '{
     "email": "dev@greggory.org",
-    "password": "***REMOVED***",
+    "password": "<your-dev-password>",
     "first_name": "Dev",
     "last_name": "User",
     "role": "developer",
@@ -210,7 +210,7 @@ curl -X POST http://localhost:3000/api/developer-verification/authenticate \
   -H "Content-Type: application/json" \
   -d '{
     "email": "dev@greggory.org",
-    "password": "***REMOVED***"
+    "password": "<your-dev-password>"
   }'
 ```
 

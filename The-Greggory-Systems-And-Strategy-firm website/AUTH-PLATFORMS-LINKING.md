@@ -181,7 +181,7 @@ CREATE TABLE admin_users (
 ### Environment Variables Required
 
 ```env
-ADMIN_CODE=***REMOVED***
+ADMIN_CODE=<YOUR_ADMIN_CODE>
 ADMIN_SESSION_SECRET=your_long_random_admin_session_secret
 ADMIN_ALLOWED_IPS=127.0.0.1,::1,localhost
 ```
@@ -286,7 +286,7 @@ CREATE TABLE developer_users (
 ### Environment Variables Required
 
 ```env
-DEV_CODE=***REMOVED***
+DEV_CODE=<YOUR_DEV_CODE>
 # Falls back to ADMIN_CODE if DEV_CODE not set
 ```
 
@@ -348,8 +348,8 @@ CREATE TABLE access_codes (
 
 | Code Type | Code Value | Status |
 |-----------|------------|--------|
-| admin | ***REMOVED*** | Active, unlimited uses |
-| developer | ***REMOVED*** | Active, unlimited uses |
+| admin | <YOUR_ADMIN_CODE> | Active, unlimited uses |
+| developer | <YOUR_DEV_CODE> | Active, unlimited uses |
 
 ---
 
@@ -462,14 +462,14 @@ curl -X POST http://localhost:8080/api/login \
 ```bash
 curl -X POST http://localhost:8080/api/admin/authenticate \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"***REMOVED***","adminCode":"***REMOVED***"}'
+  -d '{"email":"admin@example.com","password":"<your-admin-password>","adminCode":"<YOUR_ADMIN_CODE>"}'
 ```
 
 ### Test Developer
 ```bash
 curl -X POST http://localhost:8080/api/developer/authenticate \
   -H "Content-Type: application/json" \
-  -d '{"email":"dev@example.com","password":"***REMOVED***","devCode":"***REMOVED***"}'
+  -d '{"email":"dev@example.com","password":"<your-dev-password>","devCode":"<YOUR_DEV_CODE>"}'
 ```
 
 ---

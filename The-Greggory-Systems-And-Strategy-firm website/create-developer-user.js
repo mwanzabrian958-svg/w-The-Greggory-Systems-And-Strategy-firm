@@ -15,9 +15,13 @@ const dbConfig = {
   port: process.env.DB_PORT || 3306
 };
 
+const crypto = require('crypto');
+
+// Credentials from env or CLI args — never hardcoded.
+// Usage: node create-developer-user.js <email> [password]
 const developerUser = {
-  email: 'dev@example.com',
-  password: '***REMOVED***',  // Change this!
+  email: process.env.DEV_EMAIL || process.argv[2],
+  password: process.env.DEV_PASSWORD || process.argv[3] || crypto.randomBytes(12).toString('base64url'),
   first_name: 'Developer',
   last_name: 'User',
   phone_number: '+254700000000',
@@ -114,7 +118,7 @@ async function createDeveloperUser() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('\nDeveloper Login Details:');
     console.log('  Endpoint: /api/developer/authenticate');
-    console.log('  Or use the same admin code (***REMOVED***) if DEV_CODE not set');
+    console.log('  Or use the same admin code (your ADMIN_CODE) if DEV_CODE not set');
     console.log('\nMake sure to set DEV_CODE in your .env file (optional):');
     console.log('Example: DEV_CODE=GF-DEV-2024-SECURE');
     

@@ -28,7 +28,7 @@ Edit the script to use your project's database name:
 ```javascript
 const RESTRICTED_USER = {
   username: 'your_project_user',        // Unique username
-  password: '***REMOVED***',   // Strong password
+  password: '<strong-db-password>',   // Strong password
   database: 'your_project_db'           // Your database name
 };
 ```
@@ -53,7 +53,7 @@ Add the database credentials to your project's `.env`:
 ```env
 DB_HOST=localhost
 DB_USER=your_project_user
-DB_PASSWORD=***REMOVED***
+DB_PASSWORD=<strong-db-password>
 DB_NAME=your_project_db
 ```
 
@@ -61,7 +61,7 @@ DB_NAME=your_project_db
 
 When accessing phpMyAdmin, use the restricted user credentials:
 - **Username:** `your_project_user`
-- **Password:** `***REMOVED***`
+- **Password:** `<strong-db-password>`
 
 You will ONLY see your project's database, not others.
 
@@ -72,7 +72,7 @@ You will ONLY see your project's database, not others.
 // scripts/setup-restricted-db-user.js
 const RESTRICTED_USER = {
   username: 'the_greggory_systems_and_strategy_firm_user',
-  password: '***REMOVED***',
+  password: '<strong-db-password>',
   database: 'the_greggory_systems_and_strategy_firm_db_main'
 };
 ```
@@ -81,7 +81,7 @@ const RESTRICTED_USER = {
 # .env
 DB_HOST=localhost
 DB_USER=the_greggory_systems_and_strategy_firm_user
-DB_PASSWORD=***REMOVED***
+DB_PASSWORD=<strong-db-password>
 DB_NAME=the_greggory_systems_and_strategy_firm_db_main
 ```
 

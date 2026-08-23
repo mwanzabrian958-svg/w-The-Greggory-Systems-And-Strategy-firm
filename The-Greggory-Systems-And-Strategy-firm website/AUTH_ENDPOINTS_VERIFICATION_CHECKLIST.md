@@ -107,7 +107,7 @@ curl -X POST http://localhost:3000/api/users/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "testuser@example.com",
-    "password": "***REMOVED***",
+    "password": "<test-password>",
     "first_name": "Test",
     "last_name": "User"
   }'
@@ -125,7 +125,7 @@ curl -X POST http://localhost:3000/api/users/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "testuser@example.com",
-    "password": "***REMOVED***"
+    "password": "<test-password>"
   }'
 ```
 - [ ] Response code: 200
@@ -157,7 +157,7 @@ curl -X POST http://localhost:3000/api/users/admin-create \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@test.com",
-    "password": "***REMOVED***",
+    "password": "<your-admin-password>",
     "first_name": "Admin",
     "last_name": "Test",
     "role": "admin",
@@ -176,7 +176,7 @@ curl -X POST http://localhost:3000/api/admin-verification/authenticate-enhanced 
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin@test.com",
-    "password": "***REMOVED***"
+    "password": "<your-admin-password>"
   }'
 ```
 - [ ] Response code: 200
@@ -191,7 +191,7 @@ curl -X POST http://localhost:3000/api/users/admin-create \
   -H "Content-Type: application/json" \
   -d '{
     "email": "admin2@test.com",
-    "password": "***REMOVED***",
+    "password": "<your-admin-password>",
     "first_name": "Admin",
     "last_name": "Test"
   }'
@@ -210,7 +210,7 @@ curl -X POST http://localhost:3000/api/users/admin-create \
   -H "Content-Type: application/json" \
   -d '{
     "email": "dev@test.com",
-    "password": "***REMOVED***",
+    "password": "<your-dev-password>",
     "first_name": "Dev",
     "last_name": "Test",
     "role": "developer",
@@ -229,7 +229,7 @@ curl -X POST http://localhost:3000/api/developer-verification/authenticate \
   -H "Content-Type: application/json" \
   -d '{
     "email": "dev@test.com",
-    "password": "***REMOVED***"
+    "password": "<your-dev-password>"
   }'
 ```
 - [ ] Response code: 200
@@ -244,7 +244,7 @@ curl -X POST http://localhost:3000/api/users/admin-create \
   -H "Content-Type: application/json" \
   -d '{
     "email": "dev2@test.com",
-    "password": "***REMOVED***",
+    "password": "<your-dev-password>",
     "first_name": "Dev",
     "last_name": "Test"
   }'

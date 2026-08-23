@@ -7,8 +7,8 @@ Admin and Developer access codes are now stored in the **database**, not environ
 ### Default Codes (Auto-Created)
 | Type | Code | Purpose |
 |------|------|---------|
-| **Admin** | `***REMOVED***` | Access admin panel |
-| **Developer** | `***REMOVED***` | Access developer panel |
+| **Admin** | `<YOUR_ADMIN_CODE>` | Access admin panel |
+| **Developer** | `<YOUR_DEV_CODE>` | Access developer panel |
 
 ---
 
@@ -39,13 +39,13 @@ You'll see: `[ACCESS CODE] Table ready`
 
 **Admin Login:**
 - Email: `brianmwanza651@gmail.com`
-- Password: `***REMOVED***`
-- Admin Code: `***REMOVED***`
+- Password: `<your-admin-password>`
+- Admin Code: `<YOUR_ADMIN_CODE>`
 
 **Developer Login:**
 - Email: `dev@example.com`
-- Password: `***REMOVED***`
-- Dev Code: `***REMOVED***`
+- Password: `<your-dev-password>`
+- Dev Code: `<YOUR_DEV_CODE>`
 
 ---
 
@@ -82,8 +82,8 @@ Success → JWT token issued
 POST /api/admin/authenticate
 {
   "email": "admin@example.com",
-  "password": "***REMOVED***",
-  "adminCode": "***REMOVED***"
+  "password": "<password>",
+  "adminCode": "<YOUR_ADMIN_CODE>"
 }
 ```
 
@@ -92,8 +92,8 @@ POST /api/admin/authenticate
 POST /api/developer/authenticate
 {
   "email": "dev@example.com",
-  "password": "***REMOVED***",
-  "devCode": "***REMOVED***"
+  "password": "<password>",
+  "devCode": "<YOUR_DEV_CODE>"
 }
 ```
 
@@ -137,7 +137,7 @@ DELETE /api/access-codes/1
 |-------|------|-------------|
 | `id` | BIGINT | Primary key |
 | `code_type` | ENUM | `admin`, `developer`, `super_admin` |
-| `code_value` | VARCHAR | The actual code (e.g., "***REMOVED***") |
+| `code_value` | VARCHAR | The actual code (e.g., "<YOUR_ADMIN_CODE>") |
 | `code_hash` | VARCHAR | Bcrypt hash of code |
 | `is_active` | BOOLEAN | Enable/disable code |
 | `expires_at` | TIMESTAMP | Expiration date (NULL = never) |
@@ -166,7 +166,7 @@ VALUES ('admin', 'MYNEWCODE', '$2a$10$...', TRUE);
 ```sql
 UPDATE access_codes 
 SET is_active = FALSE 
-WHERE code_value = '***REMOVED***';
+WHERE code_value = '<YOUR_ADMIN_CODE>';
 ```
 
 ### Check Code Status
@@ -190,27 +190,27 @@ FROM access_codes;
 
 1. Check if code exists:
 ```sql
-SELECT * FROM access_codes WHERE code_value = '***REMOVED***';
+SELECT * FROM access_codes WHERE code_value = '<YOUR_ADMIN_CODE>';
 ```
 
 2. Check if code is active:
 ```sql
-SELECT code_value, is_active FROM access_codes WHERE code_value = '***REMOVED***';
+SELECT code_value, is_active FROM access_codes WHERE code_value = '<YOUR_ADMIN_CODE>';
 ```
 
 3. Check usage limits:
 ```sql
-SELECT code_value, current_uses, max_uses FROM access_codes WHERE code_value = '***REMOVED***';
+SELECT code_value, current_uses, max_uses FROM access_codes WHERE code_value = '<YOUR_ADMIN_CODE>';
 ```
 
 ### Reset Default Codes
 
 ```sql
 -- Reset usage counter
-UPDATE access_codes SET current_uses = 0 WHERE code_value = '***REMOVED***';
+UPDATE access_codes SET current_uses = 0 WHERE code_value = '<YOUR_ADMIN_CODE>';
 
 -- Reactivate if deactivated
-UPDATE access_codes SET is_active = TRUE WHERE code_value = '***REMOVED***';
+UPDATE access_codes SET is_active = TRUE WHERE code_value = '<YOUR_ADMIN_CODE>';
 ```
 
 ---
@@ -232,9 +232,9 @@ UPDATE access_codes SET is_active = TRUE WHERE code_value = '***REMOVED***';
 
 **Removed (no longer needed):**
 ```diff
-- ADMIN_ACCESS_CODE=***REMOVED***
-- ADMIN_CODE=***REMOVED***  
-- DEV_CODE=***REMOVED***
+- ADMIN_ACCESS_CODE=<YOUR_ADMIN_CODE>
+- ADMIN_CODE=<YOUR_ADMIN_CODE>  
+- DEV_CODE=<YOUR_DEV_CODE>
 ```
 
 **Still Required:**

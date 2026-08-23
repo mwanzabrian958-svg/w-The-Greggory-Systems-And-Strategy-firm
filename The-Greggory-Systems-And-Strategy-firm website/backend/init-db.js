@@ -1,10 +1,17 @@
 const mysql = require('mysql2');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const DB_HOST = process.env.DB_HOST || '127.0.0.1';
 const DB_USER = process.env.DB_USER || 'root';
 const DB_PASSWORD = process.env.DB_PASSWORD || '';
 const DB_NAME = process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db';
+
+// Default admin credentials are generated per-run unless provided via env.
+const DEFAULT_ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@thegreggorysystemsandstrategyfirm.org';
+const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || crypto.randomBytes(9).toString('base64url');
+const DEFAULT_ADMIN_HASH = bcrypt.hashSync(DEFAULT_ADMIN_PASSWORD, 10);
 
 // Connect without database to create it
 const connection = mysql.createConnection({
@@ -40,9 +47,9 @@ CREATE TABLE IF NOT EXISTS admin_users (
   deleted_at DATETIME
 );
 
--- Insert default admin user (password: ***REMOVED***)
+-- Insert default admin user (password is generated or read from ADMIN_PASSWORD env)
 INSERT IGNORE INTO admin_users (email, password_hash, first_name, last_name, display_name, admin_level, access_level, is_active) 
-VALUES ('admin@thegreggorysystemsandstrategyfirm.org', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System', 'Admin', 'Administrator', 'super_admin', 99, true);
+VALUES ('${DEFAULT_ADMIN_EMAIL}', '${DEFAULT_ADMIN_HASH}', 'System', 'Admin', 'Administrator', 'super_admin', 99, true);
 
 SELECT 'Database setup complete!' as message;
 SELECT COUNT(*) as admin_count FROM admin_users;
@@ -57,8 +64,9 @@ connection.query(setupSQL, (err, results) => {
     console.log('✓ admin_users table created');
     console.log('✓ Default admin user created');
     console.log('\nLogin credentials:');
-    console.log('  Email: admin@thegreggorysystemsandstrategyfirm.org');
-    console.log('  Password: ***REMOVED***');
+    console.log(`  Email: ${DEFAULT_ADMIN_EMAIL}`);
+    console.log(`  Password: ${DEFAULT_ADMIN_PASSWORD}`);
+    console.log('  (Store it securely — it will not be shown again)');
     connection.end();
     process.exit(0);
   }
