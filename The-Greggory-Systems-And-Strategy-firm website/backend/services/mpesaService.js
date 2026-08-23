@@ -75,7 +75,7 @@ async function initiateSTKPush(phoneNumber, amount, accountReference, transactio
     PartyA: formattedPhone,
     PartyB: MPESA_SHORTCODE,
     PhoneNumber: formattedPhone,
-    CallBackURL: `${process.env.BACKEND_URL || 'https://your-domain.com'}/api/mpesa/callback`,
+    CallBackURL: process.env.MPESA_CALLBACK_URL || `${process.env.BACKEND_URL || 'https://your-domain.com'}/api/mpesa/callback`,
     AccountReference: accountReference,
     TransactionDesc: transactionDesc
   });
