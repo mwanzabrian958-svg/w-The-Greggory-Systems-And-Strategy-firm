@@ -40,7 +40,7 @@ This repository houses the digital engine that powers our firm. Our platform is 
 - **Mission Control (Admin Dashboard)**: A sophisticated "Command Center" providing real-time oversight of all global deployments, financial telemetry, and personnel identity nodes.
 - **The Client Portal (Business Blueprint)**: A transparent, live interface where our partners can track their project's tactical progress, view financial invoices, and access the secure document vault.
 - **Hardened API Relay**: A resilient Node.js/Express backend with parallel fetch capabilities and hardened security nodes.
-- **Dual-Database Matrix**: Utilizing MySQL for strict relational integrity and MongoDB for flexible, high-scale strategic data storage.
+- **Database Matrix**: MySQL provides strict relational integrity as the sole system-of-record datastore.
 - **Strategic Messaging Hub**: Integrated SMS and WhatsApp relays for immediate communication synchronization between firm personnel and clients.
 
 ---

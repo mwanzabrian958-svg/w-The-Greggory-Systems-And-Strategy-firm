@@ -3,18 +3,10 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const mysql = require("mysql2/promise");
-const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { createClient } = require('redis');
 const PDFDocument = require('pdfkit');
 const { OAuth2Client } = require('google-auth-library');
-const connectMongoDB = require("./server/config/mongodb");
-const models = require("./server/models");
-const {
-  User, Project, Document, Message, WebsiteContent,
-  Finance, Company, BlogArticle, CaseStudy, Video,
-  ContactForm, Transaction, ActivityLog
-} = models;
 const path = require("path");
 const multer = require("multer");
 const crypto = require("crypto");
@@ -595,25 +587,6 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
-// Test MongoDB connection
-app.get("/api/test-mongodb", async (req, res) => {
-  try {
-    const state = mongoose.connection.readyState;
-    const states = ["disconnected", "connected", "connecting", "disconnecting"];
-    res.json({
-      success: true,
-      message: `MongoDB Status: ${states[state]}`,
-      connectionState: state
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "MongoDB connection test failed",
-      error: error.message
-    });
-  }
-});
-
 app.post('/api/mpesa/callback', (req, res) => {
   console.log('[MPESA] callback received:', JSON.stringify(req.body || {}));
   res.status(200).json({
@@ -913,47 +886,7 @@ app.post("/api/users/login", async (req, res) => {
         .json({ success: false, message: "Email and password are required" });
     }
 
-    // 1. Try MongoDB first (The new Strategic Standard)
-    let user = null;
-    let authSource = 'mongodb';
-
-    if (mongoose.connection.readyState === 1) {
-      user = await User.findOne({ email: normalizedEmail, is_active: true, deleted_at: null });
-    }
-
-    if (user) {
-      // Validate via Mongoose method
-      const isPasswordValid = await user.comparePassword(normalizedPassword);
-      if (!isPasswordValid) {
-        return res.status(401).json({ success: false, message: "Invalid credentials" });
-      }
-
-      const authToken = jwt.sign(
-        { userId: user._id, email: user.email, role: user.primary_role || 'user' },
-        process.env.JWT_SECRET || '***REMOVED***',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-      );
-
-      return res.json({
-        success: true,
-        token: authToken,
-        user: {
-          id: user._id,
-          sql_id: user.sql_id,
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          display_name: user.display_name,
-          has_photo: !!user.profile_photo?.data,
-          profile_photo_url: user.profile_photo?.data ? `/api/users/profile-photo/${user._id}` : null,
-          role: user.primary_role || "user",
-          whatsapp_verified: true,
-          source: 'mongodb'
-        },
-      });
-    }
-
-    // 2. Fallback to MySQL (Legacy Compatibility)
+    // Authenticate against MySQL (sole datastore)
     const [sqlUsers] = await mainDb.query(
       "SELECT id, email, first_name, last_name, display_name, password_hash, whatsapp_verified, whatsapp_auth_key, phone_number, profile_photo_blob IS NOT NULL AS has_photo FROM users WHERE LOWER(email) = ? AND deleted_at IS NULL",
       [normalizedEmail],
@@ -1135,33 +1068,6 @@ const handleUserRegister = async (req, res) => {
 
     const userId = result.insertId;
     console.log("[USER REGISTER] SQL Registration successful:", userId);
-
-    // MONGODB DUAL-WRITE (New Strategic Standard)
-    if (mongoose.connection.readyState === 1) {
-      try {
-        const mongoUser = new User({
-          email: email.toLowerCase(),
-          password_hash: hashedPassword,
-          first_name,
-          last_name,
-          display_name: display_name || `${first_name} ${last_name}`,
-          phone_number: phone || null,
-          whatsapp_verified: true,
-          primary_role: userRole || 'user',
-          profile_photo: profilePhotoBlob ? {
-            data: profilePhotoBlob,
-            contentType: photoMimeType,
-            fileName: photoFileName
-          } : undefined,
-          email_verified: true,
-          sql_id: userId
-        });
-        await mongoUser.save();
-        console.log("[USER REGISTER] MongoDB Registration successful:", mongoUser._id);
-      } catch (mongoErr) {
-        console.error("[USER REGISTER] MongoDB sync failed (but SQL succeeded):", mongoErr.message);
-      }
-    }
 
     // Assign role to user (MySQL)
     let roleId = 2; // Default to user role
@@ -4008,20 +3914,6 @@ app.get("/api/companies", async (req, res) => {
   try {
     const { industry, limit = 50, offset = 0 } = req.query;
 
-    // 1. Try MongoDB
-    if (mongoose.connection.readyState === 1) {
-      const query = industry && industry !== 'all' ? { industry } : {};
-      const companies = await Company.find(query)
-        .sort({ name: 1 })
-        .limit(parseInt(limit))
-        .skip(parseInt(offset));
-
-      if (companies.length > 0) {
-        return res.json({ success: true, companies, source: 'mongodb' });
-      }
-    }
-
-    // 2. Fallback to MySQL
     let query = "SELECT * FROM companies WHERE deleted_at IS NULL";
     const params = [];
     if (industry && industry !== 'all') {
@@ -4048,15 +3940,6 @@ app.post("/api/companies", async (req, res) => {
       "INSERT INTO companies (name, slug, description, industry, website_url, contact_email, contact_phone) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [company.name, company.slug, company.description, company.industry, company.website_url, company.contact_email, company.contact_phone],
     );
-
-    // Sync to MongoDB
-    if (mongoose.connection.readyState === 1) {
-      const mongoCompany = new Company({
-        ...company,
-        sql_id: result.insertId
-      });
-      await mongoCompany.save();
-    }
 
     res.json({ success: true, companyId: result.insertId });
   } catch (error) {
@@ -4088,15 +3971,6 @@ app.put("/api/website-content/:key", async (req, res) => {
       [value, userId, key]
     );
 
-    // 2. Sync to MongoDB if available
-    if (mongoose.connection.readyState === 1) {
-      await WebsiteContent.findOneAndUpdate(
-        { key },
-        { value, updated_by: userId },
-        { upsert: true }
-      );
-    }
-
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: "Content key not found" });
     }
@@ -4113,27 +3987,6 @@ app.get("/api/blog-articles", async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query;
 
-    // 1. Try MongoDB
-    if (mongoose.connection.readyState === 1) {
-      const articles = await BlogArticle.find({ is_published: true })
-        .sort({ created_at: -1 })
-        .limit(parseInt(limit))
-        .skip(parseInt(offset));
-
-      if (articles.length > 0) {
-        return res.json({
-          success: true,
-          articles: articles.map(a => ({
-            ...a.toObject(),
-            has_photo: !!a.featured_image?.data,
-            image_url: a.featured_image?.data ? `/api/blog-articles/photo/${a._id}?source=mongodb` : a.featured_image?.url
-          })),
-          source: 'mongodb'
-        });
-      }
-    }
-
-    // 2. Fallback to MySQL
     const [articles] = await mainDb.query(
       "SELECT id, title, excerpt, content, author, read_time, category, image_url, icon_class, is_published, published_date, created_at, image_blob IS NOT NULL as has_photo FROM blog_articles WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?",
       [parseInt(limit), parseInt(offset)],
@@ -4174,21 +4027,6 @@ app.get("/api/blog-articles/:id", async (req, res) => {
       });
     }
 
-    // 2. Try MongoDB if not in MySQL
-    if (mongoose.connection.readyState === 1) {
-      const article = await BlogArticle.findById(id);
-      if (article) {
-        return res.json({
-          success: true,
-          article: {
-            ...article.toObject(),
-            has_photo: !!article.featured_image?.data,
-            image_url: article.featured_image?.data ? `/api/blog-articles/photo/${article._id}?source=mongodb` : article.featured_image?.url
-          }
-        });
-      }
-    }
-
     res.status(404).json({ success: false, message: "Article not found" });
   } catch (error) {
     console.error("Error fetching single blog article:", error);
@@ -4200,15 +4038,6 @@ app.get("/api/blog-articles/:id", async (req, res) => {
 app.get("/api/blog-articles/photo/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { source = 'mysql' } = req.query;
-
-    if (source === 'mongodb' && mongoose.connection.readyState === 1) {
-      const article = await BlogArticle.findById(id);
-      if (article && article.featured_image?.data) {
-        res.set("Content-Type", article.featured_image.contentType || "image/jpeg");
-        return res.send(article.featured_image.data);
-      }
-    }
 
     const [articles] = await mainDb.query(
       "SELECT image_blob, image_mime_type FROM blog_articles WHERE id = ? AND image_blob IS NOT NULL",
@@ -4248,15 +4077,6 @@ app.post("/api/blog-articles", async (req, res) => {
       [article.title, article.excerpt, article.content, article.author, article.read_time, article.category, article.image_url, imageBlob, imageMimeType, article.is_published],
     );
 
-    // Sync to MongoDB
-    if (mongoose.connection.readyState === 1) {
-      const mongoArticle = new BlogArticle({
-        ...article,
-        sql_id: result.insertId
-      });
-      await mongoArticle.save();
-    }
-
     res.json({ success: true, articleId: result.insertId });
   } catch (error) {
     console.error("Error creating blog article:", error);
@@ -4270,15 +4090,6 @@ app.delete("/api/blog-articles/:id", async (req, res) => {
 
     // Soft delete in MySQL
     await mainDb.query("UPDATE blog_articles SET deleted_at = NOW() WHERE id = ?", [id]);
-
-    // Delete from MongoDB if exists
-    if (mongoose.connection.readyState === 1) {
-      await BlogArticle.deleteOne({ sql_id: id });
-      // Also try by MongoDB ID just in case
-      if (mongoose.Types.ObjectId.isValid(id)) {
-        await BlogArticle.deleteOne({ _id: id });
-      }
-    }
 
     res.json({ success: true, message: "Blog article deleted successfully" });
   } catch (error) {
@@ -4960,13 +4771,6 @@ app.use((req, res) => {
 
 app.listen(PORT, "0.0.0.0", async () => {
   console.log(`Server running on port ${PORT}`);
-
-  // Connect to MongoDB Atlas
-  if (process.env.MONGODB_URI) {
-    await connectMongoDB();
-  } else {
-    console.log("MONGODB_URI not found in .env, skipping MongoDB connection.");
-  }
 
   console.log(
     `Connected to MySQL server at ${process.env.DB_HOST || "localhost"}`,
