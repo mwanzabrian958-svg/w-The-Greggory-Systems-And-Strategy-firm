@@ -20,7 +20,13 @@ import {
   Search,
   Clock,
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  ListChecks,
+  Mail,
+  Folder,
+  Download,
+  UserCheck,
+  Wallet
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { getApiUrl, mpesaAPI } from "../services/api";
@@ -54,10 +60,24 @@ const ClientPortal = () => {
   const [mpesaLoading, setMpesaLoading] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(null);
 
+  // Full payload state (tasks / messages / documents / budgets)
+  const [tasks, setTasks] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [docSummary, setDocSummary] = useState([]);
+  const [budgetOverviewData, setBudgetOverview] = useState(null);
+  const [businessSummary, setBusinessSummary] = useState(null);
+  const [roleUpdates, setRoleUpdates] = useState([]);
+
+  const unreadMessages = messages.filter(m => m.unread).length;
+
   const navItems = [
     { id: "overview", label: "Home", icon: LayoutDashboard },
     { id: "projects", label: "Projects", icon: Briefcase },
-    { id: "billing", label: "Billing", icon: DollarSign },
+    { id: "tasks", label: "Tasks", icon: ListChecks, badge: tasks.filter(t => t.status !== "completed").length },
+    { id: "billing", label: "Billing", icon: DollarSign, badge: invoices.filter(i => i.status !== "paid").length },
+    { id: "documents", label: "Docs", icon: Folder, badge: documents.length },
+    { id: "messages", label: "Inbox", icon: Mail, badge: unreadMessages },
     { id: "notifications", label: "Alerts", icon: Bell },
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "feedback", label: "Feedback", icon: HelpCircle },
@@ -87,6 +107,17 @@ const ClientPortal = () => {
         setProjects(data.dashboard.projects || []);
         setInvoices(data.dashboard.invoices || []);
         setKpiMetrics(data.dashboard.kpiMetrics || []);
+        setTasks(data.dashboard.tasks || []);
+        setMessages(data.dashboard.messages || []);
+        setDocuments(data.dashboard.documents || []);
+        setDocSummary(data.dashboard.documentSummary || []);
+        setBudgetOverview(data.dashboard.budgetOverview || null);
+        setBusinessSummary(data.dashboard.businessSummary || null);
+        setRoleUpdates(
+          data.dashboard.roleUpdates?.[(data.dashboard.user?.role || "user")] ||
+          Object.values(data.dashboard.roleUpdates || {})[0] ||
+          []
+        );
         if (user?.userId || user?.id) {
           loadFeedbackHistory(user.userId || user.id);
         }
@@ -153,6 +184,26 @@ const ClientPortal = () => {
     }
   };
 
+  const handleDownloadInvoicePdf = async (inv) => {
+    try {
+      const res = await fetch(getApiUrl(`/api/users/my-invoices/${inv.id}/pdf`), {
+        headers: { Authorization: `Bearer ${user?.token || ""}` },
+      });
+      if (!res.ok) throw new Error("PDF unavailable");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${inv.invoiceNumber || `INV-${inv.id}`}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setPaymentStatus({ id: inv.id, type: "error", message: "PDF not available yet." });
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center text-white">
       <RefreshCw className="animate-spin text-teal-500 w-6 h-6 mb-2" />
@@ -185,6 +236,7 @@ const ClientPortal = () => {
     paid: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     overdue: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
     pending: 'bg-gold-500/10 text-gold-400 border-gold-500/20',
+    draft: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
   }[String(s).toLowerCase()] || 'bg-sky-500/10 text-sky-400 border-sky-500/20');
 
   return (
@@ -211,6 +263,9 @@ const ClientPortal = () => {
                 >
                   <item.icon size={11} />
                   <span className="text-[8px] font-bold uppercase">{item.label}</span>
+                  {!!item.badge && item.badge > 0 && (
+                    <span className="ml-0.5 px-1 min-w-[12px] text-center text-[7px] font-black rounded-full bg-gold-500 text-slate-950">{item.badge}</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -293,11 +348,64 @@ const ClientPortal = () => {
                 ))}
               </div>
 
+              {/* Engagement Briefing */}
+              {businessSummary && (
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-sky-400"><Activity size={12} /><h3 className="text-[9px] font-bold uppercase">Engagement Briefing</h3></div>
+                    {businessSummary.nextMilestone && <span className="text-[7px] text-slate-500 uppercase font-bold truncate max-w-[50%]">Next: {businessSummary.nextMilestone}</span>}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-center">
+                    {[
+                      { l: 'Active', v: businessSummary.activeProjects ?? 0 },
+                      { l: 'Completed', v: businessSummary.completedProjects ?? 0 },
+                      { l: 'Open Invoices', v: businessSummary.openInvoices ?? outstanding.length },
+                      { l: 'Unread', v: businessSummary.openMessages ?? unreadMessages },
+                      { l: 'Tasks Open', v: tasks.filter(t => t.status !== 'completed').length },
+                    ].map((c, i) => (
+                      <div key={i} className="bg-white/5 rounded-lg py-1.5"><p className="text-sm font-black">{c.v}</p><p className="text-[6px] uppercase font-bold text-slate-600">{c.l}</p></div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Budget Overview */}
+              {budgetOverviewData && (budgetOverviewData.planned > 0 || budgetOverviewData.spent > 0) && (
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-1.5 text-emerald-400"><Wallet size={12} /><h3 className="text-[9px] font-bold uppercase">Budget Overview</h3></div>
+                    <span className={`text-[7px] font-black uppercase px-1.5 py-0.5 rounded-full ${budgetOverviewData.spent <= budgetOverviewData.planned ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                      {budgetOverviewData.variance >= 0 ? `${budgetOverviewData.variance}% of plan` : 'On track'}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-700" style={{ width: pct(budgetOverviewData.planned ? (budgetOverviewData.spent / budgetOverviewData.planned) * 100 : 0), background: budgetOverviewData.spent <= budgetOverviewData.planned ? 'linear-gradient(90deg,#059669,#34d399)' : 'linear-gradient(90deg,#e11d48,#fb7185)' }} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-2.5 text-[8px]">
+                    <div><p className="text-slate-600 uppercase font-bold text-[6px]">Planned</p><p className="font-black">{formatKSH(budgetOverviewData.planned)}</p></div>
+                    <div><p className="text-slate-600 uppercase font-bold text-[6px]">Spent</p><p className="font-black">{formatKSH(budgetOverviewData.spent)}</p></div>
+                    <div><p className="text-slate-600 uppercase font-bold text-[6px]">Remaining</p><p className="font-black text-emerald-400">{formatKSH(budgetOverviewData.forecast)}</p></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Firm Updates */}
+              {roleUpdates.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {roleUpdates.map((u, i) => (
+                    <div key={i} className="bg-white/5 p-3 rounded-xl border border-white/5">
+                      <p className="text-[9px] font-bold uppercase text-teal-400">{u.title}</p>
+                      <p className="text-[8px] text-slate-500 mt-1 leading-relaxed">{u.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {[
                   { l: 'Projects', v: projects.length, i: Briefcase, c: 'text-blue-400' },
                   { l: 'Due', v: invoices.filter(i => i.status !== 'paid').length, i: DollarSign, c: 'text-emerald-400' },
-                  { l: 'System', v: '98%', i: Activity, c: 'text-teal-400' }
+                  { l: 'Unread', v: unreadMessages, i: Mail, c: 'text-gold-400' }
                 ].map((s, i) => (
                   <div key={i} className="bg-white/5 p-3 rounded-xl border border-white/5">
                     <s.i size={12} className={`${s.c} mb-1.5`} />
@@ -330,13 +438,16 @@ const ClientPortal = () => {
                             <span className={`shrink-0 text-[7px] px-1.5 py-0.5 rounded-full border font-bold uppercase ${tone}`}>{p.status || 'Active'}</span>
                           </div>
                           {p.description && <p className="text-[8px] text-slate-500 line-clamp-2 leading-relaxed">{p.description}</p>}
+                          <div className="grid grid-cols-2 gap-1.5 text-[7px]">
+                            {p.manager && <div className="bg-white/5 rounded-lg px-2 py-1"><span className="text-slate-600 uppercase font-bold block text-[6px]">Lead</span><span className="font-bold truncate block">{p.manager}</span></div>}
+                            {p.priority && <div className="bg-white/5 rounded-lg px-2 py-1"><span className="text-slate-600 uppercase font-bold block text-[6px]">Priority</span><span className="font-bold block">{p.priority}</span></div>}
+                            {!!p.plannedBudget && <div className="bg-white/5 rounded-lg px-2 py-1"><span className="text-slate-600 uppercase font-bold block text-[6px]">Budget</span><span className="font-bold block">{formatKSH(p.plannedBudget)}</span></div>}
+                            {(p.deadline) && <div className="bg-white/5 rounded-lg px-2 py-1"><span className="text-slate-600 uppercase font-bold block text-[6px]">Deadline</span><span className="font-bold block">{new Date(p.deadline).toLocaleDateString()}</span></div>}
+                          </div>
                           <div>
-                            <div className="flex justify-between text-[7px] font-bold uppercase mb-1"><span className="text-slate-500">Progress</span><span className="text-teal-400">{prog}%</span></div>
+                            <div className="flex items-center justify-between text-[7px] font-bold uppercase mb-1"><span className="text-slate-500">Progress</span><span className="text-teal-400">{prog}%</span></div>
                             <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-teal-600 to-teal-400 rounded-full transition-all duration-700" style={{ width: `${prog}%` }} /></div>
                           </div>
-                          {(p.due_date || p.end_date) && (
-                            <p className="text-[7px] text-slate-600 font-mono flex items-center gap-1"><Clock size={9} /> Target: {new Date(p.due_date || p.end_date).toLocaleDateString()}</p>
-                          )}
                         </div>
                       );
                     })}
@@ -380,14 +491,17 @@ const ClientPortal = () => {
                           <p className="font-bold uppercase text-[10px] truncate">{inv.project}</p>
                           <p className="text-[7px] text-slate-600 font-mono mt-0.5">
                             {inv.invoiceNumber || `INV-${inv.id}`}
-                            {inv.created_at ? ` · ${new Date(inv.created_at).toLocaleDateString()}` : ''}
-                            {inv.due_date ? ` · Due ${new Date(inv.due_date).toLocaleDateString()}` : ''}
+                            {inv.dueDate ? ` · Due ${new Date(inv.dueDate).toLocaleDateString()}` : ""}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className={`hidden sm:inline px-1.5 py-0.5 rounded-lg text-[7px] font-black uppercase border ${statusTone(inv.status)}`}>{inv.status}</span>
                         <p className="text-[11px] font-black">{formatKSH(inv.amount)}</p>
+                        <button onClick={() => handleDownloadInvoicePdf(inv)} title="Download PDF"
+                          className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-teal-400 transition-all">
+                          <Download size={11} />
+                        </button>
                         {inv.status !== 'paid' && (
                           <button onClick={() => handleMpesaPay(inv)} disabled={mpesaLoading === inv.id}
                             className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg text-[8px] font-bold uppercase flex items-center gap-1 transition-all">
@@ -409,6 +523,93 @@ const ClientPortal = () => {
                   <p className="text-[9px] uppercase font-bold">No invoices yet</p>
                   <p className="text-[8px] text-slate-600 mt-1">Billing appears here once your firm issues an invoice.</p>
                 </div>
+              )}
+            </div>
+          )}
+
+          {activeSection === "tasks" && (
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between px-1">
+                <p className="text-[8px] font-bold uppercase text-slate-500">
+                  {tasks.filter(t => t.status !== 'completed').length} Open · {tasks.length} Total
+                </p>
+              </div>
+              {tasks.length > 0 ? tasks.map(t => {
+                const tone = t.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  : t.status === 'blocked' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                  : t.status === 'in-progress' ? 'bg-teal-500/10 text-teal-400 border-teal-500/20'
+                  : 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+                const prog = Math.min(100, Math.max(0, Number(t.progress) || 0));
+                return (
+                  <div key={t.id} className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold truncate">{t.title}</p>
+                        <p className="text-[7px] text-slate-600 mt-0.5">{t.project} · {t.assignee}</p>
+                      </div>
+                      <span className={`shrink-0 px-1.5 py-0.5 rounded-full border text-[7px] font-black uppercase ${tone}`}>{t.status}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden"><div className="h-full bg-teal-500 rounded-full transition-all duration-700" style={{ width: `${prog}%` }} /></div>
+                      <span className="text-[7px] font-bold text-teal-400">{prog}%</span>
+                      {t.priority && <span className={`text-[7px] font-black uppercase ${t.priority === 'Critical' || t.priority === 'High' ? 'text-rose-400' : 'text-slate-500'}`}>{t.priority}</span>}
+                      {t.dueDate && <span className="text-[7px] text-slate-600 font-mono">{new Date(t.dueDate).toLocaleDateString()}</span>}
+                    </div>
+                  </div>
+                );
+              }) : (
+                <div className="py-14 text-center opacity-30"><ListChecks size={24} className="mx-auto mb-2" /><p className="text-[9px] uppercase font-bold">No milestones yet</p></div>
+              )}
+            </div>
+          )}
+
+          {activeSection === "messages" && (
+            <div className="space-y-2 animate-fade-in">
+              {messages.length > 0 ? messages.map(m => (
+                <div key={m.id} className={`p-3 rounded-xl border flex items-start gap-3 ${m.unread ? 'bg-teal-500/[0.06] border-teal-500/20' : 'bg-white/5 border-white/5'}`}>
+                  <div className={`p-1.5 rounded-lg shrink-0 ${m.unread ? 'bg-teal-500/15 text-teal-400' : 'bg-white/5 text-slate-600'}`}><Mail size={13} /></div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      {m.unread && <span className="w-1.5 h-1.5 rounded-full bg-gold-500 shrink-0" />}
+                      <p className="text-[10px] font-bold truncate">{m.subject}</p>
+                      {m.time && <span className="ml-auto text-[7px] text-slate-600 font-mono shrink-0">{new Date(m.time).toLocaleDateString()}</span>}
+                    </div>
+                    <p className="text-[8px] text-slate-500 mt-1 leading-relaxed line-clamp-2">{m.message}</p>
+                    <p className="text-[6px] text-slate-700 uppercase font-black tracking-widest mt-1">— {m.sender}</p>
+                  </div>
+                </div>
+              )) : (
+                <div className="py-14 text-center opacity-30"><Mail size={24} className="mx-auto mb-2" /><p className="text-[9px] uppercase font-bold">Inbox zero</p><p className="text-[8px] text-slate-600 mt-1">Firm updates will land here.</p></div>
+              )}
+            </div>
+          )}
+
+          {activeSection === "documents" && (
+            <div className="space-y-4 animate-fade-in">
+              {docSummary.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                  {docSummary.map((d, i) => (
+                    <div key={i} className="bg-white/5 p-3 rounded-xl border border-white/5 text-center">
+                      <Folder size={12} className="mx-auto text-gold-400 mb-1" />
+                      <p className="text-sm font-black">{d.value}</p>
+                      <p className="text-[6px] uppercase font-bold text-slate-600">{d.label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {documents.length > 0 ? documents.map(d => (
+                <div key={d.id} className="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2 rounded-lg bg-gold-500/10 text-gold-400 shrink-0"><Folder size={14} /></div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold truncate">{d.name}</p>
+                      <p className="text-[7px] text-slate-600 mt-0.5">{d.category} · {d.project} · {d.size} · {d.version}</p>
+                    </div>
+                  </div>
+                  {d.date && <span className="hidden sm:inline text-[7px] text-slate-600 font-mono shrink-0">{new Date(d.date).toLocaleDateString()}</span>}
+                </div>
+              )) : (
+                <div className="py-14 text-center opacity-30"><Folder size={24} className="mx-auto mb-2" /><p className="text-[9px] uppercase font-bold">Vault empty</p><p className="text-[8px] text-slate-600 mt-1">Contracts and deliverables appear here as your firm shares them.</p></div>
               )}
             </div>
           )}

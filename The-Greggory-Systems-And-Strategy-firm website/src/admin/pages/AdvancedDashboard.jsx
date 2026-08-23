@@ -46,6 +46,7 @@ export function AdvancedDashboard({ user }) {
   });
   const [recentActivity, setRecentActivity] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState([]);
+  const [recentInvoices, setRecentInvoices] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -55,10 +56,11 @@ export function AdvancedDashboard({ user }) {
     try {
       setLoading(true);
       // MISSION CRITICAL: Parallel Fetch Node
-      const [dashRes, budgetRes, approvalsRes] = await Promise.all([
+      const [dashRes, budgetRes, approvalsRes, invoicesRes] = await Promise.all([
         apiCall("/admin/dashboard"),
         apiCall("/admin/budget-overview"),
-        apiCall("/admin/pending-approvals")
+        apiCall("/admin/pending-approvals"),
+        apiCall("/invoices").catch(() => null)
       ]);
 
       if (dashRes.success && dashRes.dashboard) {
@@ -75,6 +77,13 @@ export function AdvancedDashboard({ user }) {
 
       if (budgetRes.success) setBudgetOverview(budgetRes.data || {});
       if (approvalsRes.success) setPendingApprovals(approvalsRes.data || []);
+      if (Array.isArray(invoicesRes)) {
+        setRecentInvoices(invoicesRes.slice(0, 5));
+      } else if (Array.isArray(invoicesRes?.invoices)) {
+        setRecentInvoices(invoicesRes.invoices.slice(0, 5));
+      } else if (Array.isArray(invoicesRes?.data)) {
+        setRecentInvoices(invoicesRes.data.slice(0, 5));
+      }
 
     } catch (error) {
       console.error("Telemetry Node Failure:", error);
@@ -225,6 +234,49 @@ export function AdvancedDashboard({ user }) {
             <p className="text-xs font-black text-emerald-500 mt-0.5">{stats.systemUptime}</p>
           </div>
         </div>
+      </div>
+
+      {/* Latest Invoices */}
+      <div className="bg-white rounded-2xl shadow-lg p-5 border border-slate-100">
+        <div className="flex items-center justify-between mb-5 border-b border-slate-50 pb-3">
+          <div className="flex items-center gap-3">
+            <DollarSign size={14} className="text-emerald-500" />
+            <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Latest Invoices</h3>
+          </div>
+          <button onClick={() => navigate('/admin/billing')} className="text-[7px] font-black text-teal-600 uppercase tracking-widest hover:underline">Billing Hub</button>
+        </div>
+        {recentInvoices.length > 0 ? (
+          <div className="space-y-2">
+            {recentInvoices.map((inv) => {
+              const st = String(inv.status || 'draft').toLowerCase();
+              const tone = st === 'paid' ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                : st === 'overdue' ? 'bg-rose-50 text-rose-600 border-rose-100'
+                : 'bg-orange-50 text-orange-600 border-orange-100';
+              return (
+                <div key={inv.id} onClick={() => navigate(`/admin/billing/preview/${inv.id}`)}
+                  className="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100 hover:bg-white cursor-pointer transition-all group">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-1.5 rounded-lg bg-white border border-slate-200 text-emerald-500"><DollarSign size={12} /></div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black text-slate-900 uppercase truncate">{inv.project_name || inv.client_name || `Invoice #${inv.id}`}</p>
+                      <p className="text-[6px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{inv.invoice_number || `INV-${inv.id}`}{inv.due_date ? ` · Due ${new Date(inv.due_date).toLocaleDateString()}` : ''}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`px-1.5 py-0.5 rounded-md border text-[6px] font-black uppercase ${tone}`}>{st}</span>
+                    <p className="text-[10px] font-black text-slate-900">{formatKSH(inv.amount || inv.total_amount)}</p>
+                    <ChevronRight size={11} className="text-slate-300 group-hover:text-teal-500" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-8 text-center opacity-30">
+            <FileCheck size={22} className="mx-auto mb-2" />
+            <p className="text-[7px] font-black uppercase">No invoices issued yet</p>
+          </div>
+        )}
       </div>
 
       {/* Activity and Validations */}
