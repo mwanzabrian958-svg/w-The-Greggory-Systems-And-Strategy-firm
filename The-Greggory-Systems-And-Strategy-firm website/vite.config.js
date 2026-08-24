@@ -36,5 +36,14 @@ export default defineConfig({
     port: 4173,
     open: false,
     host: true,
+    // Mirror the dev proxy so `vite preview` (production bundle) can reach the
+    // backend too — enables full-stack UI smoke tests against built assets.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
   }
 })
