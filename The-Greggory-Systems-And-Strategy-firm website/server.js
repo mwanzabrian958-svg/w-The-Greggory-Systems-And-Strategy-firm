@@ -536,7 +536,11 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
     const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z').slice(0, 14);
     const password = buildMpesaPassword(shortcode, passkey, timestamp);
 
-    const authResponse = await fetch('https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', {
+    // Daraja environment follows NODE_ENV: sandbox for development,
+    // production API once NODE_ENV=production (go-live).
+    const darajaHost = process.env.NODE_ENV === 'production' ? 'api.safaricom.co.ke' : 'sandbox.safaricom.co.ke';
+
+    const authResponse = await fetch(`https://${darajaHost}/oauth/v1/generate?grant_type=client_credentials`, {
       method: 'GET',
       headers: {
         Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
@@ -563,7 +567,7 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
       TransactionDesc: String(description || `Payment from ${userId || 'client'}`)
     };
 
-    const stkResponse = await fetch('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest', {
+    const stkResponse = await fetch(`https://${darajaHost}/mpesa/stkpush/v1/processrequest`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
