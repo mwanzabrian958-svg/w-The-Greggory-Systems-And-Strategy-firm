@@ -24,7 +24,9 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        // IPv4 explicit: the backend binds 0.0.0.0 only, and Node >=17 can
+        // resolve 'localhost' to ::1 first, causing random ECONNREFUSED.
+        target: 'http://127.0.0.1:3000',
         changeOrigin: true,
         secure: false,
       }
