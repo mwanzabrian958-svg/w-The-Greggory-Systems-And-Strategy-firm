@@ -16,7 +16,8 @@ import {
   RefreshCw,
   ChevronRight,
   Users,
-  Shield
+  Shield,
+  ShieldCheck
 } from "lucide-react";
 
 import { formatKSH } from "../../utils/currencyUtils";

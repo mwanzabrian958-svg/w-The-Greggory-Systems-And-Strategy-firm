@@ -15,7 +15,8 @@ import {
   CheckCircle,
   ShieldAlert,
   Terminal,
-  Search
+  Search,
+  Download
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";

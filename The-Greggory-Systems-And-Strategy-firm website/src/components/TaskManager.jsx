@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTasks } from '../context/TaskContext';
-import { Plus, Check, Trash2, Edit, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Check, Trash2, Edit, X, ChevronDown, ChevronUp, Calendar, Layers } from 'lucide-react';
 
 const priorityColors = {
   high: 'bg-rose-500/10 text-rose-500 border border-rose-500/20',

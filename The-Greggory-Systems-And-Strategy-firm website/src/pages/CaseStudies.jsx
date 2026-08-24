@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { TrendingUp, Clock, DollarSign, Users, CheckCircle, Rocket } from 'lucide-react'
+import { TrendingUp, Clock, DollarSign, Users, CheckCircle, Rocket, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 import { formatKSH } from '../utils/currencyUtils'
