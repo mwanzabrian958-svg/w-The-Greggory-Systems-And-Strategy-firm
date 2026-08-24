@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Mail, ArrowLeft } from 'lucide-react'
 import AuthLayout from '../components/AuthLayout'
+import { SITE_NAME } from '../constants/siteBrand'
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('')

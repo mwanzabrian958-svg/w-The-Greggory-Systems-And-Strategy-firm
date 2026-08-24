@@ -8,6 +8,13 @@ const GoogleSignIn = ({ buttonText = 'Sign up with Google', isSignUp = true }) =
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  // Google Sign-In only activates when a real OAuth client ID is configured.
+  // Placeholder/unset IDs previously crashed Google's script with console errors
+  // and could blank the surrounding auth pages.
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+  const GOOGLE_ENABLED =
+    Boolean(GOOGLE_CLIENT_ID) && !/your_google_client_id/i.test(GOOGLE_CLIENT_ID);
+
   const handleSuccess = async (credentialResponse) => {
     try {
       // Call backend to verify and authenticate
@@ -50,6 +57,8 @@ const GoogleSignIn = ({ buttonText = 'Sign up with Google', isSignUp = true }) =
     console.error('Google Sign-In Failed');
     alert('Google Sign-In was not successful. Please try again.');
   };
+
+  if (!GOOGLE_ENABLED) return null;
 
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
