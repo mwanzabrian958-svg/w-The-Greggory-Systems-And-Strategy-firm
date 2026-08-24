@@ -161,4 +161,15 @@ html {
   }
 }
 
+/* ── MOBILE READABILITY LAYER ─────────────────────────────────
+   The high-density "terminal" aesthetic uses 6–8px labels: razor-sharp
+   on desktop monitors, but genuinely hard to read on phones. On screens
+   ≤768px these scale up to comfortable sizes. Tablets and desktops keep
+   the dense look untouched. */
+@media (max-width: 768px) {
+  [class*="text-[6px]"] { font-size: 10px; }
+  [class*="text-[7px]"] { font-size: 12px; }
+  [class*="text-[8px]"] { font-size: 13px; }
+}
+
 
