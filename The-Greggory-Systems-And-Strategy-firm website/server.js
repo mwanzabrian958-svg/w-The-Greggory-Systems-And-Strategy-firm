@@ -4623,16 +4623,17 @@ app.post("/api/contact-forms", async (req, res) => {
   try {
     const form = req.body;
     const [result] = await mainDb.query(
-      "INSERT INTO contact_forms (name, email, phone, company, subject, message, preferred_contact) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [
-        form.name,
-        form.email,
-        form.phone,
-        form.company,
-        form.subject,
-        form.message,
-        form.preferred_contact,
-      ],
+    // NOTE: keep column list in sync with the contact_forms schema —
+    // the table has no preferred_contact column and the UI doesn't send one.
+    "INSERT INTO contact_forms (name, email, phone, company, subject, message) VALUES (?, ?, ?, ?, ?, ?)",
+    [
+      form.name,
+      form.email,
+      form.phone,
+      form.company,
+      form.subject,
+      form.message,
+    ],
     );
 
     res.json({ success: true, formId: result.insertId });
