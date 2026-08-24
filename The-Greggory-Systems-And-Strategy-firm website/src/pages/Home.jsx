@@ -60,26 +60,6 @@ const Home = () => {
           <img src="/hero-phoenix.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
         </div>
 
-        <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest mb-4 backdrop-blur-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-gold-400 animate-pulse" />
-            Systems · Strategy · Networks
-          </div>
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white uppercase tracking-tighter leading-[0.95] mb-8">
-            Engineering Your <span className="text-gold-400">Next Chapter</span>
-          </h1>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link to="/contact" className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-6 py-3 text-xs font-bold text-slate-950 shadow-lg shadow-gold-500/20 hover:bg-gold-400 transition-all active:scale-95">
-              Start a Project
-              <ArrowRight size={12} />
-            </Link>
-            <Link to="/services" className="inline-flex items-center gap-2 rounded-lg bg-white/10 border border-white/20 px-6 py-3 text-xs font-bold text-white hover:bg-white/20 transition-all backdrop-blur-sm">
-              Explore Services
-              <ChevronRight size={12} />
-            </Link>
-          </div>
-        </div>
-
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 animate-bounce opacity-40">
           <div className="h-6 w-px bg-gradient-to-b from-gold-500 to-transparent" />
           <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Scroll</span>
