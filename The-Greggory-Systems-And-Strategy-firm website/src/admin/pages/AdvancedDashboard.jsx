@@ -14,7 +14,9 @@ import {
   Activity,
   UserCheck,
   RefreshCw,
-  ChevronRight
+  ChevronRight,
+  Users,
+  Shield
 } from "lucide-react";
 
 import { formatKSH } from "../../utils/currencyUtils";
@@ -47,6 +49,7 @@ export function AdvancedDashboard({ user }) {
   const [recentActivity, setRecentActivity] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [recentInvoices, setRecentInvoices] = useState([]);
+  const [teamStats, setTeamStats] = useState({ total: 0, active: 0 });
 
   useEffect(() => {
     fetchData();
@@ -55,12 +58,12 @@ export function AdvancedDashboard({ user }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // MISSION CRITICAL: Parallel Fetch Node
-      const [dashRes, budgetRes, approvalsRes, invoicesRes] = await Promise.all([
+      const [dashRes, budgetRes, approvalsRes, invoicesRes, teamRes] = await Promise.all([
         apiCall("/admin/dashboard"),
         apiCall("/admin/budget-overview"),
         apiCall("/admin/pending-approvals"),
-        apiCall("/invoices").catch(() => null)
+        apiCall("/invoices").catch(() => null),
+        apiCall("/api/admin/team").catch(() => null)
       ]);
 
       if (dashRes.success && dashRes.dashboard) {
@@ -83,6 +86,14 @@ export function AdvancedDashboard({ user }) {
         setRecentInvoices(invoicesRes.invoices.slice(0, 5));
       } else if (Array.isArray(invoicesRes?.data)) {
         setRecentInvoices(invoicesRes.data.slice(0, 5));
+      }
+
+      if (teamRes?.success) {
+        const team = teamRes.team || [];
+        setTeamStats({
+          total: team.length,
+          active: team.filter(t => t.is_active).length
+        });
       }
 
     } catch (error) {
@@ -114,7 +125,7 @@ export function AdvancedDashboard({ user }) {
     { label: "Active Projects", value: stats.activeProjects, icon: Briefcase, color: "text-sky-400", bg: "bg-sky-500/10", path: "/admin/projects" },
     { label: "Live Now", value: stats.liveUsers, icon: Activity, color: "text-rose-400", bg: "bg-rose-500/10", path: "/admin/users" },
     { label: "Pending Prot.", value: stats.pendingApprovals, icon: ClipboardList, color: "text-orange-400", bg: "bg-orange-500/10", path: "/admin/projects" },
-    { label: "Asset Reach", value: stats.totalUsers, icon: BarChart3, color: "text-violet-400", bg: "bg-violet-500/10", path: "/admin/users" },
+    { label: "Team Active", value: teamStats.active, icon: UserCheck, color: "text-violet-400", bg: "bg-violet-500/10", path: "/admin/team" },
   ];
 
   return (
@@ -145,8 +156,8 @@ export function AdvancedDashboard({ user }) {
         {[
           { label: "New Invoice", icon: DollarSign, path: "/admin/billing", tone: "text-emerald-600 bg-emerald-50" },
           { label: "Add Personnel", icon: UserCheck, path: "/admin/users", tone: "text-sky-600 bg-sky-50" },
-          { label: "Content Hub", icon: MessageSquare, path: "/admin/content", tone: "text-violet-600 bg-violet-50" },
-          { label: "Run Reports", icon: BarChart3, path: "/admin/reports", tone: "text-orange-600 bg-orange-50" },
+          { label: "Team Management", icon: Users, path: "/admin/team", tone: "text-violet-600 bg-violet-50" },
+          { label: "Data Safety", icon: Shield, path: "/admin/data-safety", tone: "text-rose-600 bg-rose-50" },
         ].map((a) => (
           <button key={a.label} onClick={() => navigate(a.path)} className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm flex items-center gap-3 hover:border-teal-500/40 hover:shadow-md transition-all group text-left">
             <span className={`p-2 rounded-lg ${a.tone}`}><a.icon size={14} /></span>
@@ -327,6 +338,31 @@ export function AdvancedDashboard({ user }) {
               </div>
             )) : <div className="py-10 text-center opacity-20"><CheckCircle size={24} className="mx-auto mb-2" /><p className="text-[7px] font-black uppercase">Nodes Clear</p></div>}
           </div>
+        </div>
+      </div>
+
+      {/* Data Safety Overview */}
+      <div className="bg-[#0f172a] rounded-2xl shadow-2xl p-5 border border-white/5">
+        <div className="flex items-center justify-between mb-5 border-b border-white/5 pb-3">
+          <div className="flex items-center gap-3">
+            <Shield size={14} className="text-rose-400" />
+            <h3 className="text-[9px] font-black text-white uppercase tracking-widest">Data Safety & Compliance</h3>
+          </div>
+          <button onClick={() => navigate('/admin/data-safety')} className="text-[7px] font-black text-rose-400 uppercase tracking-widest hover:text-white transition-colors">Access Hub</button>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "Classified Levels", value: "4", icon: Shield, color: "text-sky-400", bg: "bg-sky-500/10" },
+            { label: "Active Team", value: teamStats.active, icon: Users, color: "text-violet-400", bg: "bg-violet-500/10" },
+            { label: "Pending Prot.", value: stats.pendingApprovals, icon: ClipboardList, color: "text-orange-400", bg: "bg-orange-500/10" },
+            { label: "Audit Ready", value: "ON", icon: ShieldCheck, color: "text-emerald-400", bg: "bg-emerald-500/10" },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white/[0.03] rounded-xl p-3 border border-white/5 text-center">
+              <div className={`inline-flex p-2 rounded-lg ${stat.bg} mb-2`}><stat.icon size={12} className={stat.color} /></div>
+              <p className="text-[6px] text-slate-500 font-black uppercase tracking-widest">{stat.label}</p>
+              <p className="text-sm font-black text-white">{stat.value}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

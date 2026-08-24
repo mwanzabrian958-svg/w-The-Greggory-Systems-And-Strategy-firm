@@ -109,12 +109,12 @@ const Footer = () => {
                   <div>
                     <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Direct Uplink</p>
                     <a
-                      href="https://wa.me/254715312251"
+                      href="https://wa.me/254115525854"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs font-bold text-slate-100 hover:text-white transition-colors uppercase tracking-wider"
                     >
-                      +254 715 312 251
+                      +254 115 525 854
                     </a>
                   </div>
                 </li>

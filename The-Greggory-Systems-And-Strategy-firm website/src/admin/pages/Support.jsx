@@ -7,7 +7,7 @@ import { apiCall } from "../../services/api";
  * Support - Help & Documentation Relay
  * Optimized with compact containers and tiny typography.
  */
-export function Support({ user }) {
+export function Support() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

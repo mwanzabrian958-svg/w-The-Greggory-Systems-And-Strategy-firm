@@ -818,6 +818,7 @@ CREATE TABLE IF NOT EXISTS project_team_members (
     project_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
     role VARCHAR(100) NOT NULL DEFAULT 'team_member',
+    duties TEXT,
     assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     assigned_by BIGINT NOT NULL,
     removed_at TIMESTAMP NULL DEFAULT NULL,
@@ -1385,7 +1386,7 @@ INSERT INTO admin_website_settings (setting_key, setting_value, setting_type, di
 ('site_title', 'The The-Greggory-Systems-And-Strategy-firm', 'text', 'Site Title', 'Main title of the website', 'general', TRUE),
 ('site_description', 'Strategic Project Development for all clients. Your Vision Delivered with Trust.', 'textarea', 'Site Description', 'Meta description for SEO', 'general', TRUE),
 ('contact_email', 'thegreggorysystemsandstrategyf@gmail.com', 'text', 'Contact Email', 'Main contact email address', 'contact', TRUE),
-('contact_phone', '+254715312251', 'text', 'Contact Phone', 'Main contact phone number', 'contact', TRUE),
+('contact_phone', '+254115525854', 'text', 'Contact Phone', 'Main contact phone number', 'contact', TRUE),
 ('company_address', 'rafiki kabarak, kabarak', 'textarea', 'Company Address', 'Physical office address', 'contact', TRUE),
 ('maintenance_mode', 'false', 'boolean', 'Maintenance Mode', 'Put site in maintenance mode', 'system', FALSE),
 ('allow_registration', 'true', 'boolean', 'Allow Registration', 'Enable user registration', 'auth', FALSE),
@@ -2048,6 +2049,140 @@ CREATE TABLE IF NOT EXISTS change_requests (
     FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE,
     FOREIGN KEY (requested_by) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (reviewed_by) REFERENCES admin_users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: data_classifications
+-- Data sensitivity levels for client data safety
+-- =============================================
+CREATE TABLE IF NOT EXISTS data_classifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    sensitivity_level ENUM('public', 'internal', 'confidential', 'restricted') DEFAULT 'internal',
+    encryption_required BOOLEAN DEFAULT FALSE,
+    access_log_required BOOLEAN DEFAULT TRUE,
+    retention_days INT DEFAULT 365,
+    auto_delete BOOLEAN DEFAULT FALSE,
+    allowed_roles JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_data_classifications_level (sensitivity_level),
+    INDEX idx_data_classifications_encryption (encryption_required)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO data_classifications (name, description, sensitivity_level, encryption_required, access_log_required, retention_days, allowed_roles) VALUES
+('public', 'Publicly available information', 'public', FALSE, FALSE, 365, '["admin", "developer", "user"]'),
+('internal', 'Internal business data', 'internal', FALSE, TRUE, 730, '["admin", "developer"]'),
+('confidential', 'Sensitive client data', 'confidential', TRUE, TRUE, 1825, '["admin"]'),
+('restricted', 'Highly sensitive data', 'restricted', TRUE, TRUE, 3650, '["super_admin"]');
+
+-- =============================================
+-- Table: data_access_logs
+-- Comprehensive data access tracking for compliance
+-- =============================================
+CREATE TABLE IF NOT EXISTS data_access_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    user_type ENUM('admin', 'developer', 'user', 'system') NOT NULL,
+    entity_type VARCHAR(100) NOT NULL,
+    entity_id BIGINT NOT NULL,
+    action ENUM('view', 'create', 'update', 'delete', 'export', 'download', 'share') NOT NULL,
+    data_classification_id BIGINT,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    session_id VARCHAR(255),
+    request_method VARCHAR(10),
+    request_url TEXT,
+    query_params JSON,
+    response_status INT,
+    error_message TEXT,
+    access_granted BOOLEAN DEFAULT TRUE,
+    denial_reason VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_data_access_user (user_id, created_at),
+    INDEX idx_data_access_entity (entity_type, entity_id, created_at),
+    INDEX idx_data_access_action (action, created_at),
+    INDEX idx_data_access_classification (data_classification_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (data_classification_id) REFERENCES data_classifications(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: client_data_consent
+-- Track client consent for data processing
+-- =============================================
+CREATE TABLE IF NOT EXISTS client_data_consent (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    consent_type ENUM('data_processing', 'marketing', 'third_party_sharing', 'analytics', 'communication') NOT NULL,
+    consent_given BOOLEAN DEFAULT FALSE,
+    consent_method ENUM('explicit', 'implied', 'opt_in', 'opt_out') DEFAULT 'explicit',
+    consent_text TEXT,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    consent_date TIMESTAMP NULL DEFAULT NULL,
+    withdrawal_date TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_consent_user (user_id, consent_type),
+    INDEX idx_consent_given (consent_given),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_consent (user_id, consent_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: data_retention_policies
+-- Define data retention rules for compliance
+-- =============================================
+CREATE TABLE IF NOT EXISTS data_retention_policies (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    entity_type VARCHAR(100) NOT NULL,
+    retention_period_days INT NOT NULL,
+    auto_archive BOOLEAN DEFAULT FALSE,
+    auto_delete BOOLEAN DEFAULT FALSE,
+    archive_location VARCHAR(512),
+    legal_basis VARCHAR(255),
+    compliance_framework VARCHAR(100),
+    created_by BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_retention_entity (entity_type),
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO data_retention_policies (entity_type, retention_period_days, auto_archive, auto_delete, legal_basis, compliance_framework) VALUES
+('users', 2555, TRUE, FALSE, 'Contract performance', 'GDPR'),
+('user_projects', 2555, TRUE, FALSE, 'Contract performance', 'GDPR'),
+('project_tasks', 2555, TRUE, FALSE, 'Contract performance', 'GDPR'),
+('project_documents', 2555, TRUE, FALSE, 'Contract performance', 'GDPR'),
+('audit_logs', 3650, TRUE, TRUE, 'Legal obligation', 'GDPR'),
+('data_access_logs', 3650, TRUE, TRUE, 'Legal obligation', 'GDPR'),
+('client_feedback', 1825, TRUE, FALSE, 'Legitimate interest', 'GDPR'),
+('mpesa_transactions', 3650, TRUE, FALSE, 'Legal obligation', 'KRA'),
+('invoices', 3650, TRUE, FALSE, 'Legal obligation', 'KRA');
+
+-- =============================================
+-- Table: data_encryption_keys
+-- Track encryption keys for sensitive data
+-- =============================================
+CREATE TABLE IF NOT EXISTS data_encryption_keys (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    key_name VARCHAR(255) NOT NULL,
+    key_type ENUM('symmetric', 'asymmetric', 'hash') DEFAULT 'symmetric',
+    algorithm VARCHAR(100) NOT NULL,
+    key_version INT DEFAULT 1,
+    encrypted_key LONGBLOB NOT NULL,
+    iv LONGBLOB,
+    expires_at TIMESTAMP NULL DEFAULT NULL,
+    rotated_at TIMESTAMP NULL DEFAULT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_by BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_encryption_keys_active (is_active, expires_at),
+    INDEX idx_encryption_keys_type (key_type),
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================

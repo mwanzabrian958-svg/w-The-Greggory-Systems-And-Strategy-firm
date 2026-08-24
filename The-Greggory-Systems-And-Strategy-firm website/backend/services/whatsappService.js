@@ -20,7 +20,7 @@ try {
 
 // Company WhatsApp number that receives messages
 // Standardize to E.164 format (remove spaces, ensure + prefix)
-const rawCompanyNumber = process.env.COMPANY_WHATSAPP_NUMBER || '+254715312251';
+const rawCompanyNumber = process.env.COMPANY_WHATSAPP_NUMBER || '+254115525854';
 const COMPANY_WHATSAPP_NUMBER = rawCompanyNumber.replace(/\s+/g, '').startsWith('+')
   ? rawCompanyNumber.replace(/\s+/g, '')
   : `+${rawCompanyNumber.replace(/\s+/g, '')}`;

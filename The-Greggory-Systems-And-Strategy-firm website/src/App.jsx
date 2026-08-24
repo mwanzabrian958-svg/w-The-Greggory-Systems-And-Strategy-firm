@@ -8,6 +8,7 @@ import FloatingWhatsApp from './components/FloatingWhatsApp'
 import PrivateRoute from './components/PrivateRoute'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
+import ErrorBoundary from './components/ErrorBoundary'
 
 // Landing page stays eager: it's the most common entry point, so we avoid
 // an extra network round-trip before first meaningful paint.
@@ -104,13 +105,19 @@ function Layout() {
           <Route path="/privacy" element={<Privacy />} />
 
           {/* Admin Routes - Using new modular admin system */}
-          <Route path="/admin/*" element={<AdminRouter />} />
+          <Route path="/admin/*" element={
+            <ErrorBoundary>
+              <AdminRouter />
+            </ErrorBoundary>
+          } />
 
           <Route
             path="/client-portal"
             element={
               <PrivateRoute>
-                <ClientPortal />
+                <ErrorBoundary>
+                  <ClientPortal />
+                </ErrorBoundary>
               </PrivateRoute>
             }
           />
@@ -119,7 +126,9 @@ function Layout() {
             path="/client-reports"
             element={
               <PrivateRoute>
-                <ClientReports />
+                <ErrorBoundary>
+                  <ClientReports />
+                </ErrorBoundary>
               </PrivateRoute>
             }
           />
@@ -128,7 +137,9 @@ function Layout() {
             path="/client-alerts"
             element={
               <PrivateRoute>
-                <ClientAlerts />
+                <ErrorBoundary>
+                  <ClientAlerts />
+                </ErrorBoundary>
               </PrivateRoute>
             }
           />

@@ -144,7 +144,7 @@ const FinancialManagement = ({
       .toISOString()
       .split("T")[0],
     payment_method: "mpesa",
-    payment_phone: "+254715312251",
+    payment_phone: "+254115525854",
     client_name: "",
     client_email: "",
     client_phone: "",
@@ -158,7 +158,7 @@ const FinancialManagement = ({
   const [paymentForm, setPaymentForm] = useState({
     invoice_id: "",
     amount: "",
-    phone_number: "+254715312251",
+    phone_number: "+254115525854",
     payment_method: "paybill",
     business_number: "174379",
     account_reference: "",
@@ -1337,7 +1337,7 @@ const FinancialManagement = ({
                 Business Number: 174379
               </span>
               <span className="text-sm text-gray-600">
-                Phone: +254715312251
+                Phone: +254115525854
               </span>
             </div>
           </div>
@@ -1668,7 +1668,7 @@ const FinancialManagement = ({
                       })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    placeholder="+254715312251"
+                    placeholder="+254115525854"
                   />
                 </div>
               </div>
@@ -1944,7 +1944,7 @@ const FinancialManagement = ({
                     })
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  placeholder="+254715312251"
+                  placeholder="+254115525854"
                 />
               </div>
 
@@ -2648,7 +2648,7 @@ const FinancialManagement = ({
                       .toISOString()
                       .split("T")[0],
                     payment_method: "mpesa",
-                    payment_phone: "+254715312251",
+                    payment_phone: "+254115525854",
                     client_name: selectedConvertQuote.client_name,
                     client_email: selectedConvertQuote.client_email,
                     client_phone: selectedConvertQuote.client_phone,

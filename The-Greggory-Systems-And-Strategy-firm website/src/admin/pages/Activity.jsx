@@ -19,7 +19,7 @@ import { apiCall } from "../../services/api";
  * ActivityLogs - Strategic Operations Log
  * High-density compact view for system auditing.
  */
-export function ActivityLogs({ user }) {
+export function ActivityLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");

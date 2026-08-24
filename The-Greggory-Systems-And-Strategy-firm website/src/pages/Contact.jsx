@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Clock, Mail, MapPin, Phone, Send } from 'lucide-react'
+import { Clock, Mail, MapPin, Phone, Send, MessageCircle, Globe } from 'lucide-react'
 import { getApiUrl } from '../services/api'
 
 const Contact = () => {
@@ -51,7 +51,7 @@ const Contact = () => {
       if (preferredChannel === 'email') {
         window.location.href = `mailto:thegreggorysystemsandstrategyf@gmail.com?subject=${encodeURIComponent(subject)}&body=${body}`
       } else {
-        window.open(`https://wa.me/254715312251?text=${whatsappText}`, '_blank')
+        window.open(`https://wa.me/254115525854?text=${whatsappText}`, '_blank')
       }
 
       setSubmitStatus('success')
@@ -74,14 +74,14 @@ const Contact = () => {
     {
       icon: <Phone className="h-5 w-5" />,
       title: 'Call',
-      content: '+254 715 312 251',
-      link: 'tel:+254715312251'
+      content: '+254 115 525 854',
+      link: 'tel:+254115525854'
     },
     {
-      icon: <Phone className="h-5 w-5" />,
+      icon: <MessageCircle className="h-5 w-5" />,
       title: 'WhatsApp',
-      content: '+254 715 312 251',
-      link: 'https://wa.me/254715312251'
+      content: '+254 115 525 854',
+      link: 'https://wa.me/254115525854'
     },
     {
       icon: <MapPin className="h-5 w-5" />,
@@ -108,79 +108,59 @@ const Contact = () => {
   ]
 
   return (
-    <div className="page-shell pt-24">
-      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
+    <div className="page-shell pt-16">
+      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
         <div className="soft-panel overflow-hidden">
-          <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
-            <div className="bg-[#223028] p-8 text-white sm:p-10 lg:p-12">
-              <p className="eyebrow text-[#8fb28a]">Contact us</p>
-              <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
-                Let’s talk about your next move.
-              </h1>
-              <p className="mt-5 max-w-xl text-base text-slate-100 sm:text-lg">
-                Share a few details and we’ll follow up with the right next step for your organization.
-              </p>
-
-              <div className="mt-8 space-y-3">
-                {contactInfo.map((item) => (
-                  <a key={item.title} href={item.link || '#'} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/10 p-4 transition hover:bg-white/15">
-                    <div className="mt-0.5 rounded-xl bg-[#8fb28a]/15 p-2 text-[#8fb28a]">{item.icon}</div>
-                    <div>
-                      <p className="text-sm font-semibold text-white">{item.title}</p>
-                      <p className="text-sm text-slate-100">{item.content}</p>
-                    </div>
-                  </a>
-                ))}
+          <div className="grid gap-0">
+            <div className="bg-[#f8efe6] p-5 sm:p-6 lg:p-8 dark:bg-[#171d19]">
+              <div className="mb-6">
+                <p className="eyebrow">Send a message</p>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-slate-900 dark:text-white sm:text-2xl">
+                  We'll reply with a practical next step.
+                </h2>
+                <p className="mt-2 text-xs text-slate-700 dark:text-slate-100">
+                  Whether you want a proposal, a system review, or a quick strategy conversation, we can help you get started.
+                </p>
               </div>
-            </div>
-
-            <div className="bg-[#f8efe6] p-8 sm:p-10 lg:p-12 dark:bg-[#171d19]">
-              <p className="eyebrow">Send a message</p>
-              <h2 className="mt-4 text-2xl font-black tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-                We’ll reply with a practical next step.
-              </h2>
-              <p className="mt-3 text-sm text-slate-700 dark:text-slate-100">
-                Whether you want a proposal, a system review, or a quick strategy conversation, we can help you get started.
-              </p>
 
               {submitStatus === 'success' && (
-                <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+                <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300">
                   Your message has been prepared successfully.
                 </div>
               )}
 
               {submitStatus === 'error' && (
-                <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-300">
+                <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/40 dark:bg-rose-950/30 dark:text-rose-300">
                   We could not relay this request right now. Please try again or reach us directly.
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-                <div className="grid gap-5 md:grid-cols-2">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label htmlFor="name" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Full Name *</label>
-                    <input id="name" name="name" value={formData.name} onChange={handleChange} required className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="John Doe" />
+                    <label htmlFor="name" className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Full Name *</label>
+                    <input id="name" name="name" value={formData.name} onChange={handleChange} required className="w-full rounded-xl border border-[#e3d2bb] bg-white px-3 py-2 text-xs text-slate-900 outline-none transition-all duration-200 focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="John Doe" />
                   </div>
                   <div>
-                    <label htmlFor="email" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Email Address *</label>
-                    <input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="you@company.com" />
+                    <label htmlFor="email" className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Email Address *</label>
+                    <input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required className="w-full rounded-xl border border-[#e3d2bb] bg-white px-3 py-2 text-xs text-slate-900 outline-none transition-all duration-200 focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="you@company.com" />
                   </div>
                 </div>
 
-                <div className="grid gap-5 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label htmlFor="company" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Company</label>
-                    <input id="company" name="company" value={formData.company} onChange={handleChange} className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="Organization name" />
+                    <label htmlFor="company" className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Company</label>
+                    <input id="company" name="company" value={formData.company} onChange={handleChange} className="w-full rounded-xl border border-[#e3d2bb] bg-white px-3 py-2 text-xs text-slate-900 outline-none transition-all duration-200 focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="Organization name" />
                   </div>
                   <div>
-                    <label htmlFor="phone" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Phone Number</label>
-                    <input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="+254 700 000 000" />
+                    <label htmlFor="phone" name="phone" className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Phone Number</label>
+                    <input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} className="w-full rounded-xl border border-[#e3d2bb] bg-white px-3 py-2 text-xs text-slate-900 outline-none transition-all duration-200 focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="+254 700 000 000" />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="service" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Service of interest</label>
-                  <select id="service" name="service" value={formData.service} onChange={handleChange} className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                  <label htmlFor="service" className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Service of interest</label>
+                  <select id="service" name="service" value={formData.service} onChange={handleChange} className="w-full rounded-xl border border-[#e3d2bb] bg-white px-3 py-2 text-xs text-slate-900 outline-none transition-all duration-200 focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                     <option value="">Select a service</option>
                     {services.map((service) => (
                       <option key={service} value={service}>{service}</option>
@@ -188,25 +168,76 @@ const Contact = () => {
                   </select>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <button type="button" onClick={() => setPreferredChannel('email')} className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${preferredChannel === 'email' ? 'border-[#4c6a4d] bg-[#4c6a4d] text-white' : 'border-[#e3d2bb] bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <button type="button" onClick={() => setPreferredChannel('email')} className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-all duration-200 ${preferredChannel === 'email' ? 'border-[#4c6a4d] bg-[#4c6a4d] text-white shadow-md shadow-[#4c6a4d]/20' : 'border-[#e3d2bb] bg-white text-slate-700 hover:border-[#4c6a4d] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}>
                     Email reply
                   </button>
-                  <button type="button" onClick={() => setPreferredChannel('whatsapp')} className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${preferredChannel === 'whatsapp' ? 'border-[#aa7d3f] bg-[#aa7d3f] text-white' : 'border-[#e3d2bb] bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}>
+                  <button type="button" onClick={() => setPreferredChannel('whatsapp')} className={`rounded-xl border px-3 py-2 text-xs font-semibold transition-all duration-200 ${preferredChannel === 'whatsapp' ? 'border-[#aa7d3f] bg-[#aa7d3f] text-white shadow-md shadow-[#aa7d3f]/20' : 'border-[#e3d2bb] bg-white text-slate-700 hover:border-[#aa7d3f] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}>
                     WhatsApp reply
                   </button>
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="mb-2 block text-xs font-black uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Message *</label>
-                  <textarea id="message" name="message" rows="5" value={formData.message} onChange={handleChange} required className="w-full rounded-2xl border border-[#e3d2bb] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="Tell us what you want to improve or build." />
+                  <label htmlFor="message" className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Message *</label>
+                  <textarea id="message" name="message" rows="4" value={formData.message} onChange={handleChange} required className="w-full rounded-xl border border-[#e3d2bb] bg-white px-3 py-2 text-xs text-slate-900 outline-none transition-all duration-200 focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="Tell us what you want to improve or build." />
                 </div>
 
-                <button type="submit" disabled={isSubmitting} className="inline-flex items-center gap-2 rounded-2xl bg-[#223028] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#2f3f33] disabled:opacity-70">
-                  <Send className="h-4 w-4" />
+                <button type="submit" disabled={isSubmitting} className="inline-flex items-center gap-2 rounded-xl bg-[#223028] px-4 py-2 text-xs font-semibold text-white transition-all duration-200 hover:bg-[#2f3f33] hover:-translate-y-0.5 disabled:opacity-70">
+                  <Send className="h-3.5 w-3.5" />
                   {isSubmitting ? 'Sending...' : 'Send message'}
                 </button>
               </form>
+            </div>
+
+            <div className="relative bg-[#223028] p-6 sm:p-8 lg:p-8 text-white">
+              <div className="absolute top-0 right-0 h-48 w-48 rounded-full bg-[#aa7d3f]/10 blur-3xl" />
+              <div className="absolute bottom-0 left-0 h-36 w-36 rounded-full bg-[#8fb28a]/10 blur-3xl" />
+              
+              <div className="relative z-10">
+                <p className="eyebrow text-[#8fb28a]">Contact us</p>
+                <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
+                  Let's talk about your next move.
+                </h1>
+                <p className="mt-3 max-w-xl text-xs text-slate-100 sm:text-sm">
+                  Share a few details and we'll follow up with the right next step for your organization.
+                </p>
+
+                <div className="mt-6 space-y-2">
+                  {contactInfo.map((item) => (
+                    item.link ? (
+                      <a key={item.title} href={item.link} className="group flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3 transition-all duration-300 hover:border-[#aa7d3f]/40 hover:bg-white/10">
+                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#aa7d3f]/15 text-[#aa7d3f] transition-transform duration-300 group-hover:scale-110">
+                          {item.icon}
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#aa7d3f]">{item.title}</p>
+                          <p className="mt-0.5 text-xs text-slate-100">{item.content}</p>
+                        </div>
+                      </a>
+                    ) : (
+                      <div key={item.title} className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#aa7d3f]/15 text-[#aa7d3f]">
+                          {item.icon}
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#aa7d3f]">{item.title}</p>
+                          <p className="mt-0.5 text-xs text-slate-100">{item.content}</p>
+                        </div>
+                      </div>
+                    )
+                  ))}
+                </div>
+
+                <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-[#aa7d3f]" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[#aa7d3f]">Coverage</p>
+                      <p className="mt-0.5 text-xs text-slate-100">Kenya & East Africa</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

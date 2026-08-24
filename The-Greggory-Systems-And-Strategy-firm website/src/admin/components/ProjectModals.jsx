@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { FormInput, Select, Textarea } from './FormInput';
-import { FolderKanban, Calendar, DollarSign, Users, Building2, MapPin, Clock } from 'lucide-react';
+import { FolderKanban, Calendar, DollarSign, Users, Building2, MapPin, Clock, Plus, Trash2 } from 'lucide-react';
 import { apiCall } from '../../services/api';
 
 /**
@@ -234,6 +234,44 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [users, setUsers] = useState([]);
+  const [team, setTeam] = useState([]);
+  const [assigneeId, setAssigneeId] = useState('');
+  const [assigneeRole, setAssigneeRole] = useState('team_member');
+
+  React.useEffect(() => {
+    if (isOpen) {
+      fetchUsers();
+      if (project?.id) fetchTeam(project.id);
+    }
+  }, [isOpen, project]);
+
+  const fetchTeam = async (projectId) => {
+    try {
+      const data = await apiCall(`/api/admin/project-team/${projectId}`);
+      if (data.success) setTeam(data.team || []);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleAssign = async () => {
+    if (!assigneeId || !project?.id) return;
+    try {
+      await apiCall(`/api/admin/project-team/${project.id}`, {
+        method: 'POST',
+        body: JSON.stringify({ user_id: Number(assigneeId), role: assigneeRole })
+      });
+      setAssigneeId('');
+      fetchTeam(project.id);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleRemove = async (memberId) => {
+    if (!window.confirm('Remove this team member?')) return;
+    try {
+      await apiCall(`/api/admin/project-team/${memberId}`, { method: 'DELETE' });
+      fetchTeam(project.id);
+    } catch (e) { console.error(e); }
+  };
 
   React.useEffect(() => {
     if (project) {
@@ -331,6 +369,49 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
            <FormInput label="Est. Budget" type="number" value={formData.estimated_budget} onChange={(e) => setFormData({...formData, estimated_budget: e.target.value})} />
            <FormInput label="Actual Spent" type="number" value={formData.actual_budget} onChange={(e) => setFormData({...formData, actual_budget: e.target.value})} />
            <FormInput label="Deadline" type="date" value={formData.end_date} onChange={(e) => setFormData({...formData, end_date: e.target.value})} />
+        </div>
+
+        {/* Team Assignment */}
+        <div className="bg-slate-50 p-4 rounded-2xl space-y-3">
+          <h4 className="text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-2">Team Assignment</h4>
+          <div className="space-y-2">
+            {team.map((m) => (
+              <div key={m.id} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white text-[8px] font-black">
+                    {(m.user_name || m.display_name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-900">{m.user_name || m.display_name}</p>
+                    <p className="text-[7px] text-slate-500 uppercase font-bold">{m.role}</p>
+                  </div>
+                </div>
+                <button onClick={() => handleRemove(m.id)} className="p-1.5 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 size={12} className="text-rose-600" /></button>
+              </div>
+            ))}
+            {team.length === 0 && <p className="text-[7px] text-slate-500 uppercase font-bold text-center py-2">No team members assigned</p>}
+          </div>
+          <div className="grid grid-cols-[1fr_120px_auto] gap-2 pt-2">
+            <Select
+              label=""
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+              options={[{ value: '', label: 'Select member...' }, ...users.filter(u => !team.find(t => t.user_id === u.id)).map(u => ({ value: u.id, label: u.display_name || u.email }))]}
+            />
+            <Select
+              label=""
+              value={assigneeRole}
+              onChange={(e) => setAssigneeRole(e.target.value)}
+              options={[
+                { value: 'project_manager', label: 'Manager' },
+                { value: 'team_member', label: 'Member' },
+                { value: 'consultant', label: 'Consultant' },
+                { value: 'developer', label: 'Developer' },
+                { value: 'designer', label: 'Designer' }
+              ]}
+            />
+            <button type="button" onClick={handleAssign} className="mt-4 p-2 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-colors"><Plus size={14} /></button>
+          </div>
         </div>
 
         <div className="flex gap-4 pt-6 border-t border-slate-50">

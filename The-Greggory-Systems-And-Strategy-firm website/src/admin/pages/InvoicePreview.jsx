@@ -53,7 +53,7 @@ export function InvoicePreview() {
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] leading-loose">
                      Nairobi, Kenya<br/>
                      thegreggorysystemsandstrategyf@gmail.com<br/>
-                     Tel: +254 715 312 251
+                     Tel: +254 115 525 854
                   </div>
                </div>
                <div className="text-right">
@@ -106,7 +106,7 @@ export function InvoicePreview() {
                    <p className="text-[9px] font-black text-teal-700 uppercase tracking-[0.2em] mb-3">How to Pay - M-Pesa Send Money</p>
                    <ol className="text-[9px] font-bold text-slate-600 space-y-1.5 list-decimal list-inside">
                       <li>Open M-Pesa and choose Send Money</li>
-                      <li>Send to <span className="font-black text-slate-900">+254 715 312 251</span></li>
+                      <li>Send to <span className="font-black text-slate-900">+254 115 525 854</span></li>
                       <li>Use <span className="font-black text-slate-900">{invoice.invoice_number}</span> as the reference</li>
                    </ol>
                 </div>

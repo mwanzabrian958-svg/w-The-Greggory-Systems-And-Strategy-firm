@@ -46,7 +46,10 @@ export const PERMISSIONS = {
   VIEW_ACTIVITY_LOGS: 'view_activity_logs',
   ACCESS_API_DOCS: 'access_api_docs',
   VIEW_DATABASE: 'view_database',
-  MANAGE_BACKUPS: 'manage_backups'
+  MANAGE_BACKUPS: 'manage_backups',
+  MANAGE_TEAM: 'manage_team',
+  VIEW_DATA_SAFETY: 'view_data_safety',
+  MANAGE_DATA_SAFETY: 'manage_data_safety'
 };
 
 export function isAdmin(user) {

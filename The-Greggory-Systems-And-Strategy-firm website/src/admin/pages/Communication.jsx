@@ -19,7 +19,7 @@ const ANNOUNCEMENTS = [
  * Distinct from Blog Management: Handles private client/team relay.
  * Optimized with compact containers and micro-typography.
  */
-export function Communication({ user }) {
+export function Communication() {
   const [activeTab, setActiveTab] = useState("messages");
   const [clients, setClients] = useState([]);
   const [selectedClientId, setSelectedClientId] = useState("");

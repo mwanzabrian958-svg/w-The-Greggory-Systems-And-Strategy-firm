@@ -7,7 +7,7 @@ import { User, Shield, Building2 } from 'lucide-react';
 /**
  * Create User Modal
  */
-export function CreateUserModal({ isOpen, onClose, onCreate, user }) {
+export function CreateUserModal({ isOpen, onClose, onCreate }) {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',

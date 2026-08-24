@@ -6,7 +6,7 @@ import { apiCall } from "../../services/api";
  * Applications - Inbound Request Telemetry
  * Optimized with compact containers and tiny typography.
  */
-export function Applications({ user }) {
+export function Applications() {
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");

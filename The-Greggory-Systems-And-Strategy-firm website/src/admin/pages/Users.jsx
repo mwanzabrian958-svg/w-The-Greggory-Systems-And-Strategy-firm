@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiCall } from "../../services/api";
 import { Filter, UserPlus, Shield, User, CheckCircle, Download, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Users as UsersIcon, Trash2, AlertCircle, Activity } from "lucide-react";
 
-export function Users({ user }) {
+export function Users() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);

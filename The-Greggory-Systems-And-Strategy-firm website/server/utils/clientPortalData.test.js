@@ -29,7 +29,11 @@ test('buildClientPortalPayload derives business metrics from project rows', () =
     feedback: [
       { id: 1, title: 'Client satisfaction', rating: 5, status: 'responded' }
     ],
-    summary: { total_projects: 2, active_projects: 1, completed_projects: 1, total_budget: 120000, total_spent: 88000, average_project_duration: 45, client_rating: 4.8 }
+    summary: { total_projects: 2, active_projects: 1, completed_projects: 1, total_budget: 120000, total_spent: 88000, average_project_duration: 45, client_rating: 4.8 },
+    teamMembers: [
+      { id: 3, projectId: 1, projectName: 'Digital Operations', name: 'Moses Ngugi', role: 'Project Manager', duties: 'Project Manager', status: 'active' },
+      { id: 4, projectId: 2, projectName: 'CRM rollout', name: 'Njeri Wambui', role: 'Project Manager', duties: 'Project Manager', status: 'active' }
+    ]
   });
 
   assert.equal(payload.projects.length, 2);
@@ -39,4 +43,6 @@ test('buildClientPortalPayload derives business metrics from project rows', () =
   assert.equal(payload.kpiMetrics[0].label, 'On-time Delivery');
   assert.equal(payload.messages.length, 3);
   assert.equal(payload.resourceAllocations.length, 2);
+  assert.equal(payload.teamMembers.length, 2);
+  assert.equal(payload.teamMembers[0].projectName, 'Digital Operations');
 });

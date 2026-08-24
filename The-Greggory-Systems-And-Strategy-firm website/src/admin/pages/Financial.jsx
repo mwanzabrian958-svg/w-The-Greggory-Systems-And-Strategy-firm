@@ -7,7 +7,7 @@ import {
   Trash2, Edit2, ChevronRight, AlertCircle, X
 } from "lucide-react";
 
-export function Billing({ user }) {
+export function Billing() {
   const navigate = useNavigate();
   const [displayMode, setDisplayMode] = useState("ledger"); // 'ledger' | 'invoices' | 'mpesa'
   const [loading, setLoading] = useState(true);

@@ -7,7 +7,7 @@ import { formatKSH } from "../../utils/currencyUtils";
 /**
  * CRM - Strategic Relationship Telemetry
  */
-export function CRM({ user }) {
+export function CRM() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({

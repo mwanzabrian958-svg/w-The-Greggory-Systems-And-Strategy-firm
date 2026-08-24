@@ -1,17 +1,16 @@
 import React, { useState } from "react";
-import { ShieldCheck, Lock, Key, Eye, EyeOff, AlertTriangle, Shield, RefreshCw, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ShieldCheck, Lock, Key, Eye, EyeOff, AlertTriangle, Shield, RefreshCw, ChevronRight, FileText } from "lucide-react";
 
-/**
- * Security - System Hardening & Compliance
- * Optimized with compact blocks and technical-grade micro-typography.
- */
-export function Security({ user }) {
+export function Security() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const SECURITY_NODES = [
     { label: "Encrypted Relay", status: "Active", node: "AES-256" },
     { label: "Identity Node", status: "Solidified", node: "WhatsApp" },
     { label: "Ledger Audit", status: "Valid", node: "MySQL-Sync" },
+    { label: "Data Safety", status: "Compliant", node: "GDPR/KRA" },
   ];
 
   if (loading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-teal-600 w-6 h-6" /></div>;
@@ -24,7 +23,9 @@ export function Security({ user }) {
           <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[7px] mt-0.5">Systems Protection Protocol</p>
         </div>
         <div className="flex gap-2">
-            <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5"><Shield size={10} /> Compliance Valid</span>
+            <button onClick={() => navigate('/admin/data-safety')} className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[7px] font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5 hover:bg-emerald-100 transition-colors">
+              <Shield size={10} /> Data Safety Hub
+            </button>
         </div>
       </div>
 
@@ -63,16 +64,24 @@ export function Security({ user }) {
         {/* Access Logs */}
         <section className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xl overflow-hidden">
            <div className="flex items-center justify-between border-b border-slate-50 pb-4 mb-4">
-            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Access Credentials</h3>
-            <Key size={14} className="text-blue-500" />
+            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Data Safety & Compliance</h3>
+            <FileText size={14} className="text-rose-500" />
           </div>
           <div className="space-y-2">
-             {[1, 2, 3].map(i => (
-               <div key={i} className="p-2 bg-slate-50/50 rounded-lg border border-slate-100 flex items-center justify-between group hover:bg-white transition-all cursor-pointer">
-                  <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Key Cycle {i}: SHA-512 Node Valid</p>
-                  <ChevronRight size={12} className="text-slate-300 group-hover:text-teal-500" />
-               </div>
-             ))}
+             <button onClick={() => navigate('/admin/data-safety')} className="w-full p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center justify-between group hover:bg-white transition-all">
+                <div>
+                  <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Audit Logs & Access Control</p>
+                  <p className="text-[7px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Track data access, classifications, and consent</p>
+                </div>
+                <ChevronRight size={12} className="text-slate-300 group-hover:text-teal-500" />
+             </button>
+             <button onClick={() => navigate('/admin/team')} className="w-full p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center justify-between group hover:bg-white transition-all">
+                <div>
+                  <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Team & Personnel</p>
+                  <p className="text-[7px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Manage team members and project assignments</p>
+                </div>
+                <ChevronRight size={12} className="text-slate-300 group-hover:text-teal-500" />
+             </button>
           </div>
         </section>
       </div>

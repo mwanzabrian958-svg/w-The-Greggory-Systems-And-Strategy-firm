@@ -53,6 +53,7 @@ function buildClientPortalPayload({
   feedback = [],
   resources = [],
   summary = null,
+  teamMembers = [],
 }) {
   const normalizedProjects = projects.map((project) => ({
     id: project.id,
@@ -240,6 +241,17 @@ function buildClientPortalPayload({
       openMessages: normalizedMessages.filter((message) => message.unread).length,
       nextMilestone: normalizedTasks.find((task) => task.status !== "completed")?.title || "Portal synced",
     },
+    teamMembers: teamMembers.map((member) => ({
+      id: member.id,
+      projectId: member.project_id,
+      projectName: member.project_name || "Unassigned",
+      name: member.display_name || `${member.first_name || ""} ${member.last_name || ""}`.trim() || "Team member",
+      email: member.email,
+      role: member.role || "Team Member",
+      duties: member.duties || member.task_name || "Assigned to project",
+      status: member.status || "active",
+      avatar: member.avatar || null,
+    })),
   };
 }
 

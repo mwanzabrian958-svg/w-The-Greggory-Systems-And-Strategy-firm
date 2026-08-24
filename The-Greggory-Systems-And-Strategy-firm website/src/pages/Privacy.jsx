@@ -53,7 +53,7 @@ const Privacy = () => {
             <div className="rounded-2xl border border-[#e3d2bb] bg-[#fbf3e8] p-4 dark:border-slate-800 dark:bg-slate-900/60">
               <Phone className="h-5 w-5 text-[#4c6a4d]" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-white">Phone</p>
-              <p className="mt-1 text-sm text-slate-700 dark:text-slate-100">+254 715 312 251</p>
+              <p className="mt-1 text-sm text-slate-700 dark:text-slate-100">+254 115 525 854</p>
             </div>
           </div>
         </div>

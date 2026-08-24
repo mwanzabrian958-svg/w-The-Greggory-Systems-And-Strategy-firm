@@ -31,16 +31,25 @@ export const AuthProvider = ({ children }) => {
     const syncAuth = () => {
       const saved = localStorage.getItem('tgf_user')
       if (saved) {
-        setUser(JSON.parse(saved))
-      } else {
-        const adminSaved = localStorage.getItem('gf_admin_user')
-        if (adminSaved) {
-          const adminData = JSON.parse(adminSaved)
-          setUser({ ...adminData, role: adminData.role || 'admin' })
-        } else {
-          setUser(null)
-        }
+        try {
+          const parsed = JSON.parse(saved)
+          if (parsed?.token) {
+            setUser(parsed)
+            return
+          }
+        } catch (e) {}
       }
+      const adminSaved = localStorage.getItem('gf_admin_user')
+      if (adminSaved) {
+        try {
+          const adminData = JSON.parse(adminSaved)
+          if (adminData?.token) {
+            setUser({ ...adminData, role: adminData.role || 'admin' })
+            return
+          }
+        } catch (e) {}
+      }
+      setUser(null)
     }
     window.addEventListener('storage', syncAuth)
     window.addEventListener('gf-admin-session-changed', syncAuth)
