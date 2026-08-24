@@ -26,7 +26,7 @@ export function SearchResults() {
     setLoading(true);
     try {
       // Deep search querying the system backbone
-      const data = await apiCall(`/admin/search?q=${query}&deep=true`);
+      const data = await apiCall(`/admin/search?q=${encodeURIComponent(query)}&deep=true`);
       if (data.success) {
         setResults(data.results || []);
       }
@@ -48,7 +48,8 @@ export function SearchResults() {
   };
 
   const getDetailLink = (item) => {
-    if (item.type === 'user') return `/admin/users/detail/${item.id}/${item.role || 'client'}`;
+    // The backend builds the correct deep-link per result type — trust it
+    // (deriving from item.role produced invalid segments like /user).
     return item.link;
   };
 

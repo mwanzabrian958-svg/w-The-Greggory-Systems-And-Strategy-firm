@@ -46,7 +46,7 @@ function AdminLayout({ user, children, onLogout }) {
       if (searchQuery.length >= 2) {
         setIsSearching(true);
         try {
-          const data = await apiCall(`/admin/search?q=${searchQuery}`);
+          const data = await apiCall(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
           if (data.success) { setSearchResults(data.results || []); setShowResults(true); }
         } catch (e) { console.error("Search failure", e); } finally { setIsSearching(false); }
       } else { setSearchResults([]); setShowResults(false); }

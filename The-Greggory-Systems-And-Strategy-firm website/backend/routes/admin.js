@@ -59,13 +59,13 @@ router.get('/search', async (req, res) => {
 
     // 1. Search Personnel (Users, Admins) - PURGED DEVELOPERS
     const personnelQuery = isDeep
-      ? `(SELECT 'user' as type, id, display_name as title, email, phone_number as phone, primary_role as role, is_active, created_at as metadata, CONCAT('/admin/users/detail/', id, '/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ? OR phone_number LIKE ?) AND deleted_at IS NULL)
+      ? `(SELECT 'user' as type, id, COALESCE(display_name, CONCAT_WS(' ', first_name, last_name), email) as title, email, phone_number as phone, primary_role as role, is_active, created_at as metadata, CONCAT('/admin/users/detail/', id, '/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ? OR phone_number LIKE ?) AND deleted_at IS NULL)
          UNION ALL
-         (SELECT 'user' as type, id, display_name as title, email, phone_number as phone, admin_level as role, is_active, created_at as metadata, CONCAT('/admin/users/detail/', id, '/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ? OR phone_number LIKE ?) AND deleted_at IS NULL)
+         (SELECT 'user' as type, id, COALESCE(display_name, CONCAT_WS(' ', first_name, last_name), email) as title, email, phone_number as phone, admin_level as role, is_active, created_at as metadata, CONCAT('/admin/users/detail/', id, '/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ? OR phone_number LIKE ?) AND deleted_at IS NULL)
          LIMIT ?`
-      : `(SELECT 'user' as type, id, display_name as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL)
+      : `(SELECT 'user' as type, id, COALESCE(display_name, CONCAT_WS(' ', first_name, last_name), email) as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL)
          UNION ALL
-         (SELECT 'user' as type, id, display_name as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL)
+         (SELECT 'user' as type, id, COALESCE(display_name, CONCAT_WS(' ', first_name, last_name), email) as title, email as subtitle, CONCAT('/admin/users/detail/', id, '/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL)
          LIMIT ?`;
 
     const personnelParams = isDeep

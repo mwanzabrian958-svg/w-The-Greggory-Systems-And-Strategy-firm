@@ -5048,7 +5048,20 @@ const modularRoutes = [
 modularRoutes.forEach((item) => {
   try {
     const routeHandler = require(item.route);
-    app.use(item.path, routeHandler);
+    if (item.path === "/api/admin") {
+      // Global search exposes personnel contact details and ledger data,
+      // so it must never be reachable without a valid admin session.
+      app.use(
+        item.path,
+        (req, res, next) =>
+          req.path.startsWith("/search")
+            ? authenticateAdmin(req, res, next)
+            : next(),
+        routeHandler
+      );
+    } else {
+      app.use(item.path, routeHandler);
+    }
     console.log(`[SERVER] Modular route ${item.path} loaded`);
   } catch (error) {
     console.warn(
