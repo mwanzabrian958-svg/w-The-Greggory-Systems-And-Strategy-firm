@@ -65,12 +65,9 @@ const Home = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-gold-400 animate-pulse" />
             Systems · Strategy · Networks
           </div>
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white uppercase tracking-tighter leading-[0.95] mb-4">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black text-white uppercase tracking-tighter leading-[0.95] mb-8">
             Engineering Your <span className="text-gold-400">Next Chapter</span>
           </h1>
-          <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto mb-8 leading-relaxed">
-            {SITE_NAME} builds resilient enterprise systems, formulates winning strategies, and designs secure network infrastructures that transform how organizations operate and grow.
-          </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link to="/contact" className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-6 py-3 text-xs font-bold text-slate-950 shadow-lg shadow-gold-500/20 hover:bg-gold-400 transition-all active:scale-95">
               Start a Project
@@ -109,6 +106,9 @@ const Home = () => {
       {/* ── VIDEO ── */}
       <section className="py-14 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+          <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto mb-6 leading-relaxed text-center">
+            {SITE_NAME} builds resilient enterprise systems, formulates winning strategies, and designs secure network infrastructures that transform how organizations operate and grow.
+          </p>
           <div className="text-center">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Featured Insight</h2>
             <div className="h-px w-8 bg-gold-500 mx-auto mb-3" />
