@@ -3934,7 +3934,7 @@ app.get("/api/admin/dashboard", authenticateAdmin, async (req, res) => {
     `);
 
     const [recentActivity] = await mainDb.query(`
-      SELECT a.id, a.action_type, a.message, a.created_at,
+      SELECT a.id, a.action_type, a.action_description as message, a.created_at,
              CONCAT(u.first_name, ' ', u.last_name) as user_name
       FROM admin_activity_logs a
       LEFT JOIN users u ON u.id = a.admin_user_id

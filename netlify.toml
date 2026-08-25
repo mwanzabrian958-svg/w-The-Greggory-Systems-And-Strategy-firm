@@ -1,0 +1,43 @@
+# ==========================================================================
+# Netlify configuration (monorepo-aware)
+#
+# This is a full-stack project, but Netlify hosts ONLY the static frontend.
+# The Express/MySQL backend must run elsewhere (Railway, Render, Fly.io, VPS).
+#
+# `base` points Netlify into the Vite app folder so `npm install` + `npm run
+# build` run where the frontend's package.json lives. Paths below are then
+# relative to that base directory.
+# ==========================================================================
+
+[build]
+  base = "The-Greggory-Systems-And-Strategy-firm website"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Fail loud: if the frontend still calls same-origin /api/* on Netlify,
+# return a real 404 instead of silently serving index.html as JSON.
+# (Replace with a redirect to your deployed backend once it exists:
+#   from = "/api/*"  to = "https://<your-backend-host>/api/:splat"  status = 200)
+[[redirects]]
+  from = "/api/*"
+  to = "/api-misconfigured"
+  status = 404
+  force = true
+
+# SPA fallback so React Router routes load directly on refresh/deep links.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+

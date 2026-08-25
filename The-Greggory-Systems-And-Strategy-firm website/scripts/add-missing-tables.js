@@ -129,6 +129,38 @@ const mysql = require("mysql2/promise");
     console.log("rental module tables created + enums seeded");
   }
 
+  // 4. DATA ACCESS LOGS
+  await conn.query(`CREATE TABLE IF NOT EXISTS data_access_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    user_type ENUM('admin', 'developer', 'user', 'system') NOT NULL,
+    entity_type VARCHAR(100) NOT NULL,
+    entity_id BIGINT NOT NULL,
+    action ENUM('view', 'create', 'update', 'delete', 'export', 'download', 'share') NOT NULL,
+    data_classification_id BIGINT,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    session_id VARCHAR(255),
+    request_method VARCHAR(10),
+    request_url TEXT,
+    query_params JSON,
+    response_status INT,
+    error_message TEXT,
+    access_granted BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`);
+  console.log("data_access_logs table verified");
+
+  // 5. MISSING COLUMNS
+  try {
+    await conn.query("ALTER TABLE project_invoices ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL");
+    console.log("project_invoices.deleted_at column added");
+  } catch (e) {
+    if (!e.message.includes("Duplicate column name")) {
+      console.warn("Could not add project_invoices.deleted_at:", e.message);
+    }
+  }
+
   console.log("ALL MIGRATIONS COMPLETE");
 })().catch((e) => {
   console.error("MIGRATION FAILED:", e.message);

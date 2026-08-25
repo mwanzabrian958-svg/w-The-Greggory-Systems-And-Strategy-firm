@@ -931,6 +931,7 @@ CREATE TABLE IF NOT EXISTS project_invoices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_by BIGINT NOT NULL,
     updated_by BIGINT,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     INDEX idx_project_invoices_project (project_id),
     INDEX idx_project_invoices_client (client_id),
     INDEX idx_project_invoices_number (invoice_number),
