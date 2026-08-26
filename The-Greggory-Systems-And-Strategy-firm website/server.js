@@ -442,8 +442,9 @@ const mainDb = mysql.createPool({
 });
 
 mainDb.on('error', (err) => {
-  console.error('[DATABASE] Unexpected error on idle client', err);
-  process.exit(-1);
+  // mysql2 pools reconnect automatically. Exiting here turns any transient
+  // DB hiccup into a container crash loop (this is what crashed Railway).
+  console.error('[DATABASE] Pool error (pool will retry automatically):', err.message);
 });
 
 // Alias db to mainDb for legacy compatibility in this monolithic file
@@ -5028,15 +5029,25 @@ try {
   console.error("[SERVER] Error loading WhatsApp routes:", error.message);
 }
 
-// Health Check API
+// Health Check API — synchronous 200 for Railway's healthcheck. The DB probe
+// below runs fire-and-forget so the response never waits on MySQL.
+let lastDbCheck = { ok: null, at: null };
 app.get("/api/health", (req, res) => {
   res.json({
     status: "OK",
     message: "Server is running",
     timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV,
-    database: "connected",
+    env: process.env.NODE_ENV || "development",
+    database: lastDbCheck.ok === null ? "unknown" : lastDbCheck.ok ? "connected" : "unreachable",
+    dbCheckedAt: lastDbCheck.at,
   });
+  mainDb
+    .query("SELECT 1")
+    .then(() => { lastDbCheck = { ok: true, at: new Date().toISOString() }; })
+    .catch((e) => {
+      lastDbCheck = { ok: false, at: new Date().toISOString() };
+      console.warn("[HEALTH] DB probe failed:", e.code || e.message);
+    });
 });
 
 // Modular Routes Integration (Centralized Control)

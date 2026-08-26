@@ -1,6 +1,9 @@
 {
   "name": "the-greggory-systems-and-strategy-firm-root",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "dev": "npm --prefix \"The-Greggory-Systems-And-Strategy-firm website\" run dev",
     "start": "npm --prefix \"The-Greggory-Systems-And-Strategy-firm website\" run start",

@@ -49,6 +49,9 @@
     "redis": "^6.2.1",
     "uuid": "^13.0.0"
   },
+  "engines": {
+    "node": ">=20 <23"
+  },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.1.0",
     "autoprefixer": "^10.4.16",
