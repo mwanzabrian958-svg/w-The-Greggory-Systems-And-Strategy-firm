@@ -2,7 +2,14 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install --prefix \"The-Greggory-Systems-And-Strategy-firm website\" --no-audit --no-fund"
+    "buildCommand": "npm install --prefix \"The-Greggory-Systems-And-Strategy-firm website\" --no-audit --no-fund",
+    "nixpacksPlan": {
+      "phases": {
+        "install": {
+          "cmds": ["npm install --prefix \"The-Greggory-Systems-And-Strategy-firm website\" --no-audit --no-fund"]
+        }
+      }
+    }
   },
   "deploy": {
     "startCommand": "cd \"The-Greggory-Systems-And-Strategy-firm website\" && node scripts/import-if-empty.js && node server.js",
