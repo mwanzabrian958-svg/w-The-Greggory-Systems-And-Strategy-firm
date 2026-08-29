@@ -59,8 +59,13 @@ async function connectWithRetry() {
 
   try {
     const [tables] = await conn.query('SHOW TABLES');
-    if (tables.length > 0) {
-      process.stdout.write(`[import] ${tables.length} tables exist - skipping import\n`);
+    const tableNames = tables.map((r) => Object.values(r)[0]);
+    // A partial import (e.g. a previous run aborted on a foreign-key error)
+    // leaves some tables behind; detect it via the core auth tables so we can
+    // wipe and re-import instead of silently skipping a broken schema.
+    const coreTables = ['users', 'admin_users', 'developer_users'];
+    if (coreTables.every((t) => tableNames.includes(t))) {
+      process.stdout.write(`[import] ${tableNames.length} tables exist - skipping import\n`);
       return;
     }
     const dumpPath = path.join(__dirname, '..', 'database', 'the-greggory-systems-and-strategy-firm-db-main.sql');
@@ -68,8 +73,22 @@ async function connectWithRetry() {
       process.stdout.write(`[import] dump not found at ${dumpPath} - skipping\n`);
       return;
     }
+    if (tableNames.length > 0) {
+      process.stdout.write(`[import] partial schema detected (${tableNames.length} tables, core missing) - dropping and re-importing\n`);
+      await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+      for (const t of tableNames) {
+        await conn.query(`DROP TABLE IF EXISTS \`${t}\``);
+      }
+      await conn.query('SET FOREIGN_KEY_CHECKS = 1');
+    }
     process.stdout.write(`[import] empty DB detected - importing ${path.basename(dumpPath)}...\n`);
-    await conn.query(fs.readFileSync(dumpPath, 'utf8'));
+    const dump = fs.readFileSync(dumpPath, 'utf8');
+    // The dump creates tables in an order MySQL rejects with foreign-key
+    // checks on (a table referencing `users` is created before `users`), so
+    // import with checks disabled and re-enable afterwards.
+    await conn.query('SET FOREIGN_KEY_CHECKS = 0');
+    await conn.query(dump);
+    await conn.query('SET FOREIGN_KEY_CHECKS = 1');
     const [after] = await conn.query('SHOW TABLES');
     process.stdout.write(`[import] done - ${after.length} tables created\n`);
   } finally {
