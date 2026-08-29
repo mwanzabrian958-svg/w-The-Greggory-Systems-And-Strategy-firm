@@ -26,8 +26,11 @@ services:
     # devDependencies, so vite would be missing and `npm run build` would fail
     # with "vite: not found".
     buildCommand: npm install --no-audit --no-fund --include=dev && npm run build
-    # import-if-empty seeds the cloud MySQL once, then boots the API+frontend.
-    startCommand: node scripts/import-if-empty.js && node server.js
+    # import-if-empty seeds the cloud MySQL once (from database/*.sql), then
+    # sync-db-schema adds the tables the seed dump doesn't carry (currencies,
+    # properties, knowledge_base, auth_*, etc. — see database/schema-sync.json).
+    # Both are idempotent and exit 0 even on error, so they never block boot.
+    startCommand: node scripts/import-if-empty.js && node scripts/sync-db-schema.js && node server.js
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
