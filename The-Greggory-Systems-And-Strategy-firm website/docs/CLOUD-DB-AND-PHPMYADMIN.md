@@ -30,25 +30,52 @@ auto-imported** from `database/the-…db-main.sql` on the first deploy
 
 ## Step 2 — Set the env vars on Render (5 min)
 
-Render dashboard → your service → **Environment** → add / update:
+> **The two sources:** your VS Code `.env` is git-ignored — it never reaches
+> GitHub or Render (that's why production logs said `injected env (0) from .env`).
+> Every value below must be **copied from `.env` into Render → Environment tab**.
+> Save with the **"Save Changes"** button — a redeploy starts automatically.
+
+### Table 1 — REQUIRED (site misbehaves without these)
 
 | Key | Value | Notes |
 |---|---|---|
-| `DB_HOST` | Aiven **Host** | from Step 1.4 |
-| `DB_PORT` | Aiven **Port** | from Step 1.4 |
-| `DB_USER` | `avnadmin` | |
-| `DB_PASSWORD` | Aiven **Password** | |
-| `DB_SSL` | `true` | Aiven requires TLS — the pools enable it |
-| `DB_NAME` | `the_greggory_systems_and_strategy_firm_db_main` | same name as your XAMPP DB (auto-created) |
+| `DB_HOST` | Aiven **Service Host** | e.g. `mysql-xxxx…h.aivencloud.com` — Aiven Overview page |
+| `DB_PORT` | Aiven **Port** | custom port, **not** 3306 |
+| `DB_USER` | `avnadmin` | Aiven Overview page |
+| `DB_PASSWORD` | Aiven **admin password** | eye icon on Overview page |
+| `DB_SSL` | `true` | Aiven requires TLS — pools enable it |
+| `DB_NAME` | `the_greggory_systems_and_strategy_firm_db_main` | same name as the XAMPP DB; auto-created on first boot |
+| `NODE_ENV` | `production` | |
+| `JWT_SECRET` | *copy from local `.env`* | |
+| `JWT_EXPIRES_IN` | `7d` | |
+| `ADMIN_SESSION_SECRET` | *copy from local `.env`* | |
+| `SESSION_SECRET` | *copy from local `.env`* | |
+| `ADMIN_KEY` | *copy from local `.env`* | x-admin-key header for legacy admin routes |
+| `ADMIN_CODE` | *generate a strong random code* | ⚠️ local `.env` ships it EMPTY — admin/developer logins need this second factor |
+| `FRONTEND_URL` | `https://w-the-greggory-systems-and-strategy-firm.onrender.com` | CORS + email links |
+| `MPESA_CALLBACK_URL` | `https://w-the-greggory-systems-and-strategy-firm.onrender.com/api/mpesa/callback` | |
 
-Also set these while you're there (they were **all missing** in production —
-the log line `injected env (0) from .env` proves no secrets reached Render):
+### Table 2 — OPTIONAL (add when you activate the feature)
 
-| Key | Value |
+| Key | When |
 |---|---|
-| `JWT_SECRET`, `ADMIN_SESSION_SECRET`, `SESSION_SECRET`, `ADMIN_CODE`, `ADMIN_KEY` | copy from your local `.env` |
-| `FRONTEND_URL` | `https://w-the-greggory-systems-and-strategy-firm.onrender.com` |
-| `MPESA_CALLBACK_URL` | `https://w-the-greggory-systems-and-strategy-firm.onrender.com/api/mpesa/callback` |
+| `DEV_CODE` | separate developer-portal code (falls back to `ADMIN_CODE` if unset) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_TO` | email relay — `SMTP_PASS` needs a Gmail **App Password** |
+| `COMPANY_PHONE_NUMBER`, `COMPANY_WHATSAPP_NUMBER` | SMS / WhatsApp hub |
+| `MPESA_PASSKEY`, `MPESA_SHORTCODE` | sandbox values already in local `.env` |
+| `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET` | real STK Push — from Safaricom Daraja app |
+| `AFRICASTALKING_USERNAME`, `AFRICASTALKING_API_KEY` | SMS sending |
+| `VITE_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID` | Google Sign-In — safe to skip: unset/placeholder hides the button (`GoogleSignIn.jsx` guards it) |
+
+### Table 3 — DO NOT set in production
+
+| Key | Why |
+|---|---|
+| `REDIS_URL` | no Redis on Render — server falls back to in-memory storage |
+| `MONGODB_URI` | intentionally skipped by the server |
+| `PORT` | Render injects it automatically |
+| `RATE_LIMIT_*` | not read by the code (limits are hardcoded) |
+| `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_CLOUD_PROJECT`, `STORAGE_BUCKET_*` | GCP service-account file isn't deployed |
 
 Saving env vars triggers a redeploy automatically.
 
