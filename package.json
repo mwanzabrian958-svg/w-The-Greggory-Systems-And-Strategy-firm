@@ -6,8 +6,8 @@
   },
   "scripts": {
     "dev": "npm --prefix \"The-Greggory-Systems-And-Strategy-firm website\" run dev",
-    "start": "npm --prefix \"The-Greggory-Systems-And-Strategy-firm website\" run start",
-    "build": "npm --prefix \"The-Greggory-Systems-And-Strategy-firm website\" run build",
+    "start": "npm --prefix \"The-Greggory-Systems-And-Strategy-firm website\" run start:cloud",
+    "build": "npm install --prefix \"The-Greggory-Systems-And-Strategy-firm website\" --no-audit --no-fund && npm --prefix \"The-Greggory-Systems-And-Strategy-firm website\" run build",
     "db:init": "npm --prefix \"The-Greggory-Systems-And-Strategy-firm website\" run db:init",
     "install:all": "npm install && npm install --prefix \"The-Greggory-Systems-And-Strategy-firm website\" && npm install --prefix \"The-Greggory-Systems-And-Strategy-firm website/backend\""
   },

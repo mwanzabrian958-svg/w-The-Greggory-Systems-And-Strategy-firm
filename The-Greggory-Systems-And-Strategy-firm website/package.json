@@ -18,6 +18,7 @@
     "db:init": "node scripts/initialize-db.js",
     "db:whatsapp": "node scripts/setup-whatsapp-verification.js",
     "start": "node server.js",
+    "start:cloud": "node scripts/import-if-empty.js && node server.js",
     "server": "nodemon server.js"
   },
   "dependencies": {
