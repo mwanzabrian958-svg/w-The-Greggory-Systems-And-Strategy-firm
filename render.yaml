@@ -37,6 +37,10 @@ services:
       # image drift can never break the build or runtime.
       - key: NODE_VERSION
         value: "22"
+      # Free-tier build containers have 512 MB RAM. Cap Vite's heap so the
+      # bundler garbage-collects before the container gets OOM-killed mid-build.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=460
       # ---- Cloud MySQL (Aiven free tier) ----
       - key: DB_SSL
         value: "true"
