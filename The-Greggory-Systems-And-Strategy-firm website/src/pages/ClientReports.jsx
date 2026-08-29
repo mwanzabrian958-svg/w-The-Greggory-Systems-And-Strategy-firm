@@ -108,7 +108,8 @@ const ClientReports = () => {
           message: `Client ${user.display_name} has opened the technical report: "${report.title}" for project "${report.project_name}".`,
           type: 'service_feedback',
           priority: 'Low',
-          rating: 5
+          rating: 5,
+          author: 'client'
         })
       });
     } catch (err) {

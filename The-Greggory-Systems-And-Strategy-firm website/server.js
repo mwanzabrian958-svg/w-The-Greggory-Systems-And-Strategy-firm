@@ -1149,7 +1149,7 @@ const handleClientFeedbackList = async (req, res) => {
     const [feedbackRows] = await mainDb.query(
       `SELECT id, title, message, feedback_type, status, priority, created_at, admin_response, responded_at
        FROM user_feedback
-       WHERE user_id = ? AND deleted_at IS NULL AND status != 'closed'
+       WHERE user_id = ? AND deleted_at IS NULL AND status != 'closed' AND author = 'admin'
        ORDER BY created_at DESC
        LIMIT 12`,
       [userId],
@@ -1164,21 +1164,55 @@ const handleClientFeedbackList = async (req, res) => {
 
 const handleClientFeedbackCreate = async (req, res) => {
   try {
-    const { userId, title, message, priority = "medium" } = req.body;
+    const { userId, title, message, priority = "medium", rating, type, author } = req.body;
 
     if (!userId || !message) {
       return res.status(400).json({ success: false, message: "Client ID and message are required" });
     }
 
+    // author='client'  -> sent from the client portal: lands on the ADMIN
+    //                     dashboard (Support page) and is hidden from the
+    //                     client's own portal list.
+    // author='admin'   -> relay from the admin Communication Hub: stays
+    //                     visible in the client's portal (existing behavior).
+    const isClientSent = author === "client";
+
+    const FEEDBACK_TYPES = [
+      "project_review",
+      "service_feedback",
+      "complaint",
+      "suggestion",
+      "testimonial",
+      "bug_report",
+    ];
+    const feedbackType = FEEDBACK_TYPES.includes(type) ? type : "service_feedback";
+    const ratingNum = Number(rating);
+    const ratingValue =
+      Number.isFinite(ratingNum) && ratingNum >= 1 && ratingNum <= 5 ? ratingNum : null;
+    const priorityValue = ["low", "medium", "high", "urgent"].includes(
+      String(priority).toLowerCase(),
+    )
+      ? String(priority).toLowerCase()
+      : "medium";
+
     const [result] = await mainDb.query(
-      `INSERT INTO user_feedback (user_id, title, message, feedback_type, status, priority, source, created_by, created_at)
-       VALUES (?, ?, ?, 'service_feedback', 'new', ?, 'website', 1, NOW())`,
-      [userId, title || "Admin update", message, priority],
+      `INSERT INTO user_feedback (user_id, title, message, feedback_type, author, status, priority, rating, source, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, 'new', ?, ?, 'website', ?, NOW())`,
+      [
+        userId,
+        title || (isClientSent ? "Client feedback" : "Admin update"),
+        message,
+        feedbackType,
+        isClientSent ? "client" : "admin",
+        priorityValue,
+        ratingValue,
+        isClientSent ? 0 : 1,
+      ],
     );
 
     res.status(201).json({
       success: true,
-      message: "Feedback sent to client portal",
+      message: isClientSent ? "Feedback sent to our team" : "Feedback sent to client portal",
       feedbackId: result.insertId,
     });
   } catch (error) {
@@ -2601,6 +2635,7 @@ app.get("/api/feedback", async (req, res) => {
       project_id,
       feedback_type,
       status,
+      author,
       limit = 50,
       offset = 0,
     } = req.query;
@@ -2632,6 +2667,13 @@ app.get("/api/feedback", async (req, res) => {
     if (status) {
       query += " AND uf.status = ?";
       params.push(status);
+    }
+
+    // author='client' filters to feedback submitted from the client portal
+    // (what the Support dashboard lists); 'admin' = Communication Hub relays.
+    if (author === "client" || author === "admin") {
+      query += " AND uf.author = ?";
+      params.push(author);
     }
 
     query += " ORDER BY uf.created_at DESC LIMIT ? OFFSET ?";

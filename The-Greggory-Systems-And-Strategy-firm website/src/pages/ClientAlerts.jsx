@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Bell,
   X,
@@ -224,7 +224,7 @@ const ClientAlerts = () => {
                                         userId: user.userId || user.id,
                                         title: 'Media Alert Accessed',
                                         message: `User viewed media attachment in alert: "${alert.title}"`,
-                                        type: 'service_feedback', priority: 'Low', rating: 5
+                                        type: 'service_feedback', priority: 'Low', rating: 5, author: 'client'
                                       })
                                    });
                                  } catch(e) {}
@@ -242,7 +242,7 @@ const ClientAlerts = () => {
                                       userId: user.userId || user.id,
                                       title: 'Video Alert Played',
                                       message: `User started video playback in alert: "${alert.title}"`,
-                                      type: 'service_feedback', priority: 'Low', rating: 5
+                                      type: 'service_feedback', priority: 'Low', rating: 5, author: 'client'
                                     })
                                  });
                                } catch(e) {}

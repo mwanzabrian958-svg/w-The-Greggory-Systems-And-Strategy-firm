@@ -300,7 +300,8 @@ const ClientPortal = () => {
           message: feedbackForm.message,
           type: feedbackForm.type,
           priority: feedbackForm.priority,
-          rating: feedbackForm.rating
+          rating: feedbackForm.rating,
+          author: 'client'
         })
       });
       const data = await response.json();
