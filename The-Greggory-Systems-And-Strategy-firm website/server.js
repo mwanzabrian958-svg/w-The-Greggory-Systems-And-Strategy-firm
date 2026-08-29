@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const { createClient } = require('redis');
 const PDFDocument = require('pdfkit');
 const { OAuth2Client } = require('google-auth-library');
-const connectMongoDB = require("./server/config/mongodb");
+const { connectMongoDB } = require("./server/config/mongodb");
 const models = require("./server/models");
 const {
   User, Project, Document, Message, WebsiteContent,
@@ -16,6 +16,7 @@ const {
   ContactForm, Transaction, ActivityLog
 } = models;
 const path = require("path");
+const fs = require("fs");
 const multer = require("multer");
 const crypto = require("crypto");
 const bcryptjs = require("bcryptjs");
@@ -369,6 +370,12 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(express.static("public"));
 
+// Single-origin production mode: serve the built React app (dist/) from this
+// same server, exactly like the Vite dev proxy does on localhost. One origin
+// means no CORS issues, no separate static host, no API URL mismatch.
+const distDir = path.join(__dirname, "dist");
+app.use(express.static(distDir));
+
 // ── LIVE USER TRACKING MIDDLEWARE ────────────────────────────
 app.use(async (req, res, next) => {
   try {
@@ -439,6 +446,11 @@ const mainDb = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
+  // Cloud MySQL providers (Aiven, TiDB Cloud, PlanetScale...) REQUIRE TLS.
+  // Local XAMPP has no SSL, so it stays opt-in: set DB_SSL=true in production.
+  ...(process.env.DB_SSL === "true"
+    ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false } }
+    : {}),
 });
 
 mainDb.on('error', (err) => {
@@ -5102,20 +5114,9 @@ app.get("/dashboard", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "dashboard.html"));
 });
 
-// 404 handler
-app.use((req, res) => {
-  if (req.accepts("html")) {
-    res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
-  } else if (req.accepts("json")) {
-    res.status(404).json({
-      success: false,
-      message: "Endpoint not found",
-      path: req.path,
-    });
-  } else {
-    res.status(404).send("Not found");
-  }
-});
+// NOTE: the 404 handler was moved to the very bottom of this file (just before
+// app.listen). It used to be registered here, which swallowed every route
+// defined below it (Express matches in registration order).
 
 // Start server
 // User Projects API
@@ -5205,12 +5206,42 @@ app.delete("/api/tasks/:taskId", async (req, res) => {
   }
 });
 
+// ── SPA fallback + 404 — registered LAST so every API route above wins ──────
+// Any GET that doesn't target /api serves the React app, so client-side routes
+// (e.g. /login, /admin, /portal) survive refresh/deep links in production —
+// the same behaviour Netlify's "/*  -> /index.html" rule provided.
+app.get(/^\/(?!api(?:\/|$)).*/, (req, res, next) => {
+  const indexFile = path.join(distDir, "index.html");
+  if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
+  next(); // no build present (local dev) -> fall through to the 404 handler
+});
+
+// 404 handler (must stay below ALL routes)
+app.use((req, res) => {
+  if (req.accepts("html")) {
+    res.status(404).sendFile(path.join(__dirname, "public", "404.html"));
+  } else if (req.accepts("json")) {
+    res.status(404).json({
+      success: false,
+      message: "Endpoint not found",
+      path: req.path,
+    });
+  } else {
+    res.status(404).send("Not found");
+  }
+});
+
 app.listen(PORT, "0.0.0.0", async () => {
   console.log(`Server running on port ${PORT}`);
 
-  // Connect to MongoDB Atlas
+  // Connect to MongoDB Atlas (optional — a Mongo outage must never take the
+  // whole API down with it)
   if (process.env.MONGODB_URI) {
-    await connectMongoDB();
+    try {
+      await connectMongoDB();
+    } catch (mongoErr) {
+      console.warn("[MONGODB] Connection failed, continuing without it:", mongoErr.message);
+    }
   } else {
     console.log("MONGODB_URI not found in .env, skipping MongoDB connection.");
   }

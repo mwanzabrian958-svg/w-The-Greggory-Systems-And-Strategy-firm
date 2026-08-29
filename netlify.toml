@@ -17,14 +17,11 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# Fail loud: if the frontend still calls same-origin /api/* on Netlify,
-# return a real 404 instead of silently serving index.html as JSON.
-# (Replace with a redirect to your deployed backend once it exists:
-#   from = "/api/*"  to = "https://<your-backend-host>/api/:splat"  status = 200)
+# API proxy: forward same-origin /api/* to the live Railway backend.
 [[redirects]]
   from = "/api/*"
-  to = "/api-misconfigured"
-  status = 404
+  to = "https://greggory-api-production.up.railway.app/api/:splat"
+  status = 200
   force = true
 
 # SPA fallback so React Router routes load directly on refresh/deep links.

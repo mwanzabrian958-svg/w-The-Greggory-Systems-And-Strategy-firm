@@ -1,0 +1,95 @@
+# ==========================================================================
+# Render Blueprint — free full-stack deployment of The Greggory Systems And
+# Strategy Firm.
+#
+# ONE service runs everything: the Express API (/api/*) AND the built React
+# frontend (dist/), served from a single origin exactly like localhost dev.
+#
+# How to use:
+#   1. Push this repo to GitHub.
+#   2. https://dashboard.render.com/blueprints -> "New Blueprint Instance"
+#      -> pick this repo. Render reads this file and prompts for the
+#      `sync: false` secrets below (paste them from your local .env and from
+#      your free Aiven MySQL service — see docs/DEPLOYMENT-FREE-STACK.md).
+#   3. Apply. First boot auto-imports database/*.sql into the empty cloud DB.
+# ==========================================================================
+services:
+  - type: web
+    name: greggory-firm
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: "The-Greggory-Systems-And-Strategy-firm website"
+    # No package-lock.json is shipped (it is git-ignored on purpose), so use
+    # `npm install` — never `npm ci` (that mismatch is what killed Railway).
+    buildCommand: npm install --no-audit --no-fund && npm run build
+    # import-if-empty seeds the cloud MySQL once, then boots the API+frontend.
+    startCommand: node scripts/import-if-empty.js && node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # ---- Cloud MySQL (Aiven free tier) ----
+      - key: DB_SSL
+        value: "true"
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: defaultdb
+      # ---- Auth / sessions (copy from local .env) ----
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: ADMIN_SESSION_SECRET
+        sync: false
+      - key: ADMIN_CODE
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      # ---- Public URLs (set after first deploy, e.g. https://greggory-firm.onrender.com) ----
+      - key: FRONTEND_URL
+        sync: false
+      - key: MPESA_CALLBACK_URL
+        sync: false
+      # ---- Optional integrations (copy from local .env if you use them) ----
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: AFRICASTALKING_USERNAME
+        sync: false
+      - key: AFRICASTALKING_API_KEY
+        sync: false
+      - key: COMPANY_PHONE_NUMBER
+        sync: false
+      - key: COMPANY_WHATSAPP_NUMBER
+        sync: false
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_SHORTCODE
+        sync: false
+      # NOTE: MONGODB_URI and REDIS_URL are intentionally omitted — the server
+      # skips MongoDB when unset and falls back to in-memory rate-limit/session
+      # storage without Redis. Add them later only if you actually need them.

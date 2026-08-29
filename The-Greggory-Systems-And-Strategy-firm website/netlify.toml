@@ -18,13 +18,11 @@
 #      FRONTEND_URL accordingly.
 # ==========================================================================
 
-# Fail loud: if the frontend still calls same-origin /api/* on Netlify,
-# return a real 404 instead of silently serving index.html as JSON.
-# (Remove this redirect only if you later add Netlify Functions under /api.)
+# API proxy: forward same-origin /api/* to the live Railway backend.
 [[redirects]]
   from = "/api/*"
-  to = "/api-misconfigured"
-  status = 404
+  to = "https://greggory-api-production.up.railway.app/api/:splat"
+  status = 200
   force = true
 
 [[redirects]]

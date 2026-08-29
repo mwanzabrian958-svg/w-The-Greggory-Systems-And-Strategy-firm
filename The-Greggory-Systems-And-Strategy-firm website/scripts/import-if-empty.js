@@ -23,6 +23,10 @@ function dbConfig() {
     database: process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main',
     multipleStatements: true,
     connectTimeout: 15000,
+    // Cloud MySQL (Aiven, TiDB...) requires TLS; local XAMPP does not.
+    ...(process.env.DB_SSL === 'true'
+      ? { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: false } }
+      : {}),
   };
 }
 
