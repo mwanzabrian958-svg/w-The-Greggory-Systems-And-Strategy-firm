@@ -22,7 +22,10 @@ services:
     rootDir: "The-Greggory-Systems-And-Strategy-firm website"
     # No package-lock.json is shipped (it is git-ignored on purpose), so use
     # `npm install` — never `npm ci` (that mismatch is what killed Railway).
-    buildCommand: npm install --no-audit --no-fund && npm run build
+    # --include=dev is REQUIRED: NODE_ENV=production (set below) makes npm skip
+    # devDependencies, so vite would be missing and `npm run build` would fail
+    # with "vite: not found".
+    buildCommand: npm install --no-audit --no-fund --include=dev && npm run build
     # import-if-empty seeds the cloud MySQL once, then boots the API+frontend.
     startCommand: node scripts/import-if-empty.js && node server.js
     healthCheckPath: /api/health
