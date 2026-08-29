@@ -58,12 +58,19 @@ services:
         sync: false
       - key: SESSION_SECRET
         sync: false
+      # Admin API key — sent as the x-admin-key header by protected admin routes
+      - key: ADMIN_KEY
+        sync: false
       # ---- Public URLs (set after first deploy, e.g. https://greggory-firm.onrender.com) ----
       - key: FRONTEND_URL
         sync: false
       - key: MPESA_CALLBACK_URL
         sync: false
       # ---- Optional integrations (copy from local .env if you use them) ----
+      # Build-time Google Sign-In (baked into the React bundle). If blank,
+      # the Google button simply hides itself — the site still works.
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: SMTP_HOST
