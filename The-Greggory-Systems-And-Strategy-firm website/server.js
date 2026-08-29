@@ -3225,6 +3225,50 @@ app.get("/api/documents/:type/:id/pdf", async (req, res) => {
   }
 });
 
+// Client Portal: download one of the client's OWN invoices as a PDF.
+// Ownership is enforced by joining through user_projects (the same way the
+// client-dashboard lists invoices), so a client can never fetch another
+// client's invoice by guessing ids.
+app.get("/api/users/my-invoices/:id/pdf", authenticateUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await mainDb.query(
+      `SELECT pi.*, up.project_name,
+              CONCAT(u.first_name, ' ', u.last_name) AS client_name,
+              u.email AS client_email, u.phone_number AS client_phone
+       FROM project_invoices pi
+       JOIN user_projects up ON up.id = pi.project_id
+       LEFT JOIN users u ON u.id = up.user_id
+       WHERE pi.id = ? AND up.user_id = ?
+       LIMIT 1`,
+      [id, req.userId],
+    );
+    const invoice = rows[0];
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: "Invoice not found" });
+    }
+    const pdfBuffer = await generatePDFContent("invoices", {
+      invoice_number: invoice.invoice_number,
+      issue_date: invoice.issue_date,
+      due_date: invoice.due_date,
+      client_name: invoice.client_name,
+      client_email: invoice.client_email,
+      client_phone: invoice.client_phone,
+      description: invoice.description || `Project: ${invoice.project_name}`,
+      amount: invoice.amount,
+    });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="invoice-${invoice.invoice_number || id}.pdf"`,
+    );
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("[PDF] client invoice error:", error);
+    res.status(500).json({ success: false, message: "Failed to generate invoice PDF" });
+  }
+});
+
 app.post("/api/documents/generate/:type/:id", async (req, res) => {
   try {
     const { type, id } = req.params;
@@ -5123,6 +5167,11 @@ const modularRoutes = [
   // { path: "/api/admin-verification", route: "./backend/routes/admin-verification" }, // Handled in server.js for stability
   // { path: "/api/developer-verification", route: "./backend/routes/developer-verification" }, // Handled in server.js for stability
   { path: "/api/mpesa", route: "./backend/routes/mpesa" },
+  // Mounted LAST on purpose: the inline /api/users/* routes above keep
+  // priority for every path they define (login, register, client-dashboard,
+  // profile, notifications me/read/read-all). This router only fills the
+  // client gaps: /my-reports (+ /:id/download) and /notifications/:id/attachment.
+  { path: "/api/users", route: "./backend/routes/users" },
 ];
 
 modularRoutes.forEach((item) => {
