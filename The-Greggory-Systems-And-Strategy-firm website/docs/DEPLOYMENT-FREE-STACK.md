@@ -110,6 +110,13 @@ want a custom-looking free domain:
 4. **Hidden server bugs** — a MongoDB import typo that crashed boot, and a 404
    handler registered *before* some API routes (making `/api/user-projects` and
    the task APIs unreachable even locally). → **Both fixed** in `server.js`.
+5. **Production-only traps** (invisible in local dev because Vite serves the
+   frontend there): behind Render's proxy all visitors shared one rate-limit
+   bucket (site 429s after ~100 requests), helmet's default CSP blocked the
+   built app's external resources (Google Sign-In, fonts), and any
+   FRONTEND_URL/origin mismatch made CORS 500 every POST (login/register).
+   → **Fixed:** `trust proxy = 1`, CSP disabled, same-origin requests always
+   allowed, `NODE_VERSION` pinned to 22.
 
 ## Redeploys
 

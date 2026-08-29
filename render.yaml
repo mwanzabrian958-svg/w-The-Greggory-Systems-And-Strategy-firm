@@ -30,6 +30,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Pin the Node major (matches "engines": ">=20 <23") so Render's default
+      # image drift can never break the build or runtime.
+      - key: NODE_VERSION
+        value: "22"
       # ---- Cloud MySQL (Aiven free tier) ----
       - key: DB_SSL
         value: "true"

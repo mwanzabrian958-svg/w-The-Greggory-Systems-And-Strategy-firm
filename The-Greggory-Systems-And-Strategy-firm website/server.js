@@ -319,6 +319,12 @@ async function generatePDFContent(type, document) {
 }
 
 const app = express();
+
+// Render/Fly/Netlify sit behind one reverse proxy. Without this, every request
+// appears to come from the proxy's internal IP and the global 100-req/15-min
+// rate limit becomes ONE shared bucket for all visitors (the site 429s after
+// ~100 hits — looks like the site "crashed"). It also fixes req.ip for logging.
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 5000;
 
 const formatMpesaPhoneNumber = (phoneNumber) => {
@@ -364,8 +370,45 @@ const corsOptions = {
     "x-admin-key",
   ],
 };
-app.use(cors(corsOptions));
-app.use(helmet());
+// Same-origin allowance: browsers attach an Origin header to same-origin
+// POST/PUT/DELETE requests too. Without this, ANY mismatch between
+// FRONTEND_URL and the real site origin (custom domain, trailing slash,
+// name taken at signup...) would make CORS 500 every write request.
+app.use(
+  cors((req, callback) => {
+    callback(null, {
+      ...corsOptions,
+      origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL)
+          return cb(null, true);
+        // Same-origin: Origin host must equal the request's Host header.
+        try {
+          const originHost = new URL(origin).host;
+          const hostHeader = (req.headers.host || "").split(",")[0].trim();
+          if (hostHeader && originHost === hostHeader) return cb(null, true);
+        } catch {
+          // malformed Origin header -> fall through to the allowlist below
+        }
+        if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin))
+          return cb(null, true);
+        if (/^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(origin))
+          return cb(null, true);
+        return cb(new Error(`CORS: origin ${origin} not allowed`));
+      },
+    });
+  }),
+);
+app.use(
+  helmet({
+    // helmet's default Content-Security-Policy would block the built app's
+    // cross-origin resources (Google Sign-In script, external fonts/images)
+    // once it is served from this server in production. All other helmet
+    // security headers stay active.
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }),
+);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(express.static("public"));
