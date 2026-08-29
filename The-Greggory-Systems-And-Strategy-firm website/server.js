@@ -686,9 +686,14 @@ app.use("/api/db/:database", async (req, res, next) => {
     // Create a new connection for the requested database
     const connection = await mysql.createConnection({
       host: process.env.DB_HOST || "localhost",
+      port: Number(process.env.DB_PORT || 3306),
       user: process.env.DB_USER || "root",
       password: process.env.DB_PASSWORD || "",
       database: database,
+      // Cloud MySQL (Aiven...) requires TLS; local XAMPP does not.
+      ...(process.env.DB_SSL === "true"
+        ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false } }
+        : {}),
     });
 
     // Attach the connection to the request

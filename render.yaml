@@ -46,7 +46,9 @@ services:
       - key: DB_PASSWORD
         sync: false
       - key: DB_NAME
-        value: defaultdb
+        # Same name as the local XAMPP/phpMyAdmin database so dev == prod.
+        # import-if-empty.js auto-creates it on the cloud MySQL on first boot.
+        value: the_greggory_systems_and_strategy_firm_db_main
       # ---- Auth / sessions (copy from local .env) ----
       - key: JWT_SECRET
         sync: false

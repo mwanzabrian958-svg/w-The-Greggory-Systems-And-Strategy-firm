@@ -13,7 +13,11 @@ const db = mysql.createPool({
   database: process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  // Cloud MySQL (Aiven...) requires TLS; local XAMPP does not.
+  ...(process.env.DB_SSL === 'true'
+    ? { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: false } }
+    : {}),
 });
 
 const authenticateUser = (req, res, next) => {

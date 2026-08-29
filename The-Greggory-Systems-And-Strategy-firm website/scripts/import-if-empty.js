@@ -14,13 +14,15 @@ const MAX_ATTEMPTS = Number(process.env.DB_BOOTSTRAP_RETRIES || 18);
 const RETRY_DELAY_MS = 5000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+const DB_NAME = process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main';
+
 function dbConfig() {
   return {
     host: process.env.DB_HOST || 'localhost',
     port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main',
+    database: DB_NAME,
     multipleStatements: true,
     connectTimeout: 15000,
     // Cloud MySQL (Aiven, TiDB...) requires TLS; local XAMPP does not.
@@ -30,10 +32,28 @@ function dbConfig() {
   };
 }
 
+// The app always connects TO a specific database, so on a fresh managed MySQL
+// (Aiven) the target DB does not exist yet. Create it first — the managed
+// admin user (e.g. avnadmin) has the rights to. Idempotent, so retry-safe.
+async function ensureDatabaseExists() {
+  const serverCfg = dbConfig();
+  delete serverCfg.database;
+  const conn = await mysql.createConnection(serverCfg);
+  try {
+    await conn.query(
+      `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+    );
+    process.stdout.write(`[import] database \`${DB_NAME}\` ready\n`);
+  } finally {
+    await conn.end();
+  }
+}
+
 async function connectWithRetry() {
   let lastErr;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
+      await ensureDatabaseExists();
       return await mysql.createConnection(dbConfig());
     } catch (err) {
       lastErr = err;
@@ -82,7 +102,14 @@ async function connectWithRetry() {
       await conn.query('SET FOREIGN_KEY_CHECKS = 1');
     }
     process.stdout.write(`[import] empty DB detected - importing ${path.basename(dumpPath)}...\n`);
-    const dump = fs.readFileSync(dumpPath, 'utf8');
+    // The dump was written for local XAMPP: it starts with DROP DATABASE /
+    // CREATE DATABASE / USE <hardcoded name>. On managed MySQL (Aiven) the
+    // app connects to DB_NAME instead, so strip those three statements and
+    // let the tables land in the database we are connected to.
+    const dump = fs.readFileSync(dumpPath, 'utf8')
+      .replace(/^\s*DROP DATABASE[^;]*;\s*$/gim, '')
+      .replace(/^\s*CREATE DATABASE[^;]*;\s*$/gim, '')
+      .replace(/^\s*USE\s+[^;]*;\s*$/gim, '');
     // The dump creates tables in an order MySQL rejects with foreign-key
     // checks on (a table referencing `users` is created before `users`), so
     // import with checks disabled and re-enable afterwards.

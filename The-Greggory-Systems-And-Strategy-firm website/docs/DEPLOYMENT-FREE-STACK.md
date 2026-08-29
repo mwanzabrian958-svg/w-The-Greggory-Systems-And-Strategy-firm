@@ -30,7 +30,8 @@ no API-URL env var to get wrong.
    - **Port** (e.g. `12345`)
    - **User** (`avnadmin`)
    - **Password** (click the eye icon)
-   - **Database** — use the default **`defaultdb`**
+   - **Database** — leave Aiven's default; the app's `DB_NAME`
+     (`the_greggory_systems_and_strategy_firm_db_main`) is auto-created on first boot
 
 ✅ Aiven requires TLS — already handled: the pool enables SSL when
 `DB_SSL=true` (set in `render.yaml`).
@@ -42,7 +43,8 @@ no API-URL env var to get wrong.
    → connect GitHub → select **`w-The-Greggory-Systems-And-Strategy-firm`**.
 3. Render reads `render.yaml` and asks for the `sync: false` values:
    - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` → paste from **Step 1.4**
-   - `DB_NAME` is preset to `defaultdb`
+   - `DB_NAME` is preset to `the_greggory_systems_and_strategy_firm_db_main`
+     (auto-created on the cloud MySQL on first boot)
    - `JWT_SECRET`, `ADMIN_SESSION_SECRET`, `ADMIN_CODE`, `SESSION_SECRET` → copy from your local `.env`
    - `FRONTEND_URL` → put `https://greggory-firm.onrender.com`
      (if that name is taken, Render shows your real URL after deploy — update it then)

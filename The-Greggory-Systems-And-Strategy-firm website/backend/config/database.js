@@ -13,7 +13,12 @@ const connection = mysql.createConnection({
   password: DB_PASSWORD,
   database: DB_NAME,
   multipleStatements: true,
-  connectTimeout: 10000
+  connectTimeout: 10000,
+  // Cloud MySQL (Aiven, TiDB...) requires TLS; local XAMPP does not.
+  // Set DB_SSL=true in production (see render.yaml).
+  ...(process.env.DB_SSL === 'true'
+    ? { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: false } }
+    : {}),
 });
 
 connection.connect((err) => {
