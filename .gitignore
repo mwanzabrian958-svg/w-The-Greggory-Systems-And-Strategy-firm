@@ -1,3 +1,6 @@
+# Database backups (contain user data - never commit)
+backups/
+
 # Logs
 logs
 *.log

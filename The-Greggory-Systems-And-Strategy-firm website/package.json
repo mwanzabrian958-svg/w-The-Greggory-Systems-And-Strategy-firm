@@ -16,6 +16,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "db:init": "node scripts/initialize-db.js",
+    "backup:cloud-to-local": "node scripts/backup-cloud-to-local.js",
     "db:whatsapp": "node scripts/setup-whatsapp-verification.js",
     "start": "node server.js",
     "start:cloud": "node scripts/import-if-empty.js && node server.js",
