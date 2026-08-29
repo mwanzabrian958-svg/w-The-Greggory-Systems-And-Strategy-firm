@@ -519,7 +519,7 @@ app.get("/api/test-db", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Database connection failed",
-      error: error.message,
+      error: error.message || error.code || error.name || String(error),
     });
   }
 });
@@ -5093,6 +5093,10 @@ app.get("/api/health", (req, res) => {
     message: "Server is running",
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || "development",
+    // Non-secret diagnostics: which DB host the process actually sees, and
+    // whether TLS mode is on. Never expose DB_PASSWORD or other secrets here.
+    dbHost: (process.env.DB_HOST || "UNSET").split(".")[0],
+    dbSsl: process.env.DB_SSL === "true",
     database: lastDbCheck.ok === null ? "unknown" : lastDbCheck.ok ? "connected" : "unreachable",
     dbCheckedAt: lastDbCheck.at,
   });
