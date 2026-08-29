@@ -1,5 +1,14 @@
 # The Greggory Systems And Strategy Firm
 
+## 🚀 One-Click Production Deployment
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/mwanzabrian958-svg/w-The-Greggory-Systems-And-Strategy-firm.git)
+
+- **Frontend + Backend** — one free Render service; the button reads `render.yaml` (root) and pre-fills everything.
+- **MySQL database** — create the free one first at [Aiven](https://console.aiven.io/signup) → *MySQL* → *Free plan*, then paste its Host/Port/User/Password into the Render prompts.
+- **Full walkthrough & env-var table** — [`docs/DEPLOYMENT-FREE-STACK.md`](The-Greggory-Systems-And-Strategy-firm%20website/docs/DEPLOYMENT-FREE-STACK.md); sanity-check secrets locally with `node scripts/validate-env.js`.
+- **After the first deploy** — set the `SITE_URL` repository variable in GitHub (*Settings → Secrets and variables → Actions → Variables*) so the keep-alive pinger targets your URL.
+
 Welcome to the central repository of **The Greggory Systems And Strategy Firm**. We are an elite, multi-disciplinary consultancy firm that merges high-level strategy with advanced systems engineering to solve the world's most complex business challenges.
 
 ## 🏢 Company Profile & Identity
