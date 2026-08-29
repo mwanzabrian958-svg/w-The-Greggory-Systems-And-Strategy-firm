@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, Settings, Save, RefreshCw, Bell, Shield, Database, Globe, Mail, Smartphone, Palette, Users, Lock, Key, Server, HardDrive, Wifi, Monitor, Moon, Sun, ChevronRight, AlertCircle, CheckCircle, ToggleLeft, ToggleRight, Building, CreditCard, MapPin, Phone } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 
@@ -284,7 +284,7 @@ export function SettingsModal({ isOpen, onClose }) {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
-                        <input type="password" defaultValue="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+                        <input type="password" defaultValue="Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢" className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
                       </div>
                     </div>
                   </div>
@@ -411,7 +411,7 @@ export function SettingsModal({ isOpen, onClose }) {
 
                 <div className="bg-slate-50 rounded-2xl p-6">
                   <h4 className="text-lg font-semibold text-slate-900 mb-4">Accent Color</h4>
-                  <div className="grid grid-cols-6 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     {['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'].map((color) => (
                       <button
                         key={color}
@@ -464,7 +464,7 @@ export function SettingsModal({ isOpen, onClose }) {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-2">Passkey</label>
-                      <input type="password" defaultValue="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
+                      <input type="password" defaultValue="Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢" className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" />
                     </div>
                     <div className="flex items-center justify-between p-4 bg-white rounded-xl">
                       <div>

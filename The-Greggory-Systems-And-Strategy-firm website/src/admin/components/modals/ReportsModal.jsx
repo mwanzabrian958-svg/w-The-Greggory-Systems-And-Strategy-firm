@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, FileText, Plus, Search, Download, Calendar, Filter, BarChart3, PieChart, TrendingUp, FileSpreadsheet, Printer, Share2, Eye } from 'lucide-react';
 
 export function ReportsModal({ isOpen, onClose }) {
@@ -87,8 +87,8 @@ export function ReportsModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Report Name</th>

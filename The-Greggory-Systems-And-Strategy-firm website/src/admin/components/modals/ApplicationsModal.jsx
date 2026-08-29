@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, ClipboardList, Plus, Search, Filter, FileText, User, Calendar, Mail, Phone, CheckCircle, XCircle, Clock, Eye, Download, Send, Archive, Star, AlertCircle, Building, MapPin } from 'lucide-react';
 
 export function ApplicationsModal({ isOpen, onClose }) {
@@ -95,8 +95,8 @@ export function ApplicationsModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Applicant</th>
@@ -153,7 +153,7 @@ export function ApplicationsModal({ isOpen, onClose }) {
           )}
 
           {activeTab === 'pipeline' && (
-            <div className="grid grid-cols-5 gap-4 h-full">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 h-full">
               {Object.entries(columns).map(([status, statusApps]) => (
                 <div key={status} className="bg-gray-100 rounded-xl p-4 min-h-[400px]">
                   <div className="flex items-center justify-between mb-4">
@@ -252,7 +252,7 @@ export function ApplicationsModal({ isOpen, onClose }) {
           {activeTab === 'analytics' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Application Analytics</h3>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-4 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <ClipboardList className="w-5 h-5" />

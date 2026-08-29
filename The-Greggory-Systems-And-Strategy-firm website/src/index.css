@@ -164,12 +164,66 @@ html {
 /* ── MOBILE READABILITY LAYER ─────────────────────────────────
    The high-density "terminal" aesthetic uses 6–8px labels: razor-sharp
    on desktop monitors, but genuinely hard to read on phones. On screens
-   ≤768px these scale up to comfortable sizes. Tablets and desktops keep
-   the dense look untouched. */
+   ≤768px these scale up to comfortable sizes. */
 @media (max-width: 768px) {
   [class*="text-[6px]"] { font-size: 10px; }
   [class*="text-[7px]"] { font-size: 12px; }
   [class*="text-[8px]"] { font-size: 13px; }
+}
+
+/* ── TABLET READABILITY LAYER ─────────────────────────────────
+   Tablets (769–1024px) were previously left with the raw desktop sizes,
+   which is far too small on an iPad-style screen. Mid-step scaling keeps
+   the dense look but makes it legible. Desktops >1024px untouched. */
+@media (min-width: 769px) and (max-width: 1024px) {
+  [class*="text-[6px]"] { font-size: 9px; }
+  [class*="text-[7px]"] { font-size: 10.5px; }
+  [class*="text-[8px]"] { font-size: 11.5px; }
+  [class*="text-[9px]"] { font-size: 12px; }
+  [class*="text-[10px]"] { font-size: 13px; }
+}
+
+/* ── MALLEABLE VIEWPORT LAYER ─────────────────────────────────
+   Full-screen sections (heroes, auth, portals) use min-h-screen = 100vh.
+   On phones with dynamic browser chrome (iOS/Android URL bars), 100vh
+   overshoots the visible area, so the bottom of the hero is cut off and
+   the layout "jumps" while scrolling. Small-viewport units (svh) fit the
+   always-visible area exactly. Progressive enhancement: browsers without
+   svh keep the original 100vh. */
+@supports (min-height: 100svh) {
+  .min-h-screen { min-height: 100svh; }
+}
+
+/* Never let content push the page sideways on small screens.
+   overflow-x: clip (unlike hidden) does NOT create a scroll container,
+   so sticky headers/sidebars keep working. */
+html, body { overflow-x: clip; }
+
+/* Respect users who disable motion at the OS level (accessibility). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── DEVICE-CLASS HOOKS (powered by utils/device.js) ──────────
+   <html> gets device-mobile / device-tablet / device-desktop and
+   has-touch / has-pointer classes. Use for per-device tweaks that
+   breakpoints can't express (e.g. touch targets, hover-only effects). */
+.device-mobile img, .device-mobile video { -webkit-touch-callout: none; }
+.has-touch * { -webkit-tap-highlight-color: transparent; }
+
+/* ── GLOBAL COMPACT PROTOCOL ──────────────────────────────────
+   "Font size small, spacing not so big — across the board."
+   Tailwind sizes ALL text, padding, margins and gaps in rem, so a single
+   root tweak scales the entire site down proportionally (~6%) on every
+   device — denser and tighter, still perfectly proportioned.
+   Pixel-arbitrary sizes (text-[7px] etc.) are untouched. */
+html {
+  font-size: 15px;
 }
 
 

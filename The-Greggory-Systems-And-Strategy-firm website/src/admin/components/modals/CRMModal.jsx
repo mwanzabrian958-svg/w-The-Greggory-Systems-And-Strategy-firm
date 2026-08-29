@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, Building2, Users, Phone, Mail, MapPin, Star, Calendar, DollarSign, Plus, Search, Filter, MessageCircle, FileText, TrendingUp, CheckCircle } from 'lucide-react';
 
 export function CRMModal({ isOpen, onClose }) {
@@ -62,8 +62,8 @@ export function CRMModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Client</th>
@@ -123,7 +123,7 @@ export function CRMModal({ isOpen, onClose }) {
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Sales Pipeline</h3>
               
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   { stage: 'Lead', count: 5, value: 150000, color: 'from-blue-500 to-blue-600' },
                   { stage: 'Qualified', count: 3, value: 450000, color: 'from-yellow-500 to-orange-600' },
@@ -200,7 +200,7 @@ export function CRMModal({ isOpen, onClose }) {
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">CRM Analytics</h3>
               
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <Building2 className="w-5 h-5" />

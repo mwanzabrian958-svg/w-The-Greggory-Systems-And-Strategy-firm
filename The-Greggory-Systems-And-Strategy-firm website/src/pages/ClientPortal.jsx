@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Briefcase,
   Bell,
@@ -379,7 +379,7 @@ const ClientPortal = () => {
   const closePortal = () => { window.location.href = '/'; };
   const profilePhotoSrc = portalUser?.profilePhotoData || user?.profilePhotoData;
 
-  // ── Real computed metrics (no more hardcoded placeholders) ──
+  // â”€â”€ Real computed metrics (no more hardcoded placeholders) â”€â”€
   const profileFields = [
     Boolean(portalUser?.email),
     Boolean(portalUser?.phone_number),
@@ -411,7 +411,7 @@ const ClientPortal = () => {
         {isOffline && (
           <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center gap-2">
             <AlertCircle className="text-rose-600 dark:text-rose-400 w-4 h-4 shrink-0" />
-            <p className="text-[8px] font-black uppercase tracking-widest text-rose-300">You are offline — some features may be limited</p>
+            <p className="text-[8px] font-black uppercase tracking-widest text-rose-300">You are offline â€” some features may be limited</p>
           </div>
         )}
 
@@ -442,7 +442,7 @@ const ClientPortal = () => {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded-lg">
                 {profilePhotoSrc ? <img src={profilePhotoSrc} alt="U" className="w-5 h-5 rounded-full" /> : <div className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-600 flex items-center justify-center text-[8px] font-bold">{(portalUser?.display_name || "U")[0]}</div>}
-                <p className="text-[8px] font-bold hidden sm:block truncate max-w-[60px]">{portalUser?.display_name || "User"}</p>
+                <p className="text-[8px] font-bold hidden sm:block">{portalUser?.display_name || "User"}</p>
               </div>
               <button onClick={closePortal} aria-label="Close portal" className="p-1 bg-slate-50 dark:bg-slate-800 hover:bg-rose-600/20 rounded-lg transition-all"><X size={12} /></button>
             </div>
@@ -458,14 +458,14 @@ const ClientPortal = () => {
                 <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-1.5 text-teal-600 mb-3 pb-1 border-b border-slate-200 dark:border-slate-700"><LayoutDashboard size={12} /><h3 className="text-[9px] font-bold uppercase">Profile</h3></div>
                   <div className="grid grid-cols-2 gap-2 text-[9px]">
-                    <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-lg"><p className="text-slate-500 dark:text-slate-300 text-[7px] mb-0.5 uppercase">Email</p><p className="truncate font-bold">{portalUser?.email}</p></div>
+                    <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-lg"><p className="text-slate-500 dark:text-slate-300 text-[7px] mb-0.5 uppercase">Email</p><p className="break-all font-bold">{portalUser?.email}</p></div>
                     <div className="bg-slate-50 dark:bg-slate-800 p-1.5 rounded-lg"><p className="text-slate-500 dark:text-slate-300 text-[7px] mb-0.5 uppercase">Phone</p><p className="font-bold">{portalUser?.phone_number || "None"}</p></div>
                   </div>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
                   <div className="flex items-center gap-1.5 text-gold-600 mb-3 pb-1 border-b border-slate-200 dark:border-slate-700"><CheckSquare size={12} /><h3 className="text-[9px] font-bold uppercase">Profile Strength</h3></div>
                   <div className="h-1 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div className="h-full bg-gold-500 transition-all duration-700" style={{ width: pct(profileCompletion) }} /></div>
-                  <p className="text-[7px] text-slate-500 dark:text-slate-300 mt-1.5 uppercase font-bold text-right">{profileCompletion}% Complete{!portalUser?.phone_number ? ' · Add phone' : ''}</p>
+                  <p className="text-[7px] text-slate-500 dark:text-slate-300 mt-1.5 uppercase font-bold text-right">{profileCompletion}% Complete{!portalUser?.phone_number ? ' Â· Add phone' : ''}</p>
                 </div>
               </div>
 
@@ -591,7 +591,7 @@ const ClientPortal = () => {
               {projects.length > 0 ? (
                 <>
                   <div className="flex items-center justify-between px-1">
-                    <p className="text-[8px] font-bold uppercase text-slate-500 dark:text-slate-300">{projects.filter(p => String(p.status).toLowerCase() !== 'completed').length} Active · {projects.length} Total</p>
+                    <p className="text-[8px] font-bold uppercase text-slate-500 dark:text-slate-300">{projects.filter(p => String(p.status).toLowerCase() !== 'completed').length} Active Â· {projects.length} Total</p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {projects.map(p => {
@@ -703,7 +703,7 @@ const ClientPortal = () => {
                           <p className="font-bold uppercase text-[10px] truncate">{inv.project}</p>
                           <p className="text-[7px] text-slate-600 dark:text-slate-300 font-mono mt-0.5">
                             {inv.invoiceNumber || `INV-${inv.id}`}
-                            {inv.dueDate ? ` · Due ${new Date(inv.dueDate).toLocaleDateString()}` : ""}
+                            {inv.dueDate ? ` Â· Due ${new Date(inv.dueDate).toLocaleDateString()}` : ""}
                           </p>
                         </div>
                       </div>
@@ -743,7 +743,7 @@ const ClientPortal = () => {
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center justify-between px-1">
                 <p className="text-[8px] font-bold uppercase text-slate-500 dark:text-slate-300">
-                  {tasks.filter(t => t.status !== 'completed').length} Open · {tasks.length} Total
+                  {tasks.filter(t => t.status !== 'completed').length} Open Â· {tasks.length} Total
                 </p>
               </div>
               {tasks.length > 0 ? tasks.map(t => {
@@ -757,7 +757,7 @@ const ClientPortal = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-[10px] font-bold truncate">{t.title}</p>
-                        <p className="text-[7px] text-slate-600 dark:text-slate-300 mt-0.5">{t.project} · {t.assignee}</p>
+                        <p className="text-[7px] text-slate-600 dark:text-slate-300 mt-0.5">{t.project} Â· {t.assignee}</p>
                       </div>
                       <span className={`shrink-0 px-1.5 py-0.5 rounded-full border text-[7px] font-black uppercase ${tone}`}>{t.status}</span>
                     </div>
@@ -787,7 +787,7 @@ const ClientPortal = () => {
                       {m.time && <span className="ml-auto text-[7px] text-slate-600 dark:text-slate-300 font-mono shrink-0">{new Date(m.time).toLocaleDateString()}</span>}
                     </div>
                     <p className="text-[8px] text-slate-500 dark:text-slate-300 mt-1 leading-relaxed line-clamp-2">{m.message}</p>
-                    <p className="text-[6px] text-slate-700 dark:text-slate-200 uppercase font-black tracking-widest mt-1">— {m.sender}</p>
+                    <p className="text-[6px] text-slate-700 dark:text-slate-200 uppercase font-black tracking-widest mt-1">â€” {m.sender}</p>
                   </div>
                 </div>
               )) : (
@@ -815,7 +815,7 @@ const ClientPortal = () => {
                     <div className="p-2 rounded-lg bg-gold-500/10 text-gold-600 shrink-0"><Folder size={14} /></div>
                     <div className="min-w-0">
                       <p className="text-[10px] font-bold truncate">{d.name}</p>
-                      <p className="text-[7px] text-slate-600 dark:text-slate-300 mt-0.5">{d.category} · {d.project} · {d.size} · {d.version}</p>
+                      <p className="text-[7px] text-slate-600 dark:text-slate-300 mt-0.5">{d.category} Â· {d.project} Â· {d.size} Â· {d.version}</p>
                     </div>
                   </div>
                   {d.date && <span className="hidden sm:inline text-[7px] text-slate-600 dark:text-slate-300 font-mono shrink-0">{new Date(d.date).toLocaleDateString()}</span>}
@@ -907,8 +907,8 @@ const ClientPortal = () => {
                      <span className="text-[7px] font-mono text-slate-500 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">{feedbackList.length} Archived</span>
                   </div>
 
-                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
-                    <table className="w-full text-left border-collapse">
+                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[640px]">
                       <thead className="bg-slate-50 dark:bg-slate-800 text-[7px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
                         <tr>
                           <th className="px-4 py-3">Timestamp</th>

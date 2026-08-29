@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, Users, Search, Plus, Edit, Trash2, Shield, UserCog, Key, Mail, Phone, MapPin, Calendar, Clock, Activity, Filter, Download, Upload, RefreshCw } from 'lucide-react';
 
 export function UsersModal({ isOpen, onClose }) {
@@ -194,7 +194,7 @@ export function UsersModal({ isOpen, onClose }) {
               {/* Users Table */}
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full min-w-[640px]">
                     <thead className="bg-gray-50 border-b">
                       <tr>
                         <th className="px-4 py-3 text-left">
@@ -398,8 +398,8 @@ export function UsersModal({ isOpen, onClose }) {
           {activeTab === 'permissions' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Permission Matrix</h3>
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Permission</th>

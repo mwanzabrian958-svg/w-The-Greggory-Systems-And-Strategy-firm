@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, BarChart3, TrendingUp, Users, DollarSign, Activity, Eye, Calendar, Filter, Download, RefreshCw, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 export function AnalyticsModal({ isOpen, onClose }) {
@@ -58,7 +58,7 @@ export function AnalyticsModal({ isOpen, onClose }) {
         <div className="flex-1 overflow-auto p-6">
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {metrics.map((metric) => {
                   const Icon = metric.icon;
                   return (
@@ -125,17 +125,17 @@ export function AnalyticsModal({ isOpen, onClose }) {
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                   <div className="text-sm text-gray-600 mb-2">Total Users</div>
                   <div className="text-3xl font-bold text-gray-900">2,456</div>
-                  <div className="text-sm text-green-600 mt-1">↑ 12% from last period</div>
+                  <div className="text-sm text-green-600 mt-1">â†‘ 12% from last period</div>
                 </div>
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                   <div className="text-sm text-gray-600 mb-2">New Users (30d)</div>
                   <div className="text-3xl font-bold text-gray-900">345</div>
-                  <div className="text-sm text-green-600 mt-1">↑ 8% from last period</div>
+                  <div className="text-sm text-green-600 mt-1">â†‘ 8% from last period</div>
                 </div>
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                   <div className="text-sm text-gray-600 mb-2">Active Users</div>
                   <div className="text-3xl font-bold text-gray-900">1,234</div>
-                  <div className="text-sm text-red-600 mt-1">↓ 3% from last period</div>
+                  <div className="text-sm text-red-600 mt-1">â†“ 3% from last period</div>
                 </div>
               </div>
 
@@ -159,7 +159,7 @@ export function AnalyticsModal({ isOpen, onClose }) {
           {activeTab === 'projects' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Project Analytics</h3>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   { name: 'Total Projects', value: 34, change: 8 },
                   { name: 'Completed', value: 23, change: 15 },
@@ -246,7 +246,7 @@ export function AnalyticsModal({ isOpen, onClose }) {
           {activeTab === 'traffic' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Traffic Analytics</h3>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
                   { name: 'Page Views', value: '45.6K', change: 12 },
                   { name: 'Unique Visitors', value: '23.4K', change: 8 },

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, Briefcase, Plus, Search, Edit, Trash2, Eye, FileText, Image, Video, Code, Layout, Type, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, List, Link, Save, Clock, User } from 'lucide-react';
 
 export function ContentModal({ isOpen, onClose }) {
@@ -63,8 +63,8 @@ export function ContentModal({ isOpen, onClose }) {
                 </button>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Page Title</th>
@@ -120,8 +120,8 @@ export function ContentModal({ isOpen, onClose }) {
                 </button>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Title</th>
@@ -179,7 +179,7 @@ export function ContentModal({ isOpen, onClose }) {
                 </button>
               </div>
 
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
                   <div key={item} className="bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
                     <div className="aspect-video bg-gradient-to-br from-violet-200 to-purple-300 flex items-center justify-center">
@@ -187,7 +187,7 @@ export function ContentModal({ isOpen, onClose }) {
                     </div>
                     <div className="p-3">
                       <p className="text-sm font-medium text-gray-900 truncate">image-{item}.jpg</p>
-                      <p className="text-xs text-gray-500">1.2 MB • JPG</p>
+                      <p className="text-xs text-gray-500">1.2 MB â€¢ JPG</p>
                     </div>
                   </div>
                 ))}

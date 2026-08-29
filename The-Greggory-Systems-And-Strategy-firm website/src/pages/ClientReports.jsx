@@ -162,7 +162,7 @@ const ClientReports = () => {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded-lg">
                 <div className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-600 dark:text-teal-400 flex items-center justify-center text-[8px] font-bold">{(user?.display_name || "U")[0]}</div>
-                <p className="text-[8px] font-bold hidden sm:block truncate max-w-[60px] text-slate-900 dark:text-white">{user?.display_name || "User"}</p>
+                <p className="text-[8px] font-bold hidden sm:block text-slate-900 dark:text-white">{user?.display_name || "User"}</p>
               </div>
               <button onClick={() => navigate('/')} className="p-1 bg-slate-50 dark:bg-slate-800 hover:bg-rose-600/20 rounded-lg transition-all"><X size={12} /></button>
             </div>

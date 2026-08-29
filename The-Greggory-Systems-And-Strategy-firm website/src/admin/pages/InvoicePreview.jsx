@@ -41,8 +41,8 @@ export function InvoicePreview() {
       </div>
 
       <div className="flex-1 bg-slate-900/50 py-20 px-4 flex justify-center">
-         <div className="bg-white shadow-[0_0_100px_rgba(0,0,0,0.8)] w-full max-w-[850px] p-24 text-slate-900 relative min-h-[1150px] font-serif printable-area overflow-hidden rounded-sm">
-            <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none rotate-[-35deg] select-none text-[150px] font-black uppercase">GREGGORY</div>
+         <div className="bg-white shadow-[0_0_100px_rgba(0,0,0,0.8)] w-full max-w-[850px] p-6 sm:p-12 lg:p-24 text-slate-900 relative min-h-[700px] lg:min-h-[1150px] font-serif printable-area overflow-hidden rounded-sm">
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none rotate-[-35deg] select-none text-[90px] sm:text-[120px] lg:text-[150px] font-black uppercase">GREGGORY</div>
 
             <div className="flex justify-between items-start mb-24">
                <div className="space-y-8">
@@ -80,8 +80,8 @@ export function InvoicePreview() {
                </div>
             </div>
 
-            <div className="mb-24">
-               <table className="w-full">
+            <div className="mb-24 overflow-x-auto">
+               <table className="w-full min-w-[640px]">
                   <thead>
                      <tr className="text-left text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 border-b-4 border-slate-900">
                         <th className="py-6">Description</th>

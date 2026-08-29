@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, FolderKanban, Plus, Search, Filter, Calendar, Users, DollarSign, TrendingUp, Clock, AlertCircle, CheckCircle, Edit, Trash2, FileText, BarChart3, Settings, GitBranch, Target, Award } from 'lucide-react';
 
 export function ProjectsModal({ isOpen, onClose }) {
@@ -65,7 +65,7 @@ export function ProjectsModal({ isOpen, onClose }) {
 
         <div className="flex-1 overflow-auto p-6">
           {activeTab === 'kanban' && (
-            <div className="grid grid-cols-4 gap-4 h-full">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 h-full">
               {Object.entries(columns).map(([status, statusProjects]) => (
                 <div key={status} className="bg-gray-100 rounded-xl p-4">
                   <div className="flex items-center justify-between mb-4">
@@ -124,8 +124,8 @@ export function ProjectsModal({ isOpen, onClose }) {
                 </button>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Project</th>
@@ -222,7 +222,7 @@ export function ProjectsModal({ isOpen, onClose }) {
           {activeTab === 'analytics' && (
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-gray-900">Project Analytics</h3>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <FolderKanban className="w-5 h-5" />

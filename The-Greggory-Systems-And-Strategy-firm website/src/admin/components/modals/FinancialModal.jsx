@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, Calculator, DollarSign, TrendingUp, TrendingDown, Wallet, CreditCard, Smartphone, FileText, Download, Filter, Plus, Search, ArrowUpRight, ArrowDownRight, CheckCircle, AlertCircle } from 'lucide-react';
 
 export function BillingModal({ isOpen, onClose }) {
@@ -38,7 +38,7 @@ export function BillingModal({ isOpen, onClose }) {
         <div className="flex-1 overflow-auto p-6">
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-6 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="w-5 h-5" />
@@ -142,8 +142,8 @@ export function BillingModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+                <table className="w-full min-w-[640px]">
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
