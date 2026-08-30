@@ -1,24 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const mysql = require('mysql2');
 const jwt = require('jsonwebtoken');
 const { sendSMS, sendBulkSMS, COMPANY_PHONE_NUMBER } = require('../services/smsService');
 
-// Create connection pool
-const db = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  // Cloud MySQL (Aiven...) requires TLS; local XAMPP does not.
-  ...(process.env.DB_SSL === 'true'
-    ? { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: false } }
-    : {}),
-});
+// Two-MySQL failover pool (local:3306 + claude:28067) — same as the rest of
+// the API, via the shared cluster in backend/config/database.js.
+const db = require('../config/database');
 
 const authenticateUser = (req, res, next) => {
   const authHeader = req.header('authorization') || req.header('Authorization');

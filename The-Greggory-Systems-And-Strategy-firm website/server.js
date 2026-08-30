@@ -479,30 +479,51 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-// Create a connection pool for the main database
-const mainDb = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main",
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  // Cloud MySQL providers (Aiven, TiDB Cloud, PlanetScale...) REQUIRE TLS.
-  // Local XAMPP has no SSL, so it stays opt-in: set DB_SSL=true in production.
-  ...(process.env.DB_SSL === "true"
-    ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false } }
-    : {}),
+// ============================================================================
+// DATABASE — two-MySQL failover cluster.
+// The app "looks at both SQL ports" and uses whichever one answers:
+//   1. local XAMPP       -> DB_HOST / DB_PORT      (localhost:3306)
+//   2. claude / cloud    -> DB_HOST_2 / DB_PORT_2  (e.g. port 28067)
+//                          (falls back to DB_CLOUD_HOST / DB_CLOUD_PORT)
+// mysql2's PoolCluster does the failover automatically: if endpoint #1 is
+// down it uses endpoint #2, and switches back once #1 recovers.
+// ============================================================================
+const { endpoints: dbEndpoints } = require("./server/config/dbEndpoints");
+
+const dbCluster = mysql.createPoolCluster({
+  canRetry: true,           // retry on the next available node
+  removeNodeErrorCount: 1,  // take a node out of rotation after 1 failed conn
+  restoreNodeTimeout: 5000, // ...and try it again after 5s
+  defaultSelector: "ORDER", // prefer endpoint #1 (local), then #2 (claude)
 });
 
-mainDb.on('error', (err) => {
-  // mysql2 pools reconnect automatically. Exiting here turns any transient
-  // DB hiccup into a container crash loop (this is what crashed Railway).
-  console.error('[DATABASE] Pool error (pool will retry automatically):', err.message);
+dbEndpoints().forEach((cfg, i) => {
+  const { label, ...opts } = cfg;
+  console.log(`[DATABASE] endpoint ${label || i}: ${opts.host}:${opts.port}`);
+  dbCluster.add(`db-${label || i}`, {
+    ...opts,
+    database: process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
 });
 
-// Alias db to mainDb for legacy compatibility in this monolithic file
+dbCluster.on("error", (err) => {
+  // Pools reconnect automatically. Exiting here turns any transient DB hiccup
+  // into a container crash loop (this is what crashed Railway).
+  console.error("[DATABASE] Cluster error (will retry / fail over):", err.message);
+});
+dbCluster.on("warn", (err) =>
+  console.warn("[DATABASE] Cluster warn:", err.code || err.message)
+);
+dbCluster.on("offline", (id) =>
+  console.error(`[DATABASE] node ${id} offline — failing over to the other port`)
+);
+dbCluster.on("remove", (id) => console.error(`[DATABASE] node ${id} removed`));
+
+// mainDb = failover-capable pool. `db` is an alias for legacy compatibility.
+const mainDb = dbCluster.of("*", "ORDER");
 const db = mainDb;
 
 // Test main database connection
@@ -683,18 +704,24 @@ app.use("/api/db/:database", async (req, res, next) => {
   if (req.path.includes("/databases")) return next();
 
   try {
-    // Create a new connection for the requested database
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || "localhost",
-      port: Number(process.env.DB_PORT || 3306),
-      user: process.env.DB_USER || "root",
-      password: process.env.DB_PASSWORD || "",
-      database: database,
-      // Cloud MySQL (Aiven...) requires TLS; local XAMPP does not.
-      ...(process.env.DB_SSL === "true"
-        ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false } }
-        : {}),
-    });
+    // Create a connection to the requested database, trying each configured
+    // MySQL endpoint (local:3306, then claude) until one answers.
+    let lastErr;
+    let connection = null;
+    for (const cfg of dbEndpoints()) {
+      const { label, ...opts } = cfg;
+      try {
+        connection = await mysql.createConnection({ ...opts, database });
+        break;
+      } catch (e) {
+        lastErr = e;
+        console.warn(
+          `[DATABASE] endpoint ${label || opts.host}:${opts.port} failed for db "${database}":`,
+          e.code || e.message
+        );
+      }
+    }
+    if (!connection) throw lastErr || new Error("No MySQL endpoint reachable");
 
     // Attach the connection to the request
     req.db = connection;
@@ -6068,8 +6095,12 @@ app.listen(PORT, "0.0.0.0", async () => {
     console.log("MONGODB_URI not found in .env, skipping MongoDB connection.");
   }
 
+  dbEndpoints().forEach((cfg, i) => {
+    const { label, ...opts } = cfg;
+    console.log(`[DATABASE] MySQL endpoint ${i + 1} (${label || "?"}): ${opts.host}:${opts.port}`);
+  });
   console.log(
-    `Connected to MySQL server at ${process.env.DB_HOST || "localhost"}`,
+    `Connected to MySQL server at ${process.env.DB_HOST || "localhost"} (fails over to claude if it goes down)`,
   );
   console.log(`Access the API at http://localhost:${PORT}/api`);
 

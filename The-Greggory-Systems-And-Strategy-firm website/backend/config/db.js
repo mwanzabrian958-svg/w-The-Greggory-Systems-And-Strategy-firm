@@ -1,19 +1,35 @@
 const mysql = require('mysql2/promise');
-require('dotenv').config();
+const { endpoints, clean, DB_NAME } = require('../../server/config/dbEndpoints');
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  // Cloud MySQL (Aiven, TiDB...) requires TLS; local XAMPP does not.
-  ...(process.env.DB_SSL === 'true'
-    ? { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: false } }
-    : {}),
+// Create a pool CLUSTER with both MySQL endpoints (local + claude). mysql2
+// fails over automatically: dead node -> next live node, and back when it heals.
+const cluster = mysql.createPoolCluster({
+  canRetry: true,           // retry on the next available node
+  removeNodeErrorCount: 1,  // take a node out of rotation after 1 failed conn
+  restoreNodeTimeout: 5000, // ...and try it again after 5s
+  defaultSelector: 'ORDER', // always prefer endpoint #1 (local), then #2 (claude)
 });
 
-module.exports = pool;
+endpoints().forEach((cfg, i) => {
+  const { label, ...opts } = cfg;
+  cluster.add(`db-${label || i}`, {
+    ...opts,
+    database: DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  });
+});
+
+cluster.on('warn', (err) =>
+  console.warn(`[DB CLUSTER] warn: ${err.code || err.message}`)
+);
+cluster.on('offline', (id) =>
+  console.error(`[DB CLUSTER] ${id} offline — failing over to the other port`)
+);
+cluster.on('remove', (id) => console.error(`[DB CLUSTER] ${id} removed`));
+
+const db = cluster.of('*', 'ORDER');
+db.cluster = cluster;
+
+module.exports = db;

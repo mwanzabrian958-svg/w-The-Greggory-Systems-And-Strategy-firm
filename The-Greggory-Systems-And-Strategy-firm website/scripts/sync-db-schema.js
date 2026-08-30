@@ -20,6 +20,8 @@ const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
 
+const { endpoints: dbEndpoints } = require("../server/config/dbEndpoints");
+
 const envIdx = process.argv.indexOf("--env-file");
 if (envIdx > -1 && process.argv[envIdx + 1]) {
   require("dotenv").config({ path: process.argv[envIdx + 1] });
@@ -56,20 +58,40 @@ const MPESA_REQUIRED = {
   updated_by: "BIGINT",
 };
 
-function baseConfig() {
-  return {
-    host: process.env.DB_HOST || "localhost",
-    port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-  };
+// Pick the first MySQL endpoint that answers (local 3306, then claude) and
+// remember it for the rest of the run. Cached so we don't re-probe each call.
+let _resolved;
+async function resolveEndpoint() {
+  if (_resolved) return _resolved;
+  let lastErr;
+  for (const cfg of dbEndpoints()) {
+    const { label, ...opts } = cfg;
+    try {
+      const probe = await mysql.createConnection({ ...opts, connectTimeout: 4000 });
+      await probe.end();
+      _resolved = opts;
+      console.log(`[sync] using endpoint ${label || opts.host}:${opts.port}`);
+      return _resolved;
+    } catch (e) {
+      lastErr = e;
+      console.log(`[sync] endpoint ${label || opts.host}:${opts.port} unreachable (${e.code || e.message})`);
+    }
+  }
+  throw lastErr || new Error("No MySQL endpoint reachable");
 }
-function targetConfig() {
+
+async function baseConfig() {
+  const cfg = await resolveEndpoint();
+  return { ...cfg, connectTimeout: 15000 };
+}
+
+async function targetConfig() {
   const ssl =
     process.env.DB_SSL === "true"
       ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false } }
       : {};
-  return { ...baseConfig(), database: DB, connectTimeout: 15000, ...ssl };
+  const cfg = await baseConfig();
+  return { ...cfg, database: DB, ...ssl };
 }
 
 async function ensureDatabase(cfg) {
@@ -82,7 +104,7 @@ async function ensureDatabase(cfg) {
       process.env.DB_SSL === "true"
         ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false } }
         : {};
-    const c = await mysql.createConnection({ ...baseConfig(), connectTimeout: 15000, ...ssl });
+    const c = await mysql.createConnection({ ...(await baseConfig()), connectTimeout: 15000, ...ssl });
     await c.query(`CREATE DATABASE IF NOT EXISTS \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     await c.end();
   }
@@ -111,7 +133,7 @@ function buildDef(c) {
 }
 
 async function capture() {
-  const conn = await mysql.createConnection({ ...baseConfig(), database: DB });
+  const conn = await mysql.createConnection({ ...(await baseConfig()), database: DB });
   const [tabs] = await conn.query(
     "SELECT TABLE_NAME name FROM information_schema.tables WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME",
     [DB]
@@ -149,8 +171,8 @@ async function apply() {
     return;
   }
   const manifest = JSON.parse(fs.readFileSync(MANIFEST, "utf8"));
-  await ensureDatabase(targetConfig());
-  const conn = await mysql.createConnection(targetConfig());
+  await ensureDatabase(await targetConfig());
+  const conn = await mysql.createConnection(await targetConfig());
   const [tabs] = await conn.query(
     "SELECT TABLE_NAME name FROM information_schema.tables WHERE TABLE_SCHEMA = ?",
     [DB]

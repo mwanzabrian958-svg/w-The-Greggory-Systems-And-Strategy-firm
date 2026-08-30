@@ -15,28 +15,13 @@ const RETRY_DELAY_MS = 5000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const DB_NAME = process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main';
-
-function dbConfig() {
-  return {
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT || 3306),
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: DB_NAME,
-    multipleStatements: true,
-    connectTimeout: 15000,
-    // Cloud MySQL (Aiven, TiDB...) requires TLS; local XAMPP does not.
-    ...(process.env.DB_SSL === 'true'
-      ? { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: false } }
-      : {}),
-  };
-}
+const ENDPOINTS = require('../server/config/dbEndpoints').endpoints();
 
 // The app always connects TO a specific database, so on a fresh managed MySQL
 // (Aiven) the target DB does not exist yet. Create it first — the managed
 // admin user (e.g. avnadmin) has the rights to. Idempotent, so retry-safe.
-async function ensureDatabaseExists() {
-  const serverCfg = dbConfig();
+async function ensureDatabaseExists(cfg) {
+  const serverCfg = { ...cfg };
   delete serverCfg.database;
   const conn = await mysql.createConnection(serverCfg);
   try {
@@ -49,15 +34,36 @@ async function ensureDatabaseExists() {
   }
 }
 
+// Try every configured MySQL endpoint (local 3306, then claude) and keep the
+// first one that answers — same "looks at both ports" behaviour as server.js.
+async function tryAnyEndpoint(attempt) {
+  let lastErr;
+  for (const cfg of ENDPOINTS) {
+    const { label, ...opts } = cfg;
+    try {
+      await ensureDatabaseExists(opts);
+      return await mysql.createConnection({
+        ...opts,
+        database: DB_NAME,
+        multipleStatements: true, // the SQL dump is imported as one multi-statement string
+      });
+    } catch (err) {
+      lastErr = err;
+      process.stdout.write(
+        `[import] DB not ready (${label || opts.host}:${opts.port}, attempt ${attempt}/${MAX_ATTEMPTS}): ${err.code || err.message}\n`
+      );
+    }
+  }
+  throw lastErr;
+}
+
 async function connectWithRetry() {
   let lastErr;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      await ensureDatabaseExists();
-      return await mysql.createConnection(dbConfig());
+      return await tryAnyEndpoint(attempt);
     } catch (err) {
       lastErr = err;
-      process.stdout.write(`[import] DB not ready (attempt ${attempt}/${MAX_ATTEMPTS}): ${err.code || err.message}\n`);
       if (attempt < MAX_ATTEMPTS) await sleep(RETRY_DELAY_MS);
     }
   }
