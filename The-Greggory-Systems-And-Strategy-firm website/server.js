@@ -21,7 +21,7 @@ const multer = require("multer");
 const crypto = require("crypto");
 const bcryptjs = require("bcryptjs");
 const { buildClientPortalPayload } = require("./server/utils/clientPortalData");
-const { sendWhatsAppToUser } = require("./backend/services/whatsappService");
+const { sendWhatsAppToUser, sendWhatsAppToUserStrict, providerConfigured: whatsappProviderConfigured } = require("./backend/services/whatsappService");
 const { sendInvoiceEmail } = require("./backend/services/emailService");
 require("dotenv").config();
 
@@ -4620,9 +4620,6 @@ app.post("/api/admin/users/:id/whatsapp-password-reset", authenticateAdmin, asyn
     }
 
     const tempPassword = generateTempPassword(12);
-    const newHash = await bcryptjs.hash(tempPassword, 10);
-    await mainDb.query("UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?", [newHash, userId]);
-
     const firstName = String(user.display_name || user.email || "there").trim().split(/\s+/)[0];
     const message = [
       `Hello ${firstName},`,
@@ -4634,23 +4631,51 @@ app.post("/api/admin/users/:id/whatsapp-password-reset", authenticateAdmin, asyn
       `Log in and change it under your portal settings immediately.`,
     ].join("\n");
 
-    const wa = await sendWhatsAppToUser(user.phone_number, message);
-    const simulated = Boolean(wa && wa.simulated);
-    logDataAccess(req, "user", userId, simulated ? "admin_whatsapp_password_reset_simulated" : "admin_whatsapp_password_reset");
+    // ── REAL MODE ── a provider is configured: attempt delivery FIRST and only
+    // rotate the stored password if the message actually went out. A provider
+    // failure therefore never leaves the client with an undelivered password.
+    if (whatsappProviderConfigured()) {
+      const wa = await sendWhatsAppToUserStrict(user.phone_number, message);
+      if (!wa.success) {
+        logDataAccess(req, "user", userId, "admin_whatsapp_password_reset_failed");
+        console.error(`[ADMIN PASSWORD RESET] user=${userId} delivery FAILED: ${wa.error}`);
+        return res.status(502).json({
+          success: false,
+          delivered: false,
+          message: `Password NOT changed — WhatsApp delivery failed (${wa.error}). The client's current password still works. Resolve the provider issue and retry.`,
+        });
+      }
+      const newHash = await bcryptjs.hash(tempPassword, 10);
+      await mainDb.query("UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?", [newHash, userId]);
+      logDataAccess(req, "user", userId, "admin_whatsapp_password_reset");
+      console.log(`[ADMIN PASSWORD RESET] user=${userId} reset by admin — WhatsApp SENT via ${wa.provider}`);
+      return res.json({
+        success: true,
+        simulated: false,
+        provider: wa.provider,
+        deliveredTo: maskPhone(user.phone_number),
+        message: `Password reset. The temporary password was delivered to the client's WhatsApp via ${wa.provider === "meta-cloud" ? "WhatsApp Cloud API" : "Africa's Talking"}.`,
+      });
+    }
 
-    console.log(`[ADMIN PASSWORD RESET] user=${userId} reset by admin — WhatsApp ${simulated ? "SIMULATED" : "sent"}`);
+    // ── SIMULATED MODE ── no provider configured: rotate now and hand the
+    // password to the admin for manual relay.
+    const newHash = await bcryptjs.hash(tempPassword, 10);
+    await mainDb.query("UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?", [newHash, userId]);
+    await sendWhatsAppToUser(user.phone_number, message); // records the simulated relay in the service log
+    logDataAccess(req, "user", userId, "admin_whatsapp_password_reset_simulated");
+
+    console.log(`[ADMIN PASSWORD RESET] user=${userId} reset by admin — WhatsApp SIMULATED`);
 
     res.json({
       success: true,
-      simulated,
+      simulated: true,
       deliveredTo: maskPhone(user.phone_number),
-      message: simulated
-        ? "Password reset. WhatsApp provider is not configured, so the temporary password is shown below for manual relay."
-        : "Password reset. The temporary password has been sent to the client's WhatsApp.",
+      message: "Password reset. WhatsApp provider is not configured, so the temporary password is shown below for manual relay.",
       // The plaintext temp password is echoed ONLY in simulated mode so the
       // admin can relay it manually while testing; with a live provider it
       // travels exclusively over WhatsApp and is never stored or echoed.
-      ...(simulated ? { tempPassword } : {}),
+      tempPassword,
     });
   } catch (error) {
     console.error("[ADMIN PASSWORD RESET] Error:", error);

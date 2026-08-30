@@ -1,7 +1,7 @@
-// WhatsApp Service using Africa's Talking
+// WhatsApp Service — Meta WhatsApp Cloud API (preferred) / Africa's Talking / simulated fallback
 const africastalking = require('africastalking');
 
-// Initialize Africa's Talking with credentials from environment variables
+// --- Africa's Talking (legacy path) ---
 const username = process.env.AFRICASTALKING_USERNAME || 'sandbox';
 const apiKey = process.env.AFRICASTALKING_API_KEY || '';
 
@@ -17,6 +17,20 @@ try {
 } catch (error) {
   console.warn('[WHATSAPP SERVICE] Africa\'s Talking client init failed, using simulated relay fallback:', error.message);
 }
+
+// --- Meta WhatsApp Cloud API (preferred when its credentials are present) ---
+const CLOUD_TOKEN = process.env.WHATSAPP_CLOUD_TOKEN || '';
+const CLOUD_PHONE_ID = process.env.WHATSAPP_CLOUD_PHONE_ID || '';
+const CLOUD_API_VERSION = process.env.WHATSAPP_CLOUD_API_VERSION || 'v20.0';
+
+// The provider that will actually deliver messages:
+//   'meta-cloud'      → Meta WhatsApp Cloud API (WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID)
+//   'africastalking'  → Africa's Talking (AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY)
+//   'none'            → nothing configured; senders fall back to the simulated relay
+const activeProvider =
+  CLOUD_TOKEN && CLOUD_PHONE_ID ? 'meta-cloud' : whatsapp ? 'africastalking' : 'none';
+
+const providerConfigured = () => activeProvider !== 'none';
 
 // Company WhatsApp number that receives messages
 // Standardize to E.164 format (remove spaces, ensure + prefix)
@@ -41,6 +55,55 @@ function buildSimulatedResponse(provider, action) {
 }
 
 /**
+ * Dispatch a WhatsApp message through the active provider.
+ * Throws on provider-level failure — callers decide whether to fall back.
+ * @param {string[]} toArray - Recipient numbers (E.164, '+' allowed)
+ * @param {string} message - Message body
+ * @param {Object} [opts] - { from } overrides the sender for Africa's Talking
+ */
+async function dispatchWhatsApp(toArray, message, opts = {}) {
+  if (activeProvider === 'meta-cloud') {
+    const results = [];
+    for (const to of toArray) {
+      const toDigits = String(to).replace(/\D/g, ''); // Cloud API expects digits only
+      const httpRes = await fetch(
+        `https://graph.facebook.com/${CLOUD_API_VERSION}/${CLOUD_PHONE_ID}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${CLOUD_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: toDigits,
+            type: 'text',
+            text: { body: message },
+          }),
+        }
+      );
+      const payload = await httpRes.json().catch(() => ({}));
+      if (!httpRes.ok) {
+        const err = new Error(payload?.error?.message || `WhatsApp Cloud API HTTP ${httpRes.status}`);
+        err.providerPayload = payload;
+        throw err;
+      }
+      results.push({ to, messageId: (payload && payload.messages && payload.messages[0] && payload.messages[0].id) || null });
+    }
+    return { provider: 'meta-cloud', response: { results } };
+  }
+
+  // Africa's Talking
+  const response = await whatsapp.send({
+    to: toArray,
+    message: message,
+    from: opts.from || COMPANY_WHATSAPP_NUMBER,
+  });
+  return { provider: 'africastalking', response };
+}
+
+/**
  * Send WhatsApp message FROM user TO company WhatsApp number
  * @param {string} fromPhone - Sender phone number (user's phone)
  * @param {string} message - Message content
@@ -53,24 +116,15 @@ async function sendWhatsAppMessage(fromPhone, message) {
 
     console.log(`[WHATSAPP SERVICE] Sending WhatsApp FROM ${formattedFromPhone} TO ${COMPANY_WHATSAPP_NUMBER}: ${message}`);
 
-    if (!whatsapp) {
+    if (!providerConfigured()) {
       console.warn('[WHATSAPP SERVICE] No provider credentials configured; using simulated relay path');
       return buildSimulatedResponse('whatsapp', 'send');
     }
 
-    const options = {
-      to: COMPANY_WHATSAPP_NUMBER, // Send TO company WhatsApp number
-      message: message,
-      from: formattedFromPhone // FROM user's phone
-    };
+    const result = await dispatchWhatsApp([COMPANY_WHATSAPP_NUMBER], message, { from: formattedFromPhone });
+    console.log('[WHATSAPP SERVICE] WhatsApp message sent successfully:', result.response);
 
-    const response = await whatsapp.send(options);
-    console.log('[WHATSAPP SERVICE] WhatsApp message sent successfully:', response);
-
-    return {
-      success: true,
-      data: response
-    };
+    return { success: true, data: result.response };
   } catch (error) {
     console.error('[WHATSAPP SERVICE] Error sending WhatsApp message:', error);
     console.warn('[WHATSAPP SERVICE] Falling back to simulated relay response after provider error');
@@ -93,23 +147,17 @@ async function sendBulkWhatsApp(phoneNumbers, message) {
 
     console.log(`[WHATSAPP SERVICE] Sending bulk WhatsApp to ${formattedPhones.length} recipients`);
 
-    if (!whatsapp) {
+    if (!providerConfigured()) {
       console.warn('[WHATSAPP SERVICE] No provider credentials configured; using simulated bulk relay path');
       return buildSimulatedResponse('whatsapp', 'bulk-send');
     }
 
-    const options = {
-      to: formattedPhones,
-      message: message,
-      from: COMPANY_WHATSAPP_NUMBER // FROM company number
-    };
-
-    const response = await whatsapp.send(options);
-    console.log('[WHATSAPP SERVICE] Bulk WhatsApp sent successfully:', response);
+    const result = await dispatchWhatsApp(formattedPhones, message, { from: COMPANY_WHATSAPP_NUMBER });
+    console.log('[WHATSAPP SERVICE] Bulk WhatsApp sent successfully:', result.response);
 
     return {
       success: true,
-      data: response
+      data: result.response
     };
   } catch (error) {
     console.error('[WHATSAPP SERVICE] Error sending bulk WhatsApp:', error);
@@ -129,22 +177,43 @@ async function sendWhatsAppToUser(toPhone, message) {
     const formattedToPhone = toPhone.startsWith('+') ? toPhone : `+${toPhone}`;
     console.log(`[WHATSAPP SERVICE] Sending Auth Key TO ${formattedToPhone}: ${message}`);
 
-    if (!whatsapp) {
+    if (!providerConfigured()) {
       console.warn('[WHATSAPP SERVICE] No provider credentials; using simulated relay path');
       return buildSimulatedResponse('whatsapp', 'send-to-user');
     }
 
-    const options = {
-      to: [formattedToPhone],
-      message: message,
-      from: COMPANY_WHATSAPP_NUMBER
-    };
-
-    const response = await whatsapp.send(options);
-    return { success: true, data: response };
+    const result = await dispatchWhatsApp([formattedToPhone], message);
+    return { success: true, data: result.response };
   } catch (error) {
     console.error('[WHATSAPP SERVICE] Error sending to user:', error);
     return buildSimulatedResponse('whatsapp', 'send-to-user');
+  }
+}
+
+/**
+ * STRICT send to a user — never simulated, never masks provider failures.
+ * Used for password resets where the admin MUST know whether delivery
+ * actually happened before the client's password is rotated.
+ * @returns {Promise<{success:true, simulated:false, provider:string, data:Object}
+ *                  |{success:false, simulated:false, error:string, message?:string}>}
+ */
+async function sendWhatsAppToUserStrict(toPhone, message) {
+  if (!providerConfigured()) {
+    return {
+      success: false,
+      simulated: false,
+      error: 'NO_PROVIDER',
+      message: 'No WhatsApp provider is configured. Set WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID (Meta Cloud API) or AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY (Africa\'s Talking) in .env.',
+    };
+  }
+  try {
+    const formattedToPhone = toPhone.startsWith('+') ? toPhone : `+${toPhone}`;
+    const result = await dispatchWhatsApp([formattedToPhone], message);
+    console.log(`[WHATSAPP SERVICE] STRICT send to ${formattedToPhone} via ${result.provider} OK`);
+    return { success: true, simulated: false, provider: result.provider, data: result.response };
+  } catch (error) {
+    console.error('[WHATSAPP SERVICE] STRICT send failed:', error.message);
+    return { success: false, simulated: false, error: error.message };
   }
 }
 
@@ -152,5 +221,8 @@ module.exports = {
   sendWhatsAppMessage,
   sendBulkWhatsApp,
   sendWhatsAppToUser,
+  sendWhatsAppToUserStrict,
+  providerConfigured,
+  activeProvider,
   COMPANY_WHATSAPP_NUMBER
 };
