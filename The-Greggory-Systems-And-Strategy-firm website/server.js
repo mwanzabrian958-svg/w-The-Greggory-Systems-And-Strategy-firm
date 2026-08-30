@@ -1229,6 +1229,229 @@ app.post("/api/users/register", handleUserRegister);
 
 app.get("/api/users/client-feedback/:userId", handleClientFeedbackList);
 app.post("/api/users/client-feedback", handleClientFeedbackCreate);
+
+// ─────────────────────────────────────────────────────────────
+// CLIENT SELF-SERVICE — change requests (client-writable)
+// Every client action mirrors into user_feedback (author='client') so the
+// admin Support panel sees it instantly.
+// ─────────────────────────────────────────────────────────────
+const notifyAdminPanel = async (userId, title, message, priority = "medium") => {
+  try {
+    await mainDb.query(
+      `INSERT INTO user_feedback (user_id, title, message, feedback_type, author, status, priority, rating, source, created_by, created_at)
+       VALUES (?, ?, ?, 'service_feedback', 'client', 'new', ?, NULL, 'website', 0, NOW())`,
+      [userId, title, message, priority],
+    );
+  } catch (e) {
+    console.error("[CLIENT ACTIONS] admin mirror failed:", e.message);
+  }
+};
+
+const handleMyChangeRequestsList = async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      `SELECT cr.id, cr.project_id, cr.request_number, cr.change_description, cr.reason_for_change,
+              cr.status, cr.estimated_cost_impact, cr.estimated_time_impact_days, cr.created_at,
+              up.project_name
+       FROM change_requests cr
+       LEFT JOIN user_projects up ON up.id = cr.project_id
+       WHERE cr.requested_by = ? AND cr.deleted_at IS NULL
+       ORDER BY cr.created_at DESC
+       LIMIT 25`,
+      [req.userId],
+    );
+    res.json({ success: true, changeRequests: rows });
+  } catch (error) {
+    console.error("[CLIENT ACTIONS] change-requests list error:", error);
+    res.status(500).json({ success: false, message: "Failed to load change requests" });
+  }
+};
+
+const handleMyChangeRequestsCreate = async (req, res) => {
+  try {
+    const { project_id, description, reason } = req.body || {};
+    if (!project_id || !description || !String(description).trim()) {
+      return res.status(400).json({ success: false, message: "Project and description are required" });
+    }
+    const [own] = await mainDb.query(
+      "SELECT id FROM user_projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1",
+      [project_id, req.userId],
+    );
+    if (own.length === 0) {
+      return res.status(403).json({ success: false, message: "You can only request changes on your own projects" });
+    }
+    const requestNumber = `CR-${Date.now()}-${req.userId}`.slice(0, 50);
+    const [result] = await mainDb.query(
+      `INSERT INTO change_requests (project_id, request_number, requested_by, change_description, reason_for_change, status, created_at)
+       VALUES (?, ?, ?, ?, ?, 'submitted', NOW())`,
+      [project_id, requestNumber, req.userId, String(description).trim(), reason ? String(reason).trim() : null],
+    );
+    await notifyAdminPanel(req.userId, "Change request submitted", `New change request ${requestNumber}: ${String(description).trim().slice(0, 140)}`, "high");
+    res.status(201).json({ success: true, message: "Change request submitted to our team", requestId: result.insertId, requestNumber });
+  } catch (error) {
+    console.error("[CLIENT ACTIONS] change-request create error:", error);
+    res.status(500).json({ success: false, message: "Failed to submit change request" });
+  }
+};
+
+app.get("/api/users/my-change-requests", authenticateUser, handleMyChangeRequestsList);
+app.post("/api/users/my-change-requests", authenticateUser, handleMyChangeRequestsCreate);
+const handleMyQuotesList = async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      `SELECT id, quote_number, title, description, quote_type, subtotal, currency,
+              total_amount, valid_until, issue_date, status, priority
+       FROM quotes
+       WHERE client_id = ? AND status IN ('sent','viewed','accepted','rejected')
+       ORDER BY issue_date DESC, id DESC
+       LIMIT 20`,
+      [req.userId],
+    );
+    res.json({ success: true, quotes: rows });
+  } catch (error) {
+    console.error("[CLIENT ACTIONS] quotes list error:", error);
+    res.status(500).json({ success: false, message: "Failed to load quotes" });
+  }
+};
+
+const handleMyQuoteDecision = async (req, res) => {
+  try {
+    const { decision, note } = req.body || {};
+    if (!["accepted", "rejected"].includes(decision)) {
+      return res.status(400).json({ success: false, message: "Decision must be accepted or rejected" });
+    }
+    const [rows] = await mainDb.query(
+      "SELECT id, quote_number, title, status FROM quotes WHERE id = ? AND client_id = ? LIMIT 1",
+      [req.params.id, req.userId],
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Quote not found" });
+    }
+    if (!["sent", "viewed"].includes(rows[0].status)) {
+      return res.status(409).json({ success: false, message: `This quote is already ${rows[0].status}` });
+    }
+    const dateCol = decision === "accepted" ? "accepted_date = CURDATE()" : "rejected_date = CURDATE()";
+    await mainDb.query(
+      `UPDATE quotes SET status = ?, ${dateCol}, rejection_reason = ? WHERE id = ? AND client_id = ?`,
+      [decision, decision === "rejected" ? (note || null) : null, req.params.id, req.userId],
+    );
+    await notifyAdminPanel(req.userId, `Quote ${decision}`, `Client ${decision} quote ${rows[0].quote_number} ("${rows[0].title}")${note ? ` — "${String(note).slice(0, 120)}"` : ""}`, decision === "accepted" ? "high" : "medium");
+    res.json({ success: true, message: `Quote ${decision}` });
+  } catch (error) {
+    console.error("[CLIENT ACTIONS] quote decision error:", error);
+    res.status(500).json({ success: false, message: "Failed to record decision" });
+  }
+};
+
+const handleMySignatureRequestsList = async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      `SELECT ds.id AS signature_id, ds.signature_status, ds.expires_at,
+              cd.id AS document_id, cd.document_name, cd.document_type, cd.description, cd.file_path, cd.version_number
+       FROM document_signatures ds
+       JOIN client_documents cd ON cd.id = ds.document_id
+       WHERE ds.signer_id = ? AND ds.signature_status = 'pending' AND cd.deleted_at IS NULL
+       ORDER BY ds.created_at DESC
+       LIMIT 20`,
+      [req.userId],
+    );
+    res.json({ success: true, signatureRequests: rows });
+  } catch (error) {
+    console.error("[CLIENT ACTIONS] signature list error:", error);
+    res.status(500).json({ success: false, message: "Failed to load documents" });
+  }
+};
+
+const handleMySignatureDecision = async (req, res) => {
+  try {
+    const { decision, note } = req.body || {};
+    if (!["signed", "declined"].includes(decision)) {
+      return res.status(400).json({ success: false, message: "Decision must be signed or declined" });
+    }
+    const [rows] = await mainDb.query(
+      `SELECT ds.id, ds.document_id, cd.document_name
+       FROM document_signatures ds
+       JOIN client_documents cd ON cd.id = ds.document_id
+       WHERE ds.id = ? AND ds.signer_id = ? AND ds.signature_status = 'pending'
+       LIMIT 1`,
+      [req.params.id, req.userId],
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Signature request not found or already handled" });
+    }
+    const nodeCrypto = require("crypto");
+    const signatureHash = nodeCrypto.createHash("sha256").update(`${rows[0].document_id}:${req.userId}:${Date.now()}`).digest("hex");
+    await mainDb.query(
+      `UPDATE document_signatures
+       SET signature_status = ?, signature_date = NOW(), signature_hash = ?, ip_address = ?, user_agent = ?
+       WHERE id = ? AND signer_id = ?`,
+      [decision, signatureHash, req.ip || null, req.headers["user-agent"] || null, req.params.id, req.userId],
+    );
+    if (decision === "signed") {
+      await mainDb.query("UPDATE client_documents SET status = 'approved', updated_at = NOW() WHERE id = ?", [rows[0].document_id]);
+    }
+    await notifyAdminPanel(req.userId, `Document ${decision}`, `Client ${decision} document "${rows[0].document_name}"`, decision === "signed" ? "high" : "medium");
+    res.json({ success: true, message: decision === "signed" ? "Document signed" : "Document declined" });
+  } catch (error) {
+    console.error("[CLIENT ACTIONS] signature decision error:", error);
+    res.status(500).json({ success: false, message: "Failed to record decision" });
+  }
+};
+
+// Client uploads their own profile photo (multipart, field: profilePhoto)
+const profilePhotoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 4 * 1024 * 1024 },
+});
+
+const handleUploadProfilePhoto = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "No image provided" });
+    }
+    const allowed = ["image/png", "image/jpeg", "image/webp"];
+    if (!allowed.includes(req.file.mimetype)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Only PNG, JPEG or WebP images are allowed" });
+    }
+    // A client can only update their own photo (userId body field must match token)
+    if (req.body.userId && Number(req.body.userId) !== Number(req.userId)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "You can only update your own photo" });
+    }
+    await mainDb.query(
+      `UPDATE users
+       SET profile_photo_blob = ?, profile_photo_mime_type = ?, profile_photo_file_name = ?, updated_at = NOW()
+       WHERE id = ? AND deleted_at IS NULL`,
+      [req.file.buffer, req.file.mimetype, req.file.originalname || null, req.userId],
+    );
+    await notifyAdminPanel(
+      req.userId,
+      "Profile photo updated",
+      "Client updated their profile photo",
+      "low",
+    );
+    res.json({ success: true, message: "Profile photo updated" });
+  } catch (error) {
+    console.error("[CLIENT ACTIONS] photo upload error:", error);
+    res.status(500).json({ success: false, message: "Failed to upload photo" });
+  }
+};
+
+app.post(
+  "/api/users/upload-profile-photo",
+  authenticateUser,
+  profilePhotoUpload.single("profilePhoto"),
+  handleUploadProfilePhoto,
+);
+
+app.get("/api/users/my-quotes", authenticateUser, handleMyQuotesList);
+app.post("/api/users/my-quotes/:id/decision", authenticateUser, handleMyQuoteDecision);
+app.get("/api/users/my-signature-requests", authenticateUser, handleMySignatureRequestsList);
+app.post("/api/users/my-signature-requests/:id/decision", authenticateUser, handleMySignatureDecision);
+
 app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
   try {
     const id = req.userId;
@@ -1474,12 +1697,23 @@ app.put('/api/users/profile', authenticateUser, async (req, res) => {
   const userId = req.userId;
   const { display_name, phone_number } = req.body;
   try {
+    if (!display_name || !String(display_name).trim()) {
+      return res.status(400).json({ success: false, message: 'Display name is required' });
+    }
     const [result] = await mainDb.query(
-      'UPDATE users SET display_name = ?, phone_number = ?, updated_at = NOW() WHERE id = ?',
-      [display_name || null, phone_number || null, userId]
+      'UPDATE users SET display_name = ?, phone_number = ?, updated_at = NOW() WHERE id = ? AND deleted_at IS NULL',
+      [String(display_name).trim(), phone_number || null, userId]
     );
     if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      // 0 affected rows can mean "values unchanged" OR "user missing" —
+      // distinguish so an identical re-save still succeeds.
+      const [users] = await mainDb.query(
+        'SELECT id FROM users WHERE id = ? AND deleted_at IS NULL',
+        [userId]
+      );
+      if (users.length === 0) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
     }
     res.json({ success: true, message: 'Profile updated successfully' });
   } catch (error) {
@@ -4161,6 +4395,96 @@ app.get("/api/admin/pending-approvals", authenticateAdmin, async (req, res) => {
   } catch (error) {
     console.error("[ADMIN APPROVALS] Error:", error);
     res.status(500).json({ success: false, message: "Pending approvals fetch failed" });
+  }
+});
+
+// =============================================
+// Admin: Client Change Requests (from Client Portal)
+// =============================================
+app.get("/api/admin/change-requests", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      `SELECT cr.id, cr.project_id, cr.request_number, cr.requested_by,
+              cr.change_description, cr.reason_for_change, cr.impact_assessment,
+              cr.estimated_cost_impact, cr.estimated_time_impact_days,
+              cr.status, cr.review_date, cr.approval_date, cr.created_at,
+              u.display_name AS requester_name, u.email AS requester_email,
+              up.project_name
+       FROM change_requests cr
+       LEFT JOIN users u ON u.id = cr.requested_by
+       LEFT JOIN user_projects up ON up.id = cr.project_id
+       WHERE cr.deleted_at IS NULL
+       ORDER BY cr.created_at DESC
+       LIMIT 50`,
+    );
+    res.json({ success: true, changeRequests: rows || [] });
+  } catch (error) {
+    console.error("[ADMIN CHANGE REQUESTS] List error:", error);
+    res.status(500).json({ success: false, message: "Failed to load change requests" });
+  }
+});
+
+app.put("/api/admin/change-requests/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const { status } = req.body || {};
+    const allowed = ["under_review", "approved", "rejected", "implemented", "cancelled"];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+    const [rows] = await mainDb.query(
+      `SELECT id, requested_by, request_number, change_description
+       FROM change_requests WHERE id = ? AND deleted_at IS NULL LIMIT 1`,
+      [req.params.id],
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Change request not found" });
+    }
+    const cr = rows[0];
+    await mainDb.query(
+      `UPDATE change_requests
+       SET status = ?, reviewed_by = ?, review_date = CURDATE(),
+           approval_date = CASE WHEN ? IN ('approved','implemented') THEN CURDATE() ELSE approval_date END,
+           implementation_date = CASE WHEN ? = 'implemented' THEN CURDATE() ELSE implementation_date END
+       WHERE id = ?`,
+      [status, req.adminId || 1, status, status, cr.id],
+    );
+    // Notify the client — lands in their portal (author='admin')
+    const pretty = status.replace(/_/g, " ");
+    await mainDb.query(
+      `INSERT INTO user_feedback (user_id, title, message, feedback_type, author, status, priority, source, created_by, created_at)
+       VALUES (?, ?, ?, 'service_feedback', 'admin', 'new', 'medium', 'website', 1, NOW())`,
+      [
+        cr.requested_by,
+        `Change request ${pretty}`,
+        `Your change request "${cr.request_number}" has been marked as ${pretty} by our team.`,
+      ],
+    );
+    res.json({ success: true, message: `Change request marked ${pretty}; client notified` });
+  } catch (error) {
+    console.error("[ADMIN CHANGE REQUESTS] Update error:", error);
+    res.status(500).json({ success: false, message: "Failed to update change request" });
+  }
+});
+
+// =============================================
+// Admin: Document Signature Requests (from Client Portal)
+// =============================================
+app.get("/api/admin/signature-requests", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      `SELECT ds.id, ds.document_id, ds.signer_id, ds.signer_name, ds.signer_email,
+              ds.signature_status, ds.signature_date, ds.ip_address, ds.created_at,
+              cd.title AS document_title, cd.file_name
+       FROM document_signatures ds
+       LEFT JOIN client_documents cd ON cd.id = ds.document_id
+       WHERE cd.deleted_at IS NULL
+       ORDER BY ds.created_at DESC
+       LIMIT 50`,
+    );
+    res.json({ success: true, signatureRequests: rows || [] });
+  } catch (error) {
+    console.error("[ADMIN SIGNATURES] List error:", error);
+    res.status(500).json({ success: false, message: "Failed to load signature requests" });
   }
 });
 

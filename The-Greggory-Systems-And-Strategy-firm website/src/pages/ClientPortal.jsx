@@ -29,7 +29,10 @@ import {
   Wallet,
   Settings,
   Lock,
-  Users
+  Users,
+  Camera,
+  ClipboardList,
+  FileSignature
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -104,6 +107,20 @@ const ClientPortal = () => {
   const [roleUpdates, setRoleUpdates] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
 
+  // Client Requests State (change requests / quotes / signatures)
+  const [changeRequests, setChangeRequests] = useState([]);
+  const [myQuotes, setMyQuotes] = useState([]);
+  const [signatureDocs, setSignatureDocs] = useState([]);
+  const [requestForm, setRequestForm] = useState({ project_id: '', description: '', reason: '' });
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
+  const [requestMessage, setRequestMessage] = useState(null);
+  const [decisionBusy, setDecisionBusy] = useState(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoAvailable, setPhotoAvailable] = useState(null);
+  const [photoVersion, setPhotoVersion] = useState(0);
+  const pendingRequestsCount = myQuotes.filter(q => ["sent", "viewed"].includes(q.status)).length + signatureDocs.filter(d => d.signature_status === "pending").length;
+
   // Settings State
   const [settingsForm, setSettingsForm] = useState({
     display_name: '',
@@ -128,6 +145,7 @@ const ClientPortal = () => {
     { id: "team", label: "Team", icon: Users },
     { id: "tasks", label: "Tasks", icon: ListChecks, badge: tasks.filter(t => t.status !== "completed").length },
     { id: "billing", label: "Billing", icon: DollarSign, badge: invoices.filter(i => i.status !== "paid").length },
+    { id: "requests", label: "Requests", icon: ClipboardList, badge: pendingRequestsCount },
     { id: "documents", label: "Docs", icon: Folder, badge: documents.length },
     { id: "messages", label: "Inbox", icon: Mail, badge: unreadMessages },
     { id: "notifications", label: "Alerts", icon: Bell },
@@ -142,6 +160,114 @@ const ClientPortal = () => {
       if (data.success) setFeedbackList(data.feedback || []);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const loadClientRequests = async () => {
+    try {
+      const [cr, q, sig] = await Promise.all([
+        authFetch(getApiUrl('/api/users/my-change-requests')),
+        authFetch(getApiUrl('/api/users/my-quotes')),
+        authFetch(getApiUrl('/api/users/my-signature-requests')),
+      ]);
+      const [crd, qd, sd] = await Promise.all([cr.json(), q.json(), sig.json()]);
+      if (crd.success) setChangeRequests(crd.changeRequests || []);
+      if (qd.success) setMyQuotes(qd.quotes || []);
+      if (sd.success) setSignatureDocs(sd.signatureRequests || []);
+    } catch (err) {
+      console.error('Client requests load failed:', err);
+    }
+  };
+
+  const submitChangeRequest = async (e) => {
+    e.preventDefault();
+    if (!requestForm.project_id || !requestForm.description.trim()) {
+      setRequestMessage({ type: 'error', text: 'Select a project and describe the change.' });
+      return;
+    }
+    setRequestSubmitting(true);
+    setRequestMessage(null);
+    try {
+      const r = await authFetch(getApiUrl('/api/users/my-change-requests'), { method: 'POST', body: JSON.stringify(requestForm) });
+      const d = await r.json();
+      setRequestMessage({ type: d.success ? 'success' : 'error', text: d.message || (d.success ? 'Request submitted' : 'Submission failed') });
+      if (d.success) {
+        setRequestForm({ project_id: '', description: '', reason: '' });
+        loadClientRequests();
+      }
+    } catch (err) {
+      setRequestMessage({ type: 'error', text: err.message });
+    } finally {
+      setRequestSubmitting(false);
+    }
+  };
+
+  const handleQuoteDecision = async (quote, decision) => {
+    const note = decision === 'rejected' ? (window.prompt('Reason for declining (optional):') || '') : '';
+    setDecisionBusy(`q-${quote.id}`);
+    try {
+      const r = await authFetch(getApiUrl(`/api/users/my-quotes/${quote.id}/decision`), { method: 'POST', body: JSON.stringify({ decision, note }) });
+      const d = await r.json();
+      if (!d.success) window.alert(d.message || 'Action failed');
+      loadClientRequests();
+    } catch (err) {
+      window.alert(err.message);
+    } finally {
+      setDecisionBusy(null);
+    }
+  };
+
+  const handleSignatureDecision = async (doc, decision) => {
+    if (decision === 'signed' && !window.confirm(`Sign "${doc.document_name}"? This records your binding approval.`)) return;
+    setDecisionBusy(`s-${doc.signature_id}`);
+    try {
+      const r = await authFetch(getApiUrl(`/api/users/my-signature-requests/${doc.signature_id}/decision`), { method: 'POST', body: JSON.stringify({ decision }) });
+      const d = await r.json();
+      if (!d.success) window.alert(d.message || 'Action failed');
+      loadClientRequests();
+    } catch (err) {
+      window.alert(err.message);
+    } finally {
+      setDecisionBusy(null);
+    }
+  };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      setSettingsMessage({ type: 'error', text: 'Image must be under 4MB' });
+      return;
+    }
+    setPhotoUploading(true);
+    setPhotoPreview(URL.createObjectURL(file));
+    setSettingsMessage(null);
+    try {
+      const fd = new FormData();
+      fd.append('profilePhoto', file);
+      fd.append('userId', portalUser?.id);
+      const sessionStr = localStorage.getItem('gf_admin_session') || sessionStorage.getItem('gf_admin_session');
+      const token = sessionStr ? (JSON.parse(sessionStr)?.token) : null;
+      const r = await fetch(getApiUrl('/api/users/upload-profile-photo'), {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      const d = await r.json();
+      if (d.success) {
+        setSettingsMessage({ type: 'success', text: 'Profile photo updated' });
+        setPhotoVersion(v => v + 1);
+        loadClientData();
+      } else {
+        setSettingsMessage({ type: 'error', text: d.message || 'Upload failed' });
+        setPhotoPreview(null);
+      }
+    } catch (err) {
+      setSettingsMessage({ type: 'error', text: err.message });
+      setPhotoPreview(null);
+    } finally {
+      setPhotoUploading(false);
+      e.target.value = '';
     }
   };
 
@@ -174,6 +300,7 @@ const ClientPortal = () => {
         if (user?.userId || user?.id) {
           loadFeedbackHistory(user.userId || user.id);
         }
+        loadClientRequests();
       } else {
         throw new Error(data.message || 'Failed to load dashboard');
       }
@@ -377,7 +504,17 @@ const ClientPortal = () => {
   );
 
   const closePortal = () => { window.location.href = '/'; };
-  const profilePhotoSrc = portalUser?.profilePhotoData || user?.profilePhotoData;
+  useEffect(() => {
+    if (!portalUser?.id) return;
+    setPhotoAvailable(null);
+    const probe = new Image();
+    probe.onload = () => setPhotoAvailable(true);
+    probe.onerror = () => setPhotoAvailable(false);
+    probe.src = getApiUrl(`/api/users/profile-photo/${portalUser.id}?probe=1`);
+  }, [portalUser?.id, photoVersion]);
+
+  const photoUrl = portalUser?.id ? getApiUrl(`/api/users/profile-photo/${portalUser.id}${photoVersion ? `?v=${photoVersion}` : ''}`) : null;
+  const profilePhotoSrc = photoPreview || (photoAvailable && photoUrl ? photoUrl : (portalUser?.profilePhotoData || user?.profilePhotoData || null));
 
   // â”€â”€ Real computed metrics (no more hardcoded placeholders) â”€â”€
   const profileFields = [
@@ -954,6 +1091,182 @@ const ClientPortal = () => {
           )}
         </div>
 
+        {activeSection === "requests" && (
+          <div className="space-y-6 animate-fade-in">
+
+            {/* ── SECTION HEADER ── */}
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <ClipboardList size={14} className="text-teal-600" />
+                  <div>
+                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Requests &amp; Approvals</h3>
+                    <p className="text-[7px] uppercase tracking-tighter text-slate-500 dark:text-slate-300 mt-0.5">Submit change requests · decide quotes · sign documents</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-1 rounded-lg bg-gold-500/10 border border-gold-500/20 text-[7px] font-black uppercase text-gold-600">{myQuotes.filter(q => ["sent", "viewed"].includes(q.status)).length} quotes pending</span>
+                  <span className="px-2 py-1 rounded-lg bg-teal-500/10 border border-teal-500/20 text-[7px] font-black uppercase text-teal-600">{signatureDocs.length} to sign</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ── REQUEST A CHANGE ── */}
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-700">
+                <ClipboardList size={14} className="text-gold-600" />
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Request a Change</h3>
+              </div>
+              <form onSubmit={submitChangeRequest} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-300 ml-1">Project *</label>
+                    <select value={requestForm.project_id} onChange={e => setRequestForm({ ...requestForm, project_id: e.target.value })} className="w-full bg-white dark:bg-slate-900 p-2 rounded-lg text-[9px] font-bold outline-none border border-slate-200 dark:border-slate-700 focus:border-teal-500/30 text-slate-900 dark:text-white">
+                      <option value="">Select project…</option>
+                      {projects.map(p => (
+                        <option key={p.id} value={p.id}>{p.project_name || p.name || `Project #${p.id}`}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-300 ml-1">Reason (optional)</label>
+                    <input type="text" value={requestForm.reason} onChange={e => setRequestForm({ ...requestForm, reason: e.target.value })} placeholder="Why is this change needed?" className="w-full bg-white dark:bg-slate-900 p-2 rounded-lg text-[9px] font-bold outline-none border border-slate-200 dark:border-slate-700 focus:border-teal-500/30 text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-300 ml-1">Describe the change *</label>
+                  <textarea rows={3} value={requestForm.description} onChange={e => setRequestForm({ ...requestForm, description: e.target.value })} placeholder="What exactly would you like changed, added or removed?" className="w-full bg-white dark:bg-slate-900 p-2 rounded-lg text-[9px] font-bold outline-none border border-slate-200 dark:border-slate-700 focus:border-teal-500/30 resize-none text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal" />
+                </div>
+                {requestMessage && (
+                  <p className={`text-[8px] font-bold uppercase ${requestMessage.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{requestMessage.text}</p>
+                )}
+                <button type="submit" disabled={requestSubmitting} className="px-5 py-2 bg-teal-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-teal-500 disabled:opacity-50 transition-all">
+                  {requestSubmitting ? 'Submitting…' : 'Submit Request'}
+                </button>
+              </form>
+            </div>
+
+            {/* ── QUOTES AWAITING DECISION ── */}
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-700">
+                <DollarSign size={14} className="text-gold-600" />
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Quotations</h3>
+                <span className="ml-auto text-[7px] font-black uppercase text-slate-400">{myQuotes.length} total</span>
+              </div>
+              {myQuotes.length === 0 ? (
+                <p className="text-[8px] text-slate-500 dark:text-slate-400 py-4 text-center uppercase tracking-widest">No quotations yet — they appear here when the firm sends one.</p>
+              ) : (
+                <div className="space-y-3">
+                  {myQuotes.map(q => {
+                    const pending = ["sent", "viewed"].includes(q.status);
+                    const busy = decisionBusy === `q-${q.id}`;
+                    return (
+                      <div key={q.id} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[9px] font-black text-slate-900 dark:text-white truncate">{q.quote_number ? `${q.quote_number} · ` : ''}{q.title || 'Project quotation'}</p>
+                            <p className="text-[7px] uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-0.5">
+                              {q.created_at ? `Sent ${new Date(q.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}
+                              {q.valid_until ? ` · Valid until ${new Date(q.valid_until).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[11px] font-black text-teal-600 dark:text-teal-400">{q.currency || 'KES'} {Number(q.amount || 0).toLocaleString()}</span>
+                            <span className={`px-2 py-1 rounded-lg text-[7px] font-black uppercase ${q.status === 'accepted' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : q.status === 'rejected' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' : 'bg-gold-500/10 text-gold-600 border border-gold-500/20'}`}>{q.status}</span>
+                          </div>
+                        </div>
+                        {q.status === 'rejected' && q.rejection_reason && (
+                          <p className="text-[7px] text-rose-500 mt-2 uppercase tracking-wider">Declined: {q.rejection_reason}</p>
+                        )}
+                        {pending && (
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <button onClick={() => handleQuoteDecision(q, 'accepted')} disabled={busy} className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-emerald-500 disabled:opacity-50 transition-all">Accept Quote</button>
+                            <button onClick={() => handleQuoteDecision(q, 'rejected')} disabled={busy} className="px-4 py-1.5 bg-white dark:bg-slate-800 text-rose-600 border border-rose-300 dark:border-rose-500/30 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-rose-50 dark:hover:bg-rose-500/10 disabled:opacity-50 transition-all">Decline</button>
+                            {busy && <span className="text-[7px] uppercase text-slate-400 animate-pulse">Recording…</span>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ── DOCUMENTS AWAITING SIGNATURE ── */}
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-700">
+                <FileSignature size={14} className="text-teal-600" />
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Signature Requests</h3>
+                <span className="ml-auto text-[7px] font-black uppercase text-slate-400">{signatureDocs.filter(d => d.signature_status === 'pending').length} pending</span>
+              </div>
+              {signatureDocs.length === 0 ? (
+                <p className="text-[8px] text-slate-500 dark:text-slate-400 py-4 text-center uppercase tracking-widest">Nothing to sign right now.</p>
+              ) : (
+                <div className="space-y-3">
+                  {signatureDocs.map(d => {
+                    const busy = decisionBusy === `s-${d.signature_id}`;
+                    const pendingSig = d.signature_status === 'pending';
+                    return (
+                      <div key={d.signature_id} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[9px] font-black text-slate-900 dark:text-white truncate">{d.document_name || 'Document'}</p>
+                            <p className="text-[7px] uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-0.5">{(d.document_type || 'document').replace(/_/g, ' ')}{d.requested_at || d.created_at ? ` · ${new Date(d.requested_at || d.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}</p>
+                          </div>
+                          <span className={`px-2 py-1 rounded-lg text-[7px] font-black uppercase shrink-0 ${d.signature_status === 'signed' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : d.signature_status === 'declined' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' : 'bg-gold-500/10 text-gold-600 border border-gold-500/20'}`}>{(d.signature_status || 'pending').replace(/_/g, ' ')}</span>
+                        </div>
+                        {pendingSig && (
+                          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <button onClick={() => handleSignatureDecision(d, 'signed')} disabled={busy} className="px-4 py-1.5 bg-teal-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-teal-500 disabled:opacity-50 transition-all">Sign Document</button>
+                            <button onClick={() => handleSignatureDecision(d, 'declined')} disabled={busy} className="px-4 py-1.5 bg-white dark:bg-slate-800 text-rose-600 border border-rose-300 dark:border-rose-500/30 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-rose-50 dark:hover:bg-rose-500/10 disabled:opacity-50 transition-all">Decline</button>
+                            {busy && <span className="text-[7px] uppercase text-slate-400 animate-pulse">Recording…</span>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ── MY CHANGE REQUESTS (HISTORY) ── */}
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-700">
+                <Clock size={14} className="text-slate-500 dark:text-slate-400" />
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">My Requests</h3>
+                <span className="ml-auto text-[7px] font-black uppercase text-slate-400">{changeRequests.length} submitted</span>
+              </div>
+              {changeRequests.length === 0 ? (
+                <p className="text-[8px] text-slate-500 dark:text-slate-400 py-4 text-center uppercase tracking-widest">No change requests yet — submit one above.</p>
+              ) : (
+                <div className="space-y-2">
+                  {changeRequests.map(cr => (
+                    <div key={cr.id} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[9px] font-black text-slate-900 dark:text-white">{cr.project_name || `Project #${cr.project_id}`}</p>
+                          <p className="text-[8px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{cr.description}</p>
+                          {cr.reason && <p className="text-[7px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">Reason: {cr.reason}</p>}
+                          {cr.admin_response && (
+                            <div className="mt-2 p-2 rounded-lg bg-teal-500/5 border border-teal-500/20">
+                              <p className="text-[7px] font-black uppercase tracking-widest text-teal-600 dark:text-teal-400 mb-0.5">Team response</p>
+                              <p className="text-[8px] text-slate-600 dark:text-slate-300">{cr.admin_response}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-start sm:items-end gap-1 shrink-0">
+                          <span className={`px-2 py-1 rounded-lg text-[7px] font-black uppercase ${cr.status === 'approved' || cr.status === 'completed' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : cr.status === 'rejected' || cr.status === 'declined' ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20' : cr.status === 'in_progress' || cr.status === 'under_review' ? 'bg-teal-500/10 text-teal-600 border border-teal-500/20' : 'bg-gold-500/10 text-gold-600 border border-gold-500/20'}`}>{(cr.status || 'submitted').replace(/_/g, ' ')}</span>
+                          <span className="text-[7px] text-slate-400 uppercase tracking-wider">{cr.created_at ? new Date(cr.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {activeSection === "settings" && (
           <div className="space-y-6 animate-fade-in">
             <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
@@ -991,6 +1304,29 @@ const ClientPortal = () => {
                   {settingsLoading ? 'Saving...' : 'Save Changes'}
                 </button>
               </form>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2 mb-6 pb-3 border-b border-slate-200 dark:border-slate-700">
+                <Camera size={14} className="text-teal-600" />
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Profile Photo</h3>
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                  <span className="absolute text-[12px] font-black text-slate-500 dark:text-slate-300">{(portalUser?.display_name || 'C').charAt(0).toUpperCase()}</span>
+                  {(photoPreview || (photoAvailable !== false && portalUser?.id)) && (
+                    <img key={photoVersion} src={photoPreview || getApiUrl(`/api/users/profile-photo/${portalUser.id}?v=${photoVersion}`)} alt="Profile preview" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-bold text-slate-900 dark:text-white">Upload a new photo</p>
+                  <p className="text-[7px] text-slate-500 dark:text-slate-300 mb-2">JPG or PNG, up to 4MB. Shown across your portal and team views.</p>
+                  <label className={`inline-block px-4 py-2 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-teal-500 transition-all cursor-pointer ${photoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    {photoUploading ? 'Uploading…' : 'Choose Photo'}
+                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handlePhotoUpload} />
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
