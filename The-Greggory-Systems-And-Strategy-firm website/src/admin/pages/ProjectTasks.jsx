@@ -5,6 +5,7 @@ import {
   Clock, AlertCircle, ChevronLeft, User, Calendar, Tag
 } from "lucide-react";
 import { apiCall } from "../../services/api";
+import SearchBlock from "../../components/SearchBlock";
 
 /**
  * ProjectTasks - Standalone Full-Screen Task Management Node
@@ -104,10 +105,14 @@ export function ProjectTasks() {
           <div className="w-10 h-10 bg-teal-500/10 rounded-lg flex items-center justify-center text-teal-500 border border-teal-500/20">
             <CheckSquare size={20} />
           </div>
-          <div>
+          <div className="hidden sm:block">
             <h2 className="text-xl font-black uppercase leading-none tracking-tighter">Task Management Hub</h2>
             <p className="text-[7px] text-slate-500 font-black uppercase tracking-[0.4em] mt-1">Project Node: <span className="text-teal-400">{project?.project_name || "Unknown"}</span></p>
           </div>
+        </div>
+
+        <div className="flex-1 max-w-sm mx-6 hidden md:block">
+          <SearchBlock variant="admin" placeholder="Query task nodes..." />
         </div>
         <div className="flex gap-3">
           <button

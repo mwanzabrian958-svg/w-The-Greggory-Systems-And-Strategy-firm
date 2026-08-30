@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, X, Save, RefreshCw } from "lucide-react";
 import { getApiUrl, API_BASE_URL } from "../../services/api";
+import SearchBlock from "../../components/SearchBlock";
 
 export function ManualEntry() {
   const navigate = useNavigate();
@@ -47,10 +48,14 @@ export function ManualEntry() {
         <div className="bg-[#0f172a] px-6 py-3 flex items-center justify-between border-b border-white/5 bg-[#1e293b]/20">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-white font-black text-sm border border-white/10">GS</div>
-            <div>
+            <div className="hidden sm:block">
               <h2 className="text-sm font-black text-white uppercase leading-none">Manual Ledger Entry</h2>
               <p className="text-[6px] text-teal-500 font-black uppercase tracking-[0.4em]">Operational Sync Protocol</p>
             </div>
+          </div>
+
+          <div className="flex-1 max-w-sm mx-4">
+            <SearchBlock variant="admin" placeholder="Query ledger sync..." />
           </div>
           <button onClick={() => navigate('/admin/billing')} className="p-2 hover:bg-rose-600/20 text-slate-400 hover:text-rose-500 rounded-lg transition-all"><X size={16} /></button>
         </div>

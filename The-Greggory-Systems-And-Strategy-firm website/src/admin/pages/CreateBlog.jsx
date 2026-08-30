@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, X, RefreshCw, Send, Type, Tag, Clock, User, ImageIcon, Link, Upload } from "lucide-react";
 import { getApiUrl, API_BASE_URL } from "../../services/api";
+import SearchBlock from "../../components/SearchBlock";
 
 /**
  * CreateBlog - Standalone Full-Screen Post Page
@@ -75,10 +76,14 @@ export function CreateBlog() {
       <div className="bg-[#0f172a] px-6 py-3 flex items-center justify-between border-b border-white/5 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-teal-500/10 rounded-lg flex items-center justify-center text-teal-500 border border-teal-500/20"><FileText size={16} /></div>
-          <div>
+          <div className="hidden sm:block">
             <h2 className="text-lg font-black text-white uppercase leading-none tracking-tighter">Manuscript Deployment</h2>
             <p className="text-[6px] text-teal-500 font-black uppercase tracking-[0.4em] mt-1">Strategic Relay</p>
           </div>
+        </div>
+
+        <div className="flex-1 max-w-md mx-6 hidden md:block">
+           <SearchBlock variant="admin" placeholder="Query content matrix..." />
         </div>
         <button onClick={() => navigate("/admin/content")} className="px-3 py-1.5 bg-rose-600/20 text-rose-500 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all border border-rose-600/20 flex items-center gap-2"><X size={12} /> Abort</button>
       </div>

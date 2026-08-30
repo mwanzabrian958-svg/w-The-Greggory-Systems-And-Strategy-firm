@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { PieChart, X, ArrowUpRight, ArrowDownRight, FileText, Download, RefreshCw } from "lucide-react";
 import { getApiUrl } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
+import SearchBlock from "../../components/SearchBlock";
 
 export function ProfitLossReport() {
   const navigate = useNavigate();
@@ -85,10 +86,14 @@ export function ProfitLossReport() {
          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[100px] -mr-32 -mt-32"></div>
          <div className="relative z-10 flex items-center gap-4">
             <div className="bg-blue-500/20 p-3 rounded-2xl"><PieChart size={24} className="text-blue-400" /></div>
-            <div>
+            <div className="hidden sm:block">
                <h2 className="text-3xl font-black text-white tracking-tight uppercase">Profit & Loss Telemetry</h2>
                <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.4em] mt-1">Strategic Audit Node Active</p>
             </div>
+         </div>
+
+         <div className="flex-1 max-w-xl mx-8 relative z-10 hidden md:block">
+            <SearchBlock variant="admin" placeholder="Query financial telemetry..." />
          </div>
          <button onClick={() => navigate('/admin/billing')} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 relative z-10 transition-all group">
           <X className="w-6 h-6 text-slate-500 group-hover:text-rose-500 transition-colors" />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, RefreshCw, X, ArrowRight, Globe, FolderKanban, CheckSquare, Calculator, User } from "lucide-react";
 import { apiCall } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
@@ -22,6 +23,7 @@ export default function SearchBlock({
   variant = "admin",
   minChars = 2,
 }) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -70,7 +72,7 @@ export default function SearchBlock({
   const onKeyDown = (e) => {
     if (e.key === "Enter" && query.trim().length >= minChars) {
       setShow(false);
-      window.location.href = `${resultsBase}?q=${encodeURIComponent(query.trim())}`;
+      navigate(`${resultsBase}?q=${encodeURIComponent(query.trim())}`);
     } else if (e.key === "Escape") {
       setShow(false);
       inputRef.current?.blur();
@@ -80,7 +82,8 @@ export default function SearchBlock({
   const pickSuggestion = (item) => {
     setShow(false);
     setQuery("");
-    window.location.href = item?.link || `${resultsBase}?q=${encodeURIComponent(query.trim())}`;
+    if (item?.link) navigate(item.link);
+    else navigate(`${resultsBase}?q=${encodeURIComponent(query.trim())}`);
   };
 
   const IconFor = (type) => ICON_MAP[type] || Search;
@@ -154,7 +157,7 @@ export default function SearchBlock({
               ))}
               <div
                 className={`flex items-center justify-center gap-1 p-2 text-[8px] font-black uppercase cursor-pointer ${isAdminTheme ? "text-slate-500 hover:text-teal-400" : darkMode ? "text-slate-500 hover:text-teal-400" : "text-slate-500 hover:text-teal-600"}`}
-                onClick={() => { setShow(false); window.location.href = `${resultsBase}?q=${encodeURIComponent(query.trim())}`; }}
+                onClick={() => { setShow(false); navigate(`${resultsBase}?q=${encodeURIComponent(query.trim())}`); }}
               >
                 View all results <Globe size={10} />
               </div>

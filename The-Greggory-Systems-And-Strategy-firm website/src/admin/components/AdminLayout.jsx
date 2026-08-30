@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { apiCall } from "../../services/api";
 import { getNavigationItems } from "../utils/permissions";
+import SearchBlock from "../../components/SearchBlock";
 
 const ICON_MAP = {
   Home, Users, FolderKanban, Calculator, Building2,
@@ -20,11 +21,6 @@ function AdminLayout({ user, children, onLogout }) {
   const location = useLocation();
   const [profilePhotoUrl, setProfilePhotoUrl] = useState(null);
   const [imageError, setImagePhotoError] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const searchRef = useRef(null);
 
   const navItems = getNavigationItems(user);
   const displayName = user?.display_name || user?.name || (user?.first_name ? `${user.first_name} ${user.last_name}` : "Admin");
@@ -33,32 +29,6 @@ function AdminLayout({ user, children, onLogout }) {
   const IconComponent = ({ name, ...props }) => {
     const Icon = ICON_MAP[name] || HelpCircle;
     return <Icon {...props} />;
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setShowResults(false); };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (searchQuery.length >= 2) {
-        setIsSearching(true);
-        try {
-          const data = await apiCall(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
-          if (data.success) { setSearchResults(data.results || []); setShowResults(true); }
-        } catch (e) { console.error("Search failure", e); } finally { setIsSearching(false); }
-      } else { setSearchResults([]); setShowResults(false); }
-    }, 400);
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
-
-  const handleSearchSubmit = (e) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      setShowResults(false);
-      navigate(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
   };
 
   useEffect(() => {
@@ -95,32 +65,13 @@ function AdminLayout({ user, children, onLogout }) {
              </div>
           </div>
 
-          <div className="flex-1 max-w-2xl mx-10 relative" ref={searchRef}>
-            <div className="relative">
-              <Search className={`absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 ${isSearching ? 'text-teal-400 animate-pulse' : 'text-slate-500'}`} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearchSubmit}
-                placeholder="Query system database..."
-                className="w-full pl-12 pr-10 py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-[11px] font-bold focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all"
-              />
-            </div>
-            {showResults && (
-              <div className="absolute top-full left-0 right-0 mt-3 bg-[#1e293b] border border-white/10 rounded-[24px] shadow-2xl overflow-hidden z-[60] animate-in fade-in zoom-in-95 duration-200">
-                <div className="p-2 max-h-[400px] overflow-y-auto custom-scrollbar">
-                  {searchResults.length > 0 ? (
-                    searchResults.map((result, idx) => (
-                      <button key={`${result.id}-${idx}`} onClick={() => { navigate(result.link); setShowResults(false); setSearchQuery(""); }} className="w-full flex items-center gap-4 p-4 hover:bg-white/5 rounded-xl text-left border-b border-white/5 last:border-0 transition-all group">
-                        <div className="bg-teal-500/10 p-2 rounded-lg group-hover:bg-teal-500/20"><IconComponent name={result.type === 'user' ? 'Users' : 'FolderKanban'} size={18} className="text-teal-400" /></div>
-                        <div><p className="text-sm font-bold text-white leading-tight">{result.title}</p><p className="text-[9px] font-black text-slate-500 uppercase mt-1">{result.subtitle}</p></div>
-                      </button>
-                    ))
-                  ) : <div className="p-10 text-center text-slate-600 uppercase font-black text-[9px] tracking-widest">No Nodes Found</div>}
-                </div>
-              </div>
-            )}
+          <div className="flex-1 max-w-2xl mx-10">
+            <SearchBlock
+              endpoint="/api/admin/search"
+              resultsBase="/admin/search"
+              variant="admin"
+              placeholder="Query system database..."
+            />
           </div>
 
           <div className="flex items-center gap-6">
@@ -172,6 +123,16 @@ function AdminLayout({ user, children, onLogout }) {
                   <h2 className="text-xl font-black uppercase tracking-tighter leading-none">{workstationLabel}</h2>
                   <p className="text-[8px] text-teal-400 font-black uppercase tracking-[0.4em] mt-1.5">Operational Workstation Active</p>
                 </div>
+              </div>
+
+              {/* Global Search — Persistent in Workstation */}
+              <div className="flex-1 max-w-xl mx-8 hidden md:block">
+                <SearchBlock
+                  endpoint="/api/admin/search"
+                  resultsBase="/admin/search"
+                  variant="admin"
+                  placeholder={`Search ${workstationLabel.toLowerCase()}...`}
+                />
               </div>
 
               <div className="flex items-center gap-6">

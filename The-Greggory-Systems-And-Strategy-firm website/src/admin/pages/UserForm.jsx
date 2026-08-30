@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { User, X, Save, RefreshCw, Shield } from "lucide-react";
 import { apiCall } from "../../services/api";
+import SearchBlock from "../../components/SearchBlock";
 
 export function UserForm() {
   const navigate = useNavigate();
@@ -77,10 +78,14 @@ export function UserForm() {
       <div className="bg-[#0f172a] px-6 py-4 flex items-center justify-between border-b border-white/5">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-teal-500/10 rounded-xl flex items-center justify-center text-teal-500 border border-teal-500/20"><User size={20} /></div>
-          <div>
+          <div className="hidden sm:block">
             <h2 className="text-lg font-black text-white tracking-tighter uppercase leading-none">{id ? 'Recalibrate Identity' : 'Personnel Entry'}</h2>
             <p className="text-[7px] text-teal-500 font-black uppercase tracking-[0.4em] mt-1">Identity Node Management</p>
           </div>
+        </div>
+
+        <div className="flex-1 max-w-md mx-8">
+          <SearchBlock variant="admin" placeholder="Query identity nodes..." />
         </div>
         <button onClick={() => navigate('/admin/users')} className="p-2.5 bg-white/5 text-slate-400 rounded-xl hover:text-white transition-all"><X size={16} /></button>
       </div>

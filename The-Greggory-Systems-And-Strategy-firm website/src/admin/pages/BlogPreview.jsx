@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { X, RefreshCw, Clock, User, Tag, Calendar, ChevronLeft } from "lucide-react";
 import { getApiUrl } from "../../services/api";
+import SearchBlock from "../../components/SearchBlock";
 
 /**
  * BlogPreview - Standalone Full-Screen Display for reading blog posts.
@@ -74,10 +75,14 @@ export function BlogPreview() {
           <div className="w-8 h-8 bg-teal-500/10 rounded-lg flex items-center justify-center text-teal-500 border border-teal-500/20">
             <Tag size={16} />
           </div>
-          <div>
+          <div className="hidden sm:block">
             <h2 className="text-lg font-black text-white uppercase leading-none tracking-tighter">Document Review</h2>
             <p className="text-[6px] text-teal-500 font-black uppercase tracking-[0.4em] mt-1">Strategic Relay View</p>
           </div>
+        </div>
+
+        <div className="flex-1 max-w-sm mx-6 hidden md:block">
+           <SearchBlock variant="admin" placeholder="Search manuscripts..." />
         </div>
         <button
           onClick={() => navigate("/admin/content")}

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Download, Printer, X, RefreshCw } from "lucide-react";
 import { getApiUrl } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
+import SearchBlock from "../../components/SearchBlock";
 
 export function InvoicePreview() {
   const { id } = useParams();
@@ -31,7 +32,11 @@ export function InvoicePreview() {
       <div className="bg-[#020617] px-10 py-6 flex justify-between items-center border-b border-white/5 no-print sticky top-0 z-[510]">
          <div className="flex items-center gap-6">
             <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center text-white font-black border border-white/10">GS</div>
-            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.5em]">Invoice Preview</h2>
+            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.5em] hidden sm:block">Invoice Preview</h2>
+         </div>
+
+         <div className="flex-1 max-w-lg mx-10 hidden md:block">
+            <SearchBlock variant="admin" placeholder="Query mission database..." />
          </div>
          <div className="flex gap-4">
             <a href={getApiUrl(`/api/documents/invoices/${id}/pdf`)} className="flex items-center gap-3 bg-teal-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-500 transition-all border border-teal-500"><Download size={16} /> Download PDF</a>
