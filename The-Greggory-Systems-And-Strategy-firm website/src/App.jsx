@@ -34,6 +34,9 @@ const ClientPortal = lazy(() => import('./pages/ClientPortal'))
 const Pricing = lazy(() => import('./pages/Pricing'))
 const ClientReports = lazy(() => import('./pages/ClientReports'))
 const ClientAlerts = lazy(() => import('./pages/ClientAlerts'))
+const ClientSearchResults = lazy(() =>
+  import('./pages/ClientSearchResults').then((m) => ({ default: m.ClientSearchResults }))
+)
 
 // Admin Module (heavy) — split into its own chunk(s), loaded on demand.
 // AdminRouter is a named export, so adapt it to the default shape React.lazy expects.
@@ -56,7 +59,7 @@ function Layout() {
   const authPages = ['/login', '/signup', '/forgot-password']
   const isAuthPage = authPages.includes(location.pathname)
   const isAdminPage = location.pathname.startsWith('/admin')
-  const isClientPortal = location.pathname === '/client-portal' || location.pathname === '/client-reports' || location.pathname === '/client-alerts' || location.pathname.startsWith('/projects')
+  const isClientPortal = location.pathname === '/client-portal' || location.pathname === '/client-reports' || location.pathname === '/client-alerts' || location.pathname === '/client-search' || location.pathname.startsWith('/projects')
 
   return (
 
@@ -139,6 +142,17 @@ function Layout() {
               <PrivateRoute>
                 <ErrorBoundary>
                   <ClientAlerts />
+                </ErrorBoundary>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/client-search"
+            element={
+              <PrivateRoute>
+                <ErrorBoundary>
+                  <ClientSearchResults />
                 </ErrorBoundary>
               </PrivateRoute>
             }

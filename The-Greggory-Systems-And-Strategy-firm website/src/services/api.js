@@ -23,7 +23,10 @@ export const apiCall = async (endpoint, options = {}) => {
     // 1. Resolve Token Telemetry
     const sessionStr = localStorage.getItem("gf_admin_session") || sessionStorage.getItem("gf_admin_session");
     const session = sessionStr ? JSON.parse(sessionStr) : null;
-    const token = session?.token || localStorage.getItem("gf_admin_session_token");
+    // Fallback: client-portal sessions may persist under 'tgf_user' (AuthContext)
+    let clientSession = null;
+    try { clientSession = JSON.parse(localStorage.getItem("tgf_user") || "null"); } catch { clientSession = null; }
+    const token = session?.token || localStorage.getItem("gf_admin_session_token") || clientSession?.token;
 
     // 2. Construct Protocol Header
     const authHeaders = {

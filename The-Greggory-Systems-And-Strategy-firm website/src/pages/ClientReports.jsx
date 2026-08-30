@@ -21,6 +21,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { getApiUrl } from "../services/api";
+import SearchBlock from "../components/SearchBlock";
 import { useNavigate } from "react-router-dom";
 
 const ClientReports = () => {
@@ -143,6 +144,13 @@ const ClientReports = () => {
   return (
     <div className={`min-h-screen pt-10 px-4 pb-8 font-sans transition-colors duration-300 ${darkMode ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}`}>
       <div className="max-w-6xl mx-auto">
+
+        {/* GLOBAL SYSTEM SEARCH */}
+        <div className="mb-3 flex justify-end">
+          <div className="w-full sm:w-72 md:w-96">
+            <SearchBlock endpoint="/api/users/search" resultsBase="/client-search" variant="client" placeholder="Search workspace…" />
+          </div>
+        </div>
 
         {/* REPLICATED PORTAL NAV */}
         <nav className="mb-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/95 backdrop-blur-sm sticky top-0 z-20">

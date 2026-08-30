@@ -17,10 +17,15 @@
     "preview": "vite preview",
     "db:init": "node scripts/initialize-db.js",
     "backup:cloud-to-local": "node scripts/backup-cloud-to-local.js",
+    "backup:schedule": "node scripts/setup-backup-schedule.js",
     "db:whatsapp": "node scripts/setup-whatsapp-verification.js",
     "start": "node server.js",
     "start:cloud": "node scripts/import-if-empty.js && node server.js",
     "server": "nodemon server.js"
+  },
+  "nodemonConfig": {
+    "watch": ["server.js"],
+    "ignore": ["backups/*", "dist/*", "scripts/*", "docs/*", "database/*", "uploads/*"]
   },
   "dependencies": {
     "@google-cloud/storage": "^5.18.3",

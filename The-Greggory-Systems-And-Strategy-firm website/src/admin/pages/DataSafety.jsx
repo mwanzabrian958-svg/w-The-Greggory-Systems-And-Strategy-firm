@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiCall } from "../../services/api";
-import { RefreshCw, Shield, ShieldCheck, ShieldAlert, ShieldX, Activity, Users, FileText } from "lucide-react";
+import { RefreshCw, Shield, ShieldCheck, ShieldAlert, ShieldX, Activity, Users, FileText, Database, Play } from "lucide-react";
 
 export function DataSafety() {
   const [summary, setSummary] = useState(null);
@@ -10,6 +10,50 @@ export function DataSafety() {
   const [activeTab, setActiveTab] = useState('summary');
 
   useEffect(() => { fetchData(); }, []);
+
+  // ---- Secondary Backup (cloud Aiven -> local phpMyAdmin/XAMPP) ----
+  const [backupStatus, setBackupStatus] = useState(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+
+  useEffect(() => { fetchBackupStatus(); }, []);
+  useEffect(() => {
+    if (!backupBusy) return;
+    const t = setInterval(fetchBackupStatus, 5000);
+    return () => clearInterval(t);
+  }, [backupBusy]);
+
+  const fetchBackupStatus = async () => {
+    try {
+      const res = await apiCall("/api/admin/backup/status");
+      if (res.success) {
+        setBackupStatus(res);
+        setBackupBusy(Boolean(res.running));
+      }
+    } catch (error) {
+      console.error("Backup status fetch failed:", error);
+    }
+  };
+
+  const runBackupNow = async () => {
+    try {
+      setBackupBusy(true);
+      const res = await apiCall("/api/admin/backup/run", { method: "POST" });
+      if (!res.success) {
+        alert(res.message || "Could not start the backup");
+        setBackupBusy(false);
+      }
+    } catch (error) {
+      console.error("Backup trigger failed:", error);
+      setBackupBusy(false);
+    }
+  };
+
+  const BackupMetric = ({ label, value, tone = "text-slate-900" }) => (
+    <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2.5">
+      <p className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+      <p className={`text-[10px] font-black mt-1 ${tone}`}>{value}</p>
+    </div>
+  );
 
   const fetchData = async () => {
     try {
@@ -209,10 +253,80 @@ export function DataSafety() {
         </div>
       )}
 
+      {activeTab === 'backup' && (
+        <div className="bg-white rounded-xl border border-slate-100 shadow-md p-5 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <Database size={14} className="text-teal-500" />
+              <div>
+                <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Secondary Backup — Cloud → Local phpMyAdmin</h3>
+                <p className="text-[6.5px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{backupStatus?.scheduledTask || "Daily at 02:00 (Windows Task Scheduler)"}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={fetchBackupStatus} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 font-black text-[7px] uppercase tracking-widest hover:bg-slate-50">
+                <RefreshCw size={11} /> Refresh
+              </button>
+              <button
+                onClick={runBackupNow}
+                disabled={backupBusy}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-black text-[7px] uppercase tracking-widest text-white ${backupBusy ? "bg-slate-400 cursor-not-allowed" : "bg-teal-600 hover:bg-teal-700"}`}
+              >
+                <Play size={11} /> {backupBusy ? "Backup Running…" : "Backup Now"}
+              </button>
+            </div>
+          </div>
+
+          {!backupStatus ? (
+            <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Backup telemetry unavailable — is the backend running?</p>
+          ) : (
+            <>
+              {!backupStatus.configured && (
+                <p className="text-[8px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
+                  Cloud DB not configured — set DB_CLOUD_HOST / DB_CLOUD_USER / DB_CLOUD_PASSWORD in .env
+                </p>
+              )}
+              {backupStatus.lastRun && !backupStatus.lastRun.ok && backupStatus.lastRun.error && (
+                <p className="text-[8px] font-black uppercase tracking-wide text-orange-600 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
+                  Last run failed: {backupStatus.lastRun.error}
+                </p>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <BackupMetric
+                  label="Last Run"
+                  value={backupStatus.lastRun ? (backupStatus.lastRun.ok ? "SUCCESS" : "FAILED") : "NEVER"}
+                  tone={backupStatus.lastRun ? (backupStatus.lastRun.ok ? "text-emerald-600" : "text-rose-600") : "text-slate-400"}
+                />
+                <BackupMetric label="Trigger" value={backupStatus.lastRun?.trigger || "—"} />
+                <BackupMetric label="Finished" value={backupStatus.lastRun?.finishedAt ? new Date(backupStatus.lastRun.finishedAt).toLocaleString() : "—"} />
+                <BackupMetric label="Duration" value={backupStatus.lastRun?.durationMs ? `${(backupStatus.lastRun.durationMs / 1000).toFixed(1)}s` : "—"} />
+                <BackupMetric label="Cloud Tables" value={backupStatus.lastRun?.cloud?.tables ?? "—"} />
+                <BackupMetric label="Cloud Rows" value={backupStatus.lastRun?.cloud?.rows ?? "—"} />
+                <BackupMetric label="Rows Copied" value={backupStatus.lastRun?.local?.rowsCopied ?? "—"} />
+                <BackupMetric
+                  label="Mismatches"
+                  value={backupStatus.lastRun?.local?.mismatches ?? "—"}
+                  tone={backupStatus.lastRun?.local?.mismatches > 0 ? "text-rose-600" : "text-emerald-600"}
+                />
+              </div>
+              {backupStatus.latestSnapshot && (
+                <div className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2.5">
+                  <p className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Latest JSON Snapshot</p>
+                  <p className="text-[9px] font-bold text-slate-800 mt-1">
+                    {backupStatus.latestSnapshot.file} · {backupStatus.latestSnapshot.sizeKB} KB · {new Date(backupStatus.latestSnapshot.createdAt).toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       <div className="flex gap-2">
         <button onClick={() => setActiveTab('summary')} className={`px-4 py-2 rounded-lg text-[7px] font-black uppercase tracking-widest ${activeTab === 'summary' ? 'bg-teal-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>Summary</button>
         <button onClick={() => setActiveTab('audit')} className={`px-4 py-2 rounded-lg text-[7px] font-black uppercase tracking-widest ${activeTab === 'audit' ? 'bg-teal-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>Audit Logs</button>
         <button onClick={() => setActiveTab('access')} className={`px-4 py-2 rounded-lg text-[7px] font-black uppercase tracking-widest ${activeTab === 'access' ? 'bg-teal-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>Data Access</button>
+        <button onClick={() => setActiveTab('backup')} className={`px-4 py-2 rounded-lg text-[7px] font-black uppercase tracking-widest ${activeTab === 'backup' ? 'bg-teal-600 text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}>Backup</button>
       </div>
     </div>
   );

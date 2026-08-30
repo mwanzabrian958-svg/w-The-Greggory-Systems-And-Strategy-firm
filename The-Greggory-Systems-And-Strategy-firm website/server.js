@@ -4489,6 +4489,336 @@ app.get("/api/admin/signature-requests", authenticateAdmin, async (req, res) => 
 });
 
 // =============================================
+// Global System Search (Admin — deep cross-module index)
+// =============================================
+const esc = (v) => String(v ?? "").replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+const escLike = (v) => `%${esc(v)}%`;
+const fmtKSH = (amount) => {
+  const n = typeof amount === "string" ? parseFloat(amount) : Number(amount);
+  if (Number.isNaN(n) || n === 0) return "KSH 0.00";
+  return "KSH " + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+app.get("/api/admin/search", authenticateAdmin, async (req, res) => {
+  const q = (req.query.q || "").trim();
+  if (!q || q.length < 2) return res.json({ success: true, results: [], query: q });
+  const term = escLike(q);
+  const deep = req.query.deep === "true";
+  const limit = deep ? 40 : 8;
+  const results = [];
+  try {
+    const [users] = await mainDb.query(
+      `SELECT id, display_name, email FROM users
+         WHERE deleted_at IS NULL
+           AND (display_name LIKE ? ESCAPE '\\' OR email LIKE ? ESCAPE '\\')
+         ORDER BY display_name ASC LIMIT ${limit}`,
+      [term, term]
+    );
+    users.forEach(u => results.push({ id: u.id, type: "user", title: u.display_name || u.email, subtitle: u.email, role: "user", link: `/admin/users/detail/${u.id}/client` }));
+
+    const [projects] = await mainDb.query(
+      `SELECT id, project_name, status FROM user_projects
+         WHERE is_active = 1 AND deleted_at IS NULL
+           AND project_name LIKE ? ESCAPE '\\'
+         ORDER BY project_name ASC LIMIT ${limit}`,
+      [term]
+    );
+    projects.forEach(p => results.push({ id: p.id, type: "project", title: p.project_name, subtitle: `Project #${p.id} · ${(p.status || "planning").toUpperCase()}`, link: `/admin/projects` }));
+
+    const [tasks] = await mainDb.query(
+      `SELECT t.id, t.task_name, p.project_name FROM project_tasks t
+         LEFT JOIN user_projects p ON p.id = t.project_id
+         WHERE t.deleted_at IS NULL AND (t.task_name LIKE ? ESCAPE '\\' OR t.task_description LIKE ? ESCAPE '\\')
+         ORDER BY t.created_at DESC LIMIT ${limit}`,
+      [term, term]
+    );
+    tasks.forEach(t => results.push({ id: t.id, type: "task", title: t.task_name, subtitle: t.project_name || "Unassigned task", link: `/admin/projects` }));
+
+    const [invoices] = await mainDb.query(
+      `SELECT pi.id, pi.invoice_number, up.project_name, pi.client_name, pi.status, pi.amount_kes
+         FROM project_invoices pi
+         LEFT JOIN user_projects up ON up.id = pi.project_id
+         WHERE pi.deleted_at IS NULL
+           AND (pi.invoice_number LIKE ? ESCAPE '\\' OR pi.client_name LIKE ? ESCAPE '\\' OR up.project_name LIKE ? ESCAPE '\\')
+         ORDER BY pi.created_at DESC LIMIT ${limit}`,
+      [term, term, term]
+    );
+    invoices.forEach(i => results.push({
+      id: i.id, type: "ledger", title: i.invoice_number || `INV-${i.id}`,
+      subtitle: `${i.project_name || i.client_name || "Invoice"} · ${(i.status || "draft").toUpperCase()} · ${fmtKSH(i.amount_kes)}`,
+      link: `/admin/billing`,
+    }));
+
+    const [feedback] = await mainDb.query(
+      `SELECT id, title, feedback_type, priority FROM user_feedback
+         WHERE deleted_at IS NULL
+           AND (title LIKE ? ESCAPE '\\' OR message LIKE ? ESCAPE '\\')
+         ORDER BY created_at DESC LIMIT ${limit}`,
+      [term, term]
+    );
+    feedback.forEach(f => results.push({ id: f.id, type: "task", title: f.title, subtitle: `${f.feedback_type} · ${f.priority}`, link: `/admin/support` }));
+
+    const [team] = await mainDb.query(
+      `SELECT id, name, role, department FROM team_members
+         WHERE is_active = 1
+           AND (name LIKE ? ESCAPE '\\' OR department LIKE ? ESCAPE '\\')
+         ORDER BY name ASC LIMIT ${limit}`,
+      [term, term]
+    );
+    team.forEach(t => results.push({ id: t.id, type: "user", title: t.name, subtitle: `${t.role}${t.department ? ` · ${t.department}` : ""}`, link: `/admin/team` }));
+
+    const [docs] = await mainDb.query(
+      `SELECT id, document_name, category, description FROM client_documents
+         WHERE deleted_at IS NULL
+           AND (document_name LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\')
+         ORDER BY created_at DESC LIMIT ${limit}`,
+      [term, term]
+    );
+    docs.forEach(d => results.push({ id: d.id, type: "project", title: d.document_name, subtitle: d.category || d.description || "Document", link: `/admin/content` }));
+
+    res.json({ success: true, results, query: q, deep });
+    logDataAccess(req, 'global_search', 0, q);
+  } catch (error) {
+    console.error("[ADMIN GLOBAL SEARCH] Error:", error);
+    res.status(500).json({ success: false, message: "Search failed" });
+  }
+});
+
+// =============================================
+// Admin-triggered Password Recovery via WhatsApp
+// bcrypt hashes are one-way, so "recovery" means: generate a secure temporary
+// password, store its fresh hash, and deliver the plaintext once over
+// WhatsApp to the client's registered number. In simulated mode (no provider
+// credentials) the response includes the temp password so the admin can
+// relay it manually.
+// =============================================
+const TEMP_PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+const generateTempPassword = (length = 12) => {
+  let out = "";
+  for (let i = 0; i < length; i++) out += TEMP_PASSWORD_CHARS[crypto.randomInt(TEMP_PASSWORD_CHARS.length)];
+  return out;
+};
+const maskPhone = (phone) => {
+  const p = String(phone);
+  return p.slice(0, -4).replace(/\d/g, "•") + p.slice(-4);
+};
+
+app.post("/api/admin/users/:id/whatsapp-password-reset", authenticateAdmin, async (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return res.status(400).json({ success: false, message: "Invalid user id" });
+  }
+  try {
+    const [rows] = await mainDb.query(
+      "SELECT id, display_name, email, phone_number FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1",
+      [userId]
+    );
+    const user = rows && rows[0];
+    if (!user) return res.status(404).json({ success: false, message: "Client user not found" });
+    if (!user.phone_number) {
+      return res.status(400).json({ success: false, message: "This user has no phone number on file — add one to their profile before resetting via WhatsApp." });
+    }
+
+    const tempPassword = generateTempPassword(12);
+    const newHash = await bcryptjs.hash(tempPassword, 10);
+    await mainDb.query("UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?", [newHash, userId]);
+
+    const firstName = String(user.display_name || user.email || "there").trim().split(/\s+/)[0];
+    const message = [
+      `Hello ${firstName},`,
+      ``,
+      `Your password for THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM client portal has been reset by an administrator.`,
+      ``,
+      `Temporary password: ${tempPassword}`,
+      ``,
+      `Log in and change it under your portal settings immediately.`,
+    ].join("\n");
+
+    const wa = await sendWhatsAppToUser(user.phone_number, message);
+    const simulated = Boolean(wa && wa.simulated);
+    logDataAccess(req, "user", userId, simulated ? "admin_whatsapp_password_reset_simulated" : "admin_whatsapp_password_reset");
+
+    console.log(`[ADMIN PASSWORD RESET] user=${userId} reset by admin — WhatsApp ${simulated ? "SIMULATED" : "sent"}`);
+
+    res.json({
+      success: true,
+      simulated,
+      deliveredTo: maskPhone(user.phone_number),
+      message: simulated
+        ? "Password reset. WhatsApp provider is not configured, so the temporary password is shown below for manual relay."
+        : "Password reset. The temporary password has been sent to the client's WhatsApp.",
+      // The plaintext temp password is echoed ONLY in simulated mode so the
+      // admin can relay it manually while testing; with a live provider it
+      // travels exclusively over WhatsApp and is never stored or echoed.
+      ...(simulated ? { tempPassword } : {}),
+    });
+  } catch (error) {
+    console.error("[ADMIN PASSWORD RESET] Error:", error);
+    res.status(500).json({ success: false, message: "Password reset failed" });
+  }
+});
+
+// =============================================
+// Secondary Backup Control (cloud Aiven -> local phpMyAdmin/XAMPP)
+// Script: scripts/backup-cloud-to-local.js — scheduled daily at 02:00 by the
+// Windows Task Scheduler task "Greggory DB Cloud-to-Local Backup". These
+// endpoints let admins monitor the last run and trigger on-demand backups.
+// Docs: docs/SECONDARY-BACKUP.md
+// =============================================
+const { spawn } = require("child_process");
+const BACKUP_SCRIPT_PATH = path.join(__dirname, "scripts", "backup-cloud-to-local.js");
+const BACKUP_STATUS_PATH = path.join(__dirname, "backups", "last-backup-status.json");
+const BACKUP_SNAPSHOTS_DIR = path.join(__dirname, "backups");
+let backupRunInProgress = false;
+
+const readBackupStatus = () => {
+  try {
+    return JSON.parse(fs.readFileSync(BACKUP_STATUS_PATH, "utf8"));
+  } catch {
+    return null;
+  }
+};
+
+app.get("/api/admin/backup/status", authenticateAdmin, (req, res) => {
+  let latestSnapshot = null;
+  try {
+    const snaps = fs
+      .readdirSync(BACKUP_SNAPSHOTS_DIR)
+      .filter((f) => /^cloud-snapshot-\d+\.json$/.test(f))
+      .sort()
+      .reverse();
+    if (snaps[0]) {
+      const st = fs.statSync(path.join(BACKUP_SNAPSHOTS_DIR, snaps[0]));
+      latestSnapshot = {
+        file: snaps[0],
+        sizeKB: Math.round(st.size / 1024),
+        createdAt: st.mtime.toISOString(),
+      };
+    }
+  } catch {
+    /* backups dir missing — nothing backed up yet */
+  }
+  res.json({
+    success: true,
+    configured: Boolean(process.env.DB_CLOUD_HOST && process.env.DB_CLOUD_USER),
+    running: backupRunInProgress,
+    lastRun: readBackupStatus(),
+    latestSnapshot,
+    scheduledTask: "Greggory DB Cloud-to-Local Backup (daily 02:00)",
+    docs: "docs/SECONDARY-BACKUP.md",
+  });
+});
+
+app.post("/api/admin/backup/run", authenticateAdmin, (req, res) => {
+  if (backupRunInProgress) {
+    return res.status(409).json({ success: false, message: "A backup is already running" });
+  }
+  if (!process.env.DB_CLOUD_HOST || !process.env.DB_CLOUD_USER) {
+    return res.status(400).json({
+      success: false,
+      message: "Cloud DB not configured: set DB_CLOUD_HOST / DB_CLOUD_USER / DB_CLOUD_PASSWORD in .env",
+    });
+  }
+  backupRunInProgress = true;
+  // detached + windowsHide: the backup child survives a backend restart (e.g.
+  // nodemon reload) instead of being killed with the server's process tree.
+  const child = spawn(process.execPath, [BACKUP_SCRIPT_PATH], {
+    cwd: __dirname,
+    env: { ...process.env, BACKUP_TRIGGER: "admin-api" },
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
+    windowsHide: true,
+  });
+  child.unref();
+  let output = "";
+  child.stdout.on("data", (d) => (output += d.toString()));
+  child.stderr.on("data", (d) => (output += d.toString()));
+  const writeApiRunLog = (code) => {
+    try {
+      fs.appendFileSync(
+        path.join(__dirname, "backups", "last-api-run.log"),
+        `===== ${new Date().toISOString()} exited code=${code} =====\n${output}\n`
+      );
+    } catch { /* best effort */ }
+  };
+  child.on("close", (code) => {
+    backupRunInProgress = false;
+    writeApiRunLog(code);
+    console.log(`[BACKUP API] backup process exited code=${code}\n${output.slice(-1500)}`);
+  });
+  child.on("error", (err) => {
+    backupRunInProgress = false;
+    writeApiRunLog(`spawn-error: ${err.message}`);
+    console.error("[BACKUP API] failed to start backup:", err.message);
+  });
+  res.json({
+    success: true,
+    message: "Backup started — poll GET /api/admin/backup/status for the result",
+  });
+});
+
+// =============================================
+// Client-scoped System Search (scoped to the authenticated user's own data)
+// =============================================
+app.get("/api/users/search", authenticateUser, async (req, res) => {
+  const q = (req.query.q || "").trim();
+  const userId = req.userId;
+  if (!q || q.length < 2) return res.json({ success: true, results: [], query: q });
+  const term = escLike(q);
+  const deep = req.query.deep === "true";
+  const limit = deep ? 40 : 8;
+  const results = [];
+  try {
+    const [projects] = await mainDb.query(
+      `SELECT id, project_name, status FROM user_projects
+         WHERE is_active = 1 AND deleted_at IS NULL AND user_id = ?
+           AND project_name LIKE ? ESCAPE '\\'
+         ORDER BY project_name ASC LIMIT ${limit}`,
+      [userId, term]
+    );
+    projects.forEach(p => results.push({ id: p.id, type: "project", title: p.project_name, subtitle: `Project #${p.id} · ${(p.status || "planning").toUpperCase()}`, status: p.status, link: `/client-portal` }));
+
+    const [tasks] = await mainDb.query(
+      `SELECT t.id, t.task_name, up.project_name FROM project_tasks t
+         JOIN user_projects up ON up.id = t.project_id
+         WHERE t.deleted_at IS NULL AND up.user_id = ? AND (t.task_name LIKE ? ESCAPE '\\' OR t.task_description LIKE ? ESCAPE '\\')
+         ORDER BY t.created_at DESC LIMIT ${limit}`,
+      [userId, term, term]
+    );
+    tasks.forEach(t => results.push({ id: t.id, type: "task", title: t.task_name, subtitle: t.project_name || "Unassigned task", link: `/client-portal` }));
+
+    const [invoices] = await mainDb.query(
+      `SELECT pi.id, pi.invoice_number, up.project_name, pi.client_name, pi.status, pi.amount_kes
+         FROM project_invoices pi
+         LEFT JOIN user_projects up ON up.id = pi.project_id
+         WHERE pi.deleted_at IS NULL AND (up.user_id = ? OR pi.client_id = ?)
+           AND (pi.invoice_number LIKE ? ESCAPE '\\' OR up.project_name LIKE ? ESCAPE '\\')
+         ORDER BY pi.created_at DESC LIMIT ${limit}`,
+      [userId, userId, term, term]
+    );
+    invoices.forEach(i => results.push({
+      id: i.id, type: "ledger", title: i.invoice_number || `INV-${i.id}`,
+      subtitle: `${i.project_name || i.client_name || "Invoice"} · ${(i.status || "draft").toUpperCase()} · ${fmtKSH(i.amount_kes)}`,
+      link: `/client-portal`,
+    }));
+
+    const [docs] = await mainDb.query(
+      `SELECT id, document_name, category FROM client_documents
+         WHERE deleted_at IS NULL AND client_id = ?
+           AND (document_name LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\')
+         ORDER BY created_at DESC LIMIT ${limit}`,
+      [userId, term, term]
+    );
+    docs.forEach(d => results.push({ id: d.id, type: "project", title: d.document_name, subtitle: d.category || "Document", link: `/client-portal` }));
+
+    res.json({ success: true, results, query: q, deep });
+  } catch (error) {
+    console.error("[CLIENT SEARCH] Error:", error);
+    res.status(500).json({ success: false, message: "Search failed" });
+  }
+});
+
+// =============================================
 // Team Management API
 // =============================================
 app.get("/api/admin/team", authenticateAdmin, async (req, res) => {

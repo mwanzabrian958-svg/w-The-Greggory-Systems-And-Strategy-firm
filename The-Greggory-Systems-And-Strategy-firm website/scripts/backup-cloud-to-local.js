@@ -33,6 +33,27 @@ const mysql = require("mysql2/promise");
 const DB = process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main";
 const SNAPSHOT_KEEP = 10;
 
+// ---- status file (read by the admin API and monitoring) ----
+const STATUS_PATH = path.join(__dirname, "..", "backups", "last-backup-status.json");
+const STATUS = {
+  ok: false,
+  trigger: process.env.BACKUP_TRIGGER || "manual",
+  startedAt: new Date().toISOString(),
+  finishedAt: null,
+  durationMs: null,
+  error: null,
+  cloud: null,
+  local: null,
+};
+function saveStatus() {
+  try {
+    fs.mkdirSync(path.dirname(STATUS_PATH), { recursive: true });
+    fs.writeFileSync(STATUS_PATH, JSON.stringify(STATUS, null, 2));
+  } catch (e) {
+    console.error(`[backup] could not write status file: ${e.message}`);
+  }
+}
+
 const CLOUD = {
   host: process.env.DB_CLOUD_HOST,
   port: Number(process.env.DB_CLOUD_PORT || 3306),
@@ -111,6 +132,10 @@ function saveSnapshot(snapshot) {
   console.log(`[backup] ${new Date().toISOString()} — cloud -> local (${DB})`);
   const C = await mysql.createConnection(CLOUD).catch((e) => {
     console.error(`[backup] CLOUD UNREACHABLE (${e.code || e.message}) — local DB left untouched. Aborting.`);
+    STATUS.error = `cloud unreachable: ${e.code || e.message}`;
+    STATUS.finishedAt = new Date().toISOString();
+    STATUS.durationMs = Date.now() - Date.parse(STATUS.startedAt);
+    saveStatus();
     process.exit(1);
   });
 
@@ -119,6 +144,10 @@ function saveSnapshot(snapshot) {
   console.log(`[backup] cloud reachable: ${count} tables, ${total} rows`);
   if (total === 0 && !force) {
     console.error("[backup] cloud appears EMPTY (0 rows) — refusing to overwrite local. Use --force to override.");
+    STATUS.error = "cloud database empty (0 rows) — local protected; use --force to override";
+    STATUS.finishedAt = new Date().toISOString();
+    STATUS.durationMs = Date.now() - Date.parse(STATUS.startedAt);
+    saveStatus();
     await C.end();
     process.exit(1);
   }
@@ -127,6 +156,10 @@ function saveSnapshot(snapshot) {
   // ---- 2) mirror into local ----
   const L = await mysql.createConnection(LOCAL).catch((e) => {
     console.error(`[backup] LOCAL DB unreachable (${e.code || e.message}) — is XAMPP MySQL running? Aborting.`);
+    STATUS.error = `local DB unreachable: ${e.code || e.message} (is XAMPP MySQL running?)`;
+    STATUS.finishedAt = new Date().toISOString();
+    STATUS.durationMs = Date.now() - Date.parse(STATUS.startedAt);
+    saveStatus();
     process.exit(1);
   });
   await L.query(`CREATE DATABASE IF NOT EXISTS \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
@@ -218,9 +251,25 @@ function saveSnapshot(snapshot) {
       ? `[backup] VERIFIED — all ${count} tables match. Backup complete (${copiedRows} rows copied, ${created} tables created, ${failed} failures).`
       : `[backup] finished with ${mismatches} MISMATCH(ES) — see above`,
   );
+  STATUS.ok = mismatches === 0 && failed === 0;
+  STATUS.finishedAt = new Date().toISOString();
+  STATUS.durationMs = Date.now() - Date.parse(STATUS.startedAt);
+  STATUS.cloud = { host: CLOUD.host, tables: count, rows: total };
+  STATUS.local = {
+    host: LOCAL.host,
+    tablesCreated: created,
+    rowsCopied: copiedRows,
+    failures: failed,
+    mismatches,
+  };
+  saveStatus();
   await C.end();
   await L.end();
 })().catch((e) => {
   console.error("[backup] FATAL:", e.message);
+  STATUS.error = e.message;
+  STATUS.finishedAt = new Date().toISOString();
+  STATUS.durationMs = Date.now() - Date.parse(STATUS.startedAt);
+  saveStatus();
   process.exit(1);
 });

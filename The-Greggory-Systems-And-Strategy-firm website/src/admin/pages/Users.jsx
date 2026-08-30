@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiCall } from "../../services/api";
-import { Filter, UserPlus, Shield, User, CheckCircle, Download, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Users as UsersIcon, Trash2, AlertCircle, Activity } from "lucide-react";
+import { Filter, UserPlus, Shield, User, CheckCircle, Download, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Users as UsersIcon, Trash2, AlertCircle, Activity, KeyRound, Copy, Check } from "lucide-react";
 
 export function Users() {
   const navigate = useNavigate();
@@ -38,6 +38,40 @@ export function Users() {
         setShowDeleteModal(false);
       }
     } catch (error) { console.error("Deletion failure:", error); } finally { setIsDeleting(false); setDeletingUser(null); }
+  };
+
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetUser, setResetUser] = useState(null);
+  const [resetting, setResetting] = useState(false);
+  const [resetResult, setResetResult] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const openResetModal = (u) => {
+    setResetUser(u);
+    setResetResult(null);
+    setCopied(false);
+    setShowResetModal(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetUser) return;
+    setResetting(true);
+    try {
+      const data = await apiCall(`/admin/users/${resetUser.id}/whatsapp-password-reset`, { method: "POST" });
+      setResetResult(data && data.success ? data : { success: false, message: (data && data.message) || "Reset failed" });
+    } catch (error) {
+      setResetResult({ success: false, message: error?.message || "Reset failed" });
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const copyTempPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(resetResult.tempPassword);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard unavailable */ }
   };
 
   const navigateToDetail = (u) => {
@@ -141,6 +175,9 @@ export function Users() {
 
               <div className="mt-auto pt-3 border-t border-slate-50 flex gap-2">
                  <button onClick={(e) => { e.stopPropagation(); navigateToDetail(u); }} className="flex-1 bg-slate-900 text-white py-2 rounded-lg text-[7px] font-black uppercase tracking-widest hover:bg-black transition-all">Analyze</button>
+                 {u.source_table !== "admin" && (
+                   <button onClick={(e) => { e.stopPropagation(); openResetModal(u); }} title="Reset password & send via WhatsApp" className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-600 hover:text-white transition-all"><KeyRound size={12} /></button>
+                 )}
                  <button onClick={(e) => { e.stopPropagation(); setDeletingUser(u); setShowDeleteModal(true); }} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-600 hover:text-white transition-all"><Trash2 size={12} /></button>
               </div>
             </div>
@@ -157,6 +194,56 @@ export function Users() {
           <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all"><ChevronLeft size={14} /></button>
           <div className="px-4 py-2 bg-[#0f172a] rounded-xl text-[8px] font-black text-white uppercase tracking-widest border border-white/10">Page {currentPage} / {totalPages}</div>
           <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 transition-all"><ChevronRight size={14} /></button>
+        </div>
+      )}
+
+      {showResetModal && resetUser && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[600] flex items-center justify-center p-4 font-sans">
+           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+              {!resetResult ? (
+                <>
+                  <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-5 text-emerald-500 mx-auto border border-emerald-100"><KeyRound size={24} /></div>
+                  <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter text-center mb-1">Reset Password?</h3>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center mb-4">
+                     New temporary password for <span className="text-slate-900">{resetUser.display_name || resetUser.name}</span> will be sent to their WhatsApp:
+                     <span className="text-slate-900"> {resetUser.phone_number || "no number on file"}</span>
+                  </p>
+                  <p className="text-[7px] text-slate-400 font-bold uppercase tracking-widest text-center mb-6 leading-relaxed">Passwords are stored as one-way hashes and cannot be recovered — this issues a secure replacement and delivers it over WhatsApp.</p>
+                  <div className="flex gap-3">
+                     <button onClick={() => setShowResetModal(false)} className="flex-1 py-3 bg-slate-100 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-600 transition-all">Cancel</button>
+                     <button onClick={handleResetPassword} disabled={resetting || !resetUser.phone_number} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        {resetting ? <RefreshCw className="animate-spin" size={10} /> : <KeyRound size={10} />} Reset & Send
+                     </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 mx-auto border ${resetResult.success ? "bg-emerald-50 text-emerald-500 border-emerald-100" : "bg-rose-50 text-rose-500 border-rose-100"}`}>
+                     {resetResult.success ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter text-center mb-2">{resetResult.success ? "Password Reset" : "Reset Failed"}</h3>
+                  {resetResult.success ? (
+                    <>
+                      <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center mb-4">Delivered via WhatsApp to <span className="text-slate-900">{resetResult.deliveredTo}</span></p>
+                      {resetResult.simulated && resetResult.tempPassword ? (
+                        <div className="mb-5">
+                           <p className="text-[7px] text-amber-600 font-black uppercase tracking-widest text-center mb-2 leading-relaxed">Simulated relay — provider not configured. Relay this to the client manually:</p>
+                           <div className="flex items-center gap-2 bg-slate-900 rounded-xl px-4 py-3">
+                              <span className="flex-1 text-center font-mono text-sm font-black text-emerald-400 tracking-widest">{resetResult.tempPassword}</span>
+                              <button onClick={copyTempPassword} title="Copy" className="p-1.5 bg-white/10 rounded-lg text-white hover:bg-white/20 transition-all">{copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}</button>
+                           </div>
+                        </div>
+                      ) : (
+                        <p className="text-[8px] text-emerald-600 font-black uppercase tracking-widest text-center mb-5">The client has received the temporary password. Advise them to change it right after logging in.</p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-[9px] text-rose-600 font-bold uppercase tracking-widest text-center mb-6">{resetResult.message}</p>
+                  )}
+                  <button onClick={() => setShowResetModal(false)} className="w-full py-3 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest transition-all hover:bg-black">Done</button>
+                </>
+              )}
+           </div>
         </div>
       )}
 

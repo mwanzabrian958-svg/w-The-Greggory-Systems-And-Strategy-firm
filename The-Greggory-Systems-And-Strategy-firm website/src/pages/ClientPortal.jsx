@@ -37,6 +37,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { getApiUrl, mpesaAPI } from "../services/api";
+import SearchBlock from "../components/SearchBlock";
 import { useNavigate } from "react-router-dom";
 import { formatKSH } from "../utils/currencyUtils";
 
@@ -551,6 +552,13 @@ const ClientPortal = () => {
             <p className="text-[8px] font-black uppercase tracking-widest text-rose-300">You are offline â€” some features may be limited</p>
           </div>
         )}
+
+        {/* GLOBAL SYSTEM SEARCH */}
+        <div className="mb-3 flex justify-end">
+          <div className="w-full sm:w-72 md:w-96">
+            <SearchBlock endpoint="/api/users/search" resultsBase="/client-search" variant="client" placeholder="Search workspace…" />
+          </div>
+        </div>
 
         {/* NAV */}
         <nav className="mb-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/95 backdrop-blur-sm sticky top-0 z-20">
