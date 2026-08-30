@@ -40,4 +40,7 @@ dist-ssr
 # AI/editor agent local config
 .kilo/
 
-The-Greggory-Systems-And-Strategy-firm website/package-lock.json
+# NOTE: "The-Greggory-Systems-And-Strategy-firm website/package-lock.json" is
+# intentionally NOT ignored anymore: Render builds via `npm --prefix` from this
+# lockfile (which pins vite + daisyUI). Keeping it in git makes deploys
+# reproducible. Do NOT re-add it to .gitignore.
