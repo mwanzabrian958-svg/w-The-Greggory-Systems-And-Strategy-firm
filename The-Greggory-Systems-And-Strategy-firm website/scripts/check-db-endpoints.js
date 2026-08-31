@@ -23,9 +23,10 @@ function parseEnvFile(file) {
 
 const cloudApply = parseEnvFile(".env.cloud.apply");
 
+const eps = endpoints();
 const candidates = [
-  { tag: ".env primary (DB_HOST/DB_PORT)", ...pick(0) },
-  { tag: ".env secondary (DB_HOST_2/DB_PORT_2)", ...pick(1) },
+  { tag: `endpoint[0] (${eps[0]?.label || "?"})`, ...pick(0) },
+  { tag: `endpoint[1] (${eps[1]?.label || "?"})`, ...pick(1) },
   {
     tag: ".env.cloud.apply",
     host: cloudApply.DB_HOST,
