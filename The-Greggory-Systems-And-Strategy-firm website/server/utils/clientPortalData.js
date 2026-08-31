@@ -243,9 +243,9 @@ function buildClientPortalPayload({
     },
     teamMembers: teamMembers.map((member) => ({
       id: member.id,
-      projectId: member.project_id,
-      projectName: member.project_name || "Unassigned",
-      name: member.display_name || `${member.first_name || ""} ${member.last_name || ""}`.trim() || "Team member",
+      projectId: member.project_id ?? member.projectId,
+      projectName: member.project_name || member.projectName || "Unassigned",
+      name: member.display_name || member.name || `${member.first_name || ""} ${member.last_name || ""}`.trim() || "Team member",
       email: member.email,
       role: member.role || "Team Member",
       duties: member.duties || member.task_name || "Assigned to project",

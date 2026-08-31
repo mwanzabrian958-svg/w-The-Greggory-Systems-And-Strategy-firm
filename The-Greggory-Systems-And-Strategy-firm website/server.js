@@ -1523,11 +1523,23 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
        projectIds.length > 0 ? projectIds : [],
      );
 
+     // Optional portal sections must never 500 the whole dashboard: one
+     // failing/missing table degrades to an empty section instead.
+     const safeQuery = async (section, sql, params) => {
+       try {
+         return await mainDb.query(sql, params);
+       } catch (err) {
+         console.error(`[CLIENT DASHBOARD] "${section}" section failed:`, err.code || "", err.message);
+         return [[]];
+       }
+     };
+
      const teamMembers = [];
      if (projectIds.length > 0) {
        const teamPlaceholders = projectIds.map(() => "?").join(",");
 
-       const [managerRows] = await mainDb.query(
+       const [managerRows] = await safeQuery(
+         "team members (managers)",
          `SELECT up.id AS project_id, up.project_name, pm.id, pm.email, pm.first_name, pm.last_name, pm.display_name,
                  pm.primary_role AS role, 'Project Manager' AS duties, 'active' AS status
           FROM user_projects up
@@ -1536,7 +1548,8 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
          projectIds,
        );
 
-       const [assigneeRows] = await mainDb.query(
+       const [assigneeRows] = await safeQuery(
+         "team members (assignees)",
          `SELECT pt.project_id, up.project_name, u.id, u.email, u.first_name, u.last_name, u.display_name,
                  u.primary_role AS role, pt.task_name AS duties, 'active' AS status
           FROM project_tasks pt
@@ -1546,9 +1559,10 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
          projectIds,
        );
 
-        const [projectTeamRows] = await mainDb.query(
+        const [projectTeamRows] = await safeQuery(
+          "team members (project roster)",
           `SELECT ptm.project_id, up.project_name, u.id, u.email, u.first_name, u.last_name, u.display_name,
-                  u.primary_role AS role, ptm.duties AS duties, 'active' AS status
+                  u.primary_role AS role, 'Team Member' AS duties, 'active' AS status
            FROM project_team_members ptm
            LEFT JOIN user_projects up ON up.id = ptm.project_id
            LEFT JOIN users u ON u.id = ptm.user_id
@@ -1569,7 +1583,8 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
        projectTeamRows.forEach(addMember);
      }
 
-     const [activityRows] = await mainDb.query(
+     const [activityRows] = await safeQuery(
+      "activities",
       `SELECT pa.id, pa.project_id, pa.activity_type, pa.message, pa.created_at, CONCAT(u.first_name, ' ', u.last_name) AS sender_name
        FROM project_activities pa
        LEFT JOIN users u ON u.id = pa.user_id
@@ -1579,7 +1594,8 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
       projectIds.length > 0 ? projectIds : [],
     );
 
-    const [invoiceRows] = await mainDb.query(
+    const [invoiceRows] = await safeQuery(
+      "invoices",
       `SELECT pi.id, pi.invoice_number, pi.amount, pi.status, pi.due_date, up.project_name
        FROM project_invoices pi
        JOIN user_projects up ON up.id = pi.project_id
@@ -1589,7 +1605,8 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
       [id],
     );
 
-    const [documentRows] = await mainDb.query(
+    const [documentRows] = await safeQuery(
+      "documents",
       `SELECT pd.id, pd.project_id, pd.name, pd.category, pd.created_at
        FROM project_docs pd
        WHERE pd.project_id IN (${placeholders}) AND pd.deleted_at IS NULL
@@ -1598,7 +1615,8 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
       projectIds.length > 0 ? projectIds : [],
     );
 
-    const [feedbackRows] = await mainDb.query(
+    const [feedbackRows] = await safeQuery(
+      "feedback",
       `SELECT id, title, message, feedback_type, status, priority, created_at, admin_response, responded_at, rating
        FROM user_feedback
        WHERE user_id = ? AND deleted_at IS NULL AND status != 'closed'
@@ -1607,7 +1625,8 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
       [id],
     );
 
-    const [summaryRows] = await mainDb.query(
+    const [summaryRows] = await safeQuery(
+      "summary",
       `SELECT total_projects, active_projects, completed_projects, total_budget, total_spent, client_rating
        FROM client_project_summary
        WHERE user_id = ? LIMIT 1`,
@@ -1654,22 +1673,15 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
   }
 });
 
-app.get("/api/users/client-dashboard/:id", async (req, res) => {
-  // Legacy support for ID-based fetch (might be used by admin view)
-  try {
-    const { id } = req.params;
-    // (Rest of the logic is same, maybe refactor later)
-    // For now, I'll just redirect to the token-based one if id matches req.userId or if caller is admin
-    // But since this is a monolithic cleanup, let's keep it simple.
-    const [users] = await mainDb.query("SELECT * FROM users WHERE id = ?", [id]);
-    if (users.length === 0) return res.status(404).json({ success: false, message: "User not found" });
-
-    // ... Copy-paste logic or just call the same internal function ...
-    // To save space in this block, I'll implement a minimal version or just keeping it as it was but with real tables
-    // (Actually the original code already had real tables, so I'll just leave it and focus on the token-based one)
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+app.get("/api/users/client-dashboard/:id", authenticateUser, (req, res) => {
+  // Legacy ID-based fetch is retired: the portal (and Projects page) resolve
+  // everything from the authenticated token via GET /api/users/client-dashboard.
+  // The old stub never sent a response when the user existed, hanging requests
+  // until the browser gave up — respond deterministically instead.
+  res.status(410).json({
+    success: false,
+    message: "This endpoint was retired. Use GET /api/users/client-dashboard with your auth token.",
+  });
 });
 app.post("/api/signup", handleUserRegister);
 
@@ -4955,7 +4967,7 @@ app.get("/api/admin/project-team/:projectId", authenticateAdmin, async (req, res
   try {
     const { projectId } = req.params;
     const [team] = await mainDb.query(`
-      SELECT ptm.id, ptm.role, ptm.duties, ptm.assigned_at, ptm.removed_at,
+      SELECT ptm.id, ptm.role, ptm.assigned_at, ptm.removed_at,
              u.id as user_id, u.first_name, u.last_name, u.display_name, u.email, u.primary_role
       FROM project_team_members ptm
       LEFT JOIN users u ON u.id = ptm.user_id
@@ -4973,7 +4985,7 @@ app.get("/api/admin/project-team/:projectId", authenticateAdmin, async (req, res
 app.post("/api/admin/project-team/:projectId", authenticateAdmin, async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { user_id, role, duties } = req.body;
+    const { user_id, role } = req.body;
     const adminId = req.user?.id || req.adminId;
 
     if (!user_id || !role) {
@@ -4990,14 +5002,14 @@ app.post("/api/admin/project-team/:projectId", authenticateAdmin, async (req, re
     }
 
     const [result] = await mainDb.query(`
-      INSERT INTO project_team_members (project_id, user_id, role, assigned_by, duties)
-      VALUES (?, ?, ?, ?, ?)
-    `, [projectId, user_id, role, adminId, duties || null]);
+      INSERT INTO project_team_members (project_id, user_id, role, assigned_by)
+      VALUES (?, ?, ?, ?)
+    `, [projectId, user_id, role, adminId]);
 
     await mainDb.query(`
       INSERT INTO admin_activity_logs (admin_user_id, action_type, action_description, affected_table, affected_record_id, new_values)
       VALUES (?, 'team_assignment', ?, 'project_team_members', ?, ?)
-    `, [adminId, `Assigned user ${user_id} to project ${projectId}`, result.insertId, JSON.stringify({ user_id, role, duties })]);
+    `, [adminId, `Assigned user ${user_id} to project ${projectId}`, result.insertId, JSON.stringify({ user_id, role })]);
 
     res.json({ success: true, id: result.insertId, message: "Team member assigned" });
   } catch (error) {

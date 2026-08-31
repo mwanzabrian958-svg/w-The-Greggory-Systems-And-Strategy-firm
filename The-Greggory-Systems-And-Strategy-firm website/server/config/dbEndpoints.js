@@ -2,10 +2,19 @@
  * MySQL endpoint list — the app tries these in ORDER and automatically uses
  * whichever one answers first. This is how it "looks at both SQL ports":
  *
-  *   1. DB_HOST_2 / DB_PORT_2    -> "claude" MySQL (e.g. port 28067) — LOCAL FALLBACK
- *        * If DB_HOST_2 is empty, falls back to DB_CLOUD_HOST / DB_CLOUD_PORT
- *          so it still knows about the cloud DB already in your .env.
- *   2. DB_HOST / DB_PORT        -> local XAMPP, default localhost:3306 — PRIMARY NOW
+ *   1. LOCAL endpoint  -> DB_HOST_2 / DB_PORT_2 / DB_USER_2 / DB_PASSWORD_2
+ *        (XAMPP/MariaDB on 127.0.0.1:3306, root with an EMPTY password).
+ *        Used first when configured so a dead cloud endpoint can never slow
+ *        local dev down. NOTE: use 127.0.0.1, NOT "localhost" — MariaDB's
+ *        root@localhost is socket-auth only, which mysql2 cannot complete.
+ *   2. CLOUD endpoint  -> DB_HOST / DB_PORT / DB_USER / DB_PASSWORD
+ *        (Aiven, requires DB_SSL=true). On Render only this one exists, so
+ *        production behaviour is unchanged.
+ *
+ * IMPORTANT: the *_2 values are used EXACTLY as given when the variables are
+ * defined — an intentionally EMPTY DB_PASSWORD_2 must NOT fall through to the
+ * cloud DB_PASSWORD (the `||` chain used to do exactly that and produced
+ * "root + cloud password" -> ER_ACCESS_DENIED on localhost).
  *
  * mysql2's `createPoolCluster` uses these as two nodes: if endpoint #1 is
  * down it fails over to endpoint #2 automatically (and back again once it
@@ -18,6 +27,8 @@ const DB_NAME =
   process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main";
 
 const DEFAULT_SSL = process.env.DB_SSL === "true";
+const IS_LOCAL_HOST = (h) =>
+  ["localhost", "127.0.0.1", "::1"].includes((h || "").toLowerCase());
 
 function buildEndpoint({ host, port, user, password, ssl, label }) {
   const cfg = {
@@ -36,53 +47,52 @@ function buildEndpoint({ host, port, user, password, ssl, label }) {
 function endpoints() {
   const list = [];
 
-  // 1) Primary endpoint (claude / cloud Aiven on :28067).
-  list.push(
-        buildEndpoint({
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      ssl: process.env.DB_SSL === "true",    // default false on .env is fine
-      label: process.env.DB_HOST === "localhost" ? "local" : "claude",
-    })
-  );
-
-  // 2) Fallback endpoint (local XAMPP on :3306).
-  //    Explicit DB_HOST_2/DB_PORT_2 win; DB_CLOUD_* are the legacy fallback so
-  //    the existing .env (backup scripts) keeps the cloud DB wired up.
+  // 1) LOCAL endpoint (XAMPP/MariaDB on 127.0.0.1:3306) — preferred when set.
   const hasExplicitSecond =
     process.env.DB_HOST_2 || process.env.DB_PORT_2 || process.env.DB_USER_2;
-  const h2 = process.env.DB_HOST_2 || process.env.DB_CLOUD_HOST;
-  const u2 =
-    process.env.DB_USER_2 || process.env.DB_CLOUD_USER || process.env.DB_USER;
-  const pw2 =
-    process.env.DB_PASSWORD_2 ||
-    process.env.DB_CLOUD_PASSWORD ||
-    process.env.DB_PASSWORD;
-
-  if (h2) {
+  if (hasExplicitSecond) {
     list.push(
       buildEndpoint({
-        host: h2,
-        // If the user explicitly provided *_2 vars, honor DB_PORT_2 (default to
-        // 3306). Otherwise pair the legacy DB_CLOUD_HOST with DB_CLOUD_PORT.
-        port: hasExplicitSecond
-          ? process.env.DB_PORT_2 || process.env.DB_CLOUD_PORT
-          : process.env.DB_CLOUD_PORT,
-        user: u2,
-        password: pw2,
-        ssl:
-          process.env.DB_SSL_2 !== undefined
-            ? process.env.DB_SSL_2 === "true"
-            : DEFAULT_SSL,
+        host: process.env.DB_HOST_2 || "127.0.0.1",
+        port: process.env.DB_PORT_2 || 3306,
+        user: process.env.DB_USER_2 || "root",
+        // Presence check, NOT truthiness: "" means "no password on purpose".
+        password:
+          process.env.DB_PASSWORD_2 !== undefined
+            ? process.env.DB_PASSWORD_2
+            : "",
+        ssl: process.env.DB_SSL_2 === "true",
         label: "local",
+      })
+    );
+  }
+
+  // 2) CLOUD endpoint (Aiven) — primary in production (Render), fallback in
+  //    dev. Legacy DB_CLOUD_* vars still win if the main DB_* ones are unset
+  //    so older .env files (backup scripts) keep working.
+  const h1 = process.env.DB_HOST || process.env.DB_CLOUD_HOST;
+  if (h1) {
+    list.push(
+      buildEndpoint({
+        host: h1,
+        port: process.env.DB_PORT || process.env.DB_CLOUD_PORT,
+        user: process.env.DB_USER || process.env.DB_CLOUD_USER || "avnadmin",
+        password:
+          process.env.DB_PASSWORD !== undefined
+            ? process.env.DB_PASSWORD
+            : process.env.DB_CLOUD_PASSWORD,
+        ssl:
+          process.env.DB_SSL !== undefined
+            ? process.env.DB_SSL === "true"
+            : DEFAULT_SSL,
+        label: IS_LOCAL_HOST(h1) ? "local" : "claude",
       })
     );
   }
 
   return list;
 }
+
 
 /** Strip internal `label` before handing an endpoint to mysql2. */
 function clean(cfg) {
