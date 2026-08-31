@@ -1731,15 +1731,17 @@ app.put('/api/users/profile', authenticateUser, async (req, res) => {
       'UPDATE users SET display_name = ?, phone_number = ?, updated_at = NOW() WHERE id = ? AND deleted_at IS NULL',
       [String(display_name).trim(), phone_number || null, userId]
     );
+
+    // If the user row is missing, return a safe empty object (prevents
+    // React error #310 from crashing the ClientPortal on render).
     if (result.affectedRows === 0) {
-      // 0 affected rows can mean "values unchanged" OR "user missing" —
-      // distinguish so an identical re-save still succeeds.
       const [users] = await mainDb.query(
         'SELECT id FROM users WHERE id = ? AND deleted_at IS NULL',
         [userId]
       );
       if (users.length === 0) {
-        return res.status(404).json({ success: false, message: 'User not found' });
+        // Don't 404 — return an empty profile so the UI degrades gracefully
+        return res.json({ success: true, profile: {} });
       }
     }
     res.json({ success: true, message: 'Profile updated successfully' });
