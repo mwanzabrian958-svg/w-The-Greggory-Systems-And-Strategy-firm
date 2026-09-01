@@ -146,16 +146,15 @@ const About = () => {
               We design the underlying operating systems <br className="hidden md:block" />
               that allow strategy to breathe <span className="text-[#8fb28a]">independently.</span>
             </h1>
+
+            <p className="text-2xl md:text-3xl font-bold leading-[1.5] text-[#111] mb-8 max-w-3xl">
+              The-Greggory-Systems-And-Strategy-firm was founded on a singular premise:that complexity is the greatest tax on human ambition.We exist to dismantle that tax: by engineering the invisible operating systems, the decision rhythms, the feedback loops,and the digital nerve-centers,that turn strategic ambition into sustainable momentum.Every engagement begins not with a slide deck,but with a forensic reading of how your organization actually works:where energy leaks,where clarity stalls,and where momentum dies.We rebuild from the ground up,so that strategy is no longer a document,but a pulse.
+            </p>
+
           </div>
-                    <div className="lg:w-2/5 space-y-6">
-            <div className="space-y-4">
-              <p className="text-base text-black leading-[1.8] font-normal">
-                The-Greggory-Systems-And-Strategy-firm was founded on a singular premise:that complexity is the greatest tax on human ambition.We exist to dismantle that tax: by engineering the invisible operating systems, the decision rhythms, the feedback loops,and the digital nerve-centers,that turn strategic ambition into sustainable momentum.Every engagement begins not with a slide deck,but with a forensic reading of how your organization actually works:where energy leaks,where clarity stalls,and where momentum dies.We rebuild from the ground up,so that strategy is no longer a document,but a pulse.
-              </p>
-              <div className="h-px w-10 bg-[#aa7d3f]/20" />
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#aa7d3f]">The Systems Beneath the Strategy</p>
-              <p className="text-[11px] text-slate-400 leading-relaxed">A closer look at the architecture we engineer beneath every engagement.</p>
-            </div>
+          <div className="lg:w-2/5 space-y-6">
+
+            
             <div className="relative w-full max-w-sm overflow-hidden rounded-[24px] shadow-xl">
               <img
                 src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=900&q=80"
