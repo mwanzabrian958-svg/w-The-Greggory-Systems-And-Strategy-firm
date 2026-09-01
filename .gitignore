@@ -41,3 +41,4 @@ dist-ssr
 # intentionally NOT ignored anymore: Render builds via `npm --prefix` from this
 # lockfile (which pins vite + daisyUI). Keeping it in git makes deploys
 # reproducible. Do NOT re-add it to .gitignore.
+The-Greggory-Systems-And-Strategy-firm website/scripts/_reseed-data.sql
