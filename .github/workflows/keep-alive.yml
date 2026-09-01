@@ -18,7 +18,7 @@ jobs:
         shell: bash
         run: |
           URL="${{ vars.SITE_URL }}"
-          if [ -z "$URL" ]; then URL="https://greggory-firm.onrender.com"; fi
+          if [ -z "$URL" ]; then URL="https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com"; fi
           curl -fsS --max-time 30 "$URL/api/health" \
             && echo "pinged $URL" \
             || echo "site not reachable yet - ignoring"

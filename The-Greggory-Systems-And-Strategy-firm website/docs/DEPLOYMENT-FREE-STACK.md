@@ -10,7 +10,7 @@ no API-URL env var to get wrong.
 
 | Piece | Provider | Free allowance |
 |---|---|---|
-| Backend + built frontend (one service) | **Render** (`greggory-firm.onrender.com`) | 750 instance-hours/month |
+| Backend + built frontend (one service) | **Render** (`the-greggory-systems-and-strategy-firm-jz7i.onrender.com`) | 750 instance-hours/month |
 | MySQL database | **Aiven for MySQL** (`free-1-5gb`) | 5 GB storage, always on |
 | Keep-alive ping (no cold starts) | **cron-job.org** or **UptimeRobot** | Free |
 | MongoDB / Redis | *Skipped* — server skips Mongo when `MONGODB_URI` is unset and falls back to memory without Redis | — |
@@ -46,9 +46,9 @@ no API-URL env var to get wrong.
    - `DB_NAME` is preset to `the_greggory_systems_and_strategy_firm_db_main`
      (auto-created on the cloud MySQL on first boot)
    - `JWT_SECRET`, `ADMIN_SESSION_SECRET`, `ADMIN_CODE`, `SESSION_SECRET` → copy from your local `.env`
-   - `FRONTEND_URL` → put `https://greggory-firm.onrender.com`
+   - `FRONTEND_URL` → put `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com`
      (if that name is taken, Render shows your real URL after deploy — update it then)
-   - `MPESA_CALLBACK_URL` → `https://greggory-firm.onrender.com/api/mpesa/callback`
+   - `MPESA_CALLBACK_URL` → `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/api/mpesa/callback`
    - The rest (`SMTP_*`, `GOOGLE_CLIENT_ID`, `AFRICASTALKING_*`, `MPESA_*`,
      `COMPANY_*`) → copy from your local `.env`, or skip what you don't use.
 4. **Apply.** Render runs `npm install && npm run build`, then
@@ -64,10 +64,10 @@ Open these (replace with your real URL):
 
 | URL | Expected |
 |---|---|
-| `https://greggory-firm.onrender.com/` | The full React website |
-| `https://greggory-firm.onrender.com/login` | SPA route loads (no 404) |
-| `https://greggory-firm.onrender.com/api/health` | `{"status":"OK",...,"database":"connected"}` |
-| `https://greggory-firm.onrender.com/api/test-db` | `{"success":true,...}` |
+| `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/` | The full React website |
+| `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/login` | SPA route loads (no 404) |
+| `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/api/health` | `{"status":"OK",...,"database":"connected"}` |
+| `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/api/test-db` | `{"success":true,...}` |
 
 If `database` says `unreachable`, re-check the four DB values from Step 1 —
 `/api/health` re-probes on every call, so it turns `connected` the moment the
@@ -81,13 +81,13 @@ wake). 750 free hours/month is enough to run **one** service 24/7 (744 h) if it
 never sleeps:
 
 1. Go to **https://cron-job.org** (or UptimeRobot) → free sign-up.
-2. Create a job: URL = `https://greggory-firm.onrender.com/api/health`,
+2. Create a job: URL = `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/api/health`,
    interval = **every 14 minutes**.
 3. Done — the site now answers instantly at any hour.
 
 ## Step 5 — (Optional) a "real" free domain
 
-`greggory-firm.onrender.com` is free forever and works out of the box. If you
+`the-greggory-systems-and-strategy-firm-jz7i.onrender.com` is free forever and works out of the box. If you
 want a custom-looking free domain:
 
 - **pp.ua** (free, quick registration) or **eu.org** (free, manual approval can

@@ -74,7 +74,7 @@ services:
       # Admin API key — sent as the x-admin-key header by protected admin routes
       - key: ADMIN_KEY
         sync: false
-      # ---- Public URLs (set after first deploy, e.g. https://greggory-firm.onrender.com) ----
+      # ---- Public URLs (set after first deploy, e.g. https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com) ----
       - key: FRONTEND_URL
         sync: false
       - key: MPESA_CALLBACK_URL
