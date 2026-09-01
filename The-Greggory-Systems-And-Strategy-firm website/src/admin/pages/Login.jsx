@@ -8,7 +8,8 @@ import { apiCall } from "../../services/api";
 
 /**
  * RESTORED: Authentication Platform UI
- * Strictly follows the "3 dots -> Purple Block" protocol.
+ * Full-screen split layout: dark brand rail (3-dots identity) + full-height
+ * white access panel. No popup card — the auth UI occupies the entire viewport.
  */
 export function Login({ onLoginSuccess }) {
   const navigate = useNavigate();
@@ -83,56 +84,74 @@ export function Login({ onLoginSuccess }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#020617] flex items-center justify-center px-4 font-sans relative overflow-hidden">
+    <div className="min-h-screen w-full bg-[#020617] flex flex-col lg:flex-row font-sans relative overflow-hidden">
       {/* Background Decor */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/20 blur-[120px] rounded-full"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-900/20 blur-[120px] rounded-full"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/20 blur-[120px] rounded-full pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-900/20 blur-[120px] rounded-full pointer-events-none"></div>
 
-      <div className="w-full max-w-lg relative z-10">
-        <div className="bg-[#0f172a] rounded-[32px] border border-white/10 shadow-2xl overflow-hidden flex flex-col min-h-[500px]">
+      {/* LEFT — full-height brand rail (no popup card) */}
+      <aside className="relative z-10 w-full lg:w-[42%] xl:w-[38%] bg-gradient-to-br from-slate-950 via-[#170f2e] to-slate-950 text-white flex flex-col justify-between px-8 py-10 lg:px-12 lg:py-14 border-b lg:border-b-0 lg:border-r border-white/10">
+        <div>
+          <div className="flex items-center gap-2 mb-10" aria-hidden="true">
+            <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+            <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+            <span className="w-2 h-2 rounded-full bg-purple-800"></span>
+          </div>
 
-          {/* HEADER: THE PURPLE BLOCK */}
-          <section className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white border-b border-purple-400/40 px-8 pt-12 pb-10">
-            <div className="flex items-start gap-4 mb-8">
-              <div className="p-3 rounded-2xl bg-white/10 border border-white/20 shadow-xl">
-                <Shield className="w-8 h-8 text-purple-300" />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-purple-300">Authentication platform</p>
-                <h1 className="text-xl font-black uppercase tracking-tight mt-1">Command Relay Node</h1>
-              </div>
+          <div className="flex items-start gap-4">
+            <div className="p-3 rounded-2xl bg-white/10 border border-white/20 shadow-xl">
+              <Shield className="w-8 h-8 text-purple-300" />
             </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-purple-300">Authentication platform</p>
+              <h1 className="text-xl font-black uppercase tracking-tight mt-1">Command Relay Node</h1>
+            </div>
+          </div>
 
-            {view === "platform" && (
-               <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                  <p className="text-sm text-slate-300 leading-relaxed mb-8">
-                    Secure identity verification protocol for administrative console access.
-                    Initialize secure handshake to proceed.
-                  </p>
-                  <button
-                    onClick={() => setView("admin")}
-                    className="w-full flex items-center justify-center gap-3 bg-purple-500 hover:bg-purple-400 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all shadow-xl shadow-purple-900/40"
-                  >
-                    <Shield size={16} /> Access Admin Console
-                  </button>
-               </div>
-            )}
-          </section>
-
-          {/* DYNAMIC CONTENT AREA */}
-          <div className="flex-1 bg-white p-8 sm:p-10 relative">
-
-            {view !== "platform" && (
+          {view === "platform" ? (
+            <div className="mt-10 max-w-md animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <p className="text-sm text-slate-300 leading-relaxed mb-8">
+                Secure identity verification protocol for administrative console access.
+                Initialize secure handshake to proceed.
+              </p>
               <button
-                onClick={() => { setView("platform"); setError(""); }}
-                className="absolute left-8 top-8 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all"
+                onClick={() => setView("admin")}
+                className="w-full flex items-center justify-center gap-3 bg-purple-500 hover:bg-purple-400 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] transition-all shadow-xl shadow-purple-900/40"
               >
-                <ArrowLeft size={20} />
+                <Shield size={16} /> Access Admin Console
               </button>
-            )}
+              <button
+                onClick={() => { setView("register"); setError(""); }}
+                className="mt-4 w-full text-[9px] font-black text-purple-300/80 uppercase tracking-[0.3em] hover:text-purple-200 transition-colors"
+              >
+                Initialize New Admin Node
+              </button>
+            </div>
+          ) : (
+            <p className="mt-10 text-[9px] font-black text-slate-500 uppercase tracking-[0.4em] leading-loose max-w-xs">
+              Secure handshake in progress — complete the protocol on the access panel.
+            </p>
+          )}
+        </div>
+
+        <p className="text-[7px] font-black text-slate-600 uppercase tracking-[0.5em] pt-16">System Property of Greggory Systems &amp; Strategy Firm © {new Date().getFullYear()}</p>
+      </aside>
+
+      {/* RIGHT — full-height access panel */}
+      <main className="relative z-10 flex-1 bg-white flex items-center justify-center px-6 py-12 sm:px-12 lg:px-16 min-h-[58vh]">
+        {view !== "platform" && (
+          <button
+            onClick={() => { setView("platform"); setError(""); }}
+            className="absolute left-6 top-6 lg:left-10 lg:top-10 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-all"
+          >
+            <ArrowLeft size={20} />
+          </button>
+        )}
+
+        <div className="w-full max-w-md">
 
             {view === "admin" && (
-              <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+              <div className="animate-in fade-in slide-in-from-right-2 duration-300 w-full">
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Identity Handshake</h2>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Authorized Personnel Only</p>
@@ -172,7 +191,7 @@ export function Login({ onLoginSuccess }) {
             )}
 
             {view === "register" && (
-              <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+              <div className="animate-in fade-in slide-in-from-right-2 duration-300 w-full">
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Node Creation</h2>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Initialize Administrator Credentials</p>
@@ -208,14 +227,17 @@ export function Login({ onLoginSuccess }) {
             )}
 
             {view === "platform" && (
-              <div className="mt-auto text-center pt-8 border-t border-slate-50">
-                 <p className="text-[7px] font-black text-slate-300 uppercase tracking-[0.5em]">System Property of Greggory Systems & Strategy Firm © {new Date().getFullYear()}</p>
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
+                  <Shield className="w-10 h-10 text-slate-300" />
+                </div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Awaiting secure handshake</p>
+                <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-2">Select an access protocol from the command rail</p>
               </div>
             )}
 
-          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
