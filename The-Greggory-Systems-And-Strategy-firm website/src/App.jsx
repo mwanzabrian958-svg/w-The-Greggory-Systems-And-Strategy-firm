@@ -34,6 +34,7 @@ const ClientPortal = lazy(() => import('./pages/ClientPortal'))
 const Pricing = lazy(() => import('./pages/Pricing'))
 const ClientReports = lazy(() => import('./pages/ClientReports'))
 const ClientAlerts = lazy(() => import('./pages/ClientAlerts'))
+const PersonnelProfile = lazy(() => import('./pages/PersonnelProfile'))
 const ClientSearchResults = lazy(() =>
   import('./pages/ClientSearchResults').then((m) => ({ default: m.ClientSearchResults }))
 )
@@ -59,7 +60,7 @@ function Layout() {
   const authPages = ['/login', '/signup', '/forgot-password']
   const isAuthPage = authPages.includes(location.pathname)
   const isAdminPage = location.pathname.startsWith('/admin')
-  const isClientPortal = location.pathname === '/client-portal' || location.pathname === '/client-reports' || location.pathname === '/client-alerts' || location.pathname === '/client-search' || location.pathname.startsWith('/projects')
+    const isClientPortal = location.pathname === '/client-portal' || location.pathname === '/client-reports' || location.pathname === '/client-alerts' || location.pathname === '/client-search' || location.pathname === '/personnel/profile' || location.pathname.startsWith('/personnel/') || location.pathname.startsWith('/projects')
 
   return (
 
@@ -79,7 +80,9 @@ function Layout() {
 
           <Route path="/" element={<Home />} />
 
-          <Route path="/about" element={<About />} />
+                              <Route path="/about" element={<About />} />
+
+          <Route path="/personnel/:id" element={<PersonnelProfile />} />
 
           <Route path="/projects" element={<Projects />} />
 

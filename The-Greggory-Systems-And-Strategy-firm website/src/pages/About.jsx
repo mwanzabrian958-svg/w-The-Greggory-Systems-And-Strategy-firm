@@ -1,22 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
-
-const normalizePersonnelBio = (raw) => {
-  if (!raw || !raw.trim()) return ''
-  const trimmed = raw.trim()
-  if (/<\/?[a-z][\s\S]*>/i.test(trimmed)) return trimmed
-  return trimmed
-    .split(/\n{2,}|\r\n\r\n/)
-    .map((block) => `<p>${block.replace(/\n/g, '<br />')}</p>`)
-    .join('')
-}
 
 const About = () => {
   const [personnel, setPersonnel] = useState([])
   const [personnelLoading, setPersonnelLoading] = useState(true)
-  const [activePerson, setActivePerson] = useState(null)
 
   useEffect(() => {
     let mounted = true
@@ -99,10 +88,10 @@ const About = () => {
               ref={trackRef}
               className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth pb-4 pt-2 -mx-2 px-2"
             >
-              {visiblePersonnel.map((p) => (
-                <button
+                            {visiblePersonnel.map((p) => (
+                <Link
                   key={p.id}
-                  onClick={() => setActivePerson(p)}
+                  to={`/personnel/${p.id}`}
                   className="group text-left flex-shrink-0 w-[calc(25%-18px)] min-w-[220px]"
                 >
                   <div className="relative w-full aspect-[4/5] overflow-hidden rounded-[32px] shadow-xl bg-slate-100">
@@ -120,9 +109,9 @@ const About = () => {
                   </div>
                   <div className="mt-4 space-y-1">
                     <p className="font-black text-sm text-[#111] group-hover:text-[#8fb28a] transition-colors">{p.name}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#aa7d3f]">{p.position}</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#aa7d3f]">{p.position}</p>
                   </div>
-                </button>
+                </Link>
               ))}
             </div>
           )}
@@ -247,46 +236,6 @@ const About = () => {
             </div>
         </div>
       </section>
-
-      
-
-      {/* PERSONNEL PROFILE OVERLAY - image top-left, name right, divider, then admin-posted records */}
-      {activePerson && (
-        <div className="fixed inset-0 z-[950] bg-black/60 backdrop-blur-sm flex items-start md:items-center justify-center p-4 md:p-8 overflow-y-auto" onClick={() => setActivePerson(null)}>
-          <div className="relative w-full max-w-4xl bg-[#fdfaf6] rounded-[32px] shadow-2xl my-8 max-h-[88vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setActivePerson(null)} aria-label="Close profile" className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-slate-800 transition-all shadow-lg"><X className="w-5 h-5" /></button>
-            <div className="p-8 md:p-12">
-              <div className="flex flex-col sm:flex-row gap-8 items-start">
-                <div className="w-40 h-48 md:w-52 md:h-64 rounded-[28px] overflow-hidden shadow-xl bg-slate-100 flex-shrink-0 relative">
-                  {activePerson.image_url ? (
-                    <img src={activePerson.image_url} alt={activePerson.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-[#8fb28a]/10 text-6xl font-black text-[#8fb28a]">{activePerson.name?.charAt(0)}</div>
-                  )}
-                </div>
-                <div className="pt-2 sm:pt-8 space-y-2">
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#8fb28a]">Firm Personnel Profile</span>
-                  <h2 className="text-4xl font-bold tracking-tight text-[#111]">{activePerson.name}</h2>
-                  <p className="text-sm font-bold text-[#aa7d3f] uppercase tracking-[0.2em]">{activePerson.position}</p>
-                </div>
-              </div>
-              <div className="h-px w-full bg-gradient-to-r from-[#aa7d3f]/30 via-slate-200 to-transparent my-10" />
-              <div className="max-w-none">
-                {activePerson.bio ? (
-                  <div className="space-y-4 text-sm leading-[1.9] text-black" dangerouslySetInnerHTML={{ __html: normalizePersonnelBio(activePerson.bio) }} />
-                ) : (
-                  <p className="text-sm text-slate-400">No credentials have been published for this profile yet.</p>
-                )}
-              </div>
-              <div className="pt-10 flex flex-col items-center">
-                <div className="w-px h-8 bg-gradient-to-b from-[#8fb28a]/50 to-transparent mb-3" />
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em]">End of Record</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
 {/* FINAL CALL TO ACTION */}
       <section className="py-16 lg:py-24 bg-white w-full px-6 lg:px-20 text-center">
          <div className="max-w-3xl mx-auto flex flex-col items-center gap-8">
