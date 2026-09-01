@@ -6,16 +6,16 @@ const About = () => {
   return (
     <div className="relative min-h-screen bg-[#fdfaf6] text-[#111] pt-32 selection:bg-[#8fb28a] selection:text-white font-sans overflow-x-hidden">
 
-      {/* 1. HERO SECTION - Broadly defined, smaller professional typography */}
-      <section className="w-full px-6 lg:px-20 mb-40">
-        <div className="flex flex-col lg:flex-row items-end justify-between gap-12">
+      {/* 1. HERO SECTION */}
+      <section className="w-full px-6 lg:px-20 pb-16 lg:pb-24">
+        <div className="flex flex-col lg:flex-row items-end justify-between gap-10 lg:gap-12">
           <div className="lg:w-2/3">
             <div className="flex items-center gap-3 opacity-60 mb-8">
               <Fingerprint className="w-4 h-4" />
               <span className="text-[10px] font-bold uppercase tracking-[0.4em]">The Architectural Identity</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-              We design the underlying operating systems <br />
+              We design the underlying operating systems <br className="hidden md:block" />
               that allow strategy to breathe <span className="text-[#8fb28a]">independently.</span>
             </h1>
           </div>
@@ -27,9 +27,9 @@ const About = () => {
         </div>
       </section>
 
-      {/* 2. THE LONG NARRATIVE - Broad layout, small readable font */}
-      <section className="w-full px-6 lg:px-20 mb-60">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+      {/* 2. THE LONG NARRATIVE */}
+      <section className="w-full px-6 lg:px-20 pb-16 lg:pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
           <div className="lg:col-span-4">
             <div className="sticky top-40 space-y-6">
                <h2 className="text-xs font-black uppercase tracking-[0.3em] text-[#aa7d3f]">01 / The Origin</h2>
@@ -37,7 +37,7 @@ const About = () => {
                <div className="h-px w-20 bg-[#aa7d3f]/20" />
             </div>
           </div>
-          <div className="lg:col-span-8 space-y-16">
+          <div className="lg:col-span-8 space-y-8">
             <p className="text-base text-black leading-[1.8] max-w-3xl">
               We began not as a consultancy, but as a laboratory for operational resilience. We observed how even the most brilliant strategies often collapsed under the weight of their own implementation. The missing link was never the "what"—it was always the "how" of the ecosystem.
             </p>
@@ -47,7 +47,7 @@ const About = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 mt-40">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 mt-20 lg:mt-28">
           <div className="lg:col-span-4">
             <div className="sticky top-40 space-y-6">
                <h2 className="text-xs font-black uppercase tracking-[0.3em] text-[#8fb28a]">02 / Integrity</h2>
@@ -55,11 +55,11 @@ const About = () => {
                <div className="h-px w-20 bg-[#8fb28a]/20" />
             </div>
           </div>
-          <div className="lg:col-span-8 space-y-16">
+          <div className="lg:col-span-8 space-y-8">
             <p className="text-base text-black leading-[1.8] max-w-3xl">
               Most firms look at a company as a collection of departments. We look at it as a living organism. When one part of the system is out of sync, the entire structure vibrates with friction. Our intervention starts with a deep mapping of these vibrations.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-10 max-w-3xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 pt-2 max-w-3xl">
               <div className="space-y-4">
                 <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center">
                   <Microscope className="w-5 h-5 text-slate-400" />
@@ -79,9 +79,9 @@ const About = () => {
         </div>
       </section>
 
-      {/* 3. PHILOSOPHY - Broad definition of values */}
-      <section className="w-full px-6 lg:px-20 mb-80">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+      {/* 3. PHILOSOPHY */}
+      <section className="w-full px-6 lg:px-20 pb-16 lg:pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-12">
             <div className="space-y-6">
               <div className="w-10 h-10 rounded-2xl bg-[#8fb28a]/10 flex items-center justify-center">
                 <Orbit className="w-5 h-5 text-[#4c6a4d]" />
@@ -111,9 +111,9 @@ const About = () => {
          <div className="h-px w-full bg-slate-200" />
       </div>
 
-      {/* 5. LEADERSHIP SECTION - Broadly defined, at the bottom */}
-      <section className="py-32 w-full px-6 lg:px-20">
-        <div className="flex flex-col lg:flex-row items-start gap-20">
+      {/* 5. LEADERSHIP SECTION */}
+      <section className="py-16 lg:py-24 w-full px-6 lg:px-20">
+        <div className="flex flex-col lg:flex-row items-start gap-12 lg:gap-20">
           <div className="lg:w-1/3">
              <div className="relative w-full aspect-[4/5] max-w-sm">
                 <div className="absolute inset-0 bg-[#8fb28a]/10 rounded-[60%_40%_30%_70%/60%_30%_70%_40%] rotate-3 -z-10" />
@@ -158,9 +158,9 @@ const About = () => {
       </section>
 
       {/* FINAL CALL TO ACTION */}
-      <section className="py-40 bg-white w-full px-6 lg:px-20 text-center">
-         <div className="max-w-3xl mx-auto flex flex-col items-center gap-10">
-            <h2 className="text-3xl font-bold tracking-tight">Ready to integrate <br /> these systems into your vision?</h2>
+      <section className="py-16 lg:py-24 bg-white w-full px-6 lg:px-20 text-center">
+         <div className="max-w-3xl mx-auto flex flex-col items-center gap-8">
+            <h2 className="text-3xl font-bold tracking-tight">Ready to integrate <br className="hidden md:block" /> these systems into your vision?</h2>
             <Link to="/contact" className="group inline-flex items-center gap-4 px-8 py-4 rounded-full bg-black text-white font-bold text-base hover:bg-slate-800 transition-all">
                Start the Conversation
                <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform" />
