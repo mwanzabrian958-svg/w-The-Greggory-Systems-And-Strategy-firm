@@ -1,6 +1,6 @@
 // TEMP: verify the Aiven cloud DB is reachable and compare its tables against
 // the expected schema (database/*.sql + schema-sync.json). Never prints secrets.
-require("dotenv").config();
+require("dotenv").config({ override: true }); // override: .env wins over stale shell vars
 const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
