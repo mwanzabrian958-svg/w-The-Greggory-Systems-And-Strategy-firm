@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
-import { ChevronLeft } from 'lucide-react'
-
-const slug = (s) =>
-  (s || '')
-    .toString()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+import { X } from 'lucide-react'
 
 const PersonnelProfile = () => {
   const { id } = useParams()
@@ -20,11 +13,11 @@ const PersonnelProfile = () => {
     let mounted = true
     const load = async () => {
       try {
-        const res = await fetch(getApiUrl(`/api/company-personnel/${id}`))
+        const res = await fetch(getApiUrl('/api/company-personnel/' + id))
         const json = await res.json()
         if (!mounted) return
-        if (json?.success) setPerson(json.personnel)
-        else setError(json?.message || 'Personnel not found')
+        if (json && json.success) setPerson(json.personnel)
+        else setError(json && json.message ? json.message : 'Personnel not found')
       } catch (e) {
         if (mounted) setError(e.message)
       } finally {
@@ -32,9 +25,7 @@ const PersonnelProfile = () => {
       }
     }
     load()
-    return () => {
-      mounted = false
-    }
+    return () => { mounted = false }
   }, [id])
 
   if (loading) {
@@ -52,7 +43,7 @@ const PersonnelProfile = () => {
           <h1 className="text-3xl font-bold">Person not found</h1>
           <p className="mt-4 text-slate-500">{error || 'This team member could not be located.'}</p>
           <Link to="/about" className="inline-flex items-center gap-2 mt-8 text-[#8fb28a] font-bold hover:underline">
-            <ChevronLeft size={16} /> Back to About
+            Back to About
           </Link>
         </div>
       </div>
@@ -63,17 +54,10 @@ const PersonnelProfile = () => {
     <div className="min-h-screen bg-[#fdfaf6] text-[#111] pt-24">
       <div className="max-w-5xl mx-auto px-6 lg:px-20 py-16">
 
-        {/* Back link */}
-        <Link
-          to="/about"
-          className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.3em] text-[#8fb28a] hover:text-[#111] transition-colors mb-12"
-        >
-          <ChevronLeft size={14} /> Back to About
-        </Link>
+        {/* Top-left photo | Top-right name + position + X (shared row) */}
+        <div className="flex flex-col lg:flex-row lg:items-start gap-8 lg:gap-12">
 
-        <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">
-
-          {/* Left: photo */}
+          {/* Photo block (top left) */}
           <div className="lg:w-2/5">
             <div className="relative w-full aspect-[4/5] overflow-hidden rounded-[32px] shadow-xl bg-slate-100">
               {person.image_url ? (
@@ -86,29 +70,47 @@ const PersonnelProfile = () => {
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-[#8fb28a]/10 text-6xl font-black text-[#8fb28a]">
-                  {person.name?.charAt(0)}
+                  {person.name ? person.name.charAt(0) : ''}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Right: name + position + credentials */}
-          <div className="lg:w-3/5">
-            <h1 className="text-4xl font-bold tracking-tight">{person.name}</h1>
-            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#aa7d3f] mt-2">
-              {person.position}
-            </p>
+          {/* Name & position block (top right) */}
+          <div className="lg:w-3/5 pt-2">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <h1 className="text-4xl font-bold tracking-tight">{person.name}</h1>
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#aa7d3f]">
+                  {person.position}
+                </p>
+              </div>
 
-            <div className="h-px w-12 bg-[#aa7d3f]/20 my-6" />
-
-            {/* Bio/credentials — render HTML directly as trusted admin content */}
-            {person.bio && (
-              <div
-                className="prose prose-lg text-slate-700 max-w-none"
-                dangerouslySetInnerHTML={{ __html: person.bio }}
-              />
-            )}
+              {/* X — closes the personnel viewing session */}
+              <Link
+                to="/about"
+                aria-label="Close personnel view"
+                className="w-10 h-10 rounded-full bg-[#0f172a] text-white flex items-center justify-center hover:bg-slate-700 transition-all shadow-md hover:scale-105 active:scale-95"
+              >
+                <X size={20} />
+              </Link>
+            </div>
           </div>
+        </div>
+
+        {/* Divider */}
+        <div className="h-px w-full bg-[#aa7d3f]/20 my-10" />
+
+        {/* Below the photo: all credentials & records posted by admin */}
+        <div className="max-w-none">
+          {person.bio ? (
+            <div
+              className="space-y-4 text-sm leading-[1.9] text-black"
+              dangerouslySetInnerHTML={{ __html: person.bio }}
+            />
+          ) : (
+            <p className="text-sm text-slate-400">No credentials have been published for this profile yet.</p>
+          )}
         </div>
       </div>
     </div>
