@@ -1,8 +1,36 @@
-import React from 'react'
-import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { getApiUrl } from '../services/api'
+
+const normalizePersonnelBio = (raw) => {
+  if (!raw || !raw.trim()) return ''
+  const trimmed = raw.trim()
+  if (/<\/?[a-z][\s\S]*>/i.test(trimmed)) return trimmed
+  return trimmed
+    .split(/\n{2,}|\r\n\r\n/)
+    .map((block) => `<p>${block.replace(/\n/g, '<br />')}</p>`)
+    .join('')
+}
 
 const About = () => {
+  const [personnel, setPersonnel] = useState([])
+  const [personnelLoading, setPersonnelLoading] = useState(true)
+  const [activePerson, setActivePerson] = useState(null)
+
+  useEffect(() => {
+    let mounted = true
+    fetch(getApiUrl('/api/company-personnel'))
+      .then((r) => r.json())
+      .then((d) => { if (mounted) setPersonnel(d?.personnel || []) })
+      .catch(() => {})
+      .finally(() => { if (mounted) setPersonnelLoading(false) })
+    return () => { mounted = false }
+  }, [])
+
+  const fallbackPerson = { id: 0, name: 'Brian Mwanza', position: 'Founder & Managing Director', bio: '<p>Brian Mwanza is the visionary force behind The-Greggory-Systems-And-Strategy-firm...</p>', image_url: '/images/brian-mwanza-ceo.jpg' }
+  const displayPersonnel = personnel.length > 0 ? personnel : [fallbackPerson]
+
   return (
     <div className="relative min-h-screen bg-[#fdfaf6] text-[#111] pt-32 selection:bg-[#8fb28a] selection:text-white font-sans overflow-x-hidden">
 
@@ -111,53 +139,79 @@ const About = () => {
          <div className="h-px w-full bg-slate-200" />
       </div>
 
-      {/* 5. LEADERSHIP SECTION */}
+            {/* 5. FIRM PERSONNEL - admin-managed (same workflow as Blog), displayed here */}
       <section className="py-16 lg:py-24 w-full px-6 lg:px-20">
-        <div className="flex flex-col lg:flex-row items-start gap-12 lg:gap-20">
-          <div className="lg:w-1/3">
-             <div className="relative w-full aspect-[4/5] max-w-sm">
-                <div className="absolute inset-0 bg-[#8fb28a]/10 rounded-[60%_40%_30%_70%/60%_30%_70%_40%] rotate-3 -z-10" />
-                <div
-                  className="w-full h-full object-cover grayscale brightness-110 contrast-110 shadow-2xl transition-all duration-700 hover:grayscale-0"
-                  style={{
-                    backgroundImage: 'url("/images/brian-mwanza-ceo.jpg")',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    borderRadius: '80px 40px 100px 50px',
-                  }}
-                />
-             </div>
-          </div>
-
-          <div className="lg:w-2/3 space-y-10">
-             <div className="space-y-2">
-                <span className="text-xs font-black uppercase tracking-[0.4em] text-[#8fb28a]">Firm Leadership</span>
-                <h2 className="text-4xl font-bold tracking-tight">Brian Mwanza</h2>
-                <p className="text-sm font-bold text-[#aa7d3f] uppercase tracking-[0.2em]">Founder & Managing Director</p>
-             </div>
-
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl">
-                <p className="text-sm text-black leading-[1.8]">
-                  Brian Mwanza is the visionary force behind The-Greggory-Systems-And-Strategy-firm. With over a decade of experience in systemic design and business strategy, he has guided some of the most ambitious organizations through complex digital and operational transformations.
-                </p>
-                <p className="text-sm text-black leading-[1.8]">
-                  His philosophy is rooted in the belief that "Strategy is not a document; it's a pulse." Under his leadership, the firm has evolved from a boutique advisory to a global architect of business resonance, known for its uncompromising commitment to clarity and human-centric systems.
-                </p>
-             </div>
-
-             <div className="pt-6">
-                <div className="flex items-center gap-4">
-                   <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-white">
-                      <Fingerprint className="w-4 h-4" />
-                   </div>
-                   <span className="text-xs font-bold uppercase tracking-widest text-slate-400 italic">"Design for resonance, not just function."</span>
-                </div>
-             </div>
-          </div>
+        <div className="space-y-2">
+          <span className="text-xs font-black uppercase tracking-[0.4em] text-[#8fb28a]">Firm Personnel</span>
+          <h2 className="text-4xl font-bold tracking-tight">The People Behind the Systems</h2>
+          <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">Click a profile to explore the credentials and records published by our administrators.</p>
         </div>
+
+        {personnelLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12 w-full py-12">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="aspect-[4/5] rounded-[32px] bg-slate-100 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12 w-full">
+            {displayPersonnel.map((p) => (
+              <button key={p.id} onClick={() => setActivePerson(p)} className="group text-left">
+                <div className="relative w-full aspect-[4/5] overflow-hidden rounded-[32px] shadow-xl bg-slate-100">
+                  {p.image_url ? (
+                    <img src={p.image_url} alt={p.name} loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover grayscale brightness-105 contrast-105 transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-[#8fb28a]/10 text-5xl font-black text-[#8fb28a]">{p.name?.charAt(0)}</div>
+                  )}
+                </div>
+                <div className="mt-4 space-y-1">
+                  <p className="font-black text-sm text-[#111] group-hover:text-[#8fb28a] transition-colors">{p.name}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#aa7d3f]">{p.position}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* FINAL CALL TO ACTION */}
+      {/* PERSONNEL PROFILE OVERLAY - image top-left, name right, divider, then admin-posted records */}
+      {activePerson && (
+        <div className="fixed inset-0 z-[950] bg-black/60 backdrop-blur-sm flex items-start md:items-center justify-center p-4 md:p-8 overflow-y-auto" onClick={() => setActivePerson(null)}>
+          <div className="relative w-full max-w-4xl bg-[#fdfaf6] rounded-[32px] shadow-2xl my-8 max-h-[88vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setActivePerson(null)} aria-label="Close profile" className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black text-white flex items-center justify-center hover:bg-slate-800 transition-all shadow-lg"><X className="w-5 h-5" /></button>
+            <div className="p-8 md:p-12">
+              <div className="flex flex-col sm:flex-row gap-8 items-start">
+                <div className="w-40 h-48 md:w-52 md:h-64 rounded-[28px] overflow-hidden shadow-xl bg-slate-100 flex-shrink-0 relative">
+                  {activePerson.image_url ? (
+                    <img src={activePerson.image_url} alt={activePerson.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-[#8fb28a]/10 text-6xl font-black text-[#8fb28a]">{activePerson.name?.charAt(0)}</div>
+                  )}
+                </div>
+                <div className="pt-2 sm:pt-8 space-y-2">
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#8fb28a]">Firm Personnel Profile</span>
+                  <h2 className="text-4xl font-bold tracking-tight text-[#111]">{activePerson.name}</h2>
+                  <p className="text-sm font-bold text-[#aa7d3f] uppercase tracking-[0.2em]">{activePerson.position}</p>
+                </div>
+              </div>
+              <div className="h-px w-full bg-gradient-to-r from-[#aa7d3f]/30 via-slate-200 to-transparent my-10" />
+              <div className="max-w-none">
+                {activePerson.bio ? (
+                  <div className="space-y-4 text-sm leading-[1.9] text-black" dangerouslySetInnerHTML={{ __html: normalizePersonnelBio(activePerson.bio) }} />
+                ) : (
+                  <p className="text-sm text-slate-400">No credentials have been published for this profile yet.</p>
+                )}
+              </div>
+              <div className="pt-10 flex flex-col items-center">
+                <div className="w-px h-8 bg-gradient-to-b from-[#8fb28a]/50 to-transparent mb-3" />
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em]">End of Record</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+{/* FINAL CALL TO ACTION */}
       <section className="py-16 lg:py-24 bg-white w-full px-6 lg:px-20 text-center">
          <div className="max-w-3xl mx-auto flex flex-col items-center gap-8">
             <h2 className="text-3xl font-bold tracking-tight">Ready to integrate <br className="hidden md:block" /> these systems into your vision?</h2>

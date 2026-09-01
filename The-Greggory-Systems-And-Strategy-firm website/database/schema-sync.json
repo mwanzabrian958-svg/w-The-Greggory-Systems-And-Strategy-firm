@@ -1192,6 +1192,63 @@
         }
       ]
     },
+    "company_personnel": {
+      "create": "CREATE TABLE `company_personnel` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(255) NOT NULL,\n  `position` varchar(150) NOT NULL,\n  `bio` longtext DEFAULT NULL,\n  `image_url` varchar(512) DEFAULT NULL,\n  `image_blob` longblob DEFAULT NULL,\n  `image_mime_type` varchar(100) DEFAULT NULL,\n  `image_file_name` varchar(255) DEFAULT NULL,\n  `sort_order` int(11) DEFAULT 0,\n  `is_active` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_company_personnel_active` (`is_active`),\n  KEY `idx_company_personnel_sort` (`sort_order`)\n) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "name",
+          "def": "varchar(255) NOT NULL"
+        },
+        {
+          "name": "position",
+          "def": "varchar(150) NOT NULL"
+        },
+        {
+          "name": "bio",
+          "def": "longtext"
+        },
+        {
+          "name": "image_url",
+          "def": "varchar(512)"
+        },
+        {
+          "name": "image_blob",
+          "def": "longblob"
+        },
+        {
+          "name": "image_mime_type",
+          "def": "varchar(100)"
+        },
+        {
+          "name": "image_file_name",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "sort_order",
+          "def": "int(11) DEFAULT 0"
+        },
+        {
+          "name": "is_active",
+          "def": "tinyint(1) DEFAULT  1"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "deleted_at",
+          "def": "timestamp"
+        }
+      ]
+    },
     "case_studies": {
       "create": "CREATE TABLE `case_studies` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `title` varchar(255) NOT NULL,\n  `client` varchar(255) DEFAULT NULL,\n  `industry` varchar(255) DEFAULT NULL,\n  `challenge` text DEFAULT NULL,\n  `solution` longtext DEFAULT NULL,\n  `results` longtext DEFAULT NULL,\n  `duration` varchar(100) DEFAULT NULL,\n  `image_url` varchar(512) DEFAULT NULL,\n  `image_blob` longblob DEFAULT NULL,\n  `image_mime_type` varchar(100) DEFAULT NULL,\n  `image_file_name` varchar(255) DEFAULT NULL,\n  `image_urls` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`image_urls`)),\n  `is_featured` tinyint(1) DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_case_studies_featured` (`is_featured`),\n  KEY `idx_case_studies_industry` (`industry`),\n  KEY `idx_case_studies_created` (`created_at`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [

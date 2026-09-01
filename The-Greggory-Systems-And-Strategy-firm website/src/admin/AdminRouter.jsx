@@ -23,6 +23,9 @@ import { UserForm } from './pages/UserForm';
 import { UserDetail } from './pages/UserDetail';
 import { CreateBlog } from './pages/CreateBlog';
 import { BlogPreview } from './pages/BlogPreview';
+import { Personnel } from './pages/Personnel';
+import { CreatePersonnel } from './pages/CreatePersonnel';
+import { PersonnelPreview } from './pages/PersonnelPreview';
 import { ProjectTasks } from './pages/ProjectTasks';
 import { SearchResults } from './pages/SearchResults';
 import { Team } from './pages/Team';
@@ -78,6 +81,8 @@ export function AdminRouter() {
       <Route path="content/create" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><CreateBlog /></AdminRoute>} />
       <Route path="content/preview/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><BlogPreview /></AdminRoute>} />
       <Route path="projects/:projectId/tasks" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><ProjectTasks /></AdminRoute>} />
+      <Route path="personnel/create" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><CreatePersonnel /></AdminRoute>} />
+      <Route path="personnel/preview/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><PersonnelPreview /></AdminRoute>} />
 
       <Route path="*" element={
         isAuthenticated ? (
@@ -89,6 +94,7 @@ export function AdminRouter() {
                <Route path="billing" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_FINANCIAL}><Billing /></AdminRoute>} />
                <Route path="crm" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_CRM}><CRM /></AdminRoute>} />
                <Route path="content" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_CONTENT}><Content user={user} /></AdminRoute>} />
+              <Route path="personnel" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_CONTENT}><Personnel /></AdminRoute>} />
                <Route path="applications" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_APPLICATIONS}><Applications /></AdminRoute>} />
                <Route path="support" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_SUPPORT}><Support /></AdminRoute>} />
                <Route path="security" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_SECURITY}><Security /></AdminRoute>} />

@@ -106,6 +106,7 @@ export function getNavigationItems(user) {
     { path: '/admin/crm', label: 'CRM', icon: 'Building2' },
     { path: '/admin/applications', label: 'Applications', icon: 'ClipboardList' },
     { path: '/admin/content', label: 'Blog Management', icon: 'Briefcase' },
+    { path: '/admin/personnel', label: 'Personnel Management', icon: 'Users' },
     { path: '/admin/billing', label: 'Financial Hub', icon: 'Calculator' },
     { path: '/admin/reports', label: 'Reports', icon: 'FileText' }
   ];

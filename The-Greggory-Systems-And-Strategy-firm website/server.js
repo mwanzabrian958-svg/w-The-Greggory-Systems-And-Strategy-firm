@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
@@ -5440,6 +5440,137 @@ app.delete("/api/blog-articles/:id", async (req, res) => {
   } catch (error) {
     console.error("Error deleting blog article:", error);
     res.status(500).json({ success: false, message: "Error deleting blog article", error: error.message });
+  }
+});
+
+// =============================================
+// Company Personnel API (admin-managed like blog, displayed on About page)
+// =============================================
+app.get("/api/company-personnel", async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      "SELECT id, name, position, bio, image_url, sort_order, is_active, image_blob IS NOT NULL AS has_photo, created_at FROM company_personnel WHERE deleted_at IS NULL AND is_active = 1 ORDER BY sort_order ASC, created_at DESC"
+    );
+    res.json({
+      success: true,
+      personnel: rows.map(p => ({
+        ...p,
+        image_url: p.has_photo ? `/api/company-personnel/photo/${p.id}` : p.image_url,
+      })),
+    });
+  } catch (error) {
+    console.error("Error fetching company personnel:", error);
+    res.status(500).json({ success: false, message: "Error fetching company personnel", error: error.message });
+  }
+});
+
+app.get("/api/company-personnel/photo/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await mainDb.query(
+      "SELECT image_blob, image_mime_type FROM company_personnel WHERE id = ? AND deleted_at IS NULL",
+      [id]
+    );
+    if (rows.length === 0 || !rows[0].image_blob) {
+      return res.status(404).json({ success: false, message: "Photo not found" });
+    }
+    res.set("Content-Type", rows[0].image_mime_type || "image/jpeg");
+    res.set("Cache-Control", "public, max-age=86400");
+    res.send(rows[0].image_blob);
+  } catch (error) {
+    console.error("Personnel photo retrieval error:", error);
+    res.status(500).json({ success: false, message: "Failed to retrieve photo" });
+  }
+});
+
+app.get("/api/company-personnel/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await mainDb.query(
+      "SELECT *, image_blob IS NOT NULL AS has_photo FROM company_personnel WHERE id = ? AND deleted_at IS NULL",
+      [id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Personnel member not found" });
+    }
+    const p = rows[0];
+    res.json({
+      success: true,
+      personnel: { ...p, image_url: p.has_photo ? `/api/company-personnel/photo/${p.id}` : p.image_url },
+    });
+  } catch (error) {
+    console.error("Error fetching company personnel member:", error);
+    res.status(500).json({ success: false, message: "Error fetching personnel member", error: error.message });
+  }
+});
+
+app.post("/api/company-personnel", async (req, res) => {
+  try {
+    const { name, position, bio, image_url, image_base64, sort_order, is_active } = req.body;
+    if (!name || !position) {
+      return res.status(400).json({ success: false, message: "Name and position are required" });
+    }
+
+    // Handle Image Base64 to Blob conversion if provided (same as blog)
+    let imageBlob = null;
+    let imageMimeType = null;
+    if (image_base64) {
+      const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, "");
+      imageBlob = Buffer.from(base64Data, "base64");
+      const mimeMatch = image_base64.match(/^data:(image\/\w+);base64,/);
+      if (mimeMatch) imageMimeType = mimeMatch[1];
+    }
+
+    const [result] = await mainDb.query(
+      "INSERT INTO company_personnel (name, position, bio, image_url, image_blob, image_mime_type, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [name, position, bio || null, image_url || null, imageBlob, imageMimeType, sort_order || 0, is_active === undefined ? 1 : (is_active ? 1 : 0)]
+    );
+
+    res.json({ success: true, personnelId: result.insertId });
+  } catch (error) {
+    console.error("Error creating company personnel:", error);
+    res.status(500).json({ success: false, message: "Error creating company personnel", error: error.message });
+  }
+});
+
+app.put("/api/company-personnel/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, position, bio, image_url, image_base64, sort_order, is_active } = req.body;
+
+    let imageBlob = null;
+    let imageMimeType = null;
+    if (image_base64) {
+      const base64Data = image_base64.replace(/^data:image\/\w+;base64,/, "");
+      imageBlob = Buffer.from(base64Data, "base64");
+      const mimeMatch = image_base64.match(/^data:(image\/\w+);base64,/);
+      if (mimeMatch) imageMimeType = mimeMatch[1];
+    }
+
+    await mainDb.query(
+      "UPDATE company_personnel SET name = ?, position = ?, bio = ?, image_url = ?, sort_order = ?, is_active = ?" +
+      (imageBlob ? ", image_blob = ?, image_mime_type = ?" : "") +
+      " WHERE id = ? AND deleted_at IS NULL",
+      imageBlob
+        ? [name, position, bio || null, image_url || null, sort_order || 0, is_active === undefined ? 1 : (is_active ? 1 : 0), imageBlob, imageMimeType, id]
+        : [name, position, bio || null, image_url || null, sort_order ||  0, is_active === undefined ? 1 : (is_active ? 1 : 0), id]
+    );
+
+    res.json({ success: true, message: "Company personnel updated successfully" });
+  } catch (error) {
+    console.error("Error updating company personnel:", error);
+    res.status(500).json({ success: false, message: "Error updating company personnel", error: error.message });
+  }
+});
+
+app.delete("/api/company-personnel/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await mainDb.query("UPDATE company_personnel SET deleted_at = NOW() WHERE id = ?", [id]);
+    res.json({ success: true, message: "Company personnel removed successfully" });
+  } catch (error) {
+    console.error("Error removing company personnel:", error);
+    res.status(500).json({ success: false, message: "Error removing company personnel", error: error.message });
   }
 });
 

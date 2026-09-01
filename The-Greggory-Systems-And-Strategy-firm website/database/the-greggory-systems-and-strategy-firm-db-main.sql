@@ -2202,3 +2202,33 @@ SELECT
 -- SUCCESS MESSAGE
 -- =====================================================
 SELECT 'Complete database schema created successfully with zero ghosts and total strategic alignment!' as message;
+-- =============================================
+-- Table: company_personnel
+-- Company personnel profiles - admin-managed like blog articles,
+-- displayed on the About page (image + name + position; click opens profile).
+-- =============================================
+CREATE TABLE IF NOT EXISTS company_personnel (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    position VARCHAR(150) NOT NULL,
+    bio LONGTEXT,
+    image_url VARCHAR(512) DEFAULT NULL,
+    image_blob LONGBLOB,
+    image_mime_type VARCHAR(100) DEFAULT NULL,
+    image_file_name VARCHAR(255) DEFAULT NULL,
+    sort_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    INDEX idx_company_personnel_active (is_active),
+    INDEX idx_company_personnel_sort (sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seed founding personnel (Brian Mwanza)
+INSERT INTO company_personnel (name, position, bio, image_url, sort_order, is_active)
+SELECT 'Brian Mwanza', 'Founder & Managing Director',
+'<p>Brian Mwanza is the visionary force behind The-Greggory-Systems-And-Strategy-firm. With over a decade of experience in systemic designand business strategy, he has guided some of the most ambitious organizations through complex digitaland operational transformations.</p><p>His philosophy is rooted in the belief that &quot;Strategy is not a document; it''s a pulse.&quot; Under his leadership,the firm has evolved from a boutique advisory to a global architect of business resonance,known for its uncompromising commitment to clarity and human-centric systems.</p>',
+'/images/brian-mwanza-ceo.jpg',
+0, TRUE
+WHERE NOT EXISTS (SELECT 1 FROM company_personnel WHERE name = 'Brian Mwanza');
