@@ -54,28 +54,47 @@ function saveStatus() {
   }
 }
 
+const isLocalHost = (h) =>
+  ["localhost", "127.0.0.1", "::1"].includes((h || "").toLowerCase());
+
+// Cloud (primary) source — explicit DB_CLOUD_* keys win; otherwise fall back
+// to DB_* when DB_HOST is itself a non-local (managed) host, so a .env that
+// only defines DB_* still works.
 const CLOUD = {
-  host: process.env.DB_CLOUD_HOST,
-  port: Number(process.env.DB_CLOUD_PORT || 3306),
-  user: process.env.DB_CLOUD_USER,
-  password: process.env.DB_CLOUD_PASSWORD,
+  host:
+    process.env.DB_CLOUD_HOST ||
+    (!isLocalHost(process.env.DB_HOST) ? process.env.DB_HOST : undefined),
+  port: Number(process.env.DB_CLOUD_PORT || process.env.DB_PORT || 28067),
+  user: process.env.DB_CLOUD_USER || process.env.DB_USER,
+  password:
+    process.env.DB_CLOUD_PASSWORD !== undefined
+      ? process.env.DB_CLOUD_PASSWORD
+      : process.env.DB_PASSWORD,
   database: DB,
   connectTimeout: 20000,
   ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false },
 };
+
+// LOCAL target = the XAMPP/phpMyAdmin secondary. Uses the DB_*_2 variables —
+// the SAME convention as server/config/dbEndpoints.js (DB_* = cloud primary,
+// DB_*_2 = local secondary) so one .env drives both the app and the backup.
+// (Previously this read DB_HOST/DB_USER/DB_PASSWORD, which now point at the
+// cloud — mirroring the cloud into itself. The _2 keys fix that.)
 const LOCAL = {
-  host: process.env.DB_HOST || "localhost",
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
+  host: process.env.DB_HOST_2 || "127.0.0.1",
+  port: Number(process.env.DB_PORT_2 || 3306),
+  user: process.env.DB_USER_2 || "root",
+  password: process.env.DB_PASSWORD_2 !== undefined ? process.env.DB_PASSWORD_2 : "",
   database: DB,
   connectTimeout: 8000,
 };
 
 function requireCloudEnv() {
-  const missing = ["DB_CLOUD_HOST", "DB_CLOUD_USER", "DB_CLOUD_PASSWORD"].filter(
-    (k) => !process.env[k],
-  );
+  const missing = [];
+  if (!CLOUD.host) missing.push("DB_CLOUD_HOST (or a non-local DB_HOST)");
+  if (!CLOUD.user) missing.push("DB_CLOUD_USER (or DB_USER)");
+  if (CLOUD.password === undefined)
+    missing.push("DB_CLOUD_PASSWORD (or DB_PASSWORD)");
   if (missing.length) {
     console.error(`[backup] missing .env keys: ${missing.join(", ")} — aborting`);
     process.exit(1);
@@ -237,20 +256,36 @@ function saveSnapshot(snapshot) {
   await L.query("SET FOREIGN_KEY_CHECKS = 1");
 
   // ---- 3) verify ----
-  let mismatches = 0;
+  // Compare local against the SNAPSHOT (the exact rows we copied). Re-querying
+  // the live cloud here races with production traffic — tables like
+  // data_access_logs gain a row per API request, which reports a false
+  // MISMATCH on every run. Cloud growth beyond the snapshot is reported as
+  // informational "churn" and is picked up by the next run.
+  let mismatches = 0, churnTables = 0, churnRows = 0;
   for (const t of Object.keys(snapshot.tables)) {
-    const [cr] = await C.query(`SELECT COUNT(*) n FROM \`${t}\``);
+    const snapCount = snapshot.tables[t].length;
     const [lr] = await L.query(`SELECT COUNT(*) n FROM \`${t}\``);
-    if (cr[0].n !== lr[0].n) {
+    if (lr[0].n !== snapCount) {
       mismatches++;
-      console.error(`[backup]   MISMATCH ${t}: cloud ${cr[0].n} vs local ${lr[0].n}`);
+      console.error(`[backup]   MISMATCH ${t}: snapshot ${snapCount} vs local ${lr[0].n}`);
+    } else {
+      const [cr] = await C.query(`SELECT COUNT(*) n FROM \`${t}\``);
+      if (cr[0].n > snapCount) {
+        churnTables++;
+        churnRows += cr[0].n - snapCount;
+      }
     }
   }
   console.log(
     mismatches === 0
-      ? `[backup] VERIFIED — all ${count} tables match. Backup complete (${copiedRows} rows copied, ${created} tables created, ${failed} failures).`
+      ? `[backup] VERIFIED — local matches the snapshot for all ${count} tables` +
+          ` (${copiedRows} rows copied, ${created} tables created, ${failed} failures)` +
+          (churnTables
+            ? ` · cloud grew +${churnRows} row(s) on ${churnTables} table(s) during the run — picked up next run`
+            : "")
       : `[backup] finished with ${mismatches} MISMATCH(ES) — see above`,
   );
+  STATUS.churn = { tables: churnTables, rows: churnRows };
   STATUS.ok = mismatches === 0 && failed === 0;
   STATUS.finishedAt = new Date().toISOString();
   STATUS.durationMs = Date.now() - Date.parse(STATUS.startedAt);
