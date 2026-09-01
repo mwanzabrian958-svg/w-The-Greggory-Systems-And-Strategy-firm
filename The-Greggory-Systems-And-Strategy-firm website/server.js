@@ -488,7 +488,7 @@ app.use(limiter);
 // mysql2's PoolCluster does the failover automatically: if endpoint #1 is
 // down it uses endpoint #2, and switches back once #1 recovers.
 // ============================================================================
-const { endpoints: dbEndpoints } = require("./server/config/dbEndpoints");
+const { endpoints: dbEndpoints, cloudSslEnabled } = require("./server/config/dbEndpoints");
 
 const dbCluster = mysql.createPoolCluster({
   canRetry: true,           // retry on the next available node
@@ -5907,7 +5907,7 @@ app.get("/api/health", (req, res) => {
     // Non-secret diagnostics: which DB host the process actually sees, and
     // whether TLS mode is on. Never expose DB_PASSWORD or other secrets here.
     dbHost: (process.env.DB_HOST || "UNSET").split(".")[0],
-    dbSsl: process.env.DB_SSL === "true",
+    dbSsl: cloudSslEnabled(),
     database: lastDbCheck.ok === null ? "unknown" : lastDbCheck.ok ? "connected" : "unreachable",
     dbCheckedAt: lastDbCheck.at,
   });

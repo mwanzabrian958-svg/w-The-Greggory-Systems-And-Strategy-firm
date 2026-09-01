@@ -26,9 +26,19 @@
 const DB_NAME =
   process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main";
 
-const DEFAULT_SSL = process.env.DB_SSL === "true";
 const IS_LOCAL_HOST = (h) =>
   ["localhost", "127.0.0.1", "::1"].includes((h || "").toLowerCase());
+
+// TLS policy: DB_SSL wins when explicitly set; otherwise we INFER it — any
+// non-local (managed/remote) MySQL such as Aiven REQUIRES TLS, local XAMPP
+// does not. Inference exists because a Render service created manually
+// (not from render.yaml) can end up without the DB_SSL variable, which
+// silently broke the cloud connection ("Pool does Not have online node").
+function cloudSslEnabled() {
+  if (process.env.DB_SSL !== undefined) return process.env.DB_SSL === "true";
+  return !IS_LOCAL_HOST(process.env.DB_HOST || process.env.DB_CLOUD_HOST || "");
+}
+const DEFAULT_SSL = cloudSslEnabled();
 
 function buildEndpoint({ host, port, user, password, ssl, label }) {
   const cfg = {
@@ -81,10 +91,7 @@ function endpoints() {
           process.env.DB_PASSWORD !== undefined
             ? process.env.DB_PASSWORD
             : process.env.DB_CLOUD_PASSWORD,
-        ssl:
-          process.env.DB_SSL !== undefined
-            ? process.env.DB_SSL === "true"
-            : DEFAULT_SSL,
+        ssl: cloudSslEnabled(),
         label: IS_LOCAL_HOST(h1) ? "local" : "claude",
       })
     );
@@ -100,4 +107,4 @@ function clean(cfg) {
   return opts;
 }
 
-module.exports = { endpoints, clean, DB_NAME };
+module.exports = { endpoints, clean, DB_NAME, cloudSslEnabled };
