@@ -4745,6 +4745,131 @@ const readBackupStatus = () => {
   }
 };
 
+// ============================================================================
+// ADMIN NODE SETTINGS + SYSTEM CALIBRATION — real endpoints (no more static UI)
+// Store: existing `admin_website_settings` table, namespaced category
+// `admin_node` so website content settings are never touched.
+// ============================================================================
+const ADMIN_NODE_CATEGORY = "admin_node";
+
+// Keys the Node Settings page is allowed to write (whitelist)
+const ADMIN_NODE_KEYS = new Set([
+  "site_title",
+  "contact_email",
+  "contact_phone",
+  "admin_session_timeout",
+  "maintenance_mode",
+  "allow_registration",
+  "deep_space_mode",
+  "admin_lockdown",
+]);
+
+async function setAdminNodeSetting(key, value, adminId) {
+  const [upd] = await mainDb.query(
+    "UPDATE admin_website_settings SET setting_value = ?, updated_by = ? WHERE setting_key = ?",
+    [String(value), adminId == null ? null : String(adminId), key]
+  );
+  if (upd.affectedRows === 0) {
+    await mainDb.query(
+      "INSERT INTO admin_website_settings (setting_key, setting_value, category, updated_by) VALUES (?, ?, ?, ?)",
+      [key, String(value), ADMIN_NODE_CATEGORY, adminId == null ? null : String(adminId)]
+    );
+  }
+}
+
+// ---- Read node settings + system snapshot ----------------------------------
+app.get("/api/admin/node-settings", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      "SELECT setting_key, setting_value, category, updated_at FROM admin_website_settings"
+    );
+    const settings = {};
+    for (const r of rows) settings[r.setting_key] = r.setting_value;
+    // Sensible defaults for anything not yet in the table
+    const defaults = {
+      site_title: "The Greggory Systems And Strategy Firm",
+      admin_session_timeout: "60",
+      admin_lockdown: "false",
+    };
+    for (const [k, v] of Object.entries(defaults)) {
+      if (settings[k] === undefined) settings[k] = v;
+    }
+    res.json({
+      success: true,
+      settings,
+      system: {
+        node: process.version,
+        env: process.env.NODE_ENV || "development",
+        uptimeSeconds: Math.round(process.uptime()),
+        rssMb: Math.round(process.memoryUsage().rss / 1048576),
+      },
+    });
+  } catch (err) {
+    console.error("[node-settings] load failed:", err.message);
+    res.status(500).json({ success: false, message: "Could not load settings" });
+  }
+});
+
+// ---- Save node settings (whitelisted keys only) ----------------------------
+app.put("/api/admin/node-settings", authenticateAdmin, async (req, res) => {
+  try {
+    const incoming = req.body && req.body.settings;
+    if (!incoming || typeof incoming !== "object") {
+      return res.status(400).json({ success: false, message: "settings object required" });
+    }
+    const adminId = req.admin && (req.admin.id ?? req.admin.admin_id) || null;
+    const keys = Object.keys(incoming).filter((k) => ADMIN_NODE_KEYS.has(k));
+    if (keys.length === 0) {
+      return res.status(400).json({ success: false, message: "No valid setting keys provided" });
+    }
+    for (const k of keys) {
+      await setAdminNodeSetting(k, incoming[k], adminId);
+    }
+    await mainDb.query(
+      "INSERT INTO activity_logs (user_id, action_type, action_description, created_at) VALUES (?, ?, ?, NOW())",
+      [null, "admin_node_settings", `Updated node settings: ${keys.join(", ")}`]
+    );
+    res.json({ success: true, message: "Settings saved", updated: keys.length });
+  } catch (err) {
+    console.error("[node-settings] save failed:", err.message);
+    res.status(500).json({ success: false, message: "Could not save settings" });
+  }
+});
+
+// ---- System Calibration: live diagnostics, persisted for the dashboard -----
+app.post("/api/admin/system-calibration", authenticateAdmin, async (req, res) => {
+  try {
+    const t0 = Date.now();
+    await mainDb.query("SELECT 1");
+    const dbLatencyMs = Date.now() - t0;
+    const [[{ tables }]] = await mainDb.query(
+      "SELECT COUNT(*) AS tables FROM information_schema.tables WHERE table_schema = DATABASE()"
+    );
+    const report = {
+      ran_at: new Date().toISOString(),
+      db_latency_ms: dbLatencyMs,
+      db_host: (process.env.DB_HOST || "").split(".").slice(-3).join("."),
+      tables,
+      rss_mb: Math.round(process.memoryUsage().rss / 1048576),
+      heap_mb: Math.round(process.memoryUsage().heapUsed / 1048576),
+      uptime_seconds: Math.round(process.uptime()),
+      node: process.version,
+      status: dbLatencyMs < 500 ? "healthy" : "degraded",
+    };
+    const adminId = req.admin && (req.admin.id ?? req.admin.admin_id) || null;
+    await setAdminNodeSetting("last_calibration", JSON.stringify(report), adminId);
+    await mainDb.query(
+      "INSERT INTO activity_logs (user_id, action_type, action_description, created_at) VALUES (?, ?, ?, NOW())",
+      [null, "system_calibration", `System calibration run — DB ${dbLatencyMs}ms, status ${report.status}`]
+    );
+    res.json({ success: true, report });
+  } catch (err) {
+    console.error("[system-calibration] failed:", err.message);
+    res.status(500).json({ success: false, message: "Calibration failed: " + err.message });
+  }
+});
+// ===== Admin Node Settings & System Calibration — real endpoints (end) =====
+
 app.get("/api/admin/backup/status", authenticateAdmin, (req, res) => {
   let latestSnapshot = null;
   try {
