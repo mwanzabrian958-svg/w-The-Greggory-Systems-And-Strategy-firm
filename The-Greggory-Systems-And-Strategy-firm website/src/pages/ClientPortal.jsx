@@ -352,6 +352,17 @@ const ClientPortal = () => {
     }
   }, [portalUser]);
 
+  // Profile-photo probe — MUST live above the loading/error early returns,
+  // otherwise React throws "Rendered more hooks than during the previous render" (#310).
+  useEffect(() => {
+    if (!portalUser?.id) return;
+    setPhotoAvailable(null);
+    const probe = new Image();
+    probe.onload = () => setPhotoAvailable(true);
+    probe.onerror = () => setPhotoAvailable(false);
+    probe.src = getApiUrl(`/api/users/profile-photo/${portalUser.id}?probe=1`);
+  }, [portalUser?.id, photoVersion]);
+
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     const nextErrors = {};
@@ -505,14 +516,6 @@ const ClientPortal = () => {
   );
 
   const closePortal = () => { window.location.href = '/'; };
-  useEffect(() => {
-    if (!portalUser?.id) return;
-    setPhotoAvailable(null);
-    const probe = new Image();
-    probe.onload = () => setPhotoAvailable(true);
-    probe.onerror = () => setPhotoAvailable(false);
-    probe.src = getApiUrl(`/api/users/profile-photo/${portalUser.id}?probe=1`);
-  }, [portalUser?.id, photoVersion]);
 
   const photoUrl = portalUser?.id ? getApiUrl(`/api/users/profile-photo/${portalUser.id}${photoVersion ? `?v=${photoVersion}` : ''}`) : null;
   const profilePhotoSrc = photoPreview || (photoAvailable && photoUrl ? photoUrl : (portalUser?.profilePhotoData || user?.profilePhotoData || null));
