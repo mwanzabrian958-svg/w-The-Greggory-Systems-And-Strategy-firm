@@ -48,6 +48,7 @@ function tablesFromSql(file) {
       port,
       user,
       password,
+      database: dbName,
       connectTimeout: 15000,
       ...(useSsl ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false } } : {}),
     });
