@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, X } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, Search, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
 
@@ -31,10 +31,110 @@ const About = () => {
   const fallbackPerson = { id: 0, name: 'Brian Mwanza', position: 'Founder & Managing Director', bio: '<p>Brian Mwanza is the visionary force behind The-Greggory-Systems-And-Strategy-firm...</p>', image_url: '/images/brian-mwanza-ceo.jpg' }
   const displayPersonnel = personnel.length > 0 ? personnel : [fallbackPerson]
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const trackRef = useRef(null);
+  const visiblePersonnel = displayPersonnel.filter((p) =>
+    (p.name || '').toLowerCase().includes(searchQuery.trim().toLowerCase())
+  );
+  const scrollPersonnel = (dir) => {
+    const el = trackRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' });
+  };
+
   return (
     <div className="relative min-h-screen bg-[#fdfaf6] text-[#111] pt-32 selection:bg-[#8fb28a] selection:text-white font-sans overflow-x-hidden">
 
-      {/* 1. HERO SECTION */}
+      {/* FIRM PERSONNEL - first item on the About page, own region with divider below */}
+      <section className="w-full px-6 lg:px-20 pb-12">
+        <div className="bg-white rounded-[32px] shadow-xl border border-slate-100 p-8 md:p-12">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => scrollPersonnel(-1)}
+                aria-label="Scroll personnel left"
+                className="w-10 h-10 rounded-full bg-[#0f172a] text-white flex items-center justify-center hover:bg-slate-700 transition-all shadow-md hover:scale-105 active:scale-95 flex-shrink-0 mt-1"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-[0.4em] text-[#8fb28a]">Firm Personnel</span>
+                <h2 className="text-4xl font-bold tracking-tight">The People Behind the Systems</h2>
+                <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">Click a profile to explore the credentials and records published by our administrators.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search personnel by name..."
+                  className="pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-[11px] font-bold text-slate-700 outline-none focus:border-[#8fb28a]/60 w-48 md:w-60 transition-all"
+                />
+              </div>
+              <button
+                onClick={() => scrollPersonnel(1)}
+                aria-label="Scroll personnel right"
+                className="w-10 h-10 rounded-full bg-[#0f172a] text-white flex items-center justify-center hover:bg-slate-700 transition-all shadow-md hover:scale-105 active:scale-95 flex-shrink-0"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+
+          {personnelLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full py-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="aspect-[4/5] rounded-[32px] bg-slate-100 animate-pulse" />
+              ))}
+            </div>
+          ) : visiblePersonnel.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No personnel match your search.</p>
+            </div>
+          ) : (
+            <div
+              ref={trackRef}
+              className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth pb-4 pt-2 -mx-2 px-2"
+            >
+              {visiblePersonnel.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setActivePerson(p)}
+                  className="group text-left flex-shrink-0 w-[calc(25%-18px)] min-w-[220px]"
+                >
+                  <div className="relative w-full aspect-[4/5] overflow-hidden rounded-[32px] shadow-xl bg-slate-100">
+                    {p.image_url ? (
+                      <img
+                        src={p.image_url}
+                        alt={p.name}
+                        loading="lazy"
+                        onError={(e) => { e.currentTarget.style.display = 'none' }}
+                        className="w-full h-full object-cover grayscale brightness-105 contrast-105 transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-[#8fb28a]/10 text-5xl font-black text-[#8fb28a]">{p.name?.charAt(0)}</div>
+                    )}
+                  </div>
+                  <div className="mt-4 space-y-1">
+                    <p className="font-black text-sm text-[#111] group-hover:text-[#8fb28a] transition-colors">{p.name}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#aa7d3f]">{p.position}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+{/* DIVIDER - separates the Firm Personnel region (the first item on the About page) from the other items */}
+      <div className="w-full px-6 lg:px-20">
+         <div className="h-px w-full bg-slate-200" />
+      </div>
+
+{/* 1. HERO SECTION */}
       <section className="w-full px-6 lg:px-20 pb-16 lg:pb-24">
         <div className="flex flex-col lg:flex-row items-end justify-between gap-10 lg:gap-12">
           <div className="lg:w-2/3">
@@ -68,45 +168,7 @@ const About = () => {
         </div>
       </section>
 
-{/* THE SINGLE LINE DIVIDER - moved right under the hero */}
-      <div className="w-full px-6 lg:px-20">
-         <div className="h-px w-full bg-slate-200" />
-      </div>
 
-            {/* FIRM PERSONNEL - right under The Architectural Identity (same workflow as Blog, displayed here) */}
-      <section className="py-16 lg:py-24 w-full px-6 lg:px-20">
-        <div className="space-y-2">
-          <span className="text-xs font-black uppercase tracking-[0.4em] text-[#8fb28a]">Firm Personnel</span>
-          <h2 className="text-4xl font-bold tracking-tight">The People Behind the Systems</h2>
-          <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">Click a profile to explore the credentials and records published by our administrators.</p>
-        </div>
-
-        {personnelLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12 w-full py-12">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-[4/5] rounded-[32px] bg-slate-100 animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12 w-full">
-            {displayPersonnel.map((p) => (
-              <button key={p.id} onClick={() => setActivePerson(p)} className="group text-left">
-                <div className="relative w-full aspect-[4/5] overflow-hidden rounded-[32px] shadow-xl bg-slate-100">
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover grayscale brightness-105 contrast-105 transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-[#8fb28a]/10 text-5xl font-black text-[#8fb28a]">{p.name?.charAt(0)}</div>
-                  )}
-                </div>
-                <div className="mt-4 space-y-1">
-                  <p className="font-black text-sm text-[#111] group-hover:text-[#8fb28a] transition-colors">{p.name}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#aa7d3f]">{p.position}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </section>
 
       {/* 2. THE LONG NARRATIVE */}
       <section className="w-full px-6 lg:px-20 pb-16 lg:pb-24">
