@@ -1,8 +1,10 @@
 // Cloud bootstrap: imports database/the-*.sql once, if the cloud DB is empty.
-// Runs before server start on Railway:  node scripts/import-if-empty.js && node server.js
+// Runs before server start in production (Render):
+//   node scripts/import-if-empty.js && node server.js
 //
-// Railway starts services in parallel, so MySQL may still be booting when the
-// API container starts — we therefore RETRY the connection for ~90 seconds.
+// The cloud MySQL (Aiven) may still be unreachable (network blip, service
+// restart, credentials) right when the API container starts — we therefore
+// RETRY the connection for ~90 seconds.
 // If it is still unreachable after that (e.g. wrong credentials) we log the
 // exact cause and CONTINUE (exit 0) so the deployment goes live and the
 // problem is visible in logs / /api/test-db instead of hiding as CRASHED.

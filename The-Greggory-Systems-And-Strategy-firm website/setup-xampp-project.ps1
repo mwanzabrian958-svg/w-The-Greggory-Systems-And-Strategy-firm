@@ -160,7 +160,7 @@ Write-Host ""
 Write-Host "Documentation:" -ForegroundColor Cyan
 Write-Host "  XAMPP Setup Guide: XAMPP-SETUP-GUIDE.md" -ForegroundColor White
 Write-Host "  API Endpoints: ENDPOINTS-GUIDE.md" -ForegroundColor White
-Write-Host "  Deployment: DEPLOYMENT-GUIDE.md" -ForegroundColor White
+Write-Host "  Deployment: docs/DEPLOYMENT-FREE-STACK.md (Render + Aiven)" -ForegroundColor White
 Write-Host ""
 Write-Host "Database Backup:" -ForegroundColor Cyan
 Write-Host "  Backup:   node scripts\backup-db-github.js" -ForegroundColor White

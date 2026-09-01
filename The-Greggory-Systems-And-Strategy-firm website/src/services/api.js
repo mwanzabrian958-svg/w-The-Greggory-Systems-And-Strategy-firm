@@ -4,10 +4,10 @@
 // Base URL resolution:
 //   - Local dev: leave VITE_API_BASE_URL unset -> falls back to '/api'
 //     (the Vite dev server proxies '/api' to http://localhost:3000)
-//   - Production: set VITE_API_BASE_URL to your deployed backend origin
-//     INCLUDING the /api mount, e.g. https://api.yourdomain.com/api
-//     (set it in Netlify/Vercel/host UI so it's baked in at build time;
-//      see netlify.toml and env.example for details)
+//   - Production: leave it unset too — Render serves the built app and the API
+//     from ONE origin, so '/api' just works (same as local dev). Only set
+//     VITE_API_BASE_URL if you ever move the API to a separate domain
+//     (set it in the Render dashboard so it's baked in at build time).
 const RAW_BASE = import.meta.env?.VITE_API_BASE_URL || "";
 export const API_BASE_URL =
   String(RAW_BASE).trim().replace(/\/+$/, "") || "/api";

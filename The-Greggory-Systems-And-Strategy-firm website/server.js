@@ -320,7 +320,7 @@ async function generatePDFContent(type, document) {
 
 const app = express();
 
-// Render/Fly/Netlify sit behind one reverse proxy. Without this, every request
+// Render sits behind one reverse proxy. Without this, every request
 // appears to come from the proxy's internal IP and the global 100-req/15-min
 // rate limit becomes ONE shared bucket for all visitors (the site 429s after
 // ~100 hits — looks like the site "crashed"). It also fixes req.ip for logging.
@@ -511,7 +511,7 @@ dbEndpoints().forEach((cfg, i) => {
 
 dbCluster.on("error", (err) => {
   // Pools reconnect automatically. Exiting here turns any transient DB hiccup
-  // into a container crash loop (this is what crashed Railway).
+  // into a container crash loop on the free hosting tier.
   console.error("[DATABASE] Cluster error (will retry / fail over):", err.message);
 });
 dbCluster.on("warn", (err) =>
@@ -5895,8 +5895,8 @@ try {
   console.error("[SERVER] Error loading WhatsApp routes:", error.message);
 }
 
-// Health Check API — synchronous 200 for Railway's healthcheck. The DB probe
-// below runs fire-and-forget so the response never waits on MySQL.
+// Health Check API — synchronous 200 for the platform healthcheck (Render).
+// The DB probe below runs fire-and-forget so the response never waits on MySQL.
 let lastDbCheck = { ok: null, at: null };
 app.get("/api/health", (req, res) => {
   res.json({
@@ -6072,7 +6072,7 @@ app.delete("/api/tasks/:taskId", async (req, res) => {
 // ── SPA fallback + 404 — registered LAST so every API route above wins ──────
 // Any GET that doesn't target /api serves the React app, so client-side routes
 // (e.g. /login, /admin, /portal) survive refresh/deep links in production —
-// the same behaviour Netlify's "/*  -> /index.html" rule provided.
+// the same behaviour the classic SPA "/* -> /index.html" redirect provided.
 app.get(/^\/(?!api(?:\/|$)).*/, (req, res, next) => {
   const indexFile = path.join(distDir, "index.html");
   if (fs.existsSync(indexFile)) return res.sendFile(indexFile);

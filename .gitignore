@@ -34,9 +34,6 @@ dist-ssr
 # Database backups (keep these for GitHub safety)
 # backups/ directory is tracked for disaster recovery
 
-# Local Netlify folder
-.netlify
-
 # AI/editor agent local config
 .kilo/
 
