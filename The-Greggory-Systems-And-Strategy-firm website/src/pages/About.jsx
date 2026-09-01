@@ -47,12 +47,65 @@ const About = () => {
               that allow strategy to breathe <span className="text-[#8fb28a]">independently.</span>
             </h1>
           </div>
-          <div className="lg:w-1/3">
-            <p className="text-base text-black leading-relaxed font-normal">
-              The-Greggory-Systems-And-Strategy-firm was founded on a singular premise: that complexity is the greatest tax on human ambition. We exist to dismantle that tax.
-            </p>
+                    <div className="lg:w-2/5 space-y-6">
+            <div className="space-y-4">
+              <p className="text-base text-black leading-[1.8] font-normal">
+                The-Greggory-Systems-And-Strategy-firm was founded on a singular premise:that complexity is the greatest tax on human ambition.We exist to dismantle that tax: by engineering the invisible operating systems, the decision rhythms, the feedback loops,and the digital nerve-centers,that turn strategic ambition into sustainable momentum.Every engagement begins not with a slide deck,but with a forensic reading of how your organization actually works:where energy leaks,where clarity stalls,and where momentum dies.We rebuild from the ground up,so that strategy is no longer a document,but a pulse.
+              </p>
+              <div className="h-px w-10 bg-[#aa7d3f]/20" />
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#aa7d3f]">The Systems Beneath the Strategy</p>
+              <p className="text-[11px] text-slate-400 leading-relaxed">A closer look at the architecture we engineer beneath every engagement.</p>
+            </div>
+            <div className="relative w-full max-w-sm overflow-hidden rounded-[24px] shadow-xl">
+              <img
+                src="https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=900&q=80"
+                alt="Strategic systems and business strategy architecture"
+                loading="lazy"
+                className="w-full h-52 object-cover"
+              />
+            </div>
           </div>
         </div>
+      </section>
+
+{/* THE SINGLE LINE DIVIDER - moved right under the hero */}
+      <div className="w-full px-6 lg:px-20">
+         <div className="h-px w-full bg-slate-200" />
+      </div>
+
+            {/* FIRM PERSONNEL - right under The Architectural Identity (same workflow as Blog, displayed here) */}
+      <section className="py-16 lg:py-24 w-full px-6 lg:px-20">
+        <div className="space-y-2">
+          <span className="text-xs font-black uppercase tracking-[0.4em] text-[#8fb28a]">Firm Personnel</span>
+          <h2 className="text-4xl font-bold tracking-tight">The People Behind the Systems</h2>
+          <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">Click a profile to explore the credentials and records published by our administrators.</p>
+        </div>
+
+        {personnelLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12 w-full py-12">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="aspect-[4/5] rounded-[32px] bg-slate-100 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12 w-full">
+            {displayPersonnel.map((p) => (
+              <button key={p.id} onClick={() => setActivePerson(p)} className="group text-left">
+                <div className="relative w-full aspect-[4/5] overflow-hidden rounded-[32px] shadow-xl bg-slate-100">
+                  {p.image_url ? (
+                    <img src={p.image_url} alt={p.name} loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover grayscale brightness-105 contrast-105 transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-[#8fb28a]/10 text-5xl font-black text-[#8fb28a]">{p.name?.charAt(0)}</div>
+                  )}
+                </div>
+                <div className="mt-4 space-y-1">
+                  <p className="font-black text-sm text-[#111] group-hover:text-[#8fb28a] transition-colors">{p.name}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#aa7d3f]">{p.position}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* 2. THE LONG NARRATIVE */}
@@ -134,45 +187,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* 4. THE SINGLE LINE DIVIDER */}
-      <div className="w-full px-6 lg:px-20">
-         <div className="h-px w-full bg-slate-200" />
-      </div>
-
-            {/* 5. FIRM PERSONNEL - admin-managed (same workflow as Blog), displayed here */}
-      <section className="py-16 lg:py-24 w-full px-6 lg:px-20">
-        <div className="space-y-2">
-          <span className="text-xs font-black uppercase tracking-[0.4em] text-[#8fb28a]">Firm Personnel</span>
-          <h2 className="text-4xl font-bold tracking-tight">The People Behind the Systems</h2>
-          <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">Click a profile to explore the credentials and records published by our administrators.</p>
-        </div>
-
-        {personnelLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12 w-full py-12">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-[4/5] rounded-[32px] bg-slate-100 animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12 w-full">
-            {displayPersonnel.map((p) => (
-              <button key={p.id} onClick={() => setActivePerson(p)} className="group text-left">
-                <div className="relative w-full aspect-[4/5] overflow-hidden rounded-[32px] shadow-xl bg-slate-100">
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover grayscale brightness-105 contrast-105 transition-all duration-700 group-hover:grayscale-0 group-hover:scale-105" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-[#8fb28a]/10 text-5xl font-black text-[#8fb28a]">{p.name?.charAt(0)}</div>
-                  )}
-                </div>
-                <div className="mt-4 space-y-1">
-                  <p className="font-black text-sm text-[#111] group-hover:text-[#8fb28a] transition-colors">{p.name}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#aa7d3f]">{p.position}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </section>
+      
 
       {/* PERSONNEL PROFILE OVERLAY - image top-left, name right, divider, then admin-posted records */}
       {activePerson && (
