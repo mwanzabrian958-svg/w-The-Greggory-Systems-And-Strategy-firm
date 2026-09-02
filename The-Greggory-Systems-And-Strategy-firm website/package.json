@@ -25,7 +25,8 @@
   },
   "nodemonConfig": {
     "watch": [
-      "server.js"
+      "server.js",
+      "backend/"
     ],
     "ignore": [
       "backups/*",

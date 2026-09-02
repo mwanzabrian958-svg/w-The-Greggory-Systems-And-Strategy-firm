@@ -5712,6 +5712,7 @@ const modularRoutes = [
   { path: "/api/properties", route: "./backend/routes/properties" },
   { path: "/api/management", route: "./backend/routes/management" },
   { path: "/api/admin", route: "./backend/routes/admin" },
+  { path: "/api/admin-complete", route: "./backend/routes/admin-complete" },
   { path: "/api/admin-verification", route: "./backend/routes/admin-verification" },
   { path: "/api/developer-verification", route: "./backend/routes/developer-verification" },
   { path: "/api/mpesa", route: "./backend/routes/mpesa" },
@@ -5791,6 +5792,220 @@ app.get("/api/user-projects/:id", async (req, res) => {
     console.error('Error fetching user project:', error);
     res.status(500).json({ error: 'Failed to fetch user project' });
   }
+});
+
+app.post("/api/user-projects", async (req, res) => {
+  try {
+    const {
+      user_id, project_name, project_description, project_type, status,
+      priority, start_date, end_date, estimated_budget, actual_budget,
+      client_id, client_name, client_email, client_phone, client_id_number,
+      project_manager_id, team_members, deliverables, milestones, documents,
+      progress_percentage, notes, created_by
+    } = req.body;
+
+    if (!user_id || !project_name) {
+      return res.status(400).json({ error: 'User ID and project name are required' });
+    }
+
+    const [result] = await mainDb.query(
+      `INSERT INTO user_projects (
+        user_id, project_name, project_description, project_type, status,
+        priority, start_date, end_date, estimated_budget, actual_budget,
+        client_id, client_name, client_email, client_phone, client_id_number,
+        project_manager_id, team_members, deliverables, milestones, documents,
+        progress_percentage, notes, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        user_id, project_name, project_description || null, project_type || 'consulting',
+        status || 'planning', priority || 'medium', start_date || null, end_date || null,
+        estimated_budget || 0, actual_budget || 0, client_id || null, client_name || null,
+        client_email || null, client_phone || null, client_id_number || null,
+        project_manager_id || null, team_members ? JSON.stringify(team_members) : null,
+        deliverables ? JSON.stringify(deliverables) : null, milestones ? JSON.stringify(milestones) : null,
+        documents ? JSON.stringify(documents) : null, progress_percentage || 0,
+        notes || null, created_by || user_id
+      ]
+    );
+
+    res.status(201).json({ success: true, message: 'Project created successfully', id: result.insertId });
+  } catch (error) {
+    console.error('Error creating user project:', error);
+    res.status(500).json({ error: 'Failed to create user project' });
+  }
+});
+
+app.put("/api/user-projects/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      user_id, project_name, project_description, project_type, status,
+      priority, start_date, end_date, estimated_budget, actual_budget,
+      client_id, client_name, client_email, client_phone, client_id_number,
+      project_manager_id, team_members, deliverables, milestones, documents,
+      progress_percentage, notes, updated_by
+    } = req.body;
+
+    const [result] = await mainDb.query(
+      `UPDATE user_projects SET
+        user_id = COALESCE(?, user_id),
+        project_name = COALESCE(?, project_name),
+        project_description = COALESCE(?, project_description),
+        project_type = COALESCE(?, project_type),
+        status = COALESCE(?, status),
+        priority = COALESCE(?, priority),
+        start_date = COALESCE(?, start_date),
+        end_date = COALESCE(?, end_date),
+        estimated_budget = COALESCE(?, estimated_budget),
+        actual_budget = COALESCE(?, actual_budget),
+        client_id = COALESCE(?, client_id),
+        client_name = COALESCE(?, client_name),
+        client_email = COALESCE(?, client_email),
+        client_phone = COALESCE(?, client_phone),
+        client_id_number = COALESCE(?, client_id_number),
+        project_manager_id = COALESCE(?, project_manager_id),
+        team_members = COALESCE(?, team_members),
+        deliverables = COALESCE(?, deliverables),
+        milestones = COALESCE(?, milestones),
+        documents = COALESCE(?, documents),
+        progress_percentage = COALESCE(?, progress_percentage),
+        notes = COALESCE(?, notes),
+        updated_by = COALESCE(?, updated_by),
+        updated_at = NOW()
+      WHERE id = ? AND deleted_at IS NULL`,
+      [
+        user_id, project_name, project_description, project_type, status,
+        priority, start_date, end_date, estimated_budget, actual_budget,
+        client_id, client_name, client_email, client_phone, client_id_number,
+        project_manager_id, team_members ? JSON.stringify(team_members) : null,
+        deliverables ? JSON.stringify(deliverables) : null, milestones ? JSON.stringify(milestones) : null,
+        documents ? JSON.stringify(documents) : null, progress_percentage, notes, updated_by, id
+      ]
+    );
+
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Project not found' });
+    res.json({ success: true, message: 'Project updated successfully' });
+  } catch (error) {
+    console.error('Error updating user project:', error);
+    res.status(500).json({ error: 'Failed to update user project' });
+  }
+});
+
+app.delete("/api/user-projects/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { deleted_by } = req.body;
+    const [result] = await mainDb.query(
+      'UPDATE user_projects SET deleted_at = NOW(), deleted_by = ?, updated_at = NOW() WHERE id = ? AND deleted_at IS NULL',
+      [deleted_by || null, id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Project not found' });
+    res.json({ success: true, message: 'Project deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user project:', error);
+    res.status(500).json({ error: 'Failed to delete user project' });
+  }
+});
+
+// Website Content Update
+app.put("/api/website-content/:key", async (req, res) => {
+  try {
+    const { key } = req.params;
+    const { value, updated_by } = req.body;
+    if (!value && value !== '') return res.status(400).json({ error: 'Value required' });
+    await mainDb.query(
+      'INSERT INTO website_content (content_key, content_value, updated_by) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE content_value = ?, updated_by = ?, updated_at = NOW()',
+      [key, value, updated_by || null, value, updated_by || null]
+    );
+    res.json({ success: true, message: 'Content updated' });
+  } catch (error) { console.error('Content error:', error); res.status(500).json({ error: 'Failed' }); }
+});
+
+// Company Personnel Create
+app.post("/api/company-personnel", async (req, res) => {
+  try {
+    const { name, position, bio } = req.body;
+    if (!name) return res.status(400).json({ error: 'Name is required' });
+    const [result] = await mainDb.query(
+      'INSERT INTO company_personnel (name, position, bio, is_active, created_at) VALUES (?, ?, ?, 1, NOW())',
+      [name, position || null, bio || null]
+    );
+    res.status(201).json({ success: true, id: result.insertId });
+  } catch (error) { console.error('Personnel error:', error); res.status(500).json({ error: 'Failed' }); }
+});
+
+// Invoices Create
+app.post("/api/invoices", async (req, res) => {
+  try {
+    const { title, description, total_amount_kes, client_name, client_email, due_date } = req.body;
+    if (!title) return res.status(400).json({ error: 'Title is required' });
+    const invoice_number = 'INV-' + Date.now();
+    const [result] = await mainDb.query(
+      'INSERT INTO invoices (invoice_number, title, description, total_amount_kes, client_name, client_email, due_date, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, "pending", NOW())',
+      [invoice_number, title, description || null, total_amount_kes || 0, client_name || null, client_email || null, due_date || null]
+    );
+    res.status(201).json({ success: true, id: result.insertId });
+  } catch (error) { console.error('Invoice error:', error); res.status(500).json({ error: 'Failed' }); }
+});
+
+// Accounting Entries Create
+app.post("/api/accounting-entries", async (req, res) => {
+  try {
+    const { description, amount, entry_type, category, project_id } = req.body;
+    if (!description || !amount) return res.status(400).json({ error: 'Required' });
+    const [result] = await mainDb.query(
+      'INSERT INTO accounting_entries (description, amount, entry_type, category, project_id, transaction_date, payment_status, created_at) VALUES (?, ?, ?, ?, ?, NOW(), "completed", NOW())',
+      [description, amount, entry_type || 'expense', category || null, project_id || null]
+    );
+    res.status(201).json({ success: true, id: result.insertId });
+  } catch (error) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// Properties Create
+app.post("/api/properties", async (req, res) => {
+  try {
+    const { name, description, price, location, type_id, company_id } = req.body;
+    if (!name) return res.status(400).json({ error: 'Name is required' });
+    const [result] = await mainDb.query(
+      'INSERT INTO properties (name, description, price, location, type_id, company_id, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, true, NOW())',
+      [name, description || null, price || 0, location || null, type_id || null, company_id || null]
+    );
+    res.status(201).json({ success: true, id: result.insertId });
+  } catch (error) { console.error('Property error:', error); res.status(500).json({ error: 'Failed' }); }
+});
+
+// Audit Logs
+app.get("/api/audit-logs", async (req, res) => {
+  try { const [rows] = await mainDb.query('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 100'); res.json({ success: true, logs: rows });
+  } catch (error) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// Data Access Logs
+app.get("/api/data-access-logs", async (req, res) => {
+  try { const [rows] = await mainDb.query('SELECT * FROM data_access_logs ORDER BY created_at DESC LIMIT 100'); res.json({ success: true, logs: rows });
+  } catch (error) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// Project Team Add
+app.post("/api/admin/project-team/:projectId", async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { user_id, role } = req.body;
+    if (!user_id) return res.status(400).json({ error: 'user_id required' });
+    const [result] = await mainDb.query('INSERT INTO project_team_members (project_id, user_id, role, created_at) VALUES (?, ?, ?, NOW())', [projectId, user_id, role || 'member']);
+    res.status(201).json({ success: true, id: result.insertId });
+  } catch (error) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// Project Tasks Create
+app.post("/api/projects/:projectId/tasks", async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { task_name, assigned_to, status, priority } = req.body;
+    if (!task_name) return res.status(400).json({ error: 'Task name required' });
+    const [result] = await mainDb.query('INSERT INTO project_tasks (project_id, task_name, assigned_to, status, priority, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [projectId, task_name, assigned_to || null, status || 'pending', priority || 'medium']);
+    res.status(201).json({ success: true, id: result.insertId });
+  } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 // Task Management APIs
