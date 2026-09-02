@@ -6,6 +6,26 @@ const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const { formatActivityLog } = require('../utils/activityLogFormatter');
+const { verifySessionToken } = require('../utils/sessionToken');
+
+/**
+ * Authenticate an admin session (same scheme as the main server's
+ * `authenticateAdmin` middleware). Verifies the signed session token that the
+ * login endpoints now issue (see backend/utils/sessionToken.js).
+ */
+function requireAdminSession(req, res, next) {
+  const authHeader = req.headers.authorization || req.headers.Authorization || '';
+  const m = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!m) {
+    return res.status(401).json({ success: false, message: 'Admin authentication required' });
+  }
+  const payload = verifySessionToken(m[1].trim());
+  if (!payload) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
+  }
+  req.adminId = payload.uid;
+  next();
+}
 
 // =============================================
 // GET LIVE USERS (Who's Online)
@@ -491,7 +511,7 @@ router.put('/users/:id/status', async (req, res) => {
 // =============================================
 // DELETE USER
 // =============================================
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', requireAdminSession, async (req, res) => {
   try {
     const { id } = req.params;
     const { role_type } = req.query;
@@ -503,17 +523,36 @@ router.delete('/users/:id', async (req, res) => {
       });
     }
 
-    let tableName;
-    if (role_type === 'admin') {
-      tableName = 'admin_users';
-    } else {
-      tableName = 'users';
-    }
+    // Map the role_type (as reported by the user-management UI: source_table)
+    // to the correct identity table so the deletion lands in the right table.
+    // Developer accounts are purged from this project — only `users` and
+    // `admin_users` are active identity tables.
+    const tableMap = {
+      admin: 'admin_users', admin_users: 'admin_users', 'admin-user': 'admin_users',
+      client: 'users', user: 'users', users: 'users'
+    };
+    const tableName = tableMap[String(role_type).toLowerCase()] || 'users';
 
-    // Soft delete by setting deleted_at
-    const [result] = await db.promise().query(
-      `UPDATE ${tableName} SET deleted_at = NOW(), is_active = 0 WHERE id = ?`,
+    // Grab the target row first (for the audit trail + existence check), then
+    // soft-delete it so the change is actually applied in the database.
+    const [targets] = await db.promise().query(
+      `SELECT id, display_name, email FROM ${tableName} WHERE id = ? AND deleted_at IS NULL`,
       [id]
+    );
+
+    if (targets.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found in the requested identity table'
+      });
+    }
+    const target = targets[0];
+
+    // Soft delete by setting deleted_at, disabling the account, and recording
+    // who performed the termination.
+    const [result] = await db.promise().query(
+      `UPDATE ${tableName} SET deleted_at = NOW(), is_active = 0, deleted_by = ?, updated_at = NOW() WHERE id = ? AND deleted_at IS NULL`,
+      [req.adminId || null, id]
     );
 
     if (result.affectedRows === 0) {
@@ -523,11 +562,30 @@ router.delete('/users/:id', async (req, res) => {
       });
     }
 
+    // Best-effort audit trail (admin id must exist in `users` for the FK —
+    // failures are swallowed so deletion is never blocked by logging).
+    try {
+      await db.promise().query(
+        `INSERT INTO admin_activity_logs (admin_user_id, action_type, action_description, affected_table, affected_record_id, old_values, ip_address, created_at)
+         VALUES (?, 'USER_DELETED', ?, ?, ?, ?, ?, NOW())`,
+        [
+          req.adminId || 0,
+          `Soft-deleted ${tableName.slice(0, -6)} account "${target.display_name || target.email || target.id}" (id: ${id})`,
+          tableName,
+          id,
+          JSON.stringify({ deleted_at: new Date().toISOString(), is_active: 0 })
+        ]
+      );
+    } catch (logError) {
+      console.warn('[ADMIN] Could not write USER_DELETED activity log:', logError.message);
+    }
+
     res.json({
       success: true,
       message: 'User deleted successfully',
       userId: id,
-      role_type: role_type
+      role_type: role_type,
+      table: tableName
     });
 
   } catch (error) {
@@ -543,7 +601,7 @@ router.delete('/users/:id', async (req, res) => {
 // =============================================
 // GET USER BY ID
 // =============================================
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:id', requireAdminSession, async (req, res) => {
   try {
     const { id } = req.params;
     const { role_type } = req.query;
@@ -555,8 +613,14 @@ router.get('/users/:id', async (req, res) => {
       });
     }
 
+    const tableMap = {
+      admin: 'admin_users', admin_users: 'admin_users', 'admin-user': 'admin_users',
+      client: 'users', user: 'users', users: 'users'
+    };
+    const tableName = tableMap[String(role_type).toLowerCase()] || 'users';
+
     let query;
-    if (role_type === 'admin') {
+    if (tableName === 'admin_users') {
       query = `
         SELECT 
           au.id, au.email, au.first_name, au.last_name, au.display_name,

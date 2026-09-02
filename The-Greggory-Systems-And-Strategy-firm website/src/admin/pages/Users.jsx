@@ -13,6 +13,7 @@ export function Users() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingUser, setDeletingUser] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const itemsPerPage = 12;
 
   useEffect(() => { fetchUsers(); }, []);
@@ -30,14 +31,25 @@ export function Users() {
   const handleDeleteUser = async () => {
     if (!deletingUser) return;
     setIsDeleting(true);
+    setDeleteError("");
     try {
       const roleType = deletingUser.source_table || 'client';
       const data = await apiCall(`/admin/users/${deletingUser.id}?role_type=${roleType}`, { method: "DELETE" });
       if (data.success) {
-        setUsers(users.filter(u => !(u.id === deletingUser.id && u.source_table === deletingUser.source_table)));
+        // DB write succeeded — re-sync this node list from the database so the
+        // terminated account actually disappears (not just from local state).
+        await fetchUsers();
         setShowDeleteModal(false);
+      } else {
+        setDeleteError(data.message || "Termination failed — no changes were applied to the database.");
       }
-    } catch (error) { console.error("Deletion failure:", error); } finally { setIsDeleting(false); setDeletingUser(null); }
+    } catch (error) {
+      console.error("Deletion failure:", error);
+      setDeleteError(error?.message || "Termination relay failed — the record remains active in the database.");
+    } finally {
+      setIsDeleting(false);
+      setDeletingUser(null);
+    }
   };
 
   const [showResetModal, setShowResetModal] = useState(false);
@@ -253,6 +265,11 @@ export function Users() {
               <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center mb-5 text-rose-500 mx-auto border border-rose-100"><AlertCircle size={24} /></div>
               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter text-center mb-1">Terminate User Node?</h3>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center mb-8">Confirming deletion: <span className="text-slate-900">{deletingUser.display_name}</span></p>
+              {deleteError && (
+                <div className="mb-5 px-4 py-3 bg-rose-50 border border-rose-100 rounded-xl">
+                  <p className="text-[8px] text-rose-600 font-black uppercase tracking-widest text-center leading-relaxed">{deleteError}</p>
+                </div>
+              )}
               <div className="flex gap-3">
                  <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 bg-slate-100 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-600 transition-all">Abort</button>
                  <button onClick={handleDeleteUser} disabled={isDeleting} className="flex-1 py-3 bg-rose-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">

@@ -56,8 +56,12 @@ async function validateAuthRequest(platform, tableName, endpoint, email, req) {
     }
 
     // 2. Check if endpoint matches the locked endpoint
+    //    `req.originalUrl` carries the full mounted path (e.g.
+    //    `/api/admin-verification/authenticate-enhanced`) so it reliably
+    //    contains the platform segment. Fall back to the endpoint path only
+    //    when the request object isn't available.
     const lockedMapping = mapping[0];
-    const fullPath = req.originalUrl || endpoint;
+    const fullPath = (req && req.originalUrl) || endpoint || '';
     if (!fullPath.includes(platform)) {
       return {
         valid: false,
@@ -73,10 +77,19 @@ async function validateAuthRequest(platform, tableName, endpoint, email, req) {
       [platform]
     );
 
+    // Registration enforces the FULL required-field set. Login requests only
+    // carry credentials (email/password), so registration-only fields
+    // (first_name, last_name, role) must never block authentication.
+    const isLoginRequest = /(login|authenticate)/i.test(fullPath);
+
+    const body = (req && req.body) || {};
     const violations = [];
     for (const rule of rules) {
       const fieldName = rule.rule_value;
-      if (!req[fieldName]) {
+      if (isLoginRequest && fieldName !== 'email' && fieldName !== 'password') {
+        continue;
+      }
+      if (!body[fieldName]) {
         violations.push({
           rule: rule.rule_name,
           field: fieldName,
@@ -171,7 +184,7 @@ function authEndpointValidator(platform, tableName) {
       tableName,
       req.path,
       req.body?.email,
-      req.body
+      req
     );
 
     if (!validation.valid) {

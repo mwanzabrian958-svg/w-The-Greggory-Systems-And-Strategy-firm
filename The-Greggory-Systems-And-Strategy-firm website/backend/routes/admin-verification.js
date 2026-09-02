@@ -9,6 +9,7 @@ const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
+const { signSessionToken } = require('../utils/sessionToken');
 
 // Apply endpoint validation middleware to admin routes
 router.use(authEndpointValidator('admin', 'admin_users'));
@@ -98,7 +99,7 @@ router.post('/authenticate-enhanced', (req, res) => {
             profilePhotoData: profilePhotoData,
             profile_image_id: user.profile_image_id
           },
-          token: `admin-session-${Date.now()}-${user.id}`
+          token: signSessionToken(user.id, 'admin')
         });
       });
     }
