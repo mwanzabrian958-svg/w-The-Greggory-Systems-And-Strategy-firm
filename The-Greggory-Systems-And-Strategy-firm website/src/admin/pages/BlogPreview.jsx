@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { X, RefreshCw, Clock, User, Tag, Calendar, ChevronLeft } from "lucide-react";
 import { getApiUrl } from "../../services/api";
+import DOMPurify from "dompurify";
 import SearchBlock from "../../components/SearchBlock";
 
 /**
@@ -137,7 +138,7 @@ export function BlogPreview() {
             <div className="prose prose-invert prose-sm max-w-none">
               <div
                 className="blog-preview-content text-[11px] leading-relaxed text-slate-300 font-medium"
-                dangerouslySetInnerHTML={{ __html: previewContent }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewContent) }}
               />
             </div>
           </div>

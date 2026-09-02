@@ -19,6 +19,27 @@ const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
 const crypto = require("crypto");
+
+// ── SECURITY: resolve all secrets at boot — never fall back to a literal. ──
+// A hardcoded fallback secret in a public repo lets anyone forge tokens.
+// If a secret is missing we use an ephemeral random value instead: tokens
+// stay unforgable (they just invalidate on restart until the env var is set).
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
+const ADMIN_SESSION_SECRET =
+  process.env.ADMIN_SESSION_SECRET || process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
+if (!process.env.JWT_SECRET) {
+  console.error(
+    "[SECURITY][CRITICAL] JWT_SECRET is not set — using an ephemeral random secret. " +
+      "All JWT sessions will invalidate on every restart. Set JWT_SECRET in your environment!"
+  );
+}
+if (!process.env.ADMIN_SESSION_SECRET && !process.env.JWT_SECRET) {
+  console.error(
+    "[SECURITY][CRITICAL] ADMIN_SESSION_SECRET/JWT_SECRET are not set — admin sessions are " +
+      "ephemeral. Set ADMIN_SESSION_SECRET in your environment!"
+  );
+}
+// ─────────────────────────────────────────────────────────────────────────────
 const bcryptjs = require("bcryptjs");
 const { buildClientPortalPayload } = require("./server/utils/clientPortalData");
 const { sendWhatsAppToUser, sendWhatsAppToUserStrict, providerConfigured: whatsappProviderConfigured } = require("./backend/services/whatsappService");
@@ -51,7 +72,7 @@ const authenticateUser = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || '***REMOVED***');
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.authUser = decoded;
     req.userId = decoded.userId || decoded.id || decoded.user?.id;
 
@@ -67,11 +88,7 @@ const authenticateUser = (req, res, next) => {
 };
 
 function getAdminSessionSecret() {
-  return (
-    process.env.ADMIN_SESSION_SECRET ||
-    process.env.JWT_SECRET ||
-    "dev-only-set-ADMIN_SESSION_SECRET-in-production"
-  );
+  return ADMIN_SESSION_SECRET;
 }
 
 function signAdminSessionToken(userId) {
@@ -440,7 +457,7 @@ app.use(async (req, res, next) => {
       } else {
         // 2. Check for Standard JWT (Regular Users)
         try {
-          const decoded = jwt.verify(token, process.env.JWT_SECRET || '***REMOVED***');
+          const decoded = jwt.verify(token, JWT_SECRET);
           const userId = decoded.userId || decoded.id || decoded.user?.id;
           if (userId) {
             mainDb.query("UPDATE users SET last_active_at = NOW() WHERE id = ?", [userId]).catch(() => {});
@@ -696,9 +713,23 @@ app.get("/api/databases", async (req, res) => {
   }
 });
 
-// Dynamic database connection middleware
-app.use("/api/db/:database", async (req, res, next) => {
+// Dynamic database connection middleware — ADMIN-ONLY.
+// This endpoint family can read arbitrary tables of a database, so it must
+// never be reachable without an admin session, and both the database and
+// table names are strictly validated (they are interpolated into SQL).
+const SAFE_IDENTIFIER = /^[A-Za-z0-9_]+$/;
+app.use("/api/db/:database", authenticateAdmin, async (req, res, next) => {
   const { database } = req.params;
+
+  if (!SAFE_IDENTIFIER.test(database)) {
+    return res.status(400).json({ success: false, message: "Invalid database name" });
+  }
+  const allowedDatabases = new Set(
+    [process.env.DB_NAME, process.env.DB_NAME_2, process.env.DB_CLOUD_NAME].filter(Boolean)
+  );
+  if (allowedDatabases.size > 0 && !allowedDatabases.has(database)) {
+    return res.status(403).json({ success: false, message: "Database not allowed" });
+  }
 
   // Skip if it's the databases endpoint
   if (req.path.includes("/databases")) return next();
@@ -758,9 +789,14 @@ app.get("/api/db/:database/tables", async (req, res) => {
 });
 
 // Get table data
-app.get("/api/db/:database/table/:table", async (req, res) => {
+app.get("/api/db/:database/table/:table", authenticateAdmin, async (req, res) => {
   const { database, table } = req.params;
   const { limit = 100, offset = 0 } = req.query;
+
+  // The table name is interpolated into SQL below — only allow safe identifiers
+  if (!SAFE_IDENTIFIER.test(table)) {
+    return res.status(400).json({ success: false, message: "Invalid table name" });
+  }
 
   try {
     // Get table structure
@@ -802,7 +838,7 @@ app.get("/api/db/:database/table/:table", async (req, res) => {
 // ========== WEBSITE API ENDPOINTS ==========
 
 // Users API
-app.get("/api/users", async (req, res) => {
+app.get("/api/users", authenticateAdmin, async (req, res) => {
   try {
     // Union all identity tables to provide a master view for the admin panel
     const [users] = await mainDb.query(`
@@ -824,7 +860,7 @@ app.get("/api/users", async (req, res) => {
   }
 });
 
-app.post("/api/users", async (req, res) => {
+app.post("/api/users", authenticateAdmin, async (req, res) => {
   try {
     const {
       email,
@@ -852,317 +888,11 @@ app.post("/api/users", async (req, res) => {
 });
 
 // Login endpoint - Regular Users
-app.post("/api/users/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const normalizedEmail = String(email || "")
-      .trim()
-      .toLowerCase();
-    const normalizedPassword = String(password || "");
-
-    if (!normalizedEmail || !normalizedPassword) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Email and password are required" });
-    }
-
-    // 1. Try MongoDB first (The new Strategic Standard)
-    let user = null;
-    let authSource = 'mongodb';
-
-    if (mongoose.connection.readyState === 1) {
-      user = await User.findOne({ email: normalizedEmail, is_active: true, deleted_at: null });
-    }
-
-    if (user) {
-      // Validate via Mongoose method
-      const isPasswordValid = await user.comparePassword(normalizedPassword);
-      if (!isPasswordValid) {
-        return res.status(401).json({ success: false, message: "Invalid credentials" });
-      }
-
-      const authToken = jwt.sign(
-        { userId: user._id, email: user.email, role: user.primary_role || 'user' },
-        process.env.JWT_SECRET || '***REMOVED***',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-      );
-
-      return res.json({
-        success: true,
-        token: authToken,
-        user: {
-          id: user._id,
-          sql_id: user.sql_id,
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          display_name: user.display_name,
-          has_photo: !!user.profile_photo?.data,
-          profile_photo_url: user.profile_photo?.data ? `/api/users/profile-photo/${user._id}` : null,
-          role: user.primary_role || "user",
-          whatsapp_verified: true,
-          source: 'mongodb'
-        },
-      });
-    }
-
-    // 2. Fallback to MySQL (Legacy Compatibility)
-    const [sqlUsers] = await mainDb.query(
-      "SELECT id, email, first_name, last_name, display_name, password_hash, whatsapp_verified, whatsapp_auth_key, phone_number, profile_photo_blob IS NOT NULL AS has_photo FROM users WHERE LOWER(email) = ? AND deleted_at IS NULL",
-      [normalizedEmail],
-    );
-
-    if (sqlUsers.length === 0) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
-    }
-
-    const sqlUser = sqlUsers[0];
-    let isSqlPasswordValid = false;
-    const storedPassword = sqlUser.password_hash || "";
-
-    if (storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$") || storedPassword.startsWith("$2y$")) {
-      isSqlPasswordValid = await bcryptjs.compare(normalizedPassword, storedPassword);
-    } else {
-      isSqlPasswordValid = normalizedPassword === storedPassword;
-    }
-
-    if (!isSqlPasswordValid) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
-    }
-
-    const sqlToken = jwt.sign(
-      { userId: sqlUser.id, email: sqlUser.email, role: 'user' },
-      process.env.JWT_SECRET || '***REMOVED***',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
-
-    res.json({
-      success: true,
-      token: sqlToken,
-      user: {
-        id: sqlUser.id,
-        email: sqlUser.email,
-        first_name: sqlUser.first_name,
-        last_name: sqlUser.last_name,
-        display_name: sqlUser.display_name,
-        has_photo: sqlUser.has_photo,
-        profile_photo_url: sqlUser.has_photo ? `/api/users/profile-photo/${sqlUser.id}` : null,
-        role: "user",
-        whatsapp_verified: true,
-        source: 'mysql'
-      },
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ success: false, message: "Login failed", error: error.message });
-  }
-});
+// REMOVED INLINE LOGIN - HANDLED BY MODULAR ROUTE /backend/routes/users.js
+// This ensures the Auth Lockdown validator is active.
 
 // Registration endpoint - accepts JSON with optional profile photo
-const handleUserRegister = async (req, res) => {
-  try {
-    const {
-      email,
-      password,
-      first_name,
-      last_name,
-      display_name,
-      phone,
-      profile_photo_base64,
-      profile_photo_mime_type,
-      profile_photo_file_name,
-      profile_image_id,
-      userRole,
-    } = req.body;
-
-    console.log("[USER REGISTER] Request received:", {
-      email,
-      first_name,
-      last_name,
-      userRole,
-    });
-
-    // Validate required fields
-    if (!email || !password || !first_name || !last_name) {
-      console.log("[USER REGISTER] Validation failed:", {
-        email: !!email,
-        password: !!password,
-        first_name: !!first_name,
-        last_name: !!last_name,
-      });
-      return res.status(400).json({
-        success: false,
-        message: "Email, password, first name, and last name are required",
-      });
-    }
-
-    // Check database connection
-    if (!mainDb) {
-      console.error("[USER REGISTER] Database connection not available");
-      return res
-        .status(500)
-        .json({ success: false, message: "Database connection not available" });
-    }
-
-    // Check if user already exists
-    console.log("[USER REGISTER] Checking if user exists:", email);
-    const [existingUsers] = await mainDb.query(
-      "SELECT id FROM users WHERE email = ? AND deleted_at IS NULL",
-      [email],
-    );
-
-    if (existingUsers.length > 0) {
-      return res.status(409).json({
-        success: false,
-        message: "User with this email already exists",
-      });
-    }
-
-    // Hash the password before storing
-    const saltRounds = 10;
-    const hashedPassword = await bcryptjs.hash(password, saltRounds);
-
-    // Set default display_name if not provided
-    const finalDisplayName = display_name || `${first_name} ${last_name}`;
-
-    // Handle profile photo - either from base64 direct upload or from images table
-    let profilePhotoBlob = null;
-    let photoMimeType = profile_photo_mime_type || null;
-    let photoFileName = profile_photo_file_name || null;
-
-    if (profile_photo_base64) {
-      // Direct base64 upload
-      try {
-        const base64Data = profile_photo_base64.replace(
-          /^data:image\/\w+;base64,/,
-          "",
-        );
-        profilePhotoBlob = Buffer.from(base64Data, "base64");
-        console.log(
-          `[USER REGISTER] Profile photo from base64: ${profilePhotoBlob.length} bytes`,
-        );
-      } catch (e) {
-        console.error(
-          "[USER REGISTER] Failed to decode base64 photo:",
-          e.message,
-        );
-      }
-    } else if (profile_image_id) {
-      // Fetch from images table (frontend uploaded to /api/images/profile first)
-      try {
-        const [images] = await mainDb.query(
-          "SELECT data, content_type, file_name FROM images WHERE id = ?",
-          [profile_image_id],
-        );
-        if (images.length > 0) {
-          profilePhotoBlob = images[0].data;
-          photoMimeType = images[0].content_type;
-          photoFileName = images[0].file_name;
-          console.log(
-            `[USER REGISTER] Profile photo from images table: ${profilePhotoBlob.length} bytes (ID: ${profile_image_id})`,
-          );
-        }
-      } catch (e) {
-        console.error(
-          "[USER REGISTER] Failed to fetch image from table:",
-          e.message,
-        );
-      }
-    }
-
-    // Create new user with profile photo BLOB if provided (MySQL)
-    const [result] = await mainDb.query(
-      "INSERT INTO users (email, password_hash, first_name, last_name, display_name, phone_number, whatsapp_verified, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name, is_active, email_verified) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, 1, 1)",
-      [
-        email,
-        hashedPassword,
-        first_name,
-        last_name,
-        display_name || `${first_name} ${last_name}`,
-        phone || null,
-        profilePhotoBlob,
-        photoMimeType,
-        photoFileName,
-      ],
-    );
-
-    const userId = result.insertId;
-    console.log("[USER REGISTER] SQL Registration successful:", userId);
-
-    // MONGODB DUAL-WRITE (New Strategic Standard)
-    if (mongoose.connection.readyState === 1) {
-      try {
-        const mongoUser = new User({
-          email: email.toLowerCase(),
-          password_hash: hashedPassword,
-          first_name,
-          last_name,
-          display_name: display_name || `${first_name} ${last_name}`,
-          phone_number: phone || null,
-          whatsapp_verified: true,
-          primary_role: userRole || 'user',
-          profile_photo: profilePhotoBlob ? {
-            data: profilePhotoBlob,
-            contentType: photoMimeType,
-            fileName: photoFileName
-          } : undefined,
-          email_verified: true,
-          sql_id: userId
-        });
-        await mongoUser.save();
-        console.log("[USER REGISTER] MongoDB Registration successful:", mongoUser._id);
-      } catch (mongoErr) {
-        console.error("[USER REGISTER] MongoDB sync failed (but SQL succeeded):", mongoErr.message);
-      }
-    }
-
-    // Assign role to user (MySQL)
-    let roleId = 2; // Default to user role
-    if (userRole === "admin") {
-      roleId = 1;
-    } else if (userRole === "developer") {
-      roleId = 3;
-    }
-
-    await mainDb.query(
-      "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)",
-      [userId, roleId],
-    );
-
-    console.log("[USER REGISTER] Role assigned:", {
-      userId,
-      roleId,
-      role: userRole,
-    });
-
-    res.json({
-      success: true,
-      userId: userId,
-      message: "User registered successfully",
-      role: userRole || "user",
-      roleId: roleId,
-      has_photo: !!profilePhotoBlob,
-    });
-  } catch (error) {
-    console.error("[USER REGISTER] Error:", error);
-    console.error("[USER REGISTER] Error code:", error.code);
-    console.error("[USER REGISTER] Error SQL:", error.sql);
-    console.error("[USER REGISTER] Error stack:", error.stack);
-    if (error.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({
-        success: false,
-        message: "User with this email already exists",
-      });
-    }
-    res.status(500).json({
-      success: false,
-      message: "Registration failed: " + error.message,
-      error: error.message,
-      errorCode: error.code,
-      sql: error.sql,
-    });
-  }
-};
+// REMOVED INLINE REGISTER - HANDLED BY MODULAR ROUTE /backend/routes/users.js
 
 // Admin-to-client feedback handlers
 const handleClientFeedbackList = async (req, res) => {
@@ -1249,12 +979,12 @@ const handleClientFeedbackCreate = async (req, res) => {
 };
 
 // Route handlers for user registration
-app.post("/api/users/register", handleUserRegister);
+// REMOVED INLINE ROUTES - HANDLED BY MODULAR ROUTER
 
 // Authentication verification endpoints removed for streamlined access
 
 
-app.get("/api/users/client-feedback/:userId", handleClientFeedbackList);
+app.get("/api/users/client-feedback/:userId", authenticateUser, handleClientFeedbackList);
 app.post("/api/users/client-feedback", handleClientFeedbackCreate);
 
 // ─────────────────────────────────────────────────────────────
@@ -1683,7 +1413,7 @@ app.get("/api/users/client-dashboard/:id", authenticateUser, (req, res) => {
     message: "This endpoint was retired. Use GET /api/users/client-dashboard with your auth token.",
   });
 });
-app.post("/api/signup", handleUserRegister);
+// app.post("/api/signup", handleUserRegister); // Handled by modular router
 
 // Notifications Endpoints
 app.get('/api/users/notifications/me', authenticateUser, async (req, res) => {
@@ -1878,7 +1608,7 @@ app.post("/api/users/google-auth", async (req, res) => {
       const user = existingUsers[0];
       const token = jwt.sign(
         { userId: user.id, email: user.email, role: 'user' },
-        process.env.JWT_SECRET || '***REMOVED***',
+        JWT_SECRET,
         { expiresIn: '7d' }
       );
 
@@ -1906,7 +1636,7 @@ app.post("/api/users/google-auth", async (req, res) => {
 
     const token = jwt.sign(
       { userId, email, role: 'user' },
-      process.env.JWT_SECRET || '***REMOVED***',
+      JWT_SECRET,
       { expiresIn: '7d' }
     );
 
@@ -1922,7 +1652,7 @@ app.post("/api/users/google-auth", async (req, res) => {
 });
 
 // Admin create user endpoint
-app.post("/api/users/admin-create", async (req, res) => {
+app.post("/api/users/admin-create", authenticateAdmin, async (req, res) => {
   try {
     const {
       first_name,
@@ -4043,215 +3773,16 @@ app.post("/api/currencies/convert", async (req, res) => {
   }
 });
 
-// Admin Authentication handler - EXACTLY like developer auth
-// Admin Authentication handler - Surgical Fix for "Unexpected end of JSON"
-async function handleAdminAuth(req, res) {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: "Email and password are required" });
-    }
-
-    const normalizedEmail = String(email).trim().toLowerCase();
-
-    // 1. Fetch Admin with precise SQL
-    const [admins] = await mainDb.query(
-      "SELECT id, email, password_hash, first_name, last_name, admin_level FROM admin_users WHERE LOWER(email) = ? AND is_active = 1 AND deleted_at IS NULL LIMIT 1",
-      [normalizedEmail]
-    );
-
-    if (!admins || admins.length === 0) {
-      return res.status(401).json({ success: false, message: "Invalid admin credentials" });
-    }
-
-    const admin = admins[0];
-
-    // 2. Verified Password Match Protocol
-    let isMatch = false;
-    const storedHash = admin.password_hash || "";
-
-    try {
-      if (storedHash.startsWith("$")) {
-        isMatch = await bcryptjs.compare(password, storedHash);
-      } else {
-        isMatch = (password === storedHash);
-      }
-    } catch (bcryptErr) {
-      console.error("[AUTH] Bcrypt failure:", bcryptErr);
-      isMatch = (password === storedHash); // Fallback to plain text if bcrypt fails on non-hash
-    }
-
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Invalid admin credentials" });
-    }
-
-    // 3. Generate Session Token
-    const token = signAdminSessionToken(admin.id);
-
-    // 4. Send Guaranteed JSON Response
-    return res.status(200).json({
-      success: true,
-      message: "Authentication successful",
-      token,
-      user: {
-        id: admin.id,
-        email: admin.email,
-        name: `${admin.first_name} ${admin.last_name}`,
-        role: "admin",
-        admin_level: admin.admin_level
-      }
-    });
-
-  } catch (error) {
-    console.error("[CRITICAL] Admin Auth Logic Error:", error);
-    // Ensure we always return JSON, never empty
-    if (!res.headersSent) {
-      return res.status(500).json({
-        success: false,
-        message: "System handshake failed",
-        error: error.message
-      });
-    }
-  }
-}
-
 // Admin Authentication API
-app.post("/api/admin/authenticate", handleAdminAuth);
+// REMOVED INLINE HANDLERS - HANDLED BY MODULAR ROUTER /backend/routes/admin-verification.js
 
 // Frontend-compatible endpoint
-app.post("/api/admin-verification/authenticate-enhanced", handleAdminAuth);
+// REMOVED INLINE HANDLERS - HANDLED BY MODULAR ROUTER /backend/routes/admin-verification.js
 
 // Developer Authentication removed as per architectural update
 
 // Admin/Developer registration (frontend expects this endpoint)
-app.post("/api/admin-verification/register", async (req, res) => {
-  try {
-    const {
-      first_name,
-      last_name,
-      email,
-      password,
-      role,
-      profile_photo_base64,
-      profile_photo_mime_type,
-      profile_photo_file_name,
-    } = req.body;
-
-    console.log(`[ADMIN-VERIFICATION REGISTER] Received:`, {
-      first_name,
-      last_name,
-      email,
-      role,
-    });
-
-    if (!email || !password || !first_name || !last_name) {
-      return res.status(400).json({
-        success: false,
-        message: "Email, password, first name, and last name are required",
-      });
-    }
-
-    // Hash password
-    const saltRounds = 10;
-    const hashedPassword = await bcryptjs.hash(password, saltRounds);
-
-    // Convert base64 photo to buffer if provided
-    let profilePhotoBlob = null;
-    let photoMimeType = profile_photo_mime_type || null;
-    let photoFileName = profile_photo_file_name || null;
-
-    if (profile_photo_base64) {
-      try {
-        // Remove data URI prefix if present (e.g., "data:image/jpeg;base64,")
-        const base64Data = profile_photo_base64.replace(
-          /^data:image\/\w+;base64,/,
-          "",
-        );
-        profilePhotoBlob = Buffer.from(base64Data, "base64");
-        console.log(
-          `[ADMIN-VERIFICATION] Profile photo converted: ${profilePhotoBlob.length} bytes`,
-        );
-
-        // Extract mime type from data URI if provided
-        if (profile_photo_base64.match(/^data:image\/(\w+);base64,/)) {
-          photoMimeType = `image/${profile_photo_base64.match(/^data:image\/(\w+);base64,/)[1]}`;
-        }
-      } catch (e) {
-        console.error(
-          "[ADMIN-VERIFICATION] Failed to decode base64 photo:",
-          e.message,
-        );
-      }
-    }
-
-    let result;
-    let userId;
-
-    if (role !== "admin") {
-      return res.status(400).json({
-        success: false,
-        message: 'Registration is restricted to the Administrator tier.',
-      });
-    }
-
-    // Check if email already exists in admin_users
-    const [existing] = await mainDb.query(
-      "SELECT id FROM admin_users WHERE email = ? AND deleted_at IS NULL",
-      [email],
-    );
-    if (existing.length > 0) {
-      return res.status(409).json({
-        success: false,
-        message: "Admin user with this email already exists",
-      });
-    }
-
-    // Insert into admin_users table with profile photo BLOB
-    [result] = await mainDb.query(
-      `INSERT INTO admin_users (
-        email, password_hash, first_name, last_name,
-        admin_level, access_level, is_active, email_verified,
-        profile_photo_blob, profile_photo_mime_type, profile_photo_file_name
-      ) VALUES (?, ?, ?, ?, ?, 'full', 1, 1, ?, ?, ?)`,
-      [
-        email,
-        hashedPassword,
-        first_name,
-        last_name,
-        "admin",
-        profilePhotoBlob,
-        photoMimeType,
-        photoFileName,
-      ],
-    );
-    userId = result.insertId;
-    console.log(
-      `[ADMIN-VERIFICATION] Admin created: ${email}, ID: ${userId}, Photo: ${profilePhotoBlob ? profilePhotoBlob.length + " bytes" : "none"}`,
-    );
-
-    res.json({
-      success: true,
-      message: `${role} account created successfully`,
-      userId: userId,
-      role: role,
-      has_photo: !!profilePhotoBlob,
-    });
-  } catch (error) {
-    console.error("[ADMIN-VERIFICATION REGISTER] Error:", error);
-    if (error.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({
-        success: false,
-        message: "User with this email already exists",
-      });
-    }
-    res.status(500).json({
-      success: false,
-      message: "Failed to create account",
-      error: error.message,
-    });
-  }
-});
+// REMOVED INLINE HANDLERS - HANDLED BY MODULAR ROUTER /backend/routes/admin-verification.js
 
 // Validate admin session token (required for admin UI — not forgeable without server secret)
 app.get("/api/admin/session", async (req, res) => {
@@ -6015,7 +5546,7 @@ app.get("/api/users/profile-photo/:userId", async (req, res) => {
 });
 
 // Admin/Developer profile photo upload endpoint (accepts base64 JSON)
-app.post("/api/admin/profile-photo", async (req, res) => {
+app.post("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
   try {
     const {
       userId,
@@ -6160,9 +5691,8 @@ app.get("/api/health", (req, res) => {
     message: "Server is running",
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || "development",
-    // Non-secret diagnostics: which DB host the process actually sees, and
-    // whether TLS mode is on. Never expose DB_PASSWORD or other secrets here.
-    dbHost: (process.env.DB_HOST || "UNSET").split(".")[0],
+    // Non-secret diagnostics: TLS mode and DB reachability only.
+    // Deliberately NOT exposing the DB host name (info leak).
     dbSsl: cloudSslEnabled(),
     database: lastDbCheck.ok === null ? "unknown" : lastDbCheck.ok ? "connected" : "unreachable",
     dbCheckedAt: lastDbCheck.at,
@@ -6182,13 +5712,9 @@ const modularRoutes = [
   { path: "/api/properties", route: "./backend/routes/properties" },
   { path: "/api/management", route: "./backend/routes/management" },
   { path: "/api/admin", route: "./backend/routes/admin" },
-  // { path: "/api/admin-verification", route: "./backend/routes/admin-verification" }, // Handled in server.js for stability
-  // { path: "/api/developer-verification", route: "./backend/routes/developer-verification" }, // Handled in server.js for stability
+  { path: "/api/admin-verification", route: "./backend/routes/admin-verification" },
+  { path: "/api/developer-verification", route: "./backend/routes/developer-verification" },
   { path: "/api/mpesa", route: "./backend/routes/mpesa" },
-  // Mounted LAST on purpose: the inline /api/users/* routes above keep
-  // priority for every path they define (login, register, client-dashboard,
-  // profile, notifications me/read/read-all). This router only fills the
-  // client gaps: /my-reports (+ /:id/download) and /notifications/:id/attachment.
   { path: "/api/users", route: "./backend/routes/users" },
 ];
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, User } from 'lucide-react'
 import { getApiUrl } from '../services/api'
-
+import DOMPurify from 'dompurify'
 const BlogDetails = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -130,7 +130,7 @@ const BlogDetails = () => {
             {/* FULL BRIEFING FLOW */}
             <div
               className="blog-article-body"
-              dangerouslySetInnerHTML={{ __html: articleBody }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(articleBody) }}
               style={{
                 fontSize: '15px',
                 lineHeight: '1.7',

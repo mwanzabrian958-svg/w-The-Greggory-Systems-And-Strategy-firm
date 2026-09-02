@@ -57,10 +57,11 @@ async function validateAuthRequest(platform, tableName, endpoint, email, req) {
 
     // 2. Check if endpoint matches the locked endpoint
     const lockedMapping = mapping[0];
-    if (!endpoint.includes(platform)) {
+    const fullPath = req.originalUrl || endpoint;
+    if (!fullPath.includes(platform)) {
       return {
         valid: false,
-        error: `Endpoint mismatch: expected platform=${platform}, got ${endpoint}`,
+        error: `Endpoint mismatch: expected platform=${platform} in path, got ${fullPath}`,
         errorCode: 'ENDPOINT_MISMATCH'
       };
     }

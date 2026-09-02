@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { X, RefreshCw, Briefcase, ChevronLeft } from "lucide-react";
 import { getApiUrl } from "../../services/api";
+import DOMPurify from "dompurify";
 
 const normalizeBio = (raw) => {
   if (!raw || !raw.trim()) return "";
@@ -82,7 +83,7 @@ export function PersonnelPreview() {
 
           <div className="prose prose-invert prose-sm max-w-none">
             {person.bio ? (
-              <div className="blog-preview-content text-[11px] leading-relaxed text-slate-300 font-medium" dangerouslySetInnerHTML={{ __html: normalizeBio(person.bio) }} />
+              <div className="blog-preview-content text-[11px] leading-relaxed text-slate-300 font-medium" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(normalizeBio(person.bio)) }} />
             ) : (
               <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">No credentials have been published for this profile yet.</p>
             )}

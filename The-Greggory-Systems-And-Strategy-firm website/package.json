@@ -24,9 +24,19 @@
     "server": "nodemon server.js"
   },
   "nodemonConfig": {
-    "watch": ["server.js"],
-    "ignore": ["backups/*", "dist/*", "scripts/*", "docs/*", "database/*", "uploads/*"]
+    "watch": [
+      "server.js"
+    ],
+    "ignore": [
+      "backups/*",
+      "dist/*",
+      "scripts/*",
+      "docs/*",
+      "database/*",
+      "uploads/*"
+    ]
   },
+  "overrides": { "axios": "^1.17.1" },
   "dependencies": {
     "@google-cloud/storage": "^5.18.3",
     "@headlessui/react": "^2.2.10",
@@ -37,6 +47,7 @@
     "cors": "^2.8.5",
     "cross-env": "^10.1.0",
     "daisyui": "^4.12.24",
+    "dompurify": "^3.4.14",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",

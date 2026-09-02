@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
 import { X } from 'lucide-react'
+import DOMPurify from 'dompurify'
 
 const PersonnelProfile = () => {
   const { id } = useParams()
@@ -106,7 +107,7 @@ const PersonnelProfile = () => {
           {person.bio ? (
             <div
               className="space-y-4 text-sm leading-[1.9] text-black"
-              dangerouslySetInnerHTML={{ __html: person.bio }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(person.bio) }}
             />
           ) : (
             <p className="text-sm text-slate-400">No credentials have been published for this profile yet.</p>
