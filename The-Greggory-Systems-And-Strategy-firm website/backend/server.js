@@ -82,13 +82,10 @@ app.get('/api/health', (req, res) => {
 });
 
 // Import routes
-const propertyRoutes = require('./routes/properties');
-const applicationRoutes = require('./routes/applications');
 const userRoutes = require('./routes/users');
 const managementRoutes = require('./routes/management');
 const contentRoutes = require('./routes/content');
 const imageRoutes = require('./routes/images');
-const companyRoutes = require('./routes/companies');
 const contactFormRoutes = require('./routes/contact-forms');
 const blogArticleRoutes = require('./routes/blog-articles');
 const userProjectRoutes = require('./routes/user-projects');
@@ -98,13 +95,10 @@ const developerVerificationRoutes = require('./routes/developer-verification');
 const easyAdminRoutes = require('./routes/easy-admin');
 
 // Use routes
-app.use('/api/properties', propertyRoutes);
-app.use('/api/applications', applicationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/management', managementRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/images', imageRoutes);
-app.use('/api/companies', companyRoutes);
 app.use('/api/contact-forms', contactFormRoutes);
 app.use('/api/blog-articles', blogArticleRoutes);
 app.use('/api/user-projects', userProjectRoutes);

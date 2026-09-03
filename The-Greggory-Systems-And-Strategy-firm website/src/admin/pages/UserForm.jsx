@@ -35,7 +35,7 @@ export function UserForm() {
             setForm({
               ...form,
               ...data.user,
-              role: data.user.primary_role || data.user.role || 'user'
+              role: data.user.admin_level ? 'admin' : data.user.developer_level ? 'developer' : (data.user.primary_role || data.user.role || 'user')
             });
 
             // Fetch real linked projects

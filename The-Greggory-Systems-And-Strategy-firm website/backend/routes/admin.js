@@ -30,7 +30,7 @@ function requireAdminSession(req, res, next) {
 // =============================================
 // GET LIVE USERS (Who's Online)
 // =============================================
-router.get('/live-users', async (req, res) => {
+router.get('/live-users', requireAdminSession, async (req, res) => {
   try {
     // Define "Live" as activity within the last 5 minutes
     const LIVE_THRESHOLD = '5 MINUTE';
@@ -126,7 +126,7 @@ router.get('/search', async (req, res) => {
 // =============================================
 // GET ALL ADMIN USERS
 // =============================================
-router.get('/admin-users', async (req, res) => {
+router.get('/admin-users', requireAdminSession, async (req, res) => {
   try {
     const [adminUsers] = await db.promise().query(`
       SELECT 
@@ -179,7 +179,7 @@ router.get('/admin-users', async (req, res) => {
 // =============================================
 // GET ALL REGULAR USERS
 // =============================================
-router.get('/users', async (req, res) => {
+router.get('/users', requireAdminSession, async (req, res) => {
   try {
     const [regularUsers] = await db.promise().query(`
       SELECT 
@@ -233,7 +233,7 @@ router.get('/users', async (req, res) => {
 // =============================================
 // CREATE ADMIN USER
 // =============================================
-router.post('/create-admin', async (req, res) => {
+router.post('/create-admin', requireAdminSession, async (req, res) => {
   try {
     const {
       first_name,
@@ -314,7 +314,7 @@ router.post('/create-admin', async (req, res) => {
 // =============================================
 // EXPORT USER PROFILE AS PDF
 // =============================================
-router.get('/users/:id/export-pdf', async (req, res) => {
+router.get('/users/:id/export-pdf', requireAdminSession, async (req, res) => {
   try {
     const { id } = req.params;
     const { role_type } = req.query;
@@ -396,7 +396,7 @@ CONFIDENTIAL - INTERNAL USE ONLY
 // =============================================
 // UPDATE USER DETAILS
 // =============================================
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id', requireAdminSession, async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -406,39 +406,51 @@ router.put('/users/:id', async (req, res) => {
       emergency_contact_name, emergency_contact_phone
     } = req.body;
 
-    const roleType = req.query.role_type || (role === 'admin' ? 'admin' : 'client');
+    const roleType = req.query.role_type || (role === 'admin' ? 'admin' : role === 'developer' ? 'developer' : 'client');
 
     let tableName;
     let updates = [];
     let params = [];
 
+    // Every identity table (users / admin_users / developer_users) carries the same
+    // contact/notes columns PLUS department and mission_briefing — so all of them
+    // live in the shared update list and actually persist (previously admin edits
+    // silently dropped mission_briefing,and client edits dropped department).
     const commonUpdates = [
       'first_name = ?', 'last_name = ?', 'email = ?', 'phone_number = ?',
       'physical_address = ?', 'id_number = ?', 'alt_phone = ?', 'expertise = ?',
       'private_notes = ?', 'manual_projects = ?', 'emergency_contact_name = ?',
-      'emergency_contact_phone = ?', 'is_active = ?'
+      'emergency_contact_phone = ?', 'is_active = ?', 'department = ?', 'mission_briefing = ?'
     ];
 
     const commonParams = [
       first_name, last_name, email, phone_number || null,
       physical_address || null, id_number || null, alt_phone || null, expertise || null,
       private_notes || null, manual_projects || null, emergency_contact_name || null,
-      emergency_contact_phone || null, is_active ? 1 : 0
+      emergency_contact_phone || null, is_active ? 1 : 0, department || null, mission_briefing || null
     ];
 
-    if (roleType === 'admin') {
-      tableName = 'admin_users';
-      updates = [...commonUpdates, 'admin_level = ?', 'department = ?'];
-      params = [...commonParams, admin_level || 'admin', department || 'General'];
+    const tableMap = {
+      admin: 'admin_users', admin_users: 'admin_users', 'admin-user': 'admin_users',
+      developer: 'developer_users', developer_users: 'developer_users', 'developer-user': 'developer_users',
+      client: 'users', user: 'users', users: 'users'
+    };
+    tableName = tableMap[String(roleType.toLowerCase())] || 'users';
+
+    if (tableName === 'admin_users') {
+      updates = [...commonUpdates, 'admin_level = ?'];
+      params = [...commonParams, admin_level || role || 'admin'];
+    } else if (tableName === 'developer_users') {
+      updates = [...commonUpdates, 'developer_level = ?'];
+      params = [...commonParams, (role === 'developer' ? 'mid' : null) || 'mid'];
     } else {
-      tableName = 'users';
-      updates = [...commonUpdates, 'primary_role = ?', 'mission_briefing = ?'];
-      params = [...commonParams, role || 'user', mission_briefing || null];
+      updates = [...commonUpdates, 'primary_role = ?'];
+      params = [...commonParams, role || 'user'];
     }
 
-    params.push(id);
+        params.push(id);
     const [result] = await db.promise().query(
-      `UPDATE ${tableName} SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ?`,
+      `UPDATE ${tableName} SET ${updates.join(', ')}, updated_at = NOW() WHERE id = ? AND deleted_at IS NULL`,
       params
     );
 
@@ -448,7 +460,8 @@ router.put('/users/:id', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'User details synchronized successfully'
+      message: 'User details synchronized successfully',
+      table: tableName
     });
 
   } catch (error) {
@@ -475,6 +488,8 @@ router.put('/users/:id/status', async (req, res) => {
     let tableName;
     if (role_type === 'admin') {
       tableName = 'admin_users';
+    } else if (role_type === 'developer' || role_type === 'developer_users') {
+      tableName = 'developer_users';
     } else {
       tableName = 'users';
     }
@@ -529,7 +544,8 @@ router.delete('/users/:id', requireAdminSession, async (req, res) => {
     // `admin_users` are active identity tables.
     const tableMap = {
       admin: 'admin_users', admin_users: 'admin_users', 'admin-user': 'admin_users',
-      client: 'users', user: 'users', users: 'users'
+      client: 'users', user: 'users', users: 'users',
+      developer: 'developer_users', developer_users: 'developer_users', 'developer-user': 'developer_users'
     };
     const tableName = tableMap[String(role_type).toLowerCase()] || 'users';
 
@@ -633,6 +649,19 @@ router.get('/users/:id', requireAdminSession, async (req, res) => {
         FROM admin_users au
         WHERE au.id = ? AND au.deleted_at IS NULL
       `;
+    } else if (tableName === 'developer_users') {
+      query = `
+        SELECT 
+          du.id, du.email, du.first_name, du.last_name, du.display_name,
+          du.phone_number, du.physical_address, du.id_number, du.alt_phone,
+          du.expertise, du.private_notes, du.manual_projects,
+          du.emergency_contact_name, du.emergency_contact_phone,
+          du.developer_level, du.tech_stack, du.department, du.mission_briefing,
+          du.is_active, du.last_login_at, du.last_login_ip,
+          du.created_at, du.updated_at, du.deleted_at
+        FROM developer_users du
+        WHERE du.id = ? AND du.deleted_at IS NULL
+      `;
     } else {
       query = `
         SELECT 
@@ -640,7 +669,7 @@ router.get('/users/:id', requireAdminSession, async (req, res) => {
           u.phone_number, u.physical_address, u.id_number, u.alt_phone,
           u.expertise, u.private_notes, u.manual_projects,
           u.emergency_contact_name, u.emergency_contact_phone,
-          u.primary_role, u.mission_briefing, u.is_active, u.last_login_at,
+          u.primary_role, u.department, u.mission_briefing, u.is_active, u.last_login_at,
           u.last_login_ip, u.created_at, u.updated_at, u.deleted_at,
           tm.name as job_title, tm.role as job_role
         FROM users u

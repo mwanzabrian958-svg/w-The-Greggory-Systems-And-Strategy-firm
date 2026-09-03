@@ -1,0 +1,71 @@
+# Render Blueprint — The Greggory Systems And Strategy Firm website
+#
+# Single-origin deployment: this one Node service serves BOTH the API and the
+# built React app (dist/). Provisioning it from this file (instead of creating
+# the service manually) guarantees the DB_SSL variable is set, which the cloud
+# MySQL connection requires — a manually created service can silently miss it.
+#
+# On first boot:
+#   import-if-empty seeds the cloud MySQL once (from database/*.sql), then
+#   sync-db-schema adds the tables the seed dump doesn't carry (currencies,
+#   knowledge_base, auth_*, etc. — see database/schema-sync.json).
+# Both are idempotent and exit 0 even on error, so they never block boot.
+services:
+  - type: web
+    name: greggory-systems-strategy
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: node scripts/import-if-empty.js && node scripts/sync-db-schema.js && node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # --- Cloud MySQL (Aiven) — primary endpoint on Render ---
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: the_greggory_systems_and_strategy_firm_db_main
+      # Required: managed/remote MySQL REQUIRES TLS (see server/config/dbEndpoints.js)
+      - key: DB_SSL
+        value: "true"
+      # --- Auth secrets (set real values in the Render dashboard) ---
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: ADMIN_SESSION_SECRET
+        sync: false
+      - key: ADMIN_CODE
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      # --- Email relay (Gmail App Password) ---
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_SECURE
+        value: "true"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: SMTP_TO
+        sync: false
+      # --- Frontend URL (CORS + email links) ---
+      - key: FRONTEND_URL
+        sync: false
+      # --- Optional integrations (leave unset to disable) ---
+      # MONGODB_URI, GOOGLE_CLIENT_ID, VITE_GOOGLE_CLIENT_ID,
+      # MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_PASSKEY,
+      # MPESA_SHORTCODE, MPESA_CALLBACK_URL, AFRICASTALKING_USERNAME,
+      # AFRICASTALKING_API_KEY, WHATSAPP_CLOUD_TOKEN, WHATSAPP_CLOUD_PHONE_ID

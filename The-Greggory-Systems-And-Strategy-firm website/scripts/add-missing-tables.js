@@ -61,73 +61,11 @@ const mysql = require("mysql2/promise");
     console.log("website_content created + seeded");
   }
 
-  // 3. RENTAL MODULE
-  await conn.query(`CREATE TABLE IF NOT EXISTS prop_type_enum (
-    id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL UNIQUE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  CREATE TABLE IF NOT EXISTS properties (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    company_id BIGINT NOT NULL,
-    type_id INT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    building VARCHAR(255),
-    location VARCHAR(255),
-    price DECIMAL(15,2) DEFAULT 0,
-    security_deposit DECIMAL(15,2) DEFAULT 0,
-    status VARCHAR(50) DEFAULT 'available',
-    description TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    tags TEXT,
-    image_urls TEXT,
-    deleted_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (company_id) REFERENCES companies(id),
-    FOREIGN KEY (type_id) REFERENCES prop_type_enum(id)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  CREATE TABLE IF NOT EXISTS property_features (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    property_id BIGINT NOT NULL,
-    room_number VARCHAR(50),
-    feature_name VARCHAR(255) NOT NULL,
-    feature_value VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  CREATE TABLE IF NOT EXISTS app_status_enum (
-    id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL UNIQUE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  CREATE TABLE IF NOT EXISTS applications (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    property_id BIGINT NOT NULL,
-    room_number VARCHAR(50),
-    agent_name VARCHAR(255),
-    total_cost DECIMAL(15,2) DEFAULT 0,
-    status_id INT DEFAULT 1,
-    application_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (property_id) REFERENCES properties(id),
-    FOREIGN KEY (status_id) REFERENCES app_status_enum(id)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  CREATE TABLE IF NOT EXISTS applicants (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    application_id BIGINT NOT NULL,
-    full_name VARCHAR(255) NOT NULL,
-    id_number VARCHAR(100),
-    phone_number VARCHAR(50),
-    email VARCHAR(255),
-    employer_name VARCHAR(255),
-    employer_address VARCHAR(255),
-    employer_phone VARCHAR(50),
-    monthly_income DECIMAL(15,2),
-    FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`);
-  const [ptCount] = await conn.query("SELECT COUNT(*) as c FROM prop_type_enum");
-  if (ptCount[0].c === 0) {
-    await conn.query(`INSERT INTO prop_type_enum (name) VALUES ('Residential'),('Commercial'),('Office Space'),('Mixed Use');`);
-    await conn.query(`INSERT INTO app_status_enum (name) VALUES ('Pending'),('Under Review'),('Approved'),('Rejected'),('Withdrawn');`);
-    console.log("rental module tables created + enums seeded");
-  }
+  // 3. RENTAL MODULE — REMOVED. The Baraka Housing Agency module
+  //    (properties, property_features, prop_type_enum, applications,
+  //    applicants, app_status_enum, companies) was purged: tables dropped,
+  //    routes deleted. Do not recreate these tables.
+  void 0;
 
   // 4. DATA ACCESS LOGS
   await conn.query(`CREATE TABLE IF NOT EXISTS data_access_logs (

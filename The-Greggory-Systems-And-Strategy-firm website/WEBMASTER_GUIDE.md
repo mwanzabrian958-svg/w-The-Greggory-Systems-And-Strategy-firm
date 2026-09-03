@@ -125,8 +125,9 @@ Key tables:
 - `blog_articles` - Blog posts
 - `case_studies` - Case studies
 - `contact_forms` - Contact form submissions
-- `properties` - Property listings (for housing agency)
-- `applications` - Rental applications
+
+Note: The Baraka Housing Agency module (properties, rental applications,
+companies tables) was removed from the system — those tables no longer exist.
 
 ## Security Best Practices
 
