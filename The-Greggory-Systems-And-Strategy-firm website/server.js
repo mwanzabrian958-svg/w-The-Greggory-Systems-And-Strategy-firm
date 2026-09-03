@@ -4629,6 +4629,61 @@ app.post("/api/images/profile", async (req, res) => {
   }
 });
 
+// Media Library API
+app.get("/api/images", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      "SELECT id, file_name, file_type, file_size, content_type, created_at FROM images WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 200"
+    );
+    res.json({ success: true, images: rows });
+  } catch (error) {
+    console.error("[IMAGES] List error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch images" });
+  }
+});
+
+app.get("/api/images/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      "SELECT * FROM images WHERE id = ? AND deleted_at IS NULL", [req.params.id]
+    );
+    if (rows.length === 0) return res.status(404).json({ success: false, message: "Image not found" });
+    res.json({ success: true, image: rows[0] });
+  } catch (error) {
+    console.error("[IMAGES] Get error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch image" });
+  }
+});
+
+app.post("/api/images", authenticateAdmin, async (req, res) => {
+  try {
+    const { dataBase64, contentType, fileName } = req.body;
+    if (!dataBase64) return res.status(400).json({ success: false, message: "Image data required" });
+    const imageBuffer = Buffer.from(dataBase64, "base64");
+    const [result] = await mainDb.query(
+      "INSERT INTO images (data, content_type, file_name, file_size, created_at) VALUES (?, ?, ?, ?, NOW())",
+      [imageBuffer, contentType || "image/jpeg", fileName || "upload.jpg", imageBuffer.length]
+    );
+    res.status(201).json({ success: true, image_id: result.insertId, message: "Image uploaded" });
+  } catch (error) {
+    console.error("[IMAGES] Upload error:", error);
+    res.status(500).json({ success: false, message: "Failed to upload image" });
+  }
+});
+
+app.delete("/api/images/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const [result] = await mainDb.query(
+      "UPDATE images SET deleted_at = NOW() WHERE id = ?", [req.params.id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ success: false, message: "Image not found" });
+    res.json({ success: true, message: "Image deleted" });
+  } catch (error) {
+    console.error("[IMAGES] Delete error:", error);
+    res.status(500).json({ success: false, message: "Failed to delete image" });
+  }
+});
+
 // Profile photo upload endpoint
 app.post(
   "/api/users/upload-profile-photo",
