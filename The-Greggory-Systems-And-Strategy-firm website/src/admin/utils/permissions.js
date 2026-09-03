@@ -93,9 +93,41 @@ export function hasAllPermissions(user, permissions) {
 }
 
 /**
- * Get navigation items based on user role
- * Filtered to strictly show only the requested 8 buttons
+ * Get navigation items based on user role.
+ * If a role-permissions matrix has been saved from the Permissions Manager
+ * (cached in localStorage as `gf_role_permissions`, sourced from the
+ * `admin_settings` DB table), the sidebar is FILTERED by it. Without a saved
+ * matrix, admins see everything (legacy behaviour).
  */
+const NAV_PERMISSION_MAP = {
+  '/admin/users': 'VIEW_USERS',
+  '/admin/projects': 'VIEW_PROJECTS',
+  '/admin/applications': 'VIEW_APPLICATIONS',
+  '/admin/content': 'VIEW_CONTENT',
+  '/admin/personnel': 'VIEW_CONTENT',
+  '/admin/billing': 'VIEW_FINANCIAL',
+  '/admin/reports': 'VIEW_REPORTS',
+  '/admin/settings': 'VIEW_SETTINGS'
+};
+
+function cachedRoleLevel(user) {
+  const level = user.admin_level || user.role || '';
+  if (level === 'super_admin') return 'super';
+  if (level === 'admin') return 'admin';
+  if (level === 'moderator') return 'manager';
+  return 'viewer';
+}
+
+export function getRolePermissions(user) {
+  if (!user) return null;
+  try {
+    const matrix = JSON.parse(localStorage.getItem('gf_role_permissions') || 'null');
+    if (!matrix) return null;
+    const perms = matrix[cachedRoleLevel(user)];
+    return Array.isArray(perms) ? perms : null;
+  } catch { return null; }
+}
+
 export function getNavigationItems(user) {
   if (!user) return [];
 
@@ -111,6 +143,13 @@ export function getNavigationItems(user) {
     { path: '/admin/settings', label: 'Settings', icon: 'ShieldCheck' }
   ];
 
-  if (isAdmin(user)) return allItems;
-  return [{ path: '/admin', label: 'Dashboard', icon: 'Home' }];
+  if (!isAdmin(user)) return [{ path: '/admin', label: 'Dashboard', icon: 'Home' }];
+
+  const rolePerms = getRolePermissions(user);
+  if (!rolePerms) return allItems; // no saved matrix yet — full access
+
+  // Dashboard is always visible; everything else requires its mapped permission.
+  return allItems.filter(item =>
+    item.path === '/admin' || rolePerms.includes(NAV_PERMISSION_MAP[item.path])
+  );
 }

@@ -38,6 +38,20 @@ function AdminLayout({ user, children, onLogout }) {
       setProfilePhotoUrl(`/api/admin/profile-photo/${role}/${user.id}?v=${Date.now()}`);
       setImagePhotoError(false);
     }
+    // Sync the role-permissions matrix from the DB so the sidebar reflects
+    // what was saved in Roles & Permissions (admin_settings table).
+    apiCall("/admin/settings").then((res) => {
+      const settings = res?.settings || {};
+      const matrix = {};
+      Object.keys(settings).forEach((k) => {
+        if (k.startsWith("role_permissions_")) {
+          try { matrix[k.replace("role_permissions_", "")] = JSON.parse(settings[k]); } catch { /* skip malformed */ }
+        }
+      });
+      if (Object.keys(matrix).length > 0) {
+        localStorage.setItem("gf_role_permissions", JSON.stringify(matrix));
+      }
+    }).catch(() => { /* non-fatal — nav falls back to defaults */ });
   }, [user]);
 
   const handleLogoutClick = () => {
