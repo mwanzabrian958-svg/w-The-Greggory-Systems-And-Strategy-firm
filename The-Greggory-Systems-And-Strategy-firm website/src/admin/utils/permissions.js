@@ -103,12 +103,12 @@ export function getNavigationItems(user) {
     { path: '/admin', label: 'Dashboard', icon: 'Home' },
     { path: '/admin/users', label: 'User Management', icon: 'Users' },
     { path: '/admin/projects', label: 'Projects', icon: 'FolderKanban' },
-    { path: '/admin/crm', label: 'CRM', icon: 'Building2' },
     { path: '/admin/applications', label: 'Applications', icon: 'ClipboardList' },
     { path: '/admin/content', label: 'Blog Management', icon: 'Briefcase' },
     { path: '/admin/personnel', label: 'Personnel Management', icon: 'Users' },
     { path: '/admin/billing', label: 'Financial Hub', icon: 'Calculator' },
-    { path: '/admin/reports', label: 'Reports', icon: 'FileText' }
+    { path: '/admin/reports', label: 'Reports', icon: 'FileText' },
+    { path: '/admin/settings', label: 'Settings', icon: 'ShieldCheck' }
   ];
 
   if (isAdmin(user)) return allItems;

@@ -155,7 +155,7 @@ export function AdvancedDashboard({ user }) {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "New Invoice", icon: DollarSign, path: "/admin/billing", tone: "text-emerald-600 bg-emerald-50" },
+          { label: "New Invoice", icon: DollarSign, path: "/admin/billing/create", tone: "text-emerald-600 bg-emerald-50" },
           { label: "Add Personnel", icon: UserCheck, path: "/admin/users", tone: "text-sky-600 bg-sky-50" },
           { label: "Team Management", icon: Users, path: "/admin/team", tone: "text-violet-600 bg-violet-50" },
           { label: "Data Safety", icon: Shield, path: "/admin/data-safety", tone: "text-rose-600 bg-rose-50" },

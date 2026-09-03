@@ -153,17 +153,6 @@ function AdminLayout({ user, children, onLogout }) {
 
             {/* Workstation Content - Full Screen Edge-to-Edge */}
             <div className="flex-1 overflow-y-auto bg-white custom-scrollbar">
-               {/* Internal Branding Strip */}
-               <div className="px-8 py-6 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                     <div className="text-teal-600 text-lg font-black uppercase tracking-tighter">Greggory Systems <span className="text-slate-400 font-medium">| Personnel Terminal</span></div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Node ID: {user?.id || 'MASTER'}</p>
-                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                  </div>
-               </div>
-
                {/* MAIN CONTENT AREA: 100% WIDTH */}
                <div className="w-full p-8 lg:p-12">
                   {children}

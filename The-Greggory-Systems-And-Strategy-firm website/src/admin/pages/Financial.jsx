@@ -3,16 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { apiCall } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import {
-  TrendingUp, Banknote, ShieldCheck, RefreshCw, FileText,
-  Trash2, Edit2, ChevronRight, AlertCircle, X
+  TrendingUp, Banknote, RefreshCw, FilePlus2,
+  Trash2, Eye, Plus, Wallet, Receipt
 } from "lucide-react";
 
 export function Billing() {
   const navigate = useNavigate();
-  const [displayMode, setDisplayMode] = useState("ledger"); // 'ledger' | 'invoices' | 'mpesa'
+  const [displayMode, setDisplayMode] = useState("invoices"); // 'invoices' | 'ledger' | 'mpesa'
   const [loading, setLoading] = useState(true);
   const [financials, setFinancials] = useState({
-    revenue: 0, expenses: 0, net_income: 0,
+    revenue: 0, expenses: 0, net_income: 0, outstanding: 0,
     entries: [], invoices: [], mpesa: []
   });
 
@@ -28,16 +28,23 @@ export function Billing() {
       ]);
 
       const entries = ledgerRes.entries || [];
-      const totalRevenue = entries.filter(e => e.entry_type === 'income' || e.entry_type === 'invoice_payment').reduce((s, e) => s + parseFloat(e.amount), 0);
-      const totalExpenses = entries.filter(e => e.entry_type === 'expense').reduce((s, e) => s + parseFloat(e.amount), 0);
+      const invoices = invoiceRes.invoices || invoiceRes.data || (Array.isArray(invoiceRes) ? invoiceRes : []);
+      const totalRevenue = entries.filter(e => e.entry_type === 'income' || e.entry_type === 'invoice_payment').reduce((s, e) => s + parseFloat(e.amount || 0), 0);
+      const totalExpenses = entries.filter(e => e.entry_type === 'expense').reduce((s, e) => s + parseFloat(e.amount || 0), 0);
+
+      // Outstanding = sum of invoices not yet marked paid
+      const outstanding = invoices
+        .filter(inv => String(inv.status || '').toLowerCase() !== 'paid')
+        .reduce((s, inv) => s + parseFloat(inv.total_amount_kes || 0), 0);
 
       const mpesaList = Array.isArray(mpesaRes) ? mpesaRes : ((mpesaRes && (mpesaRes.transactions || mpesaRes.data)) || []);
       setFinancials({
         revenue: totalRevenue,
         expenses: totalExpenses,
         net_income: totalRevenue - totalExpenses,
-        entries: entries,
-        invoices: invoiceRes.invoices || [],
+        outstanding,
+        entries,
+        invoices,
         mpesa: mpesaList
       });
     } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -59,7 +66,16 @@ export function Billing() {
     } catch (e) { console.error(e); }
   };
 
-  if (loading && financials.entries.length === 0) return (
+  const statusBadge = (status) => {
+    const s = String(status || 'draft').toLowerCase();
+    const tone = s === 'paid' ? 'bg-emerald-50 text-emerald-600'
+      : s === 'sent' || s === 'pending' ? 'bg-amber-50 text-amber-600'
+      : s === 'overdue' ? 'bg-rose-50 text-rose-600'
+      : 'bg-slate-100 text-slate-500';
+    return <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-full ${tone}`}>{s}</span>;
+  };
+
+  if (loading && financials.invoices.length === 0 && financials.entries.length === 0) return (
     <div className="flex flex-col items-center justify-center py-40">
        <RefreshCw className="animate-spin text-teal-600 w-8 h-8" />
        <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Loading financial data...</p>
@@ -69,125 +85,195 @@ export function Billing() {
   return (
     <div className="space-y-6 animate-fade-in font-sans max-w-[1200px] mx-auto pb-10">
 
+      {/* HEADER + PRIMARY ACTIONS */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Financial Hub</h2>
+          <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">Invoices · Ledger · M-Pesa Payments</p>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={() => navigate('/admin/billing/create')} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 py-3 text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all">
+            <FilePlus2 size={14} /> New Invoice
+          </button>
+          <button onClick={() => navigate('/admin/billing/entry')} className="flex items-center gap-2 bg-white border border-slate-200 hover:border-teal-500 text-slate-700 rounded-xl px-5 py-3 text-[9px] font-black uppercase tracking-widest transition-all">
+            <Plus size={14} /> Ledger Entry
+          </button>
+        </div>
+      </div>
+
       {/* SECTION 1: MASTER METRICS */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Revenue", val: financials.revenue, color: "text-emerald-500", bg: "bg-emerald-50" },
-          { label: "Total Expenses", val: financials.expenses, color: "text-rose-500", bg: "bg-rose-50" },
-          { label: "Net Income", val: financials.net_income, color: "text-sky-500", bg: "bg-sky-50" },
+          { label: "Money In (Revenue)", val: financials.revenue, color: "text-emerald-600", bg: "bg-emerald-50", icon: TrendingUp },
+          { label: "Money Out (Expenses)", val: financials.expenses, color: "text-rose-600", bg: "bg-rose-50", icon: Wallet },
+          { label: "Net Income", val: financials.net_income, color: "text-sky-600", bg: "bg-sky-50", icon: Banknote },
+          { label: "Unpaid Invoices", val: financials.outstanding, color: "text-amber-600", bg: "bg-amber-50", icon: Receipt },
         ].map(m => (
           <div key={m.label} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
                <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest mb-1">{m.label}</p>
                <p className={`text-sm font-black ${m.color}`}>{formatKSH(m.val)}</p>
             </div>
-            <div className={`${m.bg} p-2 rounded-xl`}><ShieldCheck size={14} className={m.color} /></div>
+            <div className={`${m.bg} p-2 rounded-xl`}><m.icon size={14} className={m.color} /></div>
           </div>
         ))}
       </div>
 
-      {/* SECTION 2: VIEWS */}
+      {/* SECTION 2: TABS */}
       <div className="bg-[#0f172a] rounded-2xl p-4 border border-white/10 shadow-xl flex justify-between items-center">
          <div className="flex gap-2">
-            <button
-              onClick={() => setDisplayMode("ledger")}
-              className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${displayMode === 'ledger' ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/40' : 'bg-white/5 text-slate-400 hover:text-white'}`}
-            >
-              Ledger
-            </button>
-            <button
-              onClick={() => setDisplayMode("invoices")}
-              className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${displayMode === 'invoices' ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/40' : 'bg-white/5 text-slate-400 hover:text-white'}`}
-            >
-              Invoices
-            </button>
-            <button
-              onClick={() => setDisplayMode("mpesa")}
-              className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${displayMode === 'mpesa' ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/40' : 'bg-white/5 text-slate-400 hover:text-white'}`}
-            >
-              M-Pesa
-            </button>
+            {[
+              { key: "invoices", label: `Invoices (${financials.invoices.length})` },
+              { key: "ledger", label: `Ledger (${financials.entries.length})` },
+              { key: "mpesa", label: `M-Pesa (${financials.mpesa.length})` },
+            ].map(t => (
+              <button
+                key={t.key}
+                onClick={() => setDisplayMode(t.key)}
+                className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${displayMode === t.key ? 'bg-teal-600 text-white shadow-lg shadow-teal-900/40' : 'bg-white/5 text-slate-400 hover:text-white'}`}
+              >
+                {t.label}
+              </button>
+            ))}
          </div>
-         <div className="flex gap-2">
-            <button onClick={() => navigate('/admin/billing/create')} className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500 hover:text-white transition-all"><FileText size={14} /></button>
-            <button onClick={() => navigate('/admin/billing/entry')} className="p-2 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-all"><Banknote size={14} /></button>
-         </div>
+         <button onClick={fetchFinancialData} className="text-[7px] font-black text-teal-400 uppercase tracking-widest flex items-center gap-1 hover:text-white transition-colors">
+           <RefreshCw size={10} /> Refresh
+         </button>
       </div>
 
-      {/* SECTION 3: DYNAMIC DISPLAY AREA */}
+      {/* SECTION 3: CONTENT */}
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
 
-        {displayMode === "ledger" ? (
+
+        {/* INVOICES */}
+        {displayMode === "invoices" && (
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+               <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Invoices</h3>
+               <button onClick={() => navigate('/admin/billing/create')} className="text-[8px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1 hover:underline">
+                 <FilePlus2 size={11} /> Generate New
+               </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    {["Invoice #", "Client", "Issued", "Due", "Amount", "Status", ""].map(h => (
+                      <th key={h} className="pb-3 text-[7px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {financials.invoices.map(inv => (
+                    <tr key={inv.id} className="hover:bg-slate-50/50 transition-all">
+                      <td className="py-3 px-2 text-[9px] font-black text-teal-700 font-mono">{inv.invoice_number || `INV-${inv.id}`}</td>
+                      <td className="py-3 px-2 text-[9px] font-bold text-slate-700">{inv.client_name || inv.client_email || '—'}</td>
+                      <td className="py-3 px-2 text-[8px] font-bold text-slate-400">{inv.issue_date ? new Date(inv.issue_date).toLocaleDateString() : '—'}</td>
+                      <td className="py-3 px-2 text-[8px] font-bold text-slate-400">{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</td>
+                      <td className="py-3 px-2 text-right text-[10px] font-black text-slate-900">{formatKSH(inv.total_amount_kes)}</td>
+                      <td className="py-3 px-2 text-center">{statusBadge(inv.status)}</td>
+                      <td className="py-3 px-2">
+                        <div className="flex gap-1 justify-end">
+                          <button onClick={() => navigate(`/admin/billing/preview/${inv.id}`)} title="View invoice" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-teal-500 hover:text-white transition-all"><Eye size={11} /></button>
+                          <button onClick={() => handleDeleteInvoice(inv.id)} title="Delete invoice" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={11} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {financials.invoices.length === 0 && (
+                    <tr>
+                      <td colSpan="7" className="py-14 text-center">
+                        <p className="uppercase font-black text-[10px] text-slate-300 mb-4">No invoices yet</p>
+                        <button onClick={() => navigate('/admin/billing/create')} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 py-2.5 text-[8px] font-black uppercase tracking-widest transition-all">
+                          Create your first invoice
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+
+        {/* LEDGER */}
+        {displayMode === "ledger" && (
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
                <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Accounting Ledger</h3>
-               <button onClick={fetchFinancialData} className="text-[7px] font-black text-teal-600 uppercase tracking-widest flex items-center gap-1"><RefreshCw size={10} /> Sync Relay</button>
+               <button onClick={() => navigate('/admin/billing/entry')} className="text-[8px] font-black text-teal-600 uppercase tracking-widest flex items-center gap-1 hover:underline">
+                 <Plus size={11} /> Add Entry
+               </button>
             </div>
             <div className="overflow-x-auto">
-               <table className="w-full text-left">
-                  <thead>
-                    <tr className="text-[7px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
-                      <th className="py-3 px-4">Transaction / Entity</th>
-                      <th className="py-3 px-4">Node Link</th>
-                      <th className="py-3 px-4 text-right">Value</th>
-                      <th className="py-3 px-4 text-center">Protocol</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {financials.entries.map(e => (
-                      <tr key={e.id} className="hover:bg-slate-50/50 transition-all group">
-                        <td className="py-4 px-4">
-                           <p className="text-[9px] font-black text-slate-900 uppercase">{e.description}</p>
-                           <p className="text-[7px] text-slate-400 font-bold uppercase mt-0.5">{new Date(e.transaction_date).toLocaleDateString()}</p>
-                        </td>
-                        <td className="py-4 px-4">
-                           <span className="text-[8px] font-black text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">{e.client_email || 'Internal'}</span>
-                        </td>
-                        <td className="py-4 px-4 text-right">
-                           <p className="text-[10px] font-black text-slate-900">{formatKSH(e.amount)}</p>
-                        </td>
-                        <td className="py-4 px-4">
-                           <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => navigate(`/admin/billing/entry`)} className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-md"><Edit2 size={12} /></button>
-                              <button onClick={() => handleDeleteEntry(e.id)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md"><Trash2 size={12} /></button>
-                           </div>
-                        </td>
-                      </tr>
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    {["Date", "Description", "Type", "Category", "Reference", "Amount", ""].map(h => (
+                      <th key={h} className="pb-3 text-[7px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
                     ))}
-                    {financials.entries.length === 0 && <tr><td colSpan="4" className="py-20 text-center opacity-20 uppercase font-black text-[10px]">No ledger entries yet</td></tr>}
-                  </tbody>
-               </table>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {financials.entries.map(e => (
+                    <tr key={e.id} className="hover:bg-slate-50/50 transition-all">
+                      <td className="py-3 px-2 text-[8px] font-bold text-slate-400">{e.transaction_date ? new Date(e.transaction_date).toLocaleDateString() : new Date(e.created_at).toLocaleDateString()}</td>
+                      <td className="py-3 px-2 text-[9px] font-bold text-slate-700">{e.description || '—'}</td>
+                      <td className="py-3 px-2">
+                        <span className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-full ${e.entry_type === 'expense' ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                          {String(e.entry_type || '').replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-[8px] font-bold text-slate-500">{e.category || '—'}</td>
+                      <td className="py-3 px-2 text-[8px] font-bold text-slate-400 font-mono">{e.transaction_reference || '—'}</td>
+                      <td className={`py-3 px-2 text-right text-[10px] font-black ${e.entry_type === 'expense' ? 'text-rose-600' : 'text-emerald-600'}`}>
+                        {e.entry_type === 'expense' ? '-' : '+'}{formatKSH(e.amount)}
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <button onClick={() => handleDeleteEntry(e.id)} title="Delete entry" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={11} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                  {financials.entries.length === 0 && (
+                    <tr>
+                      <td colSpan="7" className="py-14 text-center">
+                        <p className="uppercase font-black text-[10px] text-slate-300 mb-4">Ledger is empty</p>
+                        <button onClick={() => navigate('/admin/billing/entry')} className="bg-teal-600 hover:bg-teal-700 text-white rounded-xl px-6 py-2.5 text-[8px] font-black uppercase tracking-widest transition-all">
+                          Record first entry
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        ) : displayMode === "mpesa" ? (
+        )}
+
+
+        {/* MPESA */}
+        {displayMode === "mpesa" && (
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
-               <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">M-Pesa Transactions</h3>
-               <button onClick={fetchFinancialData} className="text-[7px] font-black text-teal-600 uppercase tracking-widest flex items-center gap-1"><RefreshCw size={10} /> Refresh</button>
+               <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">M-Pesa Payments</h3>
+               <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Lipa Na M-Pesa STK Push</p>
             </div>
-            <div className="grid grid-cols-3 gap-4 mb-6">
-               <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-100">
-                  <p className="text-[6px] font-black text-emerald-600 uppercase tracking-widest">Collected (All Time)</p>
-                  <p className="text-sm font-black text-emerald-700">{formatKSH(financials.mpesa.filter(t => t.status === 'completed').reduce((s, t) => s + parseFloat(t.amount || 0), 0))}</p>
-               </div>
-               <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
-                  <p className="text-[6px] font-black text-amber-600 uppercase tracking-widest">Pending</p>
-                  <p className="text-sm font-black text-amber-700">{financials.mpesa.filter(t => t.status === 'pending').length}</p>
-               </div>
-               <div className="bg-rose-50 rounded-xl p-3 border border-rose-100">
-                  <p className="text-[6px] font-black text-rose-600 uppercase tracking-widest">Failed</p>
-                  <p className="text-sm font-black text-rose-700">{financials.mpesa.filter(t => t.status === 'failed').length}</p>
-               </div>
-            </div>
-            <div className="overflow-x-auto">
-               <table className="w-full text-left">
+            {financials.mpesa.length === 0 ? (
+              <div className="py-14 text-center">
+                <p className="uppercase font-black text-[10px] text-slate-300 mb-2">No M-Pesa transactions yet</p>
+                <p className="text-[8px] font-bold text-slate-400 max-w-md mx-auto leading-relaxed">
+                  When clients pay invoices via M-Pesa STK Push, every transaction (receipt number, phone, amount, status) appears here automatically.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
                   <thead>
-                    <tr className="text-[7px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
-                      <th className="py-3 px-4">Reference</th>
-                      <th className="py-3 px-4">Phone</th>
-                      <th className="py-3 px-4">Date</th>
-                      <th className="py-3 px-4 text-right">Amount</th>
-                      <th className="py-3 px-4 text-center">Status</th>
+                    <tr className="border-b border-slate-100">
+                      {["Receipt", "Phone", "Date", "Amount", "Status"].map(h => (
+                        <th key={h} className="pb-3 text-[7px] font-black text-slate-400 uppercase tracking-widest">{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -202,37 +288,10 @@ export function Billing() {
                         </td>
                       </tr>
                     ))}
-                    {financials.mpesa.length === 0 && <tr><td colSpan="5" className="py-16 text-center opacity-30 uppercase font-black text-[10px]">No M-Pesa transactions yet</td></tr>}
                   </tbody>
-               </table>
-            </div>
-          </div>
-        ) : (
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-               <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Invoices</h3>
-               <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">All invoices</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {financials.invoices.map(inv => (
-                 <div key={inv.id} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 hover:border-teal-400 transition-all group">
-                    <div className="flex justify-between items-start mb-4">
-                       <p className="text-[8px] font-black text-teal-600 uppercase">{inv.invoice_number}</p>
-                       <div className="flex gap-1">
-                          <button onClick={() => navigate(`/admin/billing/create`)} className="p-1 text-slate-400 hover:text-blue-500 transition-colors"><Edit2 size={10} /></button>
-                          <button onClick={() => handleDeleteInvoice(inv.id)} className="p-1 text-slate-400 hover:text-rose-500 transition-colors"><Trash2 size={10} /></button>
-                       </div>
-                    </div>
-                    <h4 className="text-[10px] font-black text-slate-900 uppercase mb-1 line-clamp-1">{inv.title}</h4>
-                    <p className="text-[8px] text-slate-500 font-bold truncate mb-6">{inv.client_email}</p>
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-200">
-                       <p className="text-sm font-black text-slate-900">{formatKSH(inv.total_amount_kes)}</p>
-                       <button onClick={() => navigate(`/admin/billing/preview/${inv.id}`)} className="p-1.5 bg-white rounded-lg shadow-sm group-hover:bg-teal-500 group-hover:text-white transition-all"><ChevronRight size={14} /></button>
-                    </div>
-                 </div>
-               ))}
-               {financials.invoices.length === 0 && <div className="col-span-full py-20 text-center opacity-20 uppercase font-black text-[10px]">No invoices yet</div>}
-            </div>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
