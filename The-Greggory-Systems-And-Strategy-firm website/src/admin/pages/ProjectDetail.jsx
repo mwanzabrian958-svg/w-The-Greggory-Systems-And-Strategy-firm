@@ -45,7 +45,7 @@ export function ProjectDetail() {
     in_progress: tasks.filter(t => t.status === "in_progress"),
     completed: tasks.filter(t => t.status === "completed")
   };
-\n
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300 max-w-[1400px] mx-auto">
       <Link to="/admin/projects" className="inline-flex items-center gap-2 text-[8px] font-black text-slate-500 uppercase tracking-widest hover:text-teal-600">
