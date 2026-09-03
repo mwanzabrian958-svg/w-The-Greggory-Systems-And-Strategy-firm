@@ -27,9 +27,13 @@ import { Personnel } from './pages/Personnel';
 import { CreatePersonnel } from './pages/CreatePersonnel';
 import { PersonnelPreview } from './pages/PersonnelPreview';
 import { ProjectTasks } from './pages/ProjectTasks';
+import { ProjectDetail } from './pages/ProjectDetail';
 import { SearchResults } from './pages/SearchResults';
 import { Team } from './pages/Team';
 import { DataSafety } from './pages/DataSafety';
+import { MediaLibrary } from './pages/MediaLibrary';
+import { EmailInbox } from './pages/EmailInbox';
+import { PermissionsManager } from './pages/PermissionsManager';
 import { PERMISSIONS } from './utils/permissions';
 import { apiCall } from '../services/api';
 
@@ -81,6 +85,7 @@ export function AdminRouter() {
       <Route path="content/create" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><CreateBlog /></AdminRoute>} />
       <Route path="content/preview/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><BlogPreview /></AdminRoute>} />
       <Route path="projects/:projectId/tasks" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><ProjectTasks /></AdminRoute>} />
+              <Route path="projects/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><ProjectDetail /></AdminRoute>} />
       <Route path="personnel/create" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><CreatePersonnel /></AdminRoute>} />
       <Route path="personnel/preview/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><PersonnelPreview /></AdminRoute>} />
 
@@ -103,6 +108,9 @@ export function AdminRouter() {
                <Route path="activity" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_ACTIVITY_LOGS}><ActivityLogs /></AdminRoute>} />
                <Route path="team" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.MANAGE_TEAM}><Team /></AdminRoute>} />
                <Route path="data-safety" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_DATA_SAFETY}><DataSafety /></AdminRoute>} />
+                <Route path="media" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><MediaLibrary /></AdminRoute>} />
+                <Route path="messages" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><EmailInbox /></AdminRoute>} />
+                <Route path="permissions" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><PermissionsManager /></AdminRoute>} />
                <Route path="search" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><SearchResults /></AdminRoute>} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>

@@ -9,6 +9,7 @@ import {
 import { apiCall } from "../../services/api";
 import { getNavigationItems } from "../utils/permissions";
 import SearchBlock from "../../components/SearchBlock";
+import { NotificationBell } from "./NotificationBell";
 
 const ICON_MAP = {
   Home, Users, FolderKanban, Calculator, Building2,
@@ -75,7 +76,7 @@ function AdminLayout({ user, children, onLogout }) {
           </div>
 
           <div className="flex items-center gap-6">
-            <button onClick={() => navigate('/admin/activity')} className="p-2 text-slate-400 hover:text-white rounded-xl transition-all relative group"><Bell className="h-5 w-5" /><span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#0f172a]"></span></button>
+            <NotificationBell />
             <div className="flex items-center gap-3">
                <div className="text-right hidden sm:block">
                   <p className="text-[10px] font-bold text-white leading-none">{displayName}</p>

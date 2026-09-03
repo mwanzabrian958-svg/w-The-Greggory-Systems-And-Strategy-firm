@@ -25,6 +25,7 @@ const Blog = lazy(() => import('./pages/Blog'))
 const BlogDetails = lazy(() => import('./pages/BlogDetails'))
 const Contact = lazy(() => import('./pages/Contact'))
 const Companies = lazy(() => import('./pages/Companies'))
+const ClientPortal = lazy(() => import('./pages/ClientPortal'))
 const Login = lazy(() => import('./pages/Login'))
 const Signup = lazy(() => import('./pages/Signup'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
@@ -98,6 +99,7 @@ function Layout() {
 
           <Route path="/contact" element={<Contact />} />
 
+          <Route path="/portal" element={<PrivateRoute><ClientPortal /></PrivateRoute>} />
           <Route path="/companies" element={<Companies />} />
 
           <Route path="/login" element={<Login />} />
