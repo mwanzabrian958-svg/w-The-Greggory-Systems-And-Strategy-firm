@@ -2151,6 +2151,17 @@ app.post("/api/accounting/entries", async (req, res) => {
     const userId = req.user?.id || (await getFirstUserId()) || 1; // Default to first real user for demo
     const resolvedProjectId = await resolveAccountingProjectId(project_id);
 
+    // Defensive defaults — no bind parameter may ever be `undefined`
+    const safeEntryType = entry_type || "expense";
+    const safeCategory = category || "Uncategorized";
+    const safeCurrency = currency || "KES";
+    const safeTxDate = transaction_date || new Date().toISOString().split("T")[0];
+    const safePaymentMethod = payment_method || "bank_transfer";
+    const safePaymentStatus = payment_status || "completed";
+    if (amount === undefined || amount === null || amount === "" || isNaN(parseFloat(amount))) {
+      return res.status(400).json({ success: false, message: "A valid amount is required" });
+    }
+
     const query = `
       INSERT INTO accounting_entries (
         entry_type, category, subcategory, amount, tax_amount, currency, exchange_rate,
@@ -2162,18 +2173,18 @@ app.post("/api/accounting/entries", async (req, res) => {
     `;
 
     const [result] = await db.execute(query, [
-      entry_type,
-      category,
+      safeEntryType,
+      safeCategory,
       subcategory || null,
       parseFloat(amount),
       parseFloat(tax_amount || 0),
-      currency,
+      safeCurrency,
       parseFloat(exchange_rate || 1),
-      transaction_date,
+      safeTxDate,
       transaction_reference || null,
-      payment_method,
-      payment_status,
-      description,
+      safePaymentMethod,
+      safePaymentStatus,
+      description || null,
       notes || null,
       budget_category || null,
       budget_period || null,
@@ -2208,12 +2219,14 @@ app.post("/api/accounting/entries", async (req, res) => {
 app.delete("/api/accounting/entries/:id", async (req, res) => {
   try {
     const entryId = req.params.id;
-    const userId = req.user?.id || 1;
 
-    // Soft delete the entry
+    // Soft delete the entry. `deleted_by` is intentionally left NULL: in the
+    // canonical schema it is FK-constrained to users(id), so recording an
+    // admin_users id here raises ER_NO_REFERENCED_ROW_2 and the delete 500s
+    // (matching the modular backend routes, which set deleted_at only).
     await db.execute(
-      "UPDATE accounting_entries SET deleted_at = NOW(), deleted_by = ? WHERE id = ?",
-      [userId, entryId],
+      "UPDATE accounting_entries SET deleted_at = NOW() WHERE id = ?",
+      [entryId],
     );
 
     res.json({
@@ -2388,12 +2401,13 @@ app.get("/api/invoices", async (req, res) => {
 app.delete("/api/invoices/:id", async (req, res) => {
   try {
     const invoiceId = req.params.id;
-    const userId = req.user?.id || 1;
 
-    // Soft delete the invoice
+    // Soft delete the invoice. `deleted_by` intentionally NULL — the FK on
+    // invoices.deleted_by references users(id), so an admin_users id would
+    // violate the constraint (see accounting_entries DELETE route comment).
     await db.execute(
-      "UPDATE invoices SET deleted_at = NOW(), deleted_by = ? WHERE id = ?",
-      [userId, invoiceId],
+      "UPDATE invoices SET deleted_at = NOW() WHERE id = ?",
+      [invoiceId],
     );
 
     res.json({
@@ -3045,12 +3059,12 @@ app.post("/api/quotes/:id/convert-to-invoice", async (req, res) => {
 app.delete("/api/quotes/:id", async (req, res) => {
   try {
     const quoteId = req.params.id;
-    const userId = req.user?.id || 1;
 
-    // Soft delete the quote
+    // Soft delete the quote. `deleted_by` intentionally NULL — quotes.deleted_by
+    // is FK-constrained to users(id) in the canonical schema, not admin_users.
     await db.execute(
-      "UPDATE quotes SET deleted_at = NOW(), deleted_by = ? WHERE id = ?",
-      [userId, quoteId],
+      "UPDATE quotes SET deleted_at = NOW() WHERE id = ?",
+      [quoteId],
     );
 
     res.json({
@@ -3832,7 +3846,7 @@ app.get("/api/admin/budget-overview", authenticateAdmin, async (req, res) => {
     const [revenueData] = await mainDb.query(`
       SELECT SUM(amount) as revenue
       FROM project_invoices
-      WHERE status = 'paid' AND deleted_at IS NULL
+      WHERE status = 'paid'
     `);
 
     const planned = parseFloat(budgetData[0]?.planned || 0);
@@ -4565,6 +4579,9 @@ app.delete("/api/:type/:id", async (req, res) => {
         break;
       case "videos":
         table = "videos";
+        break;
+      case "images":
+        table = "images";
         break;
       default:
         return res
