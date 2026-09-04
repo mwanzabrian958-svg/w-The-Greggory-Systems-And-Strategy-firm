@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiCall } from "../services/api";
 import { formatKSH } from "../utils/currencyUtils";
 import { useAuth } from "../context/AuthContext";
@@ -6,6 +7,7 @@ import { FolderKanban, FileText, DollarSign, RefreshCw, LogOut } from "lucide-re
 
 export function ClientPortal() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const displayName = user?.display_name || user?.name || (user?.first_name ? `${user?.first_name} ${user?.last_name}` : (user?.email || "Client"));
   const initials = displayName.split(" ").map(s => s ? s[0] : "").filter(Boolean).slice(0, 2).join("").toUpperCase();
   const profilePhoto = user?.profilePhotoData || null;
@@ -25,7 +27,16 @@ export function ClientPortal() {
       const userId = user?.id;
       setProjects(Array.isArray(p) ? p.filter(proj => String(proj.client_id) === String(userId) || String(proj.user_id) === String(userId)) : []);
       setInvoices(Array.isArray(i) ? i.filter(inv => String(inv.client_id) === String(userId)) : []);
-    } catch (e) { console.error("Client portal fetch failed:", e); }
+    } catch (e) {
+      const msg = String(e?.message || e || "").toLowerCase();
+      // Session expired / token revoked -> send the client back to login
+      if (msg.includes("401") || msg.includes("authentication") || msg.includes("unauthorized")) {
+        logout();
+        navigate("/login", { replace: true });
+        return;
+      }
+      console.error("Client portal fetch failed:", e);
+    }
     finally { setLoading(false); }
   };
 

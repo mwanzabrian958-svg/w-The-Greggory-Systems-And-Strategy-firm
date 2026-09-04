@@ -44,6 +44,12 @@ function check(name, cond, extra) {
   const ud = J(ulog.body);
   check("user login 200 + token (no email-token gating)", ulog.status === 200 && !!ud?.token, (ulog.body || "").substring(0, 80));
 
+  // ── CLIENT PORTAL ACCESS (ClientPortal.jsx -> PrivateRoute -> client-dashboard) ──
+  const cd = await api("/api/users/client-dashboard", "GET", null, ud?.token);
+  check("client portal dashboard 200 (token works)", cd.status === 200, (cd.body || "").substring(0, 90));
+  const badTok = await api("/api/users/client-dashboard", "GET", null, undefined);
+  check("client portal dashboard 401 without token (redirects to /login)", badTok.status === 401, "status=" + badTok.status);
+
   console.log("auth OK\n--- FINANCIAL HUB (Financial.jsx) ---");
 
   let r = await api("/api/admin/ledger", "GET", null, tok);

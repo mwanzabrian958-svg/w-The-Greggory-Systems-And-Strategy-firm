@@ -12,7 +12,9 @@ export const AuthProvider = ({ children }) => {
     const saved = localStorage.getItem('tgf_user')
     if (saved) {
       try {
-        return JSON.parse(saved)
+        const parsed = JSON.parse(saved)
+        // Only hydrate a real session — a profile without a token is stale
+        if (parsed?.token) return parsed
       } catch (e) {
         console.error('Auth parse error:', e)
       }
@@ -21,7 +23,7 @@ export const AuthProvider = ({ children }) => {
     if (adminSaved) {
       try {
         const adminData = JSON.parse(adminSaved)
-        return { ...adminData, role: adminData.role || 'admin' }
+        if (adminData?.token) return { ...adminData, role: adminData.role || 'admin' }
       } catch (e) {}
     }
     return null
