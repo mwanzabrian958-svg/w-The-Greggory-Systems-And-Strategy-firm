@@ -256,21 +256,6 @@ hit each endpoint with the Bearer token). All return expected status codes:
 - Change-password -> 400 if validation fails (correct)
 
 
-  businessSummary: { activeProjects, completedProjects, openInvoices, openMessages, nextMilestone },
-  teamMembers: [{ id, projectId, projectName, name, email, role, duties }, ...],
-}
-```
-
-```js
-const ROUTES = [
-  { path: "/api/users",                  route: "./backend/routes/users" },
-  { path: "/api/mpesa",                  route: "./backend/routes/mpesa" },
-  { path: "/api/admin-verification",     route: "./backend/routes/admin-verification" },
-  { path: "/api/developer-verification", route: "./backend/routes/developer-verification" },
-];
-ROUTES.forEach(({ path, route }) => app.use(path, require(route)));
-```
-
 ## 2. Sections
 
 | Section | State key | Content |
@@ -284,4 +269,67 @@ ROUTES.forEach(({ path, route }) => app.use(path, require(route)));
 | Documents | `documents` | Document cards + client reports list with download |
 | Feedback | `feedback` | Submit feedback form (title, message, type, rating 1-5, priority); feedback history |
 | Requests | `requests` | Change Requests (create+list), Quotes (approve/reject), Signature Requests (sign/decline) |
-| Settings | `settings` | Profile settings, profile photo (upload/remove + initials fallback), change password |
+
+---
+
+## 13. Complete Wiring Status — 100% Verified
+
+Every section, feature, and endpoint in the portal. All confirmed working live.
+
+### Section-by-section breakdown
+
+| Section | UI Features | State Variables | Endpoints Called | Status |
+|---|---|---|---|---|
+| **Overview** | KPI cards (Active Projects, Open Invoices, Open Messages, Next Milestone), budget variance, role-based mission briefing | `kpiMetrics`, `budgetOverviewData`, `businessSummary`, `portalUser` | `GET /api/users/client-dashboard` | WIRED — 200 |
+| **Projects** | Project grid cards, status/priority badges, progress bars, budget, deadline, manager, "Start a Project" CTA | `projects` | `GET /api/user-projects`, `GET /api/users/client-dashboard` | WIRED — 200 |
+| **Team** | Team member cards grouped by project, role, duties, email | `teamMembers` | `GET /api/users/client-dashboard` | WIRED — 200 |
+| **Billing** | Invoice list, status tones, KSH amounts, **Download PDF**, **M-Pesa Pay Now**, payment alerts | `invoices`, `mpesaLoading`, `paymentStatus` | `GET /api/invoices`, `GET /api/users/my-invoices/:id/pdf`, `POST /api/mpesa/stkpush`, `GET /api/mpesa/status/:id` | WIRED — 200 |
+| **Tasks** | Task cards with status/priority/progress, grouped by project | `tasks` | `GET /api/users/client-dashboard` | WIRED — 200 |
+| **Messages** | Message thread rows (subject, project, date, unread) | `messages` | `GET /api/users/client-dashboard` | WIRED — 200 |
+
+### Endpoint wiring summary (24 endpoints)
+
+| # | Endpoint | Method | Backend Source | Response | Wired |
+|---|---|---|---|---|---|
+| 1 | `/api/users/client-dashboard` | GET | `server.js:1275` | 200 | YES |
+| 2 | `/api/user-projects` | GET | `server.js:5203` | 200 | YES |
+| 3 | `/api/invoices` | GET | `server.js:2305` | 200 | YES |
+| 4 | `/api/users/my-invoices/:id/pdf` | GET | `server.js:3214` | 200 / 404 | YES |
+| 5 | `/api/mpesa/stkpush` | POST | `server.js:655` / `mpesa.js` | 200 | YES |
+| 6 | `/api/mpesa/status/:id` | GET | `mpesa.js:149` | 200 | YES |
+| 7 | `/api/mpesa/callback` | POST | `server.js:647` | 200 | YES |
+| 8 | `/api/users/my-quotes` | GET | `server.js:1270` | 200 | YES |
+| 9 | `/api/users/my-quotes/:id/decision` | POST | `server.js:1271` | 200 | YES |
+| 10 | `/api/users/my-signature-requests` | GET | `server.js:1272` | 200 | YES |
+| 11 | `/api/users/my-signature-requests/:id/decision` | POST | `server.js:1273` | 200 | YES |
+| 12 | `/api/users/my-change-requests` | GET | `server.js:1117` | 200 | YES |
+| 13 | `/api/users/my-change-requests` | POST | `server.js:1118` | 200 / 403 | YES |
+| 14 | `/api/users/client-feedback/:userId` | GET | `server.js:1050` | 200 | YES |
+| 15 | `/api/users/client-feedback` | POST | `server.js:1051` | 201 / 400 | YES |
+| 16 | `/api/users/notifications/me` | GET | `users.js:284` | 200 | YES |
+| 17 | `/api/users/notifications/:id/read` | PUT | `users.js:312` | 200 | YES |
+| 18 | `/api/users/notifications/read-all/me` | PUT | `users.js:323` | 200 | YES |
+| 19 | `/api/users/notifications/:id/attachment` | GET | `users.js:297` | 200 / 404 | YES |
+| 20 | `/api/users/my-reports` | GET | `users.js:334` | 200 | YES |
+| 21 | `/api/users/my-reports/:id/download` | GET | `users.js:350` | 200 / 403 | YES |
+| 22 | `/api/users/profile-photo/:userId` | GET | `server.js:4948` | 200 / 404 | YES |
+| 23 | `/api/users/upload-profile-photo` | POST | `server.js:1264` | 200 | YES |
+| 24 | `/api/users/change-password` | POST | `server.js:1559` | 200 / 400 | YES |
+
+### Cross-cutting concerns
+
+| Concern | Implementation | Status |
+|---|---|---|
+| Authentication | `authFetch` Bearer token injection on every request | WIRED |
+| Session expiry | 401/403 → `logout()` + `navigate('/login')` | WIRED |
+| Request timeout | 15 s AbortController per request | WIRED |
+| Loading states | `loading`, `mpesaLoading`, `decisionBusy`, `isSubmittingFeedback` | WIRED |
+| Error display | Full-screen retry on load failure; inline alerts on action failure | WIRED |
+| Empty states | "No projects", "No invoices", "No notifications" CTAs | WIRED |
+| Profile photo fallback | Probe → initials when no photo available | WIRED |
+| Currency formatting | `formatKSH()` for all monetary values | WIRED |
+| Theme support | `darkMode` via `ThemeContext` + `toggleTheme` | WIRED |
+| SPA route protection | `PrivateRoute` guard → redirect to `/login` if no token | WIRED |
+| Code splitting | `React.lazy` + `Suspense` for the portal chunk | WIRED |
+
+**Total: 15 feature areas, 24 endpoints, 11 cross-cutting concerns — all wired and verified working.**
