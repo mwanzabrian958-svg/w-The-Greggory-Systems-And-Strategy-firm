@@ -38,10 +38,6 @@ const TAX_PRESETS = Object.freeze([
   { type: "withholding", pct: 5, rate: 0.05, label: "Withholding Tax (5%) — professional fees" },
 ]);
 
-/** Firm's KRA PIN / VAT registration (env-configured; blank until provided). */
-const KRA_PIN = String(process.env.COMPANY_KRA_PIN || "").trim();
-const VAT_NUMBER = String(process.env.COMPANY_VAT_NUMBER || "").trim();
-
 /**
  * Normalize any tax input to the DECIMAL FRACTION the `invoices` table expects.
  * DB columns: tax_rate DECIMAL(5,4), and `tax_amount` is a STORED generated
@@ -86,8 +82,6 @@ function roundMoney(n) {
 module.exports = {
   KRA_RATES,
   TAX_PRESETS,
-  KRA_PIN,
-  VAT_NUMBER,
   normalizeRate,
   rateToPct,
   taxLabel,

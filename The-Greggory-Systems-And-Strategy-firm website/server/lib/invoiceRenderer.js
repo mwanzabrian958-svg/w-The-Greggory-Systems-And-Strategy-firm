@@ -7,7 +7,7 @@
 // =============================================================================
 "use strict";
 const PDFDocument = require("pdfkit");
-const { rateToPct, taxLabel, roundMoney, KRA_PIN, VAT_NUMBER } = require("./kraTax");
+const { rateToPct, taxLabel, roundMoney } = require("./kraTax");
 
 const FIRM_LEGAL_NAME = "THE GREGGORY SYSTEMS AND STRATEGY FIRM";
 const FIRM_TAGLINE = "Strategic Projects, Systems & Business Solutions";
@@ -337,11 +337,7 @@ let rowIdx = 1;
     doc.text(FIRM_LEGAL_NAME, M, PAGE_H - 70, { width: CW });
     doc.font("Helvetica").fontSize(6.5).fillColor(SLATE);
     doc.text(`${FIRM_EMAIL}  ·  ${FIRM_PHONE}  ·  ${FIRM_ADDRESS}`, M, PAGE_H - 60, { width: CW });
-    const taxRegLine = [KRA_PIN ? `KRA PIN: ${KRA_PIN}` : "", VAT_NUMBER ? `VAT Reg No: ${VAT_NUMBER}` : ""]
-      .filter(Boolean)
-      .join("   ·   ");
-    if (taxRegLine) doc.text(taxRegLine, M, PAGE_H - 52, { width: CW });
-    doc.text(`© ${new Date().getFullYear()} ${FIRM_LEGAL_NAME}. All rights reserved.`, M, PAGE_H - 45, { width: CW });
+    doc.text(`© ${new Date().getFullYear()} ${FIRM_LEGAL_NAME}. All rights reserved.`, M, PAGE_H - 48, { width: CW });
 
     doc.end();
   });
@@ -485,7 +481,7 @@ ${
           <td colspan="2" style="background:#f8fafc;padding:16px 30px;border-top:1px solid #e2e8f0;">
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="font-size:10px;color:#64748b;text-align:left;">${esc(FIRM_EMAIL)}<br/>${esc(FIRM_PHONE)}<br/>${esc(FIRM_ADDRESS)}${KRA_PIN ? `<br/><span style="color:#475569;">KRA PIN: ${esc(KRA_PIN)}</span>` : ""}${VAT_NUMBER ? `<br/><span style="color:#475569;">VAT Reg No: ${esc(VAT_NUMBER)}</span>` : ""}</td>
+                <td style="font-size:10px;color:#64748b;text-align:left;">${esc(FIRM_EMAIL)}<br/>${esc(FIRM_PHONE)}<br/>${esc(FIRM_ADDRESS)}</td>
                 <td style="font-size:9px;color:#94a3b8;text-align:right;">© ${new Date().getFullYear()} ${esc(FIRM_LEGAL_NAME)}<br/>All rights reserved.</td>
               </tr>
             </table>
