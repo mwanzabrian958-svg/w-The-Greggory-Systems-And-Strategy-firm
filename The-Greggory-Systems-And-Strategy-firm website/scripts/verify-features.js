@@ -25,8 +25,15 @@ function check(name, cond, extra) {
 (async () => {
   const em = "verify" + Date.now() + "@test.com";
   await api("/api/admin-verification/register", "POST", { email: em, password: "Verify123", first_name: "Ver", last_name: "Ify", role: "admin" });
-  const login = await api("/api/admin-verification/authenticate-enhanced", "POST", { email: em, password: "Verify123" });
-  const tok = J(login.body)?.token;
+  // Login can transiently hit the global 100-req/15-min rate limiter (plain-text
+  // 429 body) when runs are back-to-back — retry a few times before giving up.
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  let tok = null;
+  for (let i = 1; i <= 5 && !tok; i++) {
+    const login = await api("/api/admin-verification/authenticate-enhanced", "POST", { email: em, password: "Verify123" });
+    tok = J(login.body)?.token;
+    if (!tok) { console.log(`login attempt ${i} failed (${login.status}) — retrying...`); await sleep(800); }
+  }
   if (!tok) { console.log("FATAL: no token"); process.exit(1); }
   console.log("auth OK\n--- FINANCIAL HUB (Financial.jsx) ---");
 
@@ -46,6 +53,8 @@ function check(name, cond, extra) {
   const created = invList.find(i => i.title === "Verify " + stamp);
   check("invoice persisted & listed", !!created);
   if (created) {
+    const send = await api("/api/invoices/" + created.id + "/send", "POST", {}, tok);
+    check("send invoice to client (email+PDF)", send.status === 200, (send.body || "").substring(0, 90));
     const del = await api("/api/invoices/" + created.id, "DELETE", null, tok);
     check("delete invoice (Financial Hub button)", del.status === 200);
   }

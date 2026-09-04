@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Download, Printer, X, RefreshCw } from "lucide-react";
+import { Download, Printer, X, RefreshCw, Send, MailCheck } from "lucide-react";
 import { getApiUrl } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import SearchBlock from "../../components/SearchBlock";
@@ -10,6 +10,8 @@ export function InvoicePreview() {
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [sendMsg, setSendMsg] = useState(null);
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -23,6 +25,34 @@ export function InvoicePreview() {
     };
     fetchInvoice();
   }, [id]);
+
+  const handleSendInvoice = async () => {
+    if (!invoice) return;
+    if (!invoice.client_email) {
+      setSendMsg({ ok: false, text: "This invoice has no client email — add one and retry." });
+      return;
+    }
+    if (!window.confirm(`Send invoice ${invoice.invoice_number || "INV-" + invoice.id} to ${invoice.client_email}?`)) return;
+    setSending(true);
+    setSendMsg(null);
+    try {
+      const res = await fetch(getApiUrl(`/api/invoices/${invoice.id}/send`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setInvoice((inv) => ({ ...inv, email_sent: 1, email_sent_at: new Date().toISOString(), status: "sent" }));
+        setSendMsg({ ok: true, text: data.message });
+      } else {
+        setSendMsg({ ok: false, text: data.message || data.error || "Failed to send invoice" });
+      }
+    } catch (e) {
+      setSendMsg({ ok: false, text: String(e.message || e) });
+    }
+    setSending(false);
+  };
 
   if (loading) return <div className="fixed inset-0 bg-[#020617] flex items-center justify-center"><RefreshCw className="animate-spin text-teal-500" /></div>;
   if (!invoice) return <div className="fixed inset-0 bg-[#020617] flex items-center justify-center text-white">Invoice Not Found <button onClick={() => navigate('/admin/billing')} className="ml-4 underline">Back</button></div>;
@@ -39,11 +69,21 @@ export function InvoicePreview() {
             <SearchBlock variant="admin" placeholder="Query mission database..." />
          </div>
          <div className="flex gap-4">
+            <button onClick={handleSendInvoice} disabled={sending} className={`flex items-center gap-3 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${invoice.email_sent ? "bg-emerald-600/90 border-emerald-400 text-white" : "bg-white/5 border-white/10 text-white hover:bg-emerald-600 hover:border-emerald-400"} disabled:opacity-60`}>
+               {sending ? <RefreshCw size={16} className="animate-spin" /> : invoice.email_sent ? <MailCheck size={16} /> : <Send size={16} />}
+               {invoice.email_sent ? "Sent" : "Send to Client"}
+            </button>
             <a href={getApiUrl(`/api/documents/invoices/${id}/pdf`)} className="flex items-center gap-3 bg-teal-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-500 transition-all border border-teal-500"><Download size={16} /> Download PDF</a>
             <button onClick={() => window.print()} className="flex items-center gap-3 bg-white/5 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/10"><Printer size={16} /> Print</button>
             <button onClick={() => navigate('/admin/billing')} className="p-3 bg-rose-600 text-white rounded-2xl shadow-xl hover:bg-rose-700 transition-all"><X size={20} /></button>
          </div>
       </div>
+
+      {sendMsg && (
+         <div className={`mx-10 mt-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border ${sendMsg.ok ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
+            {sendMsg.text}
+         </div>
+      )}
 
       <div className="flex-1 bg-slate-900/50 py-20 px-4 flex justify-center">
          <div className="bg-white shadow-[0_0_100px_rgba(0,0,0,0.8)] w-full max-w-[850px] p-6 sm:p-12 lg:p-24 text-slate-900 relative min-h-[700px] lg:min-h-[1150px] font-serif printable-area overflow-hidden rounded-sm">

@@ -11,9 +11,10 @@ export function CreateInvoice() {
   const [projects, setProjects] = useState([]);
 
   const [invoiceForm, setInvoiceForm] = useState({
-    project_id: '', title: '', invoice_type: 'project_fee', subtotal: '', tax_rate: '0',
+    project_id: '', title: '', invoice_type: 'project_fee', tax_rate: '0',
     issue_date: new Date().toISOString().split('T')[0], due_date: '',
-    client_name: '', client_email: '', client_phone: '', notes: ''
+    client_name: '', client_email: '', client_phone: '', notes: '',
+    items: [{ description: '', quantity: '1', unit_price: '' }]
   });
 
   useEffect(() => {
@@ -29,6 +30,17 @@ export function CreateInvoice() {
     fetchProjects();
   }, []);
 
+  const itemsSubtotal = invoiceForm.items.reduce(
+    (s, it) => s + parseFloat(it.quantity || 0) * parseFloat(it.unit_price || 0), 0
+  );
+
+  const updateItem = (idx, field, value) =>
+    setInvoiceForm((f) => ({ ...f, items: f.items.map((it, i) => (i === idx ? { ...it, [field]: value } : it)) }));
+  const addLineItem = () =>
+    setInvoiceForm((f) => ({ ...f, items: [...f.items, { description: '', quantity: '1', unit_price: '' }] }));
+  const removeLineItem = (idx) =>
+    setInvoiceForm((f) => ({ ...f, items: f.items.length > 1 ? f.items.filter((_, i) => i !== idx) : f.items }));
+
   const handleInvoiceSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -38,7 +50,13 @@ export function CreateInvoice() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...invoiceForm,
-          items: [{ description: invoiceForm.title, amount: invoiceForm.subtotal }],
+          subtotal: itemsSubtotal,
+          items: invoiceForm.items.map((it) => ({
+            description: it.description || invoiceForm.title,
+            quantity: parseFloat(it.quantity || 1),
+            unit_price: parseFloat(it.unit_price || 0),
+            line_total: parseFloat(it.quantity || 1) * parseFloat(it.unit_price || 0),
+          })),
           currency: 'KES'
         })
       });
@@ -78,10 +96,7 @@ export function CreateInvoice() {
                     </select>
                   </div>
                   <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Objective</label><input type="text" placeholder="Description..." value={invoiceForm.title} onChange={(e) => setInvoiceForm({...invoiceForm, title: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" required /></div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Value (KSH)</label><input type="number" value={invoiceForm.subtotal} onChange={(e) => setInvoiceForm({...invoiceForm, subtotal: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] font-black text-emerald-400 outline-none focus:border-emerald-500 transition-all" required /></div>
-                    <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Tax (%)</label><input type="number" value={invoiceForm.tax_rate} onChange={(e) => setInvoiceForm({...invoiceForm, tax_rate: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" /></div>
-                  </div>
+                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Tax (%)</label><input type="number" value={invoiceForm.tax_rate} onChange={(e) => setInvoiceForm({...invoiceForm, tax_rate: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" /></div>
                 </div>
               </section>
             </div>
@@ -101,6 +116,40 @@ export function CreateInvoice() {
             </div>
 
             <div className="md:col-span-2">
+              <section className="space-y-3">
+                <div className="flex items-center justify-between border-b border-white/5 pb-1.5">
+                  <div className="flex items-center gap-2 text-emerald-400"><Briefcase size={10} /><h4 className="text-[7px] font-black uppercase tracking-widest">Line Items</h4></div>
+                  <button type="button" onClick={addLineItem} className="text-[7px] font-black text-teal-400 uppercase tracking-widest hover:text-white transition-colors">+ Add Item</button>
+                </div>
+                <div className="space-y-2">
+                  <div className="hidden md:grid grid-cols-12 gap-2 px-1 text-[6px] font-black text-slate-500 uppercase tracking-widest">
+                    <div className="col-span-6">Description</div>
+                    <div className="col-span-2">Qty</div>
+                    <div className="col-span-2">Rate (KSH)</div>
+                    <div className="col-span-2 text-right">Amount</div>
+                  </div>
+                  {invoiceForm.items.map((it, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-center">
+                      <input type="text" placeholder="Service / deliverable..." value={it.description} onChange={(e) => updateItem(idx, 'description', e.target.value)} className="col-span-12 md:col-span-6 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" />
+                      <input type="number" min="1" step="any" value={it.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} className="col-span-4 md:col-span-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" />
+                      <input type="number" min="0" step="any" placeholder="0" value={it.unit_price} onChange={(e) => updateItem(idx, 'unit_price', e.target.value)} className="col-span-5 md:col-span-2 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" />
+                      <div className="col-span-3 md:col-span-2 flex items-center justify-end gap-2">
+                        <span className="text-[10px] font-black text-emerald-400">{formatKSH(parseFloat(it.quantity || 0) * parseFloat(it.unit_price || 0))}</span>
+                        <button type="button" onClick={() => removeLineItem(idx)} className="p-1 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all" title="Remove item"><X size={11} /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end pt-1">
+                  <div className="text-right">
+                    <p className="text-[6px] font-black text-slate-500 uppercase tracking-widest">Subtotal</p>
+                    <p className="text-sm font-black text-emerald-400">{formatKSH(itemsSubtotal)}</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div className="md:col-span-2">
               <textarea value={invoiceForm.notes} onChange={(e) => setInvoiceForm({...invoiceForm, notes: e.target.value})} className="w-full bg-white/2 border border-white/5 rounded-xl text-[9px] font-medium text-slate-400 p-4 outline-none h-16 resize-none" placeholder="Mission constraints..."></textarea>
             </div>
           </div>
@@ -110,7 +159,7 @@ export function CreateInvoice() {
            <div className="flex gap-6">
               <div className="text-left">
                 <p className="text-[5.5px] font-black text-slate-500 uppercase tracking-widest">Calculated Debt</p>
-                <p className="text-xl font-black text-white">{formatKSH(parseFloat(invoiceForm.subtotal || 0) * (1 + parseFloat(invoiceForm.tax_rate || 0)/100))}</p>
+                <p className="text-xl font-black text-white">{formatKSH(itemsSubtotal * (1 + parseFloat(invoiceForm.tax_rate || 0) / 100))}</p>
               </div>
            </div>
            <button onClick={handleInvoiceSubmit} disabled={isSubmitting} className="w-full md:w-auto bg-teal-600 hover:bg-teal-500 text-white px-8 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2">

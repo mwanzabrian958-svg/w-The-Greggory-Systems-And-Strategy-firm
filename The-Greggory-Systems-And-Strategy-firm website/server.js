@@ -43,7 +43,9 @@ if (!process.env.ADMIN_SESSION_SECRET && !process.env.JWT_SECRET) {
 const bcryptjs = require("bcryptjs");
 const { buildClientPortalPayload } = require("./server/utils/clientPortalData");
 const { sendWhatsAppToUser, sendWhatsAppToUserStrict, providerConfigured: whatsappProviderConfigured } = require("./backend/services/whatsappService");
-const { sendInvoiceEmail } = require("./backend/services/emailService");
+const { sendMail, sendInvoiceEmail } = require("./backend/services/emailService");
+// Professional document renderers (PDF + email HTML) — see server/lib/invoiceRenderer.js
+const { generatePDFContent, buildDocumentEmailHtml } = require("./server/lib/invoiceRenderer");
 require("dotenv").config();
 
 // Initialize Security & Auth Clients
@@ -284,56 +286,9 @@ function isLocalAdminIp(raw) {
   );
 }
 
-// PDF Generation Helper Function (Pro Upgrade)
-async function generatePDFContent(type, document) {
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ margin: 50 });
-    let chunks = [];
-    doc.on('data', chunk => chunks.push(chunk));
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
-    doc.on('error', reject);
-
-    // Header / Branding
-    doc.fontSize(20).text('THE GREGGORY SYSTEMS', { align: 'right' });
-    doc.fontSize(10).text('Strategic Systems & Strategy Firm', { align: 'right' });
-    doc.moveDown();
-    doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-    doc.moveDown();
-
-    const title = type.toUpperCase().replace(/S$/, '');
-    doc.fontSize(25).fillColor('#0ea5e9').text(title, { underline: true });
-    doc.fillColor('black').fontSize(10);
-    doc.moveDown();
-
-    if (type === "invoices") {
-      doc.text(`Invoice Number: ${document.invoice_number}`);
-      doc.text(`Date: ${document.issue_date}`);
-      doc.text(`Due Date: ${document.due_date}`);
-    } else if (type === "quotes") {
-      doc.text(`Quote Number: ${document.quote_number}`);
-      doc.text(`Valid Until: ${document.valid_until}`);
-    }
-
-    doc.moveDown();
-    doc.fontSize(14).text('Bill To:', { underline: true });
-    doc.fontSize(10).text(document.client_name);
-    doc.text(document.client_email || '');
-    doc.text(document.client_phone || '');
-    doc.moveDown();
-
-    // Line Items Table logic would go here in a full implementation
-    doc.fontSize(12).text('Description:', { underline: true });
-    doc.fontSize(10).text(document.description || 'Service delivery as per agreement');
-    doc.moveDown();
-
-    doc.fontSize(16).fillColor('#0ea5e9').text(`TOTAL AMOUNT: KES ${document.total_amount || document.amount}`, { align: 'right' });
-
-    doc.moveDown(4);
-    doc.fillColor('gray').fontSize(8).text('Thank you for choosing The Greggory Systems. Payments via M-Pesa Business 174379.', { align: 'center' });
-
-    doc.end();
-  });
-}
+// NOTE: generatePDFContent + buildDocumentEmailHtml moved to
+// server/lib/invoiceRenderer.js (professional invoice/quote/receipt layout) —
+// required at the top of this file, so every route below uses the new renderer.
 
 const app = express();
 
@@ -3225,8 +3180,8 @@ app.get("/api/documents/:type/:id/pdf", async (req, res) => {
       });
     }
 
-    // Generate PDF content (simplified version)
-    const pdfContent = generatePDFContent(type, document);
+    // Generate PDF content (professional layout — awaited so res.send gets a Buffer)
+    const pdfContent = await generatePDFContent(type, document);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
@@ -3333,7 +3288,7 @@ app.post("/api/documents/generate/:type/:id", async (req, res) => {
     }
 
     // Generate PDF content
-    const pdfContent = generatePDFContent(type, document);
+    const pdfContent = await generatePDFContent(type, document);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
@@ -3348,6 +3303,77 @@ app.post("/api/documents/generate/:type/:id", async (req, res) => {
       message: "Failed to generate document",
       error: error.message,
     });
+  }
+});
+
+// Admin: one-click "send invoice to client" — renders the professional PDF +
+// matching HTML email and delivers both via SMTP. Marks the invoice as sent.
+app.post("/api/invoices/:id/send", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email: overrideEmail, subject: overrideSubject, message } = req.body || {};
+
+    const [rows] = await db.execute("SELECT * FROM invoices WHERE id = ? AND deleted_at IS NULL", [id]);
+    const invoice = rows && rows[0];
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: "Invoice not found" });
+    }
+
+    const to = overrideEmail || invoice.client_email;
+    if (!to) {
+      return res.status(400).json({
+        success: false,
+        message: "This invoice has no client email. Add one on the invoice and retry.",
+      });
+    }
+
+    const pdfBuffer = await generatePDFContent("invoices", invoice);
+    const htmlEmail = buildDocumentEmailHtml("invoices", invoice);
+    const invoiceRef = invoice.invoice_number || `INV-${invoice.id}`;
+
+    const sendResult = await sendMail({
+      to,
+      subject:
+        overrideSubject ||
+        `Invoice ${invoiceRef} — The Greggory Systems & Strategy Firm`,
+      html: htmlEmail,
+      text: message || undefined,
+      attachments: [
+        {
+          filename: `${invoiceRef}.pdf`,
+          content: pdfBuffer,
+          contentType: "application/pdf",
+        },
+      ],
+    });
+
+    if (!sendResult.success) {
+      return res.status(502).json({
+        success: false,
+        message: "Email failed to send",
+        error: sendResult.error,
+      });
+    }
+
+    await db.execute(
+      "UPDATE invoices SET email_sent = TRUE, email_sent_at = NOW(), status = ? WHERE id = ?",
+      ["sent", id],
+    );
+    await db.execute(
+      "INSERT INTO activity_logs (user_id, action_type, action_description, created_at) VALUES (?, ?, ?, NOW())",
+      [req.user?.id || 1, "send_document", `Sent invoice ${invoiceRef} to ${to}`],
+    );
+
+    res.json({
+      success: true,
+      simulated: !!sendResult.simulated,
+      message: sendResult.simulated
+        ? `Email simulated (SMTP not configured) — invoice ${invoiceRef} marked as sent.`
+        : `Invoice ${invoiceRef} sent to ${to}`,
+    });
+  } catch (error) {
+    console.error("[INVOICE SEND] Error:", error);
+    res.status(500).json({ success: false, message: "Failed to send invoice", error: error.message });
   }
 });
 
@@ -3382,28 +3408,45 @@ app.post("/api/documents/send", async (req, res) => {
       });
     }
 
-    // Generate PDF
-    const pdfContent = generatePDFContent(documentType, document);
+    // Generate the professional PDF (buffer) + the matching HTML email
+    const pdfBuffer = await generatePDFContent(documentType, document);
+    const htmlEmail = buildDocumentEmailHtml(documentType, document);
+    const docRef =
+      document.invoice_number ||
+      document.quote_number ||
+      document.transaction_id ||
+      `${documentType}-${documentId}`;
 
-    // Send email (simplified - in production, use nodemailer or similar)
-    const emailData = {
+    // Actually deliver via SMTP (simulated when SMTP_PASS is unset — dev/test)
+    const sendResult = await sendMail({
       to: email,
-      subject: subject,
-      text: message,
+      subject:
+        subject ||
+        `${documentType === "invoices" ? "Invoice" : documentType === "quotes" ? "Quote" : "Receipt"} ${docRef} — The Greggory Systems & Strategy Firm`,
+      html: htmlEmail,
+      text: message || undefined,
       attachments: [
         {
-          filename: `${documentType}-${document.invoice_number || document.quote_number}.pdf`,
-          content: pdfContent,
+          filename: `${documentType}-${docRef}.pdf`,
+          content: pdfBuffer,
           contentType: "application/pdf",
         },
       ],
-    };
+    });
 
-    // Update email sent status
+    if (!sendResult.success) {
+      return res.status(502).json({
+        success: false,
+        message: "Email failed to send",
+        error: sendResult.error,
+      });
+    }
+
+    // Mark as sent — only on a real (or simulated) success
     if (documentType === "invoices") {
       await db.execute(
-        "UPDATE invoices SET email_sent = TRUE, email_sent_at = NOW() WHERE id = ?",
-        [documentId],
+        "UPDATE invoices SET email_sent = TRUE, email_sent_at = NOW(), status = ? WHERE id = ?",
+        ["sent", documentId],
       );
     } else if (documentType === "quotes") {
       await db.execute(
@@ -3416,15 +3459,18 @@ app.post("/api/documents/send", async (req, res) => {
     await db.execute(
       "INSERT INTO activity_logs (user_id, action_type, action_description, created_at) VALUES (?, ?, ?, NOW())",
       [
-        1,
+        req.user?.id || 1,
         "send_document",
-        `Sent ${documentType} ${document.invoice_number || document.quote_number} to ${email}`,
+        `Sent ${documentType} ${docRef} to ${email}`,
       ],
     );
 
     res.json({
       success: true,
-      message: "Document sent successfully",
+      simulated: !!sendResult.simulated,
+      message: sendResult.simulated
+        ? "Email simulated (SMTP not configured) — document marked as sent."
+        : `Document ${docRef} sent to ${email}`,
     });
   } catch (error) {
     console.error("Error sending document:", error);

@@ -4,13 +4,15 @@ import { apiCall } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import {
   TrendingUp, Banknote, RefreshCw, FilePlus2,
-  Trash2, Eye, Plus, Wallet, Receipt
+  Trash2, Eye, Plus, Wallet, Receipt, Send
 } from "lucide-react";
 
 export function Billing() {
   const navigate = useNavigate();
   const [displayMode, setDisplayMode] = useState("invoices"); // 'invoices' | 'ledger' | 'mpesa'
   const [loading, setLoading] = useState(true);
+  const [sendingId, setSendingId] = useState(null);
+  const [notice, setNotice] = useState(null);
   const [financials, setFinancials] = useState({
     revenue: 0, expenses: 0, net_income: 0, outstanding: 0,
     entries: [], invoices: [], mpesa: []
@@ -50,6 +52,29 @@ export function Billing() {
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
+  const handleSendInvoice = async (inv) => {
+    if (!inv.client_email) {
+      setNotice({ ok: false, text: `Invoice ${inv.invoice_number || inv.id} has no client email — open it and add one.` });
+      return;
+    }
+    if (!window.confirm(`Send invoice ${inv.invoice_number || "INV-" + inv.id} to ${inv.client_email}?`)) return;
+    setSendingId(inv.id);
+    setNotice(null);
+    try {
+      const res = await apiCall(`/invoices/${inv.id}/send`, { method: "POST", body: JSON.stringify({}) });
+      if (res.success) {
+        setNotice({ ok: true, text: res.message || "Invoice sent to client." });
+        fetchFinancialData();
+      } else {
+        setNotice({ ok: false, text: res.message || res.error || "Failed to send invoice." });
+      }
+    } catch (e) {
+      setNotice({ ok: false, text: String(e.message || e) });
+    }
+    setSendingId(null);
+    setTimeout(() => setNotice(null), 6000);
+  };
+
   const handleDeleteEntry = async (id) => {
     if (!window.confirm("Delete this ledger entry?")) return;
     try {
@@ -84,6 +109,12 @@ export function Billing() {
 
   return (
     <div className="space-y-6 animate-fade-in font-sans max-w-[1200px] mx-auto pb-10">
+
+      {notice && (
+        <div className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border ${notice.ok ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
+          {notice.text}
+        </div>
+      )}
 
       {/* HEADER + PRIMARY ACTIONS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -174,6 +205,9 @@ export function Billing() {
                       <td className="py-3 px-2 text-center">{statusBadge(inv.status)}</td>
                       <td className="py-3 px-2">
                         <div className="flex gap-1 justify-end">
+                          <button onClick={() => handleSendInvoice(inv)} disabled={sendingId === inv.id} title={inv.client_email ? `Send invoice to ${inv.client_email}` : "No client email"} className={`p-1.5 rounded-lg transition-all ${inv.email_sent ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-400 hover:bg-teal-500 hover:text-white"} disabled:opacity-60`}>
+                            {sendingId === inv.id ? <RefreshCw size={11} className="animate-spin" /> : <Send size={11} />}
+                          </button>
                           <button onClick={() => navigate(`/admin/billing/preview/${inv.id}`)} title="View invoice" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-teal-500 hover:text-white transition-all"><Eye size={11} /></button>
                           <button onClick={() => handleDeleteInvoice(inv.id)} title="Delete invoice" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={11} /></button>
                         </div>
