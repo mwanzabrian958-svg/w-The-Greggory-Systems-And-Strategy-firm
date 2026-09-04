@@ -136,22 +136,33 @@ router.delete('/:id', requireAdmin, (req, res) => {
 // AUTH PROTOCOL: User registration
 router.post('/register', authEndpointValidator('user', 'users'), async (req, res) => {
   try {
-    const { email, password, first_name, last_name, display_name, phone, profile_image_id } = req.body;
-    
+    const { email, password, first_name, last_name, display_name, phone } = req.body;
+    const profilePhotoBase64 = req.body.profile_photo_base64 || null;
+    const profilePhotoMime = req.body.profile_photo_mime_type || "image/jpeg";
+    const profilePhotoName = req.body.profile_photo_file_name || "profile.jpg";
+
     if (!email || !password || !first_name || !last_name) {
       return res.status(400).json({ success: false, message: 'Fields required' });
     }
 
-    const [existing] = await db.promise().query('SELECT id FROM users WHERE email = ?', [email]);
+    const [existing] = await db.promise().query('SELECT id FROM users WHERE email = ? AND deleted_at IS NULL', [email]);
     if (existing.length > 0) return res.status(400).json({ success: false, message: 'Email taken' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const name = display_name || `${first_name} ${last_name}`;
 
+    // Store the optional profile photo as a blob in the columns the users table actually has.
+    let photoBlob = null;
+    if (profilePhotoBase64) {
+      const commaIdx = profilePhotoBase64.indexOf(",");
+      const base64Data = commaIdx > -1 ? profilePhotoBase64.slice(commaIdx + 1) : profilePhotoBase64;
+      photoBlob = Buffer.from(base64Data, "base64");
+    }
+
     const [result] = await db.promise().query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, display_name, phone_number, primary_role, is_active, profile_image_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, 'user', true, ?, NOW())`,
-      [email, hashedPassword, first_name, last_name, name, phone || null, profile_image_id || null]
+      `INSERT INTO users (email, password_hash, first_name, last_name, display_name, phone_number, primary_role, is_active, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'user', true, ?, ?, ?, NOW())`,
+      [email, hashedPassword, first_name, last_name, name, phone || null, photoBlob, profilePhotoMime, profilePhotoName]
     );
 
     await createNotification(result.insertId, 'system', 'Account Initialized', 'Welcome to the tactical portal.', 'normal');
@@ -168,11 +179,9 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
 
   try {
     const [userResults] = await db.promise().query(
-      `SELECT u.*, 'user' as role_type, tm.name as job_title, tm.role as job_role,
-              i.data as profile_photo_blob, i.content_type as profile_photo_type
+      `SELECT u.*, 'user' as role_type, tm.name as job_title, tm.role as job_role
        FROM users u
        LEFT JOIN team_members tm ON u.job_id = tm.id
-       LEFT JOIN images i ON i.id = u.profile_image_id
        WHERE u.email = ? AND u.is_active = true AND u.deleted_at IS NULL`,
       [email]
     );
@@ -185,10 +194,11 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
     
     await db.promise().query('UPDATE users SET last_login_at = NOW(), last_login_ip = ? WHERE id = ?', [req.ip, user.id]);
     
+    // Profile photo is stored directly on the users table (set at registration).
     let profilePhotoData = null;
     if (user.profile_photo_blob) {
       const base64 = Buffer.from(user.profile_photo_blob).toString('base64');
-      profilePhotoData = `data:${user.profile_photo_type || 'image/jpeg'};base64,${base64}`;
+      profilePhotoData = `data:${user.profile_photo_mime_type || 'image/jpeg'};base64,${base64}`;
     }
     
     const authToken = jwt.sign({ userId: user.id, email: user.email, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' });

@@ -36,6 +36,15 @@ function check(name, cond, extra) {
   }
   if (!tok) { console.log("FATAL: no token"); process.exit(1); }
   console.log("auth OK\n--- FINANCIAL HUB (Financial.jsx) ---");
+  // --- CLIENT USER auth (Signup.jsx -> /users/register -> /users/login) ---
+  const uem = "verifyuser" + Date.now() + "@test.com";
+  let ur = await api("/api/users/register", "POST", { email: uem, password: "Verify123", first_name: "Cli", last_name: "Ent", phone: "+254700000099" });
+  check("user register 201", ur.status === 201, (ur.body || "").substring(0, 80));
+  let ulog = await api("/api/users/login", "POST", { email: uem, password: "Verify123" });
+  const ud = J(ulog.body);
+  check("user login 200 + token (no email-token gating)", ulog.status === 200 && !!ud?.token, (ulog.body || "").substring(0, 80));
+
+  console.log("auth OK\n--- FINANCIAL HUB (Financial.jsx) ---");
 
   let r = await api("/api/admin/ledger", "GET", null, tok);
   check("ledger list 200 + entries[]", r.status === 200 && Array.isArray(J(r.body)?.entries));
