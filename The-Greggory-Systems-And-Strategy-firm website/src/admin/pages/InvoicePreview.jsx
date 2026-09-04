@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Download, Printer, X, RefreshCw, Send, MailCheck, BadgeCheck } from "lucide-react";
 import { getApiUrl, apiCall } from "../../services/api";
+import { taxLabel } from "../../utils/kraTax";
 import SearchBlock from "../../components/SearchBlock";
 
 export function InvoicePreview() {
@@ -215,7 +216,7 @@ export function InvoicePreview() {
                      </div>
                      {ratePct > 0 && (
                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                        <span>Tax ({ratePct}%)</span><span className="font-black text-slate-900">{fmt(taxAmount)}</span>
+                        <span>{taxLabel(ratePct) || `Tax (${ratePct}%)`}</span><span className="font-black text-slate-900">{fmt(taxAmount)}</span>
                      </div>
                      )}
                      <div className="flex justify-between items-center pt-3 border-t-2 border-slate-900">

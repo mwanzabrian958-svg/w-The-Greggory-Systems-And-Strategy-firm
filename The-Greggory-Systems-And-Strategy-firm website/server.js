@@ -46,6 +46,7 @@ const { sendWhatsAppToUser, sendWhatsAppToUserStrict, providerConfigured: whatsa
 const { sendMail, sendInvoiceEmail } = require("./backend/services/emailService");
 // Professional document renderers (PDF + email HTML) — see server/lib/invoiceRenderer.js
 const { generatePDFContent, buildDocumentEmailHtml } = require("./server/lib/invoiceRenderer");
+const { normalizeRate, rateToPct } = require("./server/lib/kraTax");
 // PDF co-generator for completion records
 const { generateCompletionPdf } = require("./server/services/pdfGenerator");
 require("dotenv").config();
@@ -2806,13 +2807,18 @@ app.post("/api/quotes", async (req, res) => {
     // Generate unique quote number
     const quoteNumber = `QUOTE-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
+    // KRA compliance: accept "16", 16 or 0.16 — store the DECIMAL FRACTION
+    // (0.16) the DB's generated `tax_amount = subtotal * tax_rate` needs.
+    const taxRateFraction = normalizeRate(tax_rate);
+    const taxRatePct = rateToPct(tax_rate);
+
     // Calculate total with discount
     const discountedSubtotal =
       discount_type === "percentage"
         ? parseFloat(subtotal) * (1 - parseFloat(discount_value || 0) / 100)
         : parseFloat(subtotal) - parseFloat(discount_value || 0);
     const totalAmount =
-      discountedSubtotal * (1 + parseFloat(tax_rate || 0) / 100);
+      discountedSubtotal * (1 + taxRatePct / 100);
 
     const query = `
       INSERT INTO quotes (
@@ -2831,7 +2837,7 @@ app.post("/api/quotes", async (req, res) => {
       title,
       description,
       parseFloat(subtotal),
-      parseFloat(tax_rate || 0),
+      taxRateFraction,
       currency,
       parseFloat(exchange_rate || 1),
       issue_date,
@@ -5379,7 +5385,15 @@ app.post("/api/invoices", async (req, res) => {
       req.body.subtotal != null ? parseFloat(req.body.subtotal)
       : req.body.total_amount_kes != null ? parseFloat(req.body.total_amount_kes)
       : req.body.total_amount != null ? parseFloat(req.body.total_amount) : 0;
-    const tax_rate = req.body.tax_rate != null ? parseFloat(req.body.tax_rate) : 0;
+    // KRA compliance: ALWAYS store tax_rate as a DECIMAL FRACTION (0.16 = 16%).
+    // `tax_amount` is a STORED generated column (subtotal * tax_rate), so a
+    // whole percent like 16 would silently compute 1600% tax. normalizeRate
+    // accepts "16", 16 or 0.16 and returns the fraction the DB needs.
+    const _taxType = String(req.body.tax_type || req.body.taxType || "").toLowerCase();
+    const rawRate = req.body.tax_rate != null && req.body.tax_rate !== "";
+    const tax_rate = normalizeRate(
+      rawRate ? req.body.tax_rate : _taxType === "withholding" ? 0.05 : _taxType === "vat" ? 0.16 : 0
+    );
     const items = Array.isArray(req.body.items) ? JSON.stringify(req.body.items) : (req.body.items || null);
     const [result] = await mainDb.query(
       `INSERT INTO invoices

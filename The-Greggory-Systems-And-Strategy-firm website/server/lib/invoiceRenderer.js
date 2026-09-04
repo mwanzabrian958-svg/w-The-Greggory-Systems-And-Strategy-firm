@@ -7,6 +7,7 @@
 // =============================================================================
 "use strict";
 const PDFDocument = require("pdfkit");
+const { rateToPct, taxLabel, roundMoney, KRA_PIN, VAT_NUMBER } = require("./kraTax");
 
 const FIRM_LEGAL_NAME = "THE GREGGORY SYSTEMS AND STRATEGY FIRM";
 const FIRM_TAGLINE = "Strategic Projects, Systems & Business Solutions";
@@ -90,16 +91,15 @@ function parseDocumentItems(document) {
  */
 function documentTotals(document, items) {
   const subtotal = items.reduce((s, it) => s + it.line_total, 0);
-  const rateRaw = Number(document.tax_rate || 0);
-  const ratePct = rateRaw > 1 ? rateRaw : Math.round(rateRaw * 10000) / 100;
+  const ratePct = rateToPct(document.tax_rate);
   const taxAmount =
     Number(document.tax_amount) > 0
       ? Number(document.tax_amount)
-      : subtotal * (ratePct / 100);
+      : roundMoney(subtotal * (ratePct / 100));
   const total =
     Number(document.total_amount) > 0
       ? Number(document.total_amount)
-      : subtotal + taxAmount;
+      : roundMoney(subtotal + taxAmount);
   return { subtotal, taxAmount, ratePct, total };
 }
 
@@ -274,7 +274,7 @@ let rowIdx = 1;
     y += 15;
     if (ratePct > 0) {
       doc.font("Helvetica").fontSize(8).fillColor(SLATE);
-      doc.text(`Tax (${ratePct}%)`, totalX, y);
+      doc.text(taxLabel(ratePct) || `Tax (${ratePct}%)`, totalX, y);
       doc.font("Helvetica-Bold").fillColor(INK);
       doc.text(fmtMoney(taxAmount, currency), totalX, y, { width: totalW, align: "right" });
       y += 15;
@@ -337,7 +337,11 @@ let rowIdx = 1;
     doc.text(FIRM_LEGAL_NAME, M, PAGE_H - 70, { width: CW });
     doc.font("Helvetica").fontSize(6.5).fillColor(SLATE);
     doc.text(`${FIRM_EMAIL}  ·  ${FIRM_PHONE}  ·  ${FIRM_ADDRESS}`, M, PAGE_H - 60, { width: CW });
-    doc.text(`© ${new Date().getFullYear()} ${FIRM_LEGAL_NAME}. All rights reserved.`, M, PAGE_H - 48, { width: CW });
+    const taxRegLine = [KRA_PIN ? `KRA PIN: ${KRA_PIN}` : "", VAT_NUMBER ? `VAT Reg No: ${VAT_NUMBER}` : ""]
+      .filter(Boolean)
+      .join("   ·   ");
+    if (taxRegLine) doc.text(taxRegLine, M, PAGE_H - 52, { width: CW });
+    doc.text(`© ${new Date().getFullYear()} ${FIRM_LEGAL_NAME}. All rights reserved.`, M, PAGE_H - 45, { width: CW });
 
     doc.end();
   });
@@ -398,7 +402,7 @@ const totalsRows = `
         <td style="padding:5px 8px;font-size:12px;font-weight:700;color:#0f172a;text-align:right;">${money(subtotal, currency)}</td></tr>
     ${
       ratePct > 0
-        ? `<tr><td style="padding:5px 8px;font-size:11px;color:#64748b;">Tax (${ratePct}%)</td>
+        ? `<tr><td style="padding:5px 8px;font-size:11px;color:#64748b;">${esc(taxLabel(ratePct) || `Tax (${ratePct}%)`)}</td>
         <td style="padding:5px 8px;font-size:12px;font-weight:700;color:#0f172a;text-align:right;">${money(taxAmount, currency)}</td></tr>`
         : ""
     }
@@ -481,7 +485,7 @@ ${
           <td colspan="2" style="background:#f8fafc;padding:16px 30px;border-top:1px solid #e2e8f0;">
             <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="font-size:10px;color:#64748b;text-align:left;">${esc(FIRM_EMAIL)}<br/>${esc(FIRM_PHONE)}<br/>${esc(FIRM_ADDRESS)}</td>
+                <td style="font-size:10px;color:#64748b;text-align:left;">${esc(FIRM_EMAIL)}<br/>${esc(FIRM_PHONE)}<br/>${esc(FIRM_ADDRESS)}${KRA_PIN ? `<br/><span style="color:#475569;">KRA PIN: ${esc(KRA_PIN)}</span>` : ""}${VAT_NUMBER ? `<br/><span style="color:#475569;">VAT Reg No: ${esc(VAT_NUMBER)}</span>` : ""}</td>
                 <td style="font-size:9px;color:#94a3b8;text-align:right;">© ${new Date().getFullYear()} ${esc(FIRM_LEGAL_NAME)}<br/>All rights reserved.</td>
               </tr>
             </table>

@@ -77,6 +77,26 @@ function check(name, cond, extra) {
     check("delete invoice (Financial Hub button)", del.status === 200);
   }
 
+  // ── KRA TAX COMPLIANCE: tax_rate 16 must be stored as fraction 0.16 and
+  //    the DB-generated tax_amount/total_amount must equal 16% / +tax. ──
+  const ktaxTitle = "KRA VAT " + Date.now();
+  r = await api("/api/invoices", "POST", { title: ktaxTitle, tax_rate: 16, tax_type: "vat", subtotal: 1000, client_name: "KRA Test Client", items: [{ description: "Consulting", quantity: 1, unit_price: 1000 }], issue_date: new Date().toISOString().split("T")[0] }, tok);
+  check("KRA: create invoice with tax_rate 16", r.status === 201 || r.status === 200, r.body.substring(0, 90));
+  r = await api("/api/invoices", "GET", null, tok);
+  const ktax = (J(r.body)?.invoices || J(r.body)?.data || []).find(i => i.title === ktaxTitle);
+  if (ktax) {
+    const storedRate = Number(ktax.tax_rate);
+    const taxAmt = Number(ktax.tax_amount);
+    const totAmt = Number(ktax.total_amount || ktax.total_amount_kes);
+    check("KRA: tax_rate stored as 0.16 (fraction)", Math.abs(storedRate - 0.16) < 0.0001, "got " + storedRate);
+    check("KRA: tax_amount = subtotal × 16%", Math.abs(taxAmt - 160.0) < 0.01, "got " + taxAmt);
+    check("KRA: total = subtotal + VAT", Math.abs(totAmt - 1160.0) < 0.01, "got " + totAmt);
+    const dokra = await api("/api/invoices/" + ktax.id, "DELETE", null, tok);
+    check("KRA: cleanup test invoice", dokra.status === 200);
+  } else {
+    check("KRA: persisted VAT invoice found for assertions", false, "not found");
+  }
+
 
   console.log("--- LEDGER (ManualEntry.jsx -> Ledger tab) ---");
   r = await api("/api/accounting/entries", "POST", { description: "Verify " + stamp, amount: 500, entry_type: "expense", category: "Verification", payment_status: "completed" }, tok);

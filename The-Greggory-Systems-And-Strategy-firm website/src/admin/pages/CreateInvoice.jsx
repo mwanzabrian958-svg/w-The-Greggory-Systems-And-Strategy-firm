@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Briefcase, User, X, Save, RefreshCw, Send } from "lucide-react";
 import { getApiUrl, API_BASE_URL } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
+import { TAX_PRESETS, taxLabel, roundMoney } from "../../utils/kraTax";
 import SearchBlock from "../../components/SearchBlock";
 
 export function CreateInvoice() {
@@ -11,7 +12,7 @@ export function CreateInvoice() {
   const [projects, setProjects] = useState([]);
 
   const [invoiceForm, setInvoiceForm] = useState({
-    project_id: '', title: '', invoice_type: 'project_fee', tax_rate: '0',
+    project_id: '', title: '', invoice_type: 'project_fee', tax_type: 'vat', tax_rate: '16',
     issue_date: new Date().toISOString().split('T')[0], due_date: '',
     client_name: '', client_email: '', client_phone: '', notes: '',
     items: [{ description: '', quantity: '1', unit_price: '' }]
@@ -33,6 +34,17 @@ export function CreateInvoice() {
   const itemsSubtotal = invoiceForm.items.reduce(
     (s, it) => s + parseFloat(it.quantity || 0) * parseFloat(it.unit_price || 0), 0
   );
+
+  // Live KRA tax math (tax_rate is a whole percent in the UI; the server
+  // converts it to the DECIMAL FRACTION the DB's generated columns require).
+  const taxPct = parseFloat(invoiceForm.tax_rate || 0);
+  const taxAmount = roundMoney(itemsSubtotal * (taxPct / 100));
+  const grandTotal = roundMoney(itemsSubtotal + taxAmount);
+
+  const pickTaxPreset = (pct) => {
+    const preset = TAX_PRESETS.find(p => p.pct === Number(pct)) || TAX_PRESETS[0];
+    setInvoiceForm((f) => ({ ...f, tax_rate: String(preset.pct), tax_type: preset.type }));
+  };
 
   const updateItem = (idx, field, value) =>
     setInvoiceForm((f) => ({ ...f, items: f.items.map((it, i) => (i === idx ? { ...it, [field]: value } : it)) }));
@@ -96,7 +108,12 @@ export function CreateInvoice() {
                     </select>
                   </div>
                   <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Objective</label><input type="text" placeholder="Description..." value={invoiceForm.title} onChange={(e) => setInvoiceForm({...invoiceForm, title: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" required /></div>
-                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Tax (%)</label><input type="number" value={invoiceForm.tax_rate} onChange={(e) => setInvoiceForm({...invoiceForm, tax_rate: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" /></div>
+                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Tax (KRA rate)</label>
+                    <select value={invoiceForm.tax_rate} onChange={(e) => pickTaxPreset(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all">
+                      {TAX_PRESETS.map(p => <option key={p.type} value={p.pct} className="bg-[#0f172a]">{p.label}</option>)}
+                    </select>
+                    <p className="mt-0.5 px-1 text-[6px] font-bold text-teal-400/80">{taxLabel(taxPct)} — {formatKSH(taxAmount)}</p>
+                  </div>
                 </div>
               </section>
             </div>
@@ -158,8 +175,12 @@ export function CreateInvoice() {
         <div className="p-6 bg-[#0f172a] border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
            <div className="flex gap-6">
               <div className="text-left">
-                <p className="text-[5.5px] font-black text-slate-500 uppercase tracking-widest">Calculated Debt</p>
-                <p className="text-xl font-black text-white">{formatKSH(itemsSubtotal * (1 + parseFloat(invoiceForm.tax_rate || 0) / 100))}</p>
+                <p className="text-[5.5px] font-black text-slate-500 uppercase tracking-widest">Subtotal</p>
+                <p className="text-sm font-bold text-white">{formatKSH(itemsSubtotal)}</p>
+                <p className="text-[5.5px] font-black text-teal-400 uppercase tracking-widest mt-1">{taxLabel(taxPct) || "No tax"}</p>
+                <p className="text-[10px] font-bold text-teal-300">{formatKSH(taxAmount)}</p>
+                <p className="text-[6px] font-black text-slate-500 uppercase tracking-widest mt-2 border-t border-white/10 pt-1">Total incl. tax</p>
+                <p className="text-xl font-black text-emerald-400">{formatKSH(grandTotal)}</p>
               </div>
            </div>
            <button onClick={handleInvoiceSubmit} disabled={isSubmitting} className="w-full md:w-auto bg-teal-600 hover:bg-teal-500 text-white px-8 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2">
