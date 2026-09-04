@@ -465,6 +465,7 @@ const totalsRows = `
                     `<div style="font-size:11px;color:${i === 0 ? "#0f172a" : "#64748b"};font-weight:${i === 0 ? 700 : 400};margin-top:2px;">${esc(l)}</div>`
                 )
                 .join("")}
+              ${document.title ? `<div style="font-size:11px;color:#64748b;margin-top:8px;"><strong style="color:#0f172a;">Reference:</strong> ${esc(document.title)}</div>` : ""}
             </div>
 </td>
           <td style="padding:10px 30px 24px;vertical-align:top;width:50%;">

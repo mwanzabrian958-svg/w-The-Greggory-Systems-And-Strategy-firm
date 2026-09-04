@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Download, Printer, X, RefreshCw, Send, MailCheck } from "lucide-react";
-import { getApiUrl } from "../../services/api";
+import { getApiUrl, apiCall } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import SearchBlock from "../../components/SearchBlock";
 
@@ -36,18 +36,12 @@ export function InvoicePreview() {
     setSending(true);
     setSendMsg(null);
     try {
-      const res = await fetch(getApiUrl(`/api/invoices/${invoice.id}/send`), {
+      const data = await apiCall(`/invoices/${invoice.id}/send`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
-      const data = await res.json();
-      if (data.success) {
-        setInvoice((inv) => ({ ...inv, email_sent: 1, email_sent_at: new Date().toISOString(), status: "sent" }));
-        setSendMsg({ ok: true, text: data.message });
-      } else {
-        setSendMsg({ ok: false, text: data.message || data.error || "Failed to send invoice" });
-      }
+      setInvoice((inv) => ({ ...inv, email_sent: 1, email_sent_at: new Date().toISOString(), status: "sent" }));
+      setSendMsg({ ok: true, text: data.message || "Invoice sent to client." });
     } catch (e) {
       setSendMsg({ ok: false, text: String(e.message || e) });
     }

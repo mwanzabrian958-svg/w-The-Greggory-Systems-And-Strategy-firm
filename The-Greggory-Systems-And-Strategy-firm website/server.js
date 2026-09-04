@@ -3308,7 +3308,7 @@ app.post("/api/documents/generate/:type/:id", async (req, res) => {
 
 // Admin: one-click "send invoice to client" — renders the professional PDF +
 // matching HTML email and delivers both via SMTP. Marks the invoice as sent.
-app.post("/api/invoices/:id/send", async (req, res) => {
+app.post("/api/invoices/:id/send", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { email: overrideEmail, subject: overrideSubject, message } = req.body || {};
@@ -3377,7 +3377,7 @@ app.post("/api/invoices/:id/send", async (req, res) => {
   }
 });
 
-app.post("/api/documents/send", async (req, res) => {
+app.post("/api/documents/send", authenticateAdmin, async (req, res) => {
   try {
     const { documentId, documentType, email, subject, message } = req.body;
 
