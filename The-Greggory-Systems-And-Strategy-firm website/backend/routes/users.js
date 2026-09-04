@@ -145,8 +145,34 @@ router.post('/register', authEndpointValidator('user', 'users'), async (req, res
       return res.status(400).json({ success: false, message: 'Fields required' });
     }
 
-    const [existing] = await db.promise().query('SELECT id FROM users WHERE email = ? AND deleted_at IS NULL', [email]);
-    if (existing.length > 0) return res.status(400).json({ success: false, message: 'Email taken' });
+        // Handle existing user gracefully: if the email already exists in the
+    // users table (including soft-deleted ones), do NOT block with an error.
+    // Instead, return success so the client can be redirected to log in
+    // with their existing credentials. This prevents the registration flow
+    // from being a dead end and removes the "Email taken" user-facing message.
+    const [existing] = await db.promise().query('SELECT id, deleted_at, password_hash, first_name, last_name, display_name FROM users WHERE email = ? LIMIT 1', [email]);
+
+    if (existing.length > 0) {
+      const existingUser = existing[0];
+      // If the user exists but was soft-deleted, restore them
+      if (existingUser.deleted_at) {
+        await db.promise().query('UPDATE users SET deleted_at = NULL, is_active = TRUE WHERE id = ?', [existingUser.id]);
+      }
+      // Return success with flags so the client knows to log in, not re-register
+      return res.status(200).json({
+        success: true,
+        message: 'Account already exists — proceed to login',
+        existingUser: {
+          userId: existingUser.id,
+          email: email,
+          first_name: existingUser.first_name,
+          last_name: existingUser.last_name,
+          display_name: existingUser.display_name,
+          passwordExists: !!existingUser.password_hash
+        },
+        loginInstead: true
+      });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const name = display_name || `${first_name} ${last_name}`;
