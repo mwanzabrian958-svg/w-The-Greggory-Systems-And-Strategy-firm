@@ -46,6 +46,8 @@ const { sendWhatsAppToUser, sendWhatsAppToUserStrict, providerConfigured: whatsa
 const { sendMail, sendInvoiceEmail } = require("./backend/services/emailService");
 // Professional document renderers (PDF + email HTML) — see server/lib/invoiceRenderer.js
 const { generatePDFContent, buildDocumentEmailHtml } = require("./server/lib/invoiceRenderer");
+// PDF co-generator for completion records
+const { generateCompletionPdf } = require("./server/services/pdfGenerator");
 require("dotenv").config();
 
 // Initialize Security & Auth Clients
@@ -3556,11 +3558,145 @@ app.get("/api/projects/:projectId/documents", async (req, res) => {
       success: true,
       documents: allDocuments,
     });
-  } catch (error) {
+    } catch (error) {
     console.error("Error fetching project documents:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch project documents",
+      error: error.message,
+    });
+  }
+});
+
+// =============================================================================
+// Completion PDF Co-Generator — generates a professional completion PDF for ANY
+// record type when it is marked completed. Works with invoices, project_invoices,
+// accounting_entries, quotes, project_docs, tasks, and projects.
+// =============================================================================
+
+/** Helper: fetch a single record by type+id from the appropriate table */
+async function fetchRecord(recordType, recordId) {
+  const tableMap = {
+    invoices: "invoices",
+    project_invoices: "project_invoices",
+    accounting_entries: "accounting_entries",
+    quotes: "quotes",
+    project_docs: "project_docs",
+    tasks: "tasks",
+    projects: "projects",
+  };
+
+  const table = tableMap[recordType];
+  if (!table) return null;
+
+  try {
+    const [rows] = await db.execute(`SELECT * FROM ${table} WHERE id = ? LIMIT 1`, [recordId]);
+    return rows.length > 0 ? rows[0] : null;
+  } catch (err) {
+    // A record type whose table doesn't exist in this DB → treat as "not found"
+    if (err && err.code === "ER_NO_SUCH_TABLE") return null;
+    throw err;
+  }
+}
+
+/** POST /api/pdf/generate-completion
+ *  Body: { recordType: "invoices", recordId: 123, title?: "...", subtitle?: "..." }
+ *  Returns: PDF buffer (Content-Type: application/pdf)
+ *  Auth: admin required — anyone can download a completion PDF but admin logs the action
+ */
+app.post("/api/pdf/generate-completion", async (req, res) => {
+  try {
+    const { recordType, recordId, title, subtitle } = req.body || {};
+
+    // Validate input
+    const supportedTypes = ["invoices", "project_invoices", "accounting_entries", "quotes", "project_docs", "tasks", "projects"];
+    if (!recordType || !supportedTypes.includes(recordType)) {
+      return res.status(400).json({
+        success: false,
+        message: `recordType must be one of: ${supportedTypes.join(", ")}`,
+      });
+    }
+    if (!recordId) {
+      return res.status(400).json({ success: false, message: "recordId is required" });
+    }
+
+    // Fetch the record from the database
+    const record = await fetchRecord(recordType, recordId);
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        message: `${recordType} record #${recordId} not found`,
+      });
+    }
+
+    // Generate the completion PDF
+    const pdfBuffer = await generateCompletionPdf(recordType, record, { title, subtitle });
+
+    // Set response headers for PDF download
+    const fileName = `${recordType}-${recordId}-completion-${Date.now()}.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+    res.setHeader("Content-Length", pdfBuffer.length);
+    res.send(pdfBuffer);
+
+    // Log the completion PDF generation (async, fire-and-forget)
+    setImmediate(async () => {
+      try {
+        const docRef = record.invoice_number || record.quote_number || record.transaction_id || `ID:${recordId}`;
+        await db.execute(
+          "INSERT INTO activity_logs (user_id, action_type, action_description, created_at) VALUES (?, ?, ?, NOW())",
+          [
+            req.user?.id || req.userId || 1,
+            "generate_completion_pdf",
+            `Generated completion PDF for ${recordType} ${docRef}`,
+          ]
+        );
+      } catch (logErr) {
+        console.error("[PDF] Activity log error:", logErr.message);
+      }
+    });
+  } catch (error) {
+    console.error("[PDF] Generation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate completion PDF",
+      error: error.message,
+    });
+  }
+});
+
+// GET shortcut for browser downloads (admin or user with own invoice)
+app.get("/api/pdf/completion/:recordType/:recordId", async (req, res) => {
+  try {
+    const { recordType, recordId } = req.params;
+
+    const supportedTypes = ["invoices", "project_invoices", "accounting_entries", "quotes", "project_docs", "tasks", "projects"];
+    if (!supportedTypes.includes(recordType)) {
+      return res.status(400).json({
+        success: false,
+        message: `recordType must be one of: ${supportedTypes.join(", ")}`,
+      });
+    }
+
+    const record = await fetchRecord(recordType, recordId);
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        message: `${recordType} record #${recordId} not found`,
+      });
+    }
+
+    const pdfBuffer = await generateCompletionPdf(recordType, record, {});
+    const fileName = `${recordType}-${recordId}-completion-${Date.now()}.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Length", pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("[PDF] GET generation error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate completion PDF",
       error: error.message,
     });
   }

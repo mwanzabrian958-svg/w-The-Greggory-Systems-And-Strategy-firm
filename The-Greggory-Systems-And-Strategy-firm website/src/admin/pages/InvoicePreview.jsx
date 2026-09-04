@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Download, Printer, X, RefreshCw, Send, MailCheck } from "lucide-react";
+import { Download, Printer, X, RefreshCw, Send, MailCheck, BadgeCheck } from "lucide-react";
 import { getApiUrl, apiCall } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import SearchBlock from "../../components/SearchBlock";
@@ -68,6 +68,7 @@ export function InvoicePreview() {
                {invoice.email_sent ? "Sent" : "Send to Client"}
             </button>
             <a href={getApiUrl(`/api/documents/invoices/${id}/pdf`)} className="flex items-center gap-3 bg-teal-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-500 transition-all border border-teal-500"><Download size={16} /> Download PDF</a>
+            <a href={getApiUrl(`/api/pdf/completion/invoices/${id}`)} className="flex items-center gap-3 bg-white/5 text-teal-300 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-600 hover:text-white transition-all border border-teal-500/40"><BadgeCheck size={16} /> Completion PDF</a>
             <button onClick={() => window.print()} className="flex items-center gap-3 bg-white/5 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/10"><Printer size={16} /> Print</button>
             <button onClick={() => navigate('/admin/billing')} className="p-3 bg-rose-600 text-white rounded-2xl shadow-xl hover:bg-rose-700 transition-all"><X size={20} /></button>
          </div>

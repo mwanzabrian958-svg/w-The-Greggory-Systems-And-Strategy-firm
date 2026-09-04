@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiCall } from "../../services/api";
+import { apiCall, getApiUrl } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import {
   TrendingUp, Banknote, RefreshCw, FilePlus2,
-  Trash2, Eye, Plus, Wallet, Receipt, Send
+  Trash2, Eye, Plus, Wallet, Receipt, Send, FileDown
 } from "lucide-react";
 
 export function Billing() {
@@ -73,6 +73,14 @@ export function Billing() {
     }
     setSendingId(null);
     setTimeout(() => setNotice(null), 6000);
+  };
+
+  // Download a professional "Completion" PDF for any record type
+  const handleDownloadCompletion = (recordType, id) => {
+    if (!id) return;
+    setNotice({ ok: true, text: `Generating completion PDF for ${recordType.replace(/_/g, " ")} #${id}…` });
+    window.open(getApiUrl(`/api/pdf/completion/${recordType}/${id}`), "_blank");
+    setTimeout(() => setNotice(null), 4000);
   };
 
   const handleDeleteEntry = async (id) => {
@@ -208,6 +216,7 @@ export function Billing() {
                           <button onClick={() => handleSendInvoice(inv)} disabled={sendingId === inv.id} title={inv.client_email ? `Send invoice to ${inv.client_email}` : "No client email"} className={`p-1.5 rounded-lg transition-all ${inv.email_sent ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-400 hover:bg-teal-500 hover:text-white"} disabled:opacity-60`}>
                             {sendingId === inv.id ? <RefreshCw size={11} className="animate-spin" /> : <Send size={11} />}
                           </button>
+                          <button onClick={() => handleDownloadCompletion("invoices", inv.id)} title="Download completion PDF" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-teal-600 hover:text-white transition-all"><FileDown size={11} /></button>
                           <button onClick={() => navigate(`/admin/billing/preview/${inv.id}`)} title="View invoice" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-teal-500 hover:text-white transition-all"><Eye size={11} /></button>
                           <button onClick={() => handleDeleteInvoice(inv.id)} title="Delete invoice" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={11} /></button>
                         </div>
@@ -265,6 +274,7 @@ export function Billing() {
                         {e.entry_type === 'expense' ? '-' : '+'}{formatKSH(e.amount)}
                       </td>
                       <td className="py-3 px-2 text-right">
+                        <button onClick={() => handleDownloadCompletion("accounting_entries", e.id)} title="Download completion PDF" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-teal-600 hover:text-white transition-all mr-1"><FileDown size={11} /></button>
                         <button onClick={() => handleDeleteEntry(e.id)} title="Delete entry" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={11} /></button>
                       </td>
                     </tr>

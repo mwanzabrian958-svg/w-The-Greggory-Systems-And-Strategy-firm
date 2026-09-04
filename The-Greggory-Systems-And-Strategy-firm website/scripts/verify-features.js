@@ -64,6 +64,9 @@ function check(name, cond, extra) {
   if (created) {
     const send = await api("/api/invoices/" + created.id + "/send", "POST", {}, tok);
     check("send invoice to client (email+PDF)", send.status === 200, (send.body || "").substring(0, 90));
+    const pdf = await api("/api/pdf/completion/invoices/" + created.id, "GET", null, tok);
+    const isPdf = /^%PDF/.test(pdf.body || "");
+    check("completion PDF co-generator (invoice)", pdf.status === 200 && isPdf, "status=" + pdf.status + " bytes=" + (pdf.body || "").length);
     const del = await api("/api/invoices/" + created.id, "DELETE", null, tok);
     check("delete invoice (Financial Hub button)", del.status === 200);
   }
