@@ -80,4 +80,20 @@ const sendInvoiceEmail = async (clientEmail, invoiceData) => {
   return sendMail({ to: clientEmail, subject, html });
 };
 
-module.exports = { sendMail, sendInvoiceEmail };
+/**
+ * SMTP connectivity/auth probe. Returns the transport's own verdict so the
+ * test script can show precise errors (bad password, blocked login, ...).
+ */
+const verifySmtp = async () => {
+  if (!process.env.SMTP_PASS) {
+    return { ok: true, simulated: true, message: "SMTP_PASS not set — running in simulation mode" };
+  }
+  try {
+    await transporter.verify();
+    return { ok: true, simulated: false, message: "SMTP connection + authentication OK" };
+  } catch (error) {
+    return { ok: false, simulated: false, message: error.message, code: error.code };
+  }
+};
+
+module.exports = { sendMail, sendInvoiceEmail, verifySmtp };
