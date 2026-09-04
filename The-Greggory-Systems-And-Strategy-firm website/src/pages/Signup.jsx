@@ -92,8 +92,18 @@ const Signup = () => {
         userData.profile_photo_file_name = profileFile.name;
       }
 
-      const response = await usersAPI.register(userData);
+            const response = await usersAPI.register(userData);
       if (!response.success) throw new Error(response.message || 'Registration failed');
+
+      // Graceful handling for existing emails: the backend now returns
+      // success:true with loginInstead:true instead of erroring. Redirect
+      // straight to login with a clear message instead of a generic success.
+      if (response.loginInstead) {
+        navigate('/login', { 
+          state: { message: 'You already have an account. Please log in with your existing credentials.' }
+        });
+        return;
+      }
 
       setShowSuccess(true);
       setTimeout(() => navigate('/login'), 1500);

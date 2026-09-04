@@ -160,6 +160,11 @@ const Login = () => {
           )}
         </div>
 
+                {location.state?.message && (
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-[9px] text-emerald-400 font-bold rounded-lg text-center uppercase tracking-widest">
+            {location.state.message}
+          </div>
+        )}
         {errors.submit && (
           <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-[8px] text-rose-400 font-bold rounded-lg text-center uppercase tracking-widest">
             {errors.submit}
