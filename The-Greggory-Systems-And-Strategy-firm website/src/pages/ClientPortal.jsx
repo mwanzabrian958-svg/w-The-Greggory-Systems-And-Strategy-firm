@@ -127,3 +127,7 @@ export function ClientPortal() {
     </div>
   );
 }
+
+// Default export — required by React.lazy(() => import("./pages/ClientPortal"))
+// in App.jsx. The named export is kept for any direct imports.
+export default ClientPortal;
