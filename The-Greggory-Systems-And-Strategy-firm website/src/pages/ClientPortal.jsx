@@ -6,6 +6,9 @@ import { FolderKanban, FileText, DollarSign, RefreshCw, LogOut } from "lucide-re
 
 export function ClientPortal() {
   const { user, logout } = useAuth();
+  const displayName = user?.display_name || user?.name || (user?.first_name ? `${user?.first_name} ${user?.last_name}` : (user?.email || "Client"));
+  const initials = displayName.split(" ").map(s => s ? s[0] : "").filter(Boolean).slice(0, 2).join("").toUpperCase();
+  const profilePhoto = user?.profilePhotoData || null;
   const [projects, setProjects] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +44,8 @@ export function ClientPortal() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-sm font-black text-slate-900 uppercase tracking-tight">Client Portal</h1>
           <div className="flex items-center gap-4">
-            <p className="text-[10px] font-bold text-slate-900">{user?.name || user?.email}</p>
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-teal-500/40 bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs">{profilePhoto ? <img src={profilePhoto} alt={displayName} className="w-full h-full object-cover" /> : (initials || "C")}</div>
+             <p className="text-[10px] font-bold text-slate-900">{displayName}</p>
             <button onClick={logout} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400"><LogOut size={16} /></button>
           </div>
         </div>
