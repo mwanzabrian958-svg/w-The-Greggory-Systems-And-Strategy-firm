@@ -1444,6 +1444,7 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
         timezone: user.timezone,
         locale: user.locale,
         role: user.primary_role || "user",
+        has_photo: !!user.profile_photo_blob,
         profilePhotoData: user.profile_photo_blob ? `data:${user.profile_photo_mime_type || "image/jpeg"};base64,${Buffer.from(user.profile_photo_blob).toString("base64")}` : null,
       },
       projects: projectRows,

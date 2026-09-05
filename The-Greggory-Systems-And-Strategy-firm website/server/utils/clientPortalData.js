@@ -208,6 +208,7 @@ function buildClientPortalPayload({
           timezone: user.timezone || "UTC",
           locale: user.locale || "en-US",
           role: user.role || user.primary_role || "user",
+          has_photo: !!user.has_photo,
           profilePhotoData: user.profilePhotoData || null,
         }
       : null,

@@ -232,7 +232,7 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
     return res.json({
       id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name,
       display_name: user.display_name || `${user.first_name} ${user.last_name}`,
-      primary_role: user.primary_role, role_type: 'user', profilePhotoData, token: authToken
+      primary_role: user.primary_role, role_type: 'user', has_photo: !!user.profile_photo_blob, profilePhotoData, token: authToken
     });
   } catch (error) {
     return res.status(500).json({ error: 'Login failed' });
@@ -250,8 +250,15 @@ router.get('/client-dashboard', authenticateUser, async (req, res) => {
     const [projects] = await db.promise().query(`SELECT * FROM user_projects WHERE user_id = ? AND deleted_at IS NULL`, [id]);
     const [invoiceRows] = await db.promise().query(`SELECT pi.*, up.project_name FROM project_invoices pi JOIN user_projects up ON up.id = pi.project_id WHERE up.user_id = ?`, [id]);
 
+    // Build profile photo data URI from DB blob for the dashboard user object
+    let dashboardPhotoData = null;
+    if (user.profile_photo_blob) {
+      const b64 = Buffer.from(user.profile_photo_blob).toString('base64');
+      dashboardPhotoData = `data:${user.profile_photo_mime_type || 'image/jpeg'};base64,${b64}`;
+    }
+
     const dashboard = {
-      user: { id: user.id, email: user.email, display_name: user.display_name, role: user.primary_role || 'user' },
+      user: { id: user.id, email: user.email, display_name: user.display_name, phone_number: user.phone_number, role: user.primary_role || 'user', has_photo: !!user.profile_photo_blob, profilePhotoData: dashboardPhotoData },
       projects: projects.map(p => ({ id: p.id, name: p.project_name, status: p.status, progress: p.progress_percentage || 0 })),
       invoices: invoiceRows.map(i => ({ id: i.id, invoiceNumber: i.invoice_number, project: i.project_name, amount: Number(i.amount || 0), status: i.status })),
       kpiMetrics: [
