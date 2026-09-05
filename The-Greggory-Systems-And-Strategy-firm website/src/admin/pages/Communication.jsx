@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MessageSquare, Mail, Phone, Send, Plus, Search, Clock, RefreshCw, ChevronRight } from "lucide-react";
-import { getApiUrl } from "../../services/api";
+import { getApiUrl, apiCall } from "../../services/api";
 
 const MESSAGES = [
   { id: 1, sender: "Amaka Wanjiru", message: "Grant applications reviewed and approved.", time: "2 hours ago", channel: "email", unread: false },
@@ -63,9 +63,8 @@ export function Communication() {
     setFeedbackStatus(null);
 
     try {
-      const response = await fetch(getApiUrl("/api/users/client-feedback"), {
+      const data = await apiCall("/api/admin/client-feedback", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId: selectedClientId,
           title: feedbackTitle.trim() || "Direct relay from command node",
@@ -73,9 +72,7 @@ export function Communication() {
           priority: feedbackPriority,
         }),
       });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Relay Failure");
+      if (!data.success) throw new Error(data.message || "Relay Failure");
 
       setFeedbackStatus({ type: "success", message: "Data successfully posted to Client Portal." });
       setFeedbackTitle("");

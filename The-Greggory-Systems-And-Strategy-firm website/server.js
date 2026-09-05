@@ -960,10 +960,11 @@ app.post("/api/users", authenticateAdmin, async (req, res) => {
 // Admin-to-client feedback handlers
 const handleClientFeedbackList = async (req, res) => {
   try {
-    const { userId } = req.params;
+    // SECURITY: Always use the authenticated user's ID, never from URL params
+    const userId = req.userId;
 
     if (!userId) {
-      return res.status(400).json({ success: false, message: "User ID is required" });
+      return res.status(401).json({ success: false, message: "Authentication required" });
     }
 
     const [feedbackRows] = await mainDb.query(
@@ -984,7 +985,10 @@ const handleClientFeedbackList = async (req, res) => {
 
 const handleClientFeedbackCreate = async (req, res) => {
   try {
-    const { userId, title, message, priority = "medium", rating, type, author } = req.body;
+    const { title, message, priority = "medium", rating, type, author } = req.body;
+
+    // SECURITY: Always use the authenticated user's ID
+    const userId = req.userId;
 
     if (!userId || !message) {
       return res.status(400).json({ success: false, message: "Client ID and message are required" });
@@ -995,7 +999,8 @@ const handleClientFeedbackCreate = async (req, res) => {
     //                     client's own portal list.
     // author='admin'   -> relay from the admin Communication Hub: stays
     //                     visible in the client's portal (existing behavior).
-    const isClientSent = author === "client";
+    // SECURITY: client endpoint ALWAYS forces author='client' (admins use /api/admin/client-feedback)
+    const isClientSent = true;
 
     const FEEDBACK_TYPES = [
       "project_review",
@@ -1048,7 +1053,33 @@ const handleClientFeedbackCreate = async (req, res) => {
 
 
 app.get("/api/users/client-feedback/:userId", authenticateUser, handleClientFeedbackList);
-app.post("/api/users/client-feedback", handleClientFeedbackCreate);
+// CLIENT-ONLY: feedback is attributed to the authenticated user (author='client')
+app.post("/api/users/client-feedback", authenticateUser, handleClientFeedbackCreate);
+
+// ADMIN-ONLY: send feedback TO a client (author='admin') — target client from body
+app.post("/api/admin/client-feedback", authenticateAdmin, async (req, res) => {
+  try {
+    const { userId, title, message, priority = "medium", rating, type } = req.body;
+    if (!userId || !message) {
+      return res.status(400).json({ success: false, message: "Client ID and message are required" });
+    }
+    const FEEDBACK_TYPES = ["project_review", "service_feedback", "complaint", "suggestion", "testimonial", "bug_report"];
+    const feedbackType = FEEDBACK_TYPES.includes(type) ? type : "service_feedback";
+    const ratingNum = Number(rating);
+    const ratingValue = Number.isFinite(ratingNum) && ratingNum >= 1 && ratingNum <= 5 ? ratingNum : null;
+    const priorityValue = ["low", "medium", "high", "urgent"].includes(String(priority).toLowerCase())
+      ? String(priority).toLowerCase() : "medium";
+    const [result] = await mainDb.query(
+      `INSERT INTO user_feedback (user_id, title, message, feedback_type, author, status, priority, rating, source, created_by, created_at)
+       VALUES (?, ?, ?, ?, 'admin', 'new', ?, ?, 'website', ?, NOW())`,
+      [userId, title || "Admin update", message, feedbackType, priorityValue, ratingValue, req.adminId || 0],
+    );
+    res.status(201).json({ success: true, message: "Feedback sent to client portal", feedbackId: result.insertId });
+  } catch (error) {
+    console.error("[ADMIN FEEDBACK] Create error:", error);
+    res.status(500).json({ success: false, message: "Failed to send feedback" });
+  }
+});
 
 // ─────────────────────────────────────────────────────────────
 // CLIENT SELF-SERVICE — change requests (client-writable)

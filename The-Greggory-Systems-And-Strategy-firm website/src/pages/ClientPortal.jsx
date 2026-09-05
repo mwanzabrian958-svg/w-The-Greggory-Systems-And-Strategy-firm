@@ -157,7 +157,8 @@ const ClientPortal = () => {
 
   const loadFeedbackHistory = async (userId) => {
     try {
-      const response = await authFetch(getApiUrl(`/api/users/client-feedback/${userId}`));
+      // SECURITY: Server uses authenticated user's ID, not URL param
+      const response = await authFetch(getApiUrl('/api/users/client-feedback'));
       const data = await response.json();
       if (data.success) setFeedbackList(data.feedback || []);
     } catch (err) {
