@@ -221,6 +221,7 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
   const [formData, setFormData] = useState({
     project_name: '',
     project_description: '',
+    user_id: '',
     client_name: '',
     client_email: '',
     client_phone: '',
@@ -230,21 +231,31 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
     progress_percentage: 0,
     actual_budget: 0,
     estimated_budget: 0,
-    end_date: ''
+    end_date: '',
+    crew_template_id: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [users, setUsers] = useState([]);
   const [team, setTeam] = useState([]);
+  const [crewTemplates, setCrewTemplates] = useState([]);
   const [assigneeId, setAssigneeId] = useState('');
   const [assigneeRole, setAssigneeRole] = useState('team_member');
 
   React.useEffect(() => {
     if (isOpen) {
       fetchUsers();
+      fetchCrewTemplates();
       if (project?.id) fetchTeam(project.id);
     }
   }, [isOpen, project]);
+
+  const fetchCrewTemplates = async () => {
+    try {
+      const data = await apiCall('/api/admin/team-templates');
+      if (data.success) setCrewTemplates(data.templates || []);
+    } catch (e) { console.error(e); }
+  };
 
   const fetchTeam = async (projectId) => {
     try {
@@ -278,6 +289,7 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
       setFormData({
         project_name: project.project_name || '',
         project_description: project.project_description || '',
+        user_id: project.user_id || '',
         client_name: project.client_name || '',
         client_email: project.client_email || '',
         client_phone: project.client_phone || '',
@@ -287,10 +299,24 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
         progress_percentage: project.progress_percentage || 0,
         actual_budget: project.actual_budget || 0,
         estimated_budget: project.estimated_budget || 0,
-        end_date: project.end_date ? project.end_date.split('T')[0] : ''
+        end_date: project.end_date ? project.end_date.split('T')[0] : '',
+        crew_template_id: project.crew_template_id || ''
       });
+      // Also update client fields from the linked user if user_id exists
+      if (project.user_id) {
+        const linkedUser = users.find(u => String(u.id) === String(project.user_id));
+        if (linkedUser) {
+          setFormData(f => ({
+            ...f,
+            client_name: linkedUser.display_name || `${linkedUser.first_name} ${linkedUser.last_name}`,
+            client_email: linkedUser.email || '',
+            client_phone: linkedUser.phone_number || '',
+            client_id_number: linkedUser.id_number || ''
+          }));
+        }
+      }
     }
-  }, [project]);
+  }, [project, users]);
 
   const handleClientChange = (e) => {
     const selectedUserId = e.target.value;
@@ -335,6 +361,20 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
 
         <div className="bg-slate-50 p-4 rounded-2xl space-y-4">
            <h4 className="text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200 pb-2">Client Parameters</h4>
+           <div className="grid grid-cols-2 gap-4">
+              <Select
+                 label="Linked Client Account"
+                 value={formData.user_id}
+                 onChange={handleClientChange}
+                 options={[{ value: '', label: '— Select client...' }, ...users.map(u => ({ value: u.id, label: u.display_name || u.email }))]}
+              />
+              <Select
+                 label="Assigned Crew"
+                 value={formData.crew_template_id}
+                 onChange={(e) => setFormData({...formData, crew_template_id: e.target.value})}
+                 options={[{ value: '', label: '— No crew assigned...' }, ...crewTemplates.map(ct => ({ value: ct.id, label: ct.name }))]}
+              />
+           </div>
            <div className="grid grid-cols-2 gap-4">
               <FormInput label="Client Name" value={formData.client_name} onChange={(e) => setFormData({...formData, client_name: e.target.value})} required />
               <FormInput label="ID Number" value={formData.client_id_number} onChange={(e) => setFormData({...formData, client_id_number: e.target.value})} required />

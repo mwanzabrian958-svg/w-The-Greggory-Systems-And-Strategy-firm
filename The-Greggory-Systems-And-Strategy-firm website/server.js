@@ -5516,7 +5516,7 @@ app.put("/api/user-projects/:id", async (req, res) => {
       priority, start_date, end_date, estimated_budget, actual_budget,
       client_id, client_name, client_email, client_phone, client_id_number,
       project_manager_id, team_members, deliverables, milestones, documents,
-      progress_percentage, notes, updated_by
+      progress_percentage, notes, updated_by, crew_template_id
     } = req.body;
 
     const [result] = await mainDb.query(
@@ -5537,6 +5537,7 @@ app.put("/api/user-projects/:id", async (req, res) => {
         client_phone = COALESCE(?, client_phone),
         client_id_number = COALESCE(?, client_id_number),
         project_manager_id = COALESCE(?, project_manager_id),
+        crew_template_id = COALESCE(?, crew_template_id),
         team_members = COALESCE(?, team_members),
         deliverables = COALESCE(?, deliverables),
         milestones = COALESCE(?, milestones),
@@ -5550,7 +5551,8 @@ app.put("/api/user-projects/:id", async (req, res) => {
         user_id, project_name, project_description, project_type, status,
         priority, start_date, end_date, estimated_budget, actual_budget,
         client_id, client_name, client_email, client_phone, client_id_number,
-        project_manager_id, team_members ? JSON.stringify(team_members) : null,
+        project_manager_id, crew_template_id || null,
+        team_members ? JSON.stringify(team_members) : null,
         deliverables ? JSON.stringify(deliverables) : null, milestones ? JSON.stringify(milestones) : null,
         documents ? JSON.stringify(documents) : null, progress_percentage, notes, updated_by, id
       ]
