@@ -4989,7 +4989,10 @@ app.post("/api/videos", async (req, res) => {
 });
 
 // Delete operations
-app.delete("/api/:type/:id", async (req, res) => {
+// NOTE: unknown types fall through with next() instead of 400 so that more
+// specific DELETE routes registered later (e.g. /api/admin/profile-photo)
+// still receive their requests — Express matches in registration order.
+app.delete("/api/:type/:id", async (req, res, next) => {
   try {
     const { type, id } = req.params;
 
@@ -5008,9 +5011,7 @@ app.delete("/api/:type/:id", async (req, res) => {
         table = "images";
         break;
       default:
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid type" });
+        return next();
     }
 
     await mainDb.query(`UPDATE ${table} SET deleted_at = NOW() WHERE id = ?`, [
@@ -5309,14 +5310,16 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
     //    (used by server.js inline POST /api/admin/profile-photo)
     // 2. images table via profile_image_id
     //    (used by admin-verification.js POST /profile/:id/photo)
+    // NOTE: alias must NOT be "admin" — ADMIN is a reserved word in MySQL 8.
+    // images table column is `file_name` (NOT `filename`).
     const [users] = await mainDb.query(
-      `SELECT admin.profile_photo_blob, admin.profile_photo_mime_type,
-              admin.profile_photo_file_name, admin.profile_image_id,
-              img.data as img_data, img.content_type as img_type, img.filename as img_name
-       FROM ${tableName} admin
-       LEFT JOIN images img ON img.id = admin.profile_image_id
-       WHERE admin.id = ? 
-       AND (admin.profile_photo_blob IS NOT NULL OR admin.profile_image_id IS NOT NULL)`,
+      `SELECT au.profile_photo_blob, au.profile_photo_mime_type,
+              au.profile_photo_file_name, au.profile_image_id,
+              img.data as img_data, img.content_type as img_type, img.file_name as img_name
+       FROM ${tableName} au
+       LEFT JOIN images img ON img.id = au.profile_image_id
+       WHERE au.id = ?
+       AND (au.profile_photo_blob IS NOT NULL OR au.profile_image_id IS NOT NULL)`,
       [userId],
     );
 
