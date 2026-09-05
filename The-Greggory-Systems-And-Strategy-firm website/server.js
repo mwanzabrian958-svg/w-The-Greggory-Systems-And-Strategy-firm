@@ -555,15 +555,19 @@ async function getFirstUserId() {
 }
 
 async function resolveInvoiceProjectId(provided) {
-  if (provided && Number(provided) > 0) return Number(provided);
-  const [rows] = await mainDb.query("SELECT id FROM projects ORDER BY id LIMIT 1");
+  // Projects now live in user_projects (legacy `projects` table is unused).
+  if (provided && Number(provided) > 0) {
+    const [check] = await mainDb.query("SELECT id FROM user_projects WHERE id = ? AND deleted_at IS NULL", [Number(provided)]);
+    if (check.length) return Number(provided);
+  }
+  const [rows] = await mainDb.query("SELECT id FROM user_projects WHERE deleted_at IS NULL ORDER BY id DESC LIMIT 1");
   if (rows && rows.length) return rows[0].id;
   const uid = await getFirstUserId();
-  if (!uid) throw new Error("No users available to own the fallback project");
+  if (!uid) return null; // project_id is now nullable — never block the invoice
   const [res] = await mainDb.query(
-    `INSERT INTO projects (name, description, status, start_date, expected_completion, client_name, created_by)
-     VALUES ('General / Unassigned', 'Auto-created fallback engagement for records without an assigned project.', 'active', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'General', ?)`,
-    [uid]
+    `INSERT INTO user_projects (user_id, project_name, project_description, project_type, status, created_by, created_at)
+     VALUES (?, 'General / Unassigned', 'Auto-created fallback engagement for records without an assigned project.', 'consulting', 'active', ?, NOW())`,
+    [uid, uid]
   );
   return res.insertId;
 }
@@ -644,14 +648,6 @@ app.get("/api/test-mongodb", async (req, res) => {
   }
 });
 
-app.post('/api/mpesa/callback', (req, res) => {
-  console.log('[MPESA] callback received:', JSON.stringify(req.body || {}));
-  res.status(200).json({
-    ResultCode: 0,
-    ResultDesc: 'Accepted'
-  });
-});
-
 app.post('/api/mpesa/stkpush', async (req, res) => {
   try {
     const {
@@ -668,17 +664,12 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
     const shortcode = process.env.MPESA_SHORTCODE || '174379';
     const callbackUrl = process.env.MPESA_CALLBACK_URL || 'http://localhost:3000/api/mpesa/callback';
 
-    if (!consumerKey || !consumerSecret || !passkey) {
-      return res.status(500).json({
-        success: false,
-        message: 'M-Pesa credentials are not configured on the server. Set MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_PASSKEY, and MPESA_SHORTCODE first.'
-      });
-    }
+    const simulate = !consumerKey || !consumerSecret || !passkey;
 
     if (!phoneNumber || !amount) {
       return res.status(400).json({
         success: false,
-        message: 'Phone number and amount are required.'
+        message: 'Phone number and amount are required.',
       });
     }
 
@@ -686,7 +677,26 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
     if (!formattedPhone || formattedPhone.length < 12) {
       return res.status(400).json({
         success: false,
-        message: 'Enter a valid phone number in the format 07xxxxxxxx or 2547xxxxxxxx.'
+        message: 'Enter a valid phone number in the format 07xxxxxxxx or 2547xxxxxxxx.',
+      });
+    }
+
+    if (simulate) {
+      const checkoutRequestId = `sim-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      try {
+        await mainDb.query(
+          `INSERT INTO mpesa_transactions (transaction_id, amount, phone_number, account_reference, status, response_data, created_by, created_at)
+           VALUES (?, ?, ?, ?, 'pending', ?, ?, NOW())`,
+          [checkoutRequestId, amount, phoneNumber, accountReference || 'GSS-FIRM', JSON.stringify({ simulated: true }), Number(userId) || null]
+        );
+      } catch (dbErr) {
+        console.warn('[MPESA] Failed to log simulated transaction:', dbErr.message);
+      }
+      return res.json({
+        success: true,
+        message: 'Simulation: STK Push initialized',
+        checkoutRequestId,
+        simulated: true,
       });
     }
 
@@ -1031,7 +1041,9 @@ const handleClientFeedbackCreate = async (req, res) => {
         isClientSent ? "client" : "admin",
         priorityValue,
         ratingValue,
-        isClientSent ? 0 : 1,
+        // created_by must satisfy the FK to users.id — use the authenticated
+        // user's id (never 0, which has no matching user row).
+        isClientSent ? userId : (req.adminId || 1),
       ],
     );
 
@@ -5646,11 +5658,11 @@ app.post("/api/company-personnel", async (req, res) => {
 // Invoices Create
 // NOTE: invoices.total_amount_kes is a STORED GENERATED column (computed by
 // the DB from subtotal/tax_rate) — it must NEVER appear in the INSERT list.
-app.post("/api/invoices", async (req, res) => {
+app.post("/api/invoices", authenticateAdmin, async (req, res) => {
   try {
     const { title, description, client_name, client_email, due_date } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
-    const userId = req.userId || req.body.created_by || await getFirstUserId();
+    const userId = req.userId || req.adminId || req.body.created_by || await getFirstUserId();
     const project_id = await resolveInvoiceProjectId(req.body.project_id);
     const invoice_number = req.body.invoice_number || 'INV-' + Date.now();
     const issue_date = req.body.issue_date || new Date().toISOString().split('T')[0];
@@ -5681,8 +5693,23 @@ app.post("/api/invoices", async (req, res) => {
        req.body.exchange_rate != null ? parseFloat(req.body.exchange_rate) : 1,
        issue_date, due, clientName, client_email || null, req.body.client_phone || null,
        items, req.body.notes || null, req.body.payment_terms || null, userId]
-    );
-    res.status(201).json({ success: true, id: result.insertId });
+     );
+     // Notify the client: look up the user by client_email (the address that
+     // belongs to the invoice) and create an in-portal notification. Fire-and-
+     // forget — a notification failure must never fail the invoice creation.
+     if (client_email) {
+       try {
+         const [clients] = await mainDb.query("SELECT id FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1", [client_email]);
+         if (clients.length) {
+           await mainDb.query(
+             `INSERT INTO notifications (user_id, notification_type, title, message, status, related_entity_type, related_entity_id, created_at)
+              VALUES (?, 'invoice_sent', ?, ?, 'unread', 'invoices', ?, NOW())`,
+             [clients[0].id, `New invoice ${invoice_number}`, `Invoice "${title}" for ${clientName} — KSH ${Number(subtotal || 0).toLocaleString()} due ${due}.`, result.insertId]
+           );
+         }
+       } catch (nErr) { console.warn('[INVOICE] notification skipped:', nErr.message); }
+     }
+     res.status(201).json({ success: true, id: result.insertId });
   } catch (error) { console.error('[POST /api/invoices]', error.code || '', error.message); res.status(500).json({ error: 'Failed', detail: error.message }); }
 });
 
