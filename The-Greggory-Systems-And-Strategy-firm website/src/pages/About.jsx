@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, Search, ChevronLeft, ChevronRight, UserCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
 
@@ -152,6 +152,69 @@ const About = () => {
                 className="w-full h-52 object-cover"
               />
             </div>
+          </div>
+        </div>
+      </section>
+{/* WHAT WE DO — ACROSS THE BOARD */}
+      <section className="w-full px-6 lg:px-20 pb-16 lg:pb-24">
+        <div className="bg-white rounded-[32px] shadow-xl border border-slate-100 p-8 md:p-12">
+          <div className="space-y-3 mb-12">
+            <span className="text-xs font-black uppercase tracking-[0.4em] text-[#8fb28a]">What We Do — Across the Board</span>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-black">
+              We develop, maintain, upgrade, and keep it up.
+            </h2>
+            <p className="text-sm text-slate-400 max-w-3xl leading-relaxed">
+              From concept to completion and beyond — we work for <b className="text-black">individuals and
+              organizations alike</b>, <b className="text-black">for-profit and non-profit</b>, across every
+              industry. Our work covers the full project lifetime: <b className="text-black">development,
+              maintenance, upgrades, and upkeep</b> — always alongside the <b className="text-black">
+              business consultancy</b> that makes you sustainable.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
+            {[
+              { icon: Command, title: 'Project Development', desc: 'We develop projects, systems, and digital platforms for individuals and organizations alike — scoped, budgeted, and delivered from concept to completion.' },
+              { icon: Shield, title: 'Maintenance', desc: 'We keep what you run healthy: monitoring, patching, backups, security, and support that stops downtime before it starts.' },
+              { icon: Zap, title: 'Upgrades', desc: 'We modernize what you already have — new features, performance gains, security hardening, and complete next-generation versions.' },
+              { icon: Heart, title: 'Upkeep & Support', desc: 'Ongoing care for every asset we build and every project we manage — so value compounds long after launch.' },
+            ].map((item) => (
+              <div key={item.title} className="space-y-4">
+                <div className="w-10 h-10 rounded-2xl bg-[#8fb28a]/10 flex items-center justify-center">
+                  <item.icon className="w-5 h-5 text-[#4c6a4d]" />
+                </div>
+                <h3 className="font-bold text-sm uppercase tracking-widest text-black">{item.title}</h3>
+                <p className="text-sm text-black leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 pt-8 border-t border-slate-100 grid gap-6 lg:grid-cols-2">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-2xl bg-[#aa7d3f]/10 flex items-center justify-center shrink-0">
+                <Globe className="w-5 h-5 text-[#aa7d3f]" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm uppercase tracking-widest text-black mb-2">Business Consultancy — Profit &amp; Non-Profit</h3>
+                <p className="text-sm text-black leading-relaxed">
+                  Alongside hands-on delivery, we provide complete business consultancy: strategy, operations,
+                  finance, organisational design, growth planning, and continuous improvement — for both
+                  profit-driven enterprises and non-profit mission organisations.
+                </p>
+              </div>
+            </div><div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center shrink-0">
+                  <UserCheck className="w-5 h-5 text-slate-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm uppercase tracking-widest text-black mb-2">Individuals &amp; Organizations — Every Industry</h3>
+                  <p className="text-sm text-black leading-relaxed">
+                    From a person steering a single initiative to a registered enterprise or non-profit running
+                    multiple workstreams — our project development, maintenance, upgrades, and upkeep services
+                    scale to the size of your ambition, across every field and industry.
+                  </p>
+                </div>
+              </div>
           </div>
         </div>
       </section>

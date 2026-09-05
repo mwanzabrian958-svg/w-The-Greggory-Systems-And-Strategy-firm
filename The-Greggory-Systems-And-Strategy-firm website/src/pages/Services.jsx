@@ -33,7 +33,7 @@ const Services = () => {
           </div>
           <div className="lg:w-1/3">
             <p className="text-base text-black leading-relaxed font-normal">
-              This page serves as a comprehensive index of the systemic capabilities we deploy today and the strategic innovations we are architecting for the future.
+              This page serves as a comprehensive index of the systemic capabilities we deploy today and the strategic innovations we are architecting for the future — for individuals and organizations alike, profit and non-profit, across every industry.
             </p>
           </div>
         </div>
