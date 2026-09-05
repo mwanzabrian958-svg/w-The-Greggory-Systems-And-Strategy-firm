@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, Search, ChevronLeft, ChevronRight, UserCheck, Rocket, RefreshCw, Target, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, Search, ChevronLeft, ChevronRight, UserCheck, Rocket, RefreshCw, Target, CheckCircle2, BarChart3, TrendingUp } from 'lucide-react'
+import { SITE_NAME } from '../constants/siteBrand'
 import { Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
 
