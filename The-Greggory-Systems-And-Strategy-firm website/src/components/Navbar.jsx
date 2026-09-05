@@ -140,14 +140,14 @@ const Navbar = () => {
             ))}
           </div>
 
-          <div className="flex items-center space-x-4 bg-slate-100 dark:bg-white/5 px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-white/10 backdrop-blur-md">
+          <div className="flex items-center space-x-3 sm:space-x-4 bg-slate-100 dark:bg-white/5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl border border-slate-200 dark:border-white/10 backdrop-blur-md min-w-0">
             {isAuthenticated && user ? (
               <>
                 {profilePhotoUrl ? (
                   <img
                     src={profilePhotoUrl}
                     alt="User"
-                    className="h-10 w-10 rounded-full object-cover border-2 border-gold-500/50"
+                    className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-full object-cover aspect-square border-2 border-gold-500/50 bg-slate-200 dark:bg-white/10"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                       e.currentTarget.nextElementSibling.style.display = 'flex';
@@ -155,7 +155,7 @@ const Navbar = () => {
                   />
                 ) : null}
                 <div
-                  className="h-10 w-10 rounded-full bg-gold-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20"
+                  className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-full bg-gold-500 flex items-center justify-center text-slate-950 text-xs sm:text-sm font-black border-2 border-white/20"
                   style={{ display: profilePhotoUrl ? 'none' : 'flex' }}
                 >
                   {user.first_name ? user.first_name[0] : (user.name ? user.name[0] : 'U')}
@@ -166,8 +166,9 @@ const Navbar = () => {
               </>
             ) : (
               <Link to="/login" className="flex items-center gap-3 group">
-                <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center text-slate-500 dark:text-slate-400 text-sm font-black border-2 border-transparent group-hover:border-gold-500/50 transition-all">
-                  <User size={18} />
+                <div className="h-9 w-9 sm:h-10 sm:w-10 shrink-0 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center text-slate-500 dark:text-slate-400 text-sm font-black border-2 border-transparent group-hover:border-gold-500/50 transition-all">
+                  <User size={16} className="sm:hidden" />
+                  <User size={18} className="hidden sm:block" />
                 </div>
                 <div className="hidden lg:block text-xs font-black text-slate-500 dark:text-slate-400 tracking-widest uppercase group-hover:text-gold-500 transition-colors">
                   Client Access
