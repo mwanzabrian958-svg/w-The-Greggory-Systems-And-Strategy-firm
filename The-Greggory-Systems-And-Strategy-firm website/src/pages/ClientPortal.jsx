@@ -107,6 +107,7 @@ const ClientPortal = () => {
   const [businessSummary, setBusinessSummary] = useState(null);
   const [roleUpdates, setRoleUpdates] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
+  const [crewTemplates, setCrewTemplates] = useState({}); // projectId -> template
 
   // Client Requests State (change requests / quotes / signatures)
   const [changeRequests, setChangeRequests] = useState([]);
@@ -322,6 +323,21 @@ const ClientPortal = () => {
   };
 
   useEffect(() => { loadClientData(); }, []);
+
+  // Fetch crew templates assigned to each project
+  useEffect(() => {
+    if (!projects.length) return;
+    projects.forEach(p => {
+      authFetch(getApiUrl(`/api/users/project-team-template/${p.id}`))
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d?.success && d.template) {
+            setCrewTemplates(prev => ({ ...prev, [p.id]: d.template }));
+          }
+        })
+        .catch(() => {});
+    });
+  }, [projects.length]);
 
   useEffect(() => {
     const handleVisibility = () => {
@@ -787,42 +803,57 @@ const ClientPortal = () => {
 
           {activeSection === "team" && (
             <div className="space-y-4 animate-fade-in">
-              {teamMembers.length > 0 ? (
-                Object.entries(
-                  teamMembers.reduce((acc, member) => {
-                    const pid = member.projectId || 'unassigned';
-                    if (!acc[pid]) acc[pid] = { projectName: member.projectName || 'Unassigned', members: [] };
-                    acc[pid].members.push(member);
-                    return acc;
-                  }, {})
-                ).map(([projectId, group]) => (
-                  <div key={projectId} className="bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
-                      <Briefcase size={12} className="text-teal-600" />
-                      <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-900 dark:text-white truncate">{group.projectName}</h3>
-                      <span className="text-[7px] text-slate-500 dark:text-slate-300 uppercase font-bold ml-auto">{group.members.length} member{group.members.length !== 1 ? 's' : ''}</span>
-                    </div>
-                    <div className="divide-y divide-white/5">
-                      {group.members.map((m, idx) => (
-                         <div key={m.id || idx} className="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-slate-900 dark:text-white text-[9px] font-black shrink-0">
-                            {(m.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                          </div>
+              {Object.keys(crewTemplates).length > 0 ? (
+                Object.entries(crewTemplates).map(([projectId, crew]) => {
+                  if (!crew) return null;
+                  const members = crew.members || [];
+                  return (
+                    <div key={projectId} className="bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                      <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-3">
+                          {crew.team_leader_image ? (
+                            <img src={`data:${crew.team_leader_image_mime || "image/jpeg"};base64,${crew.team_leader_image}`} alt={crew.leader_name || "Leader"} className="w-10 h-10 rounded-xl object-cover border-2 border-slate-200 dark:border-slate-600 shadow" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white text-xs font-black border-2 border-slate-200 dark:border-slate-600 shadow">
+                              {(crew.leader_name || crew.name || '?').split(' ').map(n => n?.[0] || '').join('').slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
-                            <p className="text-[9px] font-bold text-slate-900 dark:text-white truncate">{m.name}</p>
-                            <p className="text-[7px] text-slate-500 dark:text-slate-300 truncate">{m.duties}</p>
+                            <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-900 dark:text-white truncate">{crew.name}</h3>
+                            {crew.leader_name && <p className="text-[7px] text-teal-600 dark:text-teal-400 font-bold">{crew.leader_name} — Team Lead</p>}
                           </div>
-                          <span className="text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-[80px]">{m.role}</span>
+                          <span className="text-[7px] text-slate-500 dark:text-slate-300 uppercase font-bold">{members.length} member{members.length !== 1 ? 's' : ''}</span>
                         </div>
-                      ))}
+                      </div>
+                      {members.length > 0 && (
+                        <div className="divide-y divide-white/5">
+                          {members.map((m, idx) => (
+                            <div key={m.id || idx} className="flex items-center gap-3 p-3 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-[9px] font-black shrink-0">
+                                {(m.name || '?').split(' ').map(n => n?.[0] || '').join('').slice(0, 2).toUpperCase()}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[9px] font-bold text-slate-900 dark:text-white truncate">{m.name}</p>
+                                <p className="text-[7px] text-slate-500 dark:text-slate-300 truncate">{m.department || m.description || ''}</p>
+                              </div>
+                              <span className="text-[7px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-[80px]">{m.member_role || m.role}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
+              ) : teamMembers.length > 0 ? (
+                <div className="py-14 text-center opacity-40">
+                  <Users size={24} className="mx-auto mb-2" />
+                  <p className="text-[9px] uppercase font-bold">Legacy team data</p>
+                </div>
               ) : (
                 <div className="py-14 text-center opacity-40">
                   <Users size={24} className="mx-auto mb-2" />
-                  <p className="text-[9px] uppercase font-bold">No team members assigned yet</p>
-                  <p className="text-[8px] text-slate-600 dark:text-slate-300 mt-1">Your project team will appear here once assigned.</p>
+                  <p className="text-[9px] uppercase font-bold">No crew assigned yet</p>
+                  <p className="text-[8px] text-slate-600 dark:text-slate-300 mt-1">Your project crew will appear here once assigned.</p>
                 </div>
               )}
             </div>

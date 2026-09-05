@@ -4425,6 +4425,206 @@ app.delete("/api/admin/project-team/:id", authenticateAdmin, async (req, res) =>
 });
 
 // =============================================
+// Team Templates API
+// =============================================
+
+// List all team templates
+app.get("/api/admin/team-templates", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(`
+      SELECT tt.id, tt.name, tt.description, tt.project_id, tt.team_leader_id,
+             tt.team_leader_image, tt.team_leader_image_mime, tt.created_at, tt.updated_at,
+             tm.name as leader_name, tm.role as leader_role,
+             up.project_name,
+             (SELECT COUNT(*) FROM team_template_members ttm WHERE ttm.template_id = tt.id) as member_count
+      FROM team_templates tt
+      LEFT JOIN team_members tm ON tm.id = tt.team_leader_id
+      LEFT JOIN user_projects up ON up.id = tt.project_id
+      ORDER BY tt.updated_at DESC
+    `);
+    // Convert BLOB images to base64 for frontend display
+    const templates = (rows || []).map(r => ({
+      ...r,
+      team_leader_image: r.team_leader_image ? r.team_leader_image.toString('base64') : null,
+    }));
+    res.json({ success: true, templates });
+  } catch (error) {
+    console.error("[ADMIN TEAM TEMPLATES LIST] Error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch team templates", error: error.message });
+  }
+});
+
+// Get one template with its members
+app.get("/api/admin/team-templates/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [templates] = await mainDb.query(`
+      SELECT tt.*, tm.name as leader_name, tm.role as leader_role, tm.department as leader_department,
+             up.project_name
+      FROM team_templates tt
+      LEFT JOIN team_members tm ON tm.id = tt.team_leader_id
+      LEFT JOIN user_projects up ON up.id = tt.project_id
+      WHERE tt.id = ?
+    `, [id]);
+    if (templates.length === 0) {
+      return res.status(404).json({ success: false, message: "Template not found" });
+    }
+    const tpl = templates[0];
+    const [members] = await mainDb.query(`
+      SELECT ttm.id, ttm.team_member_id, ttm.role as member_role,
+             tm.name, tm.department, tm.description
+      FROM team_template_members ttm
+      JOIN team_members tm ON tm.id = ttm.team_member_id
+      WHERE ttm.template_id = ?
+      ORDER BY ttm.created_at ASC
+    `, [id]);
+    // Convert BLOB image to base64 for frontend display
+    const template = {
+      ...tpl,
+      team_leader_image: tpl.team_leader_image ? tpl.team_leader_image.toString('base64') : null,
+      members: members || [],
+    };
+    res.json({ success: true, template });
+  } catch (error) {
+    console.error("[ADMIN TEAM TEMPLATE GET] Error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch template", error: error.message });
+  }
+});
+
+// Create a team template
+app.post("/api/admin/team-templates", authenticateAdmin, async (req, res) => {
+  try {
+    const { name, description, project_id, team_leader_id, team_leader_image, team_leader_image_mime, member_ids } = req.body;
+    if (!name) {
+      return res.status(400).json({ success: false, message: "Template name is required" });
+    }
+    // Convert base64 image to BLOB if provided
+    let imageBlob = null;
+    if (team_leader_image && typeof team_leader_image === 'string') {
+      const base64Data = team_leader_image.replace(/^data:image\/\w+;base64,/, '');
+      imageBlob = Buffer.from(base64Data, 'base64');
+    }
+    const [result] = await mainDb.query(`
+      INSERT INTO team_templates (name, description, project_id, team_leader_id, team_leader_image, team_leader_image_mime, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+    `, [name, description || null, project_id || null, team_leader_id || null, imageBlob, team_leader_image_mime || null]);
+    const templateId = result.insertId;
+    if (Array.isArray(member_ids) && member_ids.length > 0) {
+      const values = member_ids.map((mid) => `(${templateId}, ${mid}, 'member', NOW())`).join(', ');
+      await mainDb.query(`INSERT INTO team_template_members (template_id, team_member_id, role, created_at) VALUES ${values}`);
+    }
+    res.status(201).json({ success: true, id: templateId, message: "Team template created" });
+  } catch (error) {
+    console.error("[ADMIN TEAM TEMPLATE CREATE] Error:", error);
+    res.status(500).json({ success: false, message: "Failed to create team template", error: error.message });
+  }
+});
+
+// Update a team template
+app.put("/api/admin/team-templates/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, project_id, team_leader_id, team_leader_image, team_leader_image_mime, member_ids } = req.body;
+    const updates = [];
+    const values = [];
+    if (name !== undefined) { updates.push('name = ?'); values.push(name); }
+    if (description !== undefined) { updates.push('description = ?'); values.push(description); }
+    if (project_id !== undefined) { updates.push('project_id = ?'); values.push(project_id || null); }
+    if (team_leader_id !== undefined) { updates.push('team_leader_id = ?'); values.push(team_leader_id || null); }
+    if (team_leader_image !== undefined) {
+      updates.push('team_leader_image = ?');
+      if (team_leader_image && typeof team_leader_image === 'string') {
+        const base64Data = team_leader_image.replace(/^data:image\/\w+;base64,/, '');
+        values.push(Buffer.from(base64Data, 'base64'));
+      } else {
+        values.push(null);
+      }
+    }
+    if (team_leader_image_mime !== undefined) { updates.push('team_leader_image_mime = ?'); values.push(team_leader_image_mime || null); }
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, message: "No fields to update" });
+    }
+    updates.push('updated_at = NOW()');
+    values.push(id);
+    const [result] = await mainDb.query(`UPDATE team_templates SET ${updates.join(', ')} WHERE id = ?`, values);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "Template not found" });
+    }
+    if (Array.isArray(member_ids)) {
+      await mainDb.query(`DELETE FROM team_template_members WHERE template_id = ?`, [id]);
+      if (member_ids.length > 0) {
+        const mvals = member_ids.map((mid) => `(${id}, ${mid}, 'member', NOW())`).join(', ');
+        await mainDb.query(`INSERT INTO team_template_members (template_id, team_member_id, role, created_at) VALUES ${mvals}`);
+      }
+    }
+    res.json({ success: true, message: "Team template updated" });
+  } catch (error) {
+    console.error("[ADMIN TEAM TEMPLATE UPDATE] Error:", error);
+    res.status(500).json({ success: false, message: "Failed to update team template", error: error.message });
+  }
+});
+
+// Delete a team template
+app.delete("/api/admin/team-templates/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await mainDb.query(`DELETE FROM team_template_members WHERE template_id = ?`, [id]);
+    const [result] = await mainDb.query(`DELETE FROM team_templates WHERE id = ?`, [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "Template not found" });
+    }
+    res.json({ success: true, message: "Team template deleted" });
+  } catch (error) {
+    console.error("[ADMIN TEAM TEMPLATE DELETE] Error:", error);
+    res.status(500).json({ success: false, message: "Failed to delete team template", error: error.message });
+  }
+});
+
+// Get the team template assigned to a project (for client portal)
+app.get("/api/users/project-team-template/:projectId", authenticateUser, async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const [projects] = await mainDb.query(
+      `SELECT id FROM user_projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL`,
+      [projectId, req.userId]
+    );
+    if (projects.length === 0) {
+      return res.status(403).json({ success: false, message: "Not authorized" });
+    }
+    const [templates] = await mainDb.query(`
+      SELECT tt.id, tt.name, tt.description, tt.team_leader_id, tt.team_leader_image, tt.team_leader_image_mime,
+             tm.name as leader_name, tm.role as leader_role
+      FROM team_templates tt
+      LEFT JOIN team_members tm ON tm.id = tt.team_leader_id
+      WHERE tt.project_id = ?
+      LIMIT 1
+    `, [projectId]);
+    if (templates.length === 0) {
+      return res.json({ success: true, template: null });
+    }
+    const tpl = templates[0];
+    const [members] = await mainDb.query(`
+      SELECT ttm.id, ttm.team_member_id, ttm.role as member_role,
+             tm.name, tm.department, tm.description
+      FROM team_template_members ttm
+      JOIN team_members tm ON tm.id = ttm.team_member_id
+      WHERE ttm.template_id = ?
+      ORDER BY ttm.created_at ASC
+    `, [tpl.id]);
+    // Convert BLOB image to base64 for frontend display
+    const template = {
+      ...tpl,
+      team_leader_image: tpl.team_leader_image ? tpl.team_leader_image.toString('base64') : null,
+      members: members || [],
+    };
+    res.json({ success: true, template });
+  } catch (error) {
+    console.error("[CLIENT PROJECT TEAM TEMPLATE] Error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch project team", error: error.message });
+  }
+});
+
+// =============================================
 // Data Safety & Audit API
 // =============================================
 // NOTE: Companies API removed — Baraka Housing Agency module purged
