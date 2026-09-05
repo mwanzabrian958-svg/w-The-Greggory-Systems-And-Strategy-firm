@@ -30,9 +30,11 @@ const Navbar = () => {
     }
   }, [])
 
-  const profilePhotoUrl = user?.has_photo && (user?.id || user?.userId)
-    ? `/api/users/profile-photo/${user.id || user.userId}`
-    : null
+  // Always attempt to load the photo if we have a user ID; fall back to initials on error.
+  // This avoids depending solely on has_photo (which may be stale in localStorage for sessions
+  // created before the photo flag was added to the login response).
+  const userId = user?.id || user?.userId
+  const profilePhotoUrl = userId ? `/api/users/profile-photo/${userId}` : null
 
   const navigation = [
     { name: 'Home', path: '/' },
@@ -146,12 +148,18 @@ const Navbar = () => {
                     src={profilePhotoUrl}
                     alt="User"
                     className="h-10 w-10 rounded-full object-cover border-2 border-gold-500/50"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling.style.display = 'flex';
+                    }}
                   />
-                ) : (
-                  <div className="h-10 w-10 rounded-full bg-gold-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20">
-                    {user.first_name ? user.first_name[0] : (user.name ? user.name[0] : 'U')}
-                  </div>
-                )}
+                ) : null}
+                <div
+                  className="h-10 w-10 rounded-full bg-gold-500 flex items-center justify-center text-slate-950 text-sm font-black border-2 border-white/20"
+                  style={{ display: profilePhotoUrl ? 'none' : 'flex' }}
+                >
+                  {user.first_name ? user.first_name[0] : (user.name ? user.name[0] : 'U')}
+                </div>
                 <div className="hidden lg:block text-sm font-black text-slate-900 dark:text-white tracking-wide uppercase transition-colors">
                   {user.display_name || user.name || 'User'}
                 </div>
