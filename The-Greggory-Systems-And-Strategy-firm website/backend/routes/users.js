@@ -337,7 +337,7 @@ router.put('/notifications/read-all/me', authenticateUser, async (req, res) => {
   }
 });
 
-// Client Reports
+// Client Reports — degrade gracefully if project_reports table is missing
 router.get('/my-reports', authenticateUser, async (req, res) => {
   const userId = req.userId;
   try {
@@ -350,7 +350,9 @@ router.get('/my-reports', authenticateUser, async (req, res) => {
     `, [userId]);
     res.json({ success: true, reports });
   } catch (error) {
-    res.status(500).json({ success: false });
+    // Table may not exist yet (pending sync) — return empty section instead of 500
+    console.error('[CLIENT REPORTS] my-reports error:', error.code || '', error.message);
+    res.json({ success: true, reports: [] });
   }
 });
 
@@ -370,7 +372,8 @@ router.get('/my-reports/:id/download', authenticateUser, async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${report.title}.pdf"`);
     res.send(report.file_data);
   } catch (error) {
-    res.status(500).json({ success: false });
+    console.error('[CLIENT REPORTS] download error:', error.code || '', error.message);
+    res.status(404).json({ success: false, message: 'Report not available' });
   }
 });
 
