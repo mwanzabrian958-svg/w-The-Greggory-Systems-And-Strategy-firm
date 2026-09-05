@@ -74,8 +74,8 @@ All endpoints verified live (200) as of build `68a0996`.
 | 11 | `POST /api/users/my-signature-requests/:id/decision` | Sign/decline a document | `server.js:1273` |
 | 12 | `GET /api/users/my-change-requests` | List client's change requests | `server.js:1117` |
 | 13 | `POST /api/users/my-change-requests` | Submit new change request (validates project ownership) | `server.js:1118` |
-| 14 | `GET /api/users/client-feedback/:userId` | List client's feedback | `server.js:1050` |
-| 15 | `POST /api/users/client-feedback` | Submit feedback to admin | `server.js:1051` |
+| 14 | `GET /api/users/client-feedback` | List client's feedback (uses auth token, URL param ignored) | `server.js:1055` |
+| 15 | `POST /api/users/client-feedback` | Submit feedback to admin (auth required, author forced to 'client') | `server.js:1057` |
 | 16 | `GET /api/users/notifications/me` | List client's notifications | `backend/routes/users.js:284` |
 | 17 | `PUT /api/users/notifications/:id/read` | Mark one notification read | `backend/routes/users.js:312` |
 | 18 | `PUT /api/users/notifications/read-all/me` | Mark all notifications read | `backend/routes/users.js:323` |
@@ -141,6 +141,35 @@ which normalizes raw DB rows into the shape the frontend renders:
 | `project_tasks` | SELECT | `client-dashboard` (tasks panel) |
 | `messages` | SELECT | `client-dashboard` (messages panel) |
 | `documents` | SELECT | `client-dashboard` (documents panel) |
+
+### Client Data Isolation Guarantees (SECURITY)
+
+Every client-facing endpoint filters by the **authenticated** user's ID (`req.userId`
+from the JWT token) — never from URL params or request bodies. Audited endpoint map:
+
+| Endpoint | Isolation filter |
+|---|---|
+| `GET /api/users/client-dashboard` | `WHERE up.user_id = ?`; tasks/team/activities/documents scoped to the user's own project IDs |
+| `GET /api/users/projects` / `/:id` | `WHERE up.user_id = ?` (404 if not owner) |
+| `GET /api/users/my-quotes` | `WHERE client_id = ?` |
+| `GET /api/users/my-change-requests` | `WHERE requested_by = ?` |
+| `POST /api/users/my-change-requests` | Ownership check: project must belong to `req.userId` |
+| `GET /api/users/my-signature-requests` | `WHERE signer_id = ?` |
+| `GET /api/users/my-invoices/:id/pdf` | `JOIN user_projects ... WHERE up.user_id = ?` |
+| `GET /api/users/client-feedback` | `WHERE user_id = req.userId` (URL param ignored — was a cross-client read vulnerability, fixed) |
+| `POST /api/users/client-feedback` | `authenticateUser` required; `author` forced to `'client'`; userId taken from token only |
+| `GET /api/users/notifications/me` | `WHERE user_id = ?` |
+| `GET /api/users/search` | Every sub-query (projects/tasks/invoices/docs) filtered by `user_id = ?` |
+| `GET /api/users/project-team-template/:projectId` | Ownership check via `user_projects.user_id = req.userId` (403 otherwise) |
+| `PUT /api/users/profile` / `change-password` | `WHERE id = req.userId` |
+
+**Admin sends feedback to clients** via a separate authenticated endpoint:
+`POST /api/admin/client-feedback` (`authenticateAdmin`) — target client comes from
+the request body, `author` forced to `'admin'`. Clients can never write as admins,
+and admins never use the client endpoint.
+
+Only exception: `GET /api/users/profile-photo/:userId` is public (required for
+`<img>` tags which cannot send Authorization headers) — standard avatar pattern.
 
 ---
 
