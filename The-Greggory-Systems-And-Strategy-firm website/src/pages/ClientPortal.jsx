@@ -247,8 +247,12 @@ const ClientPortal = () => {
       const fd = new FormData();
       fd.append('profilePhoto', file);
       fd.append('userId', portalUser?.id);
+      // Resolve token the same way authFetch does (admin session, legacy key, or client tgf_user)
       const sessionStr = localStorage.getItem('gf_admin_session') || sessionStorage.getItem('gf_admin_session');
-      const token = sessionStr ? (JSON.parse(sessionStr)?.token) : null;
+      const session = sessionStr ? JSON.parse(sessionStr) : null;
+      let clientSession = null;
+      try { clientSession = JSON.parse(localStorage.getItem('tgf_user') || 'null'); } catch { clientSession = null; }
+      const token = session?.token || localStorage.getItem('gf_admin_session_token') || clientSession?.token || user?.token;
       const r = await fetch(getApiUrl('/api/users/upload-profile-photo'), {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
