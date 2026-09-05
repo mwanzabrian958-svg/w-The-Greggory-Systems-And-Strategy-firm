@@ -87,7 +87,7 @@ const Home = () => {
       <section className="py-14 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
           <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto mb-6 leading-relaxed text-center">
-            {SITE_NAME} develops, maintains, upgrades, and keeps up projects, systems, and platforms — for individuals and organizations alike, profit and non-profit, across every industry — alongside the business consultancy that makes you sustainable.
+            {SITE_NAME} doesn’t hand you a project and disappear. We develop, maintain, upgrade, and stand behind the projects, systems, and platforms our clients depend on — for individuals and organizations alike, for profit and for purpose, across every industry — backed by the business consultancy that turns delivery into enduring success.
           </p>
           <div className="text-center">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Featured Insight</h2>

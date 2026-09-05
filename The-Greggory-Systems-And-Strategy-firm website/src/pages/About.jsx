@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, Search, ChevronLeft, ChevronRight, UserCheck } from 'lucide-react'
+import { ArrowRight, Sparkles, Orbit, Zap, Heart, Globe, Shield, Command, Fingerprint, Microscope, Radio, Search, ChevronLeft, ChevronRight, UserCheck, Rocket, RefreshCw, Target, CheckCircle2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
 
@@ -155,70 +155,151 @@ const About = () => {
           </div>
         </div>
       </section>
-{/* WHAT WE DO — ACROSS THE BOARD */}
+{/* WHAT WE DO - EVERY GREAT OUTCOME HAS A BEGINNING, A MIDDLE, AND A HEREAFTER */}
       <section className="w-full px-6 lg:px-20 pb-16 lg:pb-24">
         <div className="bg-white rounded-[32px] shadow-xl border border-slate-100 p-8 md:p-12">
-          <div className="space-y-3 mb-12">
+
+          {/* Section framing */}
+          <div className="max-w-3xl space-y-5 mb-14">
             <span className="text-xs font-black uppercase tracking-[0.4em] text-[#8fb28a]">What We Do — Across the Board</span>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-black">
-              We develop, maintain, upgrade, and keep it up.
+            <h2 className="text-3xl md:text-4xl lg:text-[2.75rem] font-bold tracking-tight leading-[1.1] text-black">
+              Every great outcome has a beginning, a middle,<br className="hidden md:block" /> and a hereafter.
             </h2>
-            <p className="text-sm text-slate-400 max-w-3xl leading-relaxed">
-              From concept to completion and beyond — we work for <b className="text-black">individuals and
-              organizations alike</b>, <b className="text-black">for-profit and non-profit</b>, across every
-              industry. Our work covers the full project lifetime: <b className="text-black">development,
-              maintenance, upgrades, and upkeep</b> — always alongside the <b className="text-black">
-              business consultancy</b> that makes you sustainable.
+            <p className="text-base text-slate-500 leading-[1.8] max-w-2xl">
+              Most firms hand you a finished project and walk away. We stay for the whole story. We{' '}
+              <span className="text-black font-semibold">develop</span> what you need,{' '}
+              <span className="text-black font-semibold">keep it running</span> at its best,{' '}
+              <span className="text-black font-semibold">upgrade</span> it as the world moves, and{' '}
+              <span className="text-black font-semibold">stand behind it</span> long after launch — for{' '}
+              <span className="text-black font-semibold">individuals and organizations alike</span>, for{' '}
+              <span className="text-black font-semibold">profit and for purpose</span>.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
+          {/* The four pillars */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12">
             {[
-              { icon: Command, title: 'Project Development', desc: 'We develop projects, systems, and digital platforms for individuals and organizations alike — scoped, budgeted, and delivered from concept to completion.' },
-              { icon: Shield, title: 'Maintenance', desc: 'We keep what you run healthy: monitoring, patching, backups, security, and support that stops downtime before it starts.' },
-              { icon: Zap, title: 'Upgrades', desc: 'We modernize what you already have — new features, performance gains, security hardening, and complete next-generation versions.' },
-              { icon: Heart, title: 'Upkeep & Support', desc: 'Ongoing care for every asset we build and every project we manage — so value compounds long after launch.' },
+              {
+                icon: Rocket,
+                step: '01',
+                title: 'Development',
+                desc: 'From a blank page to a working reality. We scope, design, and deliver projects, systems, and digital platforms that do exactly what your ambition needs them to do — on time, on budget, and built to survive contact with the real world.',
+              },
+              {
+                icon: Shield,
+                step: '02',
+                title: 'Maintenance',
+                desc: 'The calm of knowing it won’t let you down. We monitor, secure, and tune everything we build — so downtime, surprises, and costly failures quietly become somebody else’s problem.',
+              },
+              {
+                icon: RefreshCw,
+                step: '03',
+                title: 'Upgrades',
+                desc: 'Built yesterday doesn’t mean stuck yesterday. We modernize what you already have — new capabilities, sharper performance, stronger security — so you keep moving while everyone else plays catch-up.',
+              },
+              {
+                icon: Heart,
+                step: '04',
+                title: 'Upkeep & Support',
+                desc: 'The quiet advantage of continuity. We stay beside you with attentive care and fast response, so every asset keeps compounding value long after launch day.',
+              },
             ].map((item) => (
-              <div key={item.title} className="space-y-4">
-                <div className="w-10 h-10 rounded-2xl bg-[#8fb28a]/10 flex items-center justify-center">
-                  <item.icon className="w-5 h-5 text-[#4c6a4d]" />
+              <div key={item.title} className="relative pl-16 group">
+                <div className="absolute left-0 top-0 w-11 h-11 rounded-2xl bg-[#8fb28a]/10 flex items-center justify-center group-hover:bg-[#8fb28a] transition-colors duration-300">
+                  <item.icon className="w-5 h-5 text-[#4c6a4d] group-hover:text-white transition-colors duration-300" />
                 </div>
-                <h3 className="font-bold text-sm uppercase tracking-widest text-black">{item.title}</h3>
-                <p className="text-sm text-black leading-relaxed">{item.desc}</p>
+                <span className="text-[10px] font-black tracking-[0.4em] text-[#aa7d3f]">{item.step}</span>
+                <h3 className="text-lg font-bold tracking-tight text-black mt-1">{item.title}</h3>
+                <p className="text-sm text-black/70 leading-[1.8] mt-2">{item.desc}</p>
               </div>
             ))}
           </div>
+{/* Who we serve */}
+          <div className="mt-16 pt-10 border-t border-slate-100">
+            <div className="flex items-center gap-3 mb-9">
+              <Globe className="w-4 h-4 text-[#4c6a4d]" />
+              <h3 className="text-xs font-black uppercase tracking-[0.3em] text-black">Who we serve</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              {[
+                {
+                  icon: Sparkles,
+                  title: 'Individuals',
+                  desc: 'A single vision deserves the same rigor as a corporate roadmap. We bring enterprise-grade discipline to personal ambitions — from one project to a lifetime of momentum.',
+                },
+                {
+                  icon: Target,
+                  title: 'Profit-Driven Organizations',
+                  desc: 'From lean startups to established enterprises, we build what grows revenue, maintain what protects it, and upgrade what keeps you ahead of the market.',
+                },
+                {
+                  icon: Heart,
+                  title: 'Non-Profits & Purpose-Led Missions',
+                  desc: 'Every shilling must count. We build lean, maintain carefully, and stretch every resource — so more of your effort becomes impact.',
+                },
+              ].map((group) => (
+                <div key={group.title} className="space-y-4">
+                  <div className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center">
+                    <group.icon className="w-5 h-5 text-slate-600" />
+                  </div>
+                  <h4 className="font-bold text-sm uppercase tracking-widest text-black">{group.title}</h4>
+                  <p className="text-sm text-black/70 leading-[1.8]">{group.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          <div className="mt-12 pt-8 border-t border-slate-100 grid gap-6 lg:grid-cols-2">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-2xl bg-[#aa7d3f]/10 flex items-center justify-center shrink-0">
-                <Globe className="w-5 h-5 text-[#aa7d3f]" />
+          {/* Business consultancy — the other half */}
+          <div className="mt-16 rounded-[24px] bg-[#fdfaf6] border border-slate-100 p-8 md:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            <div className="lg:col-span-5">
+              <div className="w-12 h-12 rounded-2xl bg-[#aa7d3f]/10 flex items-center justify-center mb-5">
+                <Command className="w-6 h-6 text-[#aa7d3f]" />
               </div>
-              <div>
-                <h3 className="font-bold text-sm uppercase tracking-widest text-black mb-2">Business Consultancy — Profit &amp; Non-Profit</h3>
-                <p className="text-sm text-black leading-relaxed">
-                  Alongside hands-on delivery, we provide complete business consultancy: strategy, operations,
-                  finance, organisational design, growth planning, and continuous improvement — for both
-                  profit-driven enterprises and non-profit mission organisations.
-                </p>
+              <h3 className="text-2xl font-bold tracking-tight text-black leading-tight">
+                The consultancy<br />behind the delivery.
+              </h3>
+            </div>
+            <div className="lg:col-span-7 space-y-5">
+              <p className="text-sm md:text-base text-black/70 leading-[1.8]">
+                Hands-on delivery is only half our promise. Alongside every project, we act as the business
+                partner that helps you use it well — strategy, operations, finance, organizational design,
+                growth planning, and continuous improvement — for both profit-driven enterprises and
+                purpose-led non-profits.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                {[
+                  'Strategy that turns a build into growth',
+                  'Operations that run like clockwork',
+                  'Financial clarity for every decision',
+                  'Growth that compounds, not complicates',
+                ].map((line) => (
+                  <div key={line} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-4 h-4 text-[#8fb28a] shrink-0 mt-0.5" />
+                    <p className="text-[13px] text-black/80 leading-relaxed">{line}</p>
+                  </div>
+                ))}
               </div>
-            </div><div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-black/5 flex items-center justify-center shrink-0">
-                  <UserCheck className="w-5 h-5 text-slate-600" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm uppercase tracking-widest text-black mb-2">Individuals &amp; Organizations — Every Industry</h3>
-                  <p className="text-sm text-black leading-relaxed">
-                    From a person steering a single initiative to a registered enterprise or non-profit running
-                    multiple workstreams — our project development, maintenance, upgrades, and upkeep services
-                    scale to the size of your ambition, across every field and industry.
-                  </p>
-                </div>
-              </div>
+            </div>
+          </div>
+
+          {/* Close */}
+          <div className="mt-14 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="max-w-xl">
+              <span className="text-xs font-black uppercase tracking-[0.4em] text-[#8fb28a]">The outcome</span>
+              <p className="text-xl md:text-2xl font-bold tracking-tight text-black leading-snug mt-2">
+                One partner for the whole lifecycle — so you never have to start the story twice.
+              </p>
+            </div>
+            <Link
+              to="/contact"
+              className="group inline-flex items-center gap-3 px-7 py-4 rounded-full bg-black text-white font-bold text-sm hover:bg-slate-800 transition-all shrink-0"
+            >
+              Bring us your idea
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+            </Link>
           </div>
         </div>
       </section>
-
 
 
       {/* 2. THE LONG NARRATIVE */}

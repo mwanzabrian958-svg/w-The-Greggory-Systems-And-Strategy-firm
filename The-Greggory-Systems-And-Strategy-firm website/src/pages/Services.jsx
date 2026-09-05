@@ -33,7 +33,7 @@ const Services = () => {
           </div>
           <div className="lg:w-1/3">
             <p className="text-base text-black leading-relaxed font-normal">
-              This page serves as a comprehensive index of the systemic capabilities we deploy today and the strategic innovations we are architecting for the future — for individuals and organizations alike, profit and non-profit, across every industry.
+              This is the full index of what we do today and where we are headed — project development, maintenance, upgrades, and upkeep for individuals and organizations alike, for profit and for purpose — backed by the business consultancy that turns delivery into lasting success.
             </p>
           </div>
         </div>
