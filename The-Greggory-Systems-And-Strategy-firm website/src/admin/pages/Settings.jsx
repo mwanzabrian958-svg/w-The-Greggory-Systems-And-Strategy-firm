@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Save, RefreshCw, Shield, Power, Activity, User, Lock, Loader2,
   CheckCircle2, AlertTriangle, Eraser, Timer, Wrench, Users, Moon,
+  Upload, Trash2,
 } from "lucide-react";
 import { apiCall } from "../../services/api";
 
@@ -44,7 +45,9 @@ export function Settings({ user }) {
   const [calibrating, setCalibrating] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [locking, setLocking] = useState(false);
-  const [feedback, setFeedback] = useState(null);
+    const [feedback, setFeedback] = useState(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoKey, setPhotoKey] = useState(Date.now());
   const flashTimer = useRef(null);
 
   const flash = useCallback((type, text) => {
@@ -160,6 +163,79 @@ export function Settings({ user }) {
     } finally {
       setLocking(false);
     }
+    };
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      flash("err", "Only image files are allowed");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      flash("err", "Image must be under 5MB");
+      return;
+    }
+    setPhotoUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result;
+        try {
+          const data = await apiCall("/api/admin/profile-photo", {
+            method: "POST",
+            body: JSON.stringify({
+              userId: user?.id,
+              role: user?.role || "admin",
+              profile_photo_base64: base64,
+              profile_photo_mime_type: file.type,
+              profile_photo_file_name: file.name,
+            }),
+          });
+          if (data?.success) {
+            flash("ok", "Profile photo uploaded");
+            setPhotoKey(Date.now());
+            window.dispatchEvent(new Event("gf-admin-session-changed"));
+          } else {
+            throw new Error(data?.message || "Upload failed");
+          }
+        } catch (err) {
+          flash("err", err.message || "Upload failed");
+        } finally {
+          setPhotoUploading(false);
+        }
+      };
+      reader.onerror = () => { setPhotoUploading(false); flash("err", "Failed to read file"); };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setPhotoUploading(false);
+      flash("err", err.message || "Upload failed");
+    }
+  };
+
+  const handlePhotoRemove = async () => {
+    if (!window.confirm("Remove profile photo?")) return;
+    setPhotoUploading(true);
+    try {
+      const data = await apiCall(`/api/admin/profile-photo`, {
+        method: "DELETE",
+        body: JSON.stringify({
+          userId: user?.id,
+          role: user?.role || "admin",
+        }),
+      });
+      if (data?.success) {
+        flash("ok", "Profile photo removed");
+        setPhotoKey(Date.now());
+        window.dispatchEvent(new Event("gf-admin-session-changed"));
+      } else {
+        throw new Error(data?.message || "Remove failed");
+      }
+    } catch (err) {
+      flash("err", err.message || "Remove failed");
+    } finally {
+      setPhotoUploading(false);
+    }
   };
 
   const timeoutOn = form.admin_session_timeout !== "0" && form.admin_session_timeout !== "";
@@ -230,6 +306,52 @@ export function Settings({ user }) {
                  <label className="block text-[6px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Public Contact Phone</label>
                  <input type="text" value={form.contact_phone || ""} onChange={(e) => set("contact_phone", e.target.value)} placeholder="+254 …" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[9px] font-bold outline-none focus:ring-1 focus:ring-teal-500" />
               </div>
+
+               {/* Profile Photo Upload */}
+               <div className="pt-2">
+                  <label className="block text-[6px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Admin Profile Photo</label>
+                  <div className="flex items-center gap-3">
+                     <div className="relative">
+                        {user?.has_photo ? (
+                          <img
+                            key={photoKey}
+                            src={`/api/admin/profile-photo/${user?.role || "admin"}/${user?.id}?t=${photoKey}`}
+                            alt={user?.display_name || "Admin"}
+                            className="w-12 h-12 rounded-xl object-cover border-2 border-slate-200 shadow"
+                            onError={(e) => { e.currentTarget.style.display = "none"; }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-black text-xs border border-slate-200">
+                            {(user?.display_name || user?.first_name || "A").split(" ").map(n => n?.[0] || "").join("").toUpperCase().slice(0, 2)}
+                          </div>
+                        )}
+                     </div>
+                     <div className="flex-1">
+                        <label className="flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-lg text-[7px] font-black text-slate-600 uppercase tracking-widest cursor-pointer hover:border-teal-500 hover:text-teal-700 transition-all">
+                           <Upload size={10} />
+                           {photoUploading ? "Uploading…" : user?.has_photo ? "Change Photo" : "Upload Photo"}
+                           <input
+                             type="file"
+                             accept="image/*"
+                             onChange={handlePhotoUpload}
+                             disabled={photoUploading}
+                             className="hidden"
+                           />
+                        </label>
+                     </div>
+                     {user?.has_photo && (
+                        <button
+                          onClick={handlePhotoRemove}
+                          disabled={photoUploading}
+                          className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                          title="Remove photo"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                     )}
+                  </div>
+                  <p className="text-[6px] font-bold text-slate-300 uppercase tracking-widest mt-1 px-1">PNG/JPG, max 5MB</p>
+               </div>
            </div>
         </section>
 

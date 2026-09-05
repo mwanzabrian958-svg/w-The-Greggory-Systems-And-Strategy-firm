@@ -3962,9 +3962,10 @@ app.get("/api/admin/session", async (req, res) => {
         .json({ success: false, message: "Invalid or expired session" });
     }
 
-    // Check admin_users table first
+        // Check admin_users table first
     let [admins] = await mainDb.query(
-      `SELECT id, email, first_name, last_name, phone_number, admin_level, access_level, department
+      `SELECT id, email, first_name, last_name, phone_number, admin_level, access_level, department,
+              profile_photo_blob IS NOT NULL as has_photo, profile_image_id IS NOT NULL as has_image
        FROM admin_users
        WHERE id = ? AND is_active = TRUE AND deleted_at IS NULL
        LIMIT 1`,
@@ -3976,8 +3977,9 @@ app.get("/api/admin/session", async (req, res) => {
     let role = "admin";
 
     if (admins.length === 0) {
-      const [developers] = await mainDb.query(
-        `SELECT id, email, first_name, last_name, phone_number, developer_level, tech_stack
+            const [developers] = await mainDb.query(
+        `SELECT id, email, first_name, last_name, phone_number, developer_level, tech_stack,
+                profile_photo_blob IS NOT NULL as has_photo, profile_image_id IS NOT NULL as has_image
          FROM developer_users
          WHERE id = ? AND is_active = TRUE AND deleted_at IS NULL
          LIMIT 1`,
@@ -3996,7 +3998,7 @@ app.get("/api/admin/session", async (req, res) => {
       user = admins[0];
     }
 
-    res.json({
+        res.json({
       success: true,
       user: {
         id: user.id,
@@ -4010,6 +4012,8 @@ app.get("/api/admin/session", async (req, res) => {
         department: user.department,
         developer_level: user.developer_level,
         tech_stack: user.tech_stack,
+        has_photo: Boolean(user.has_photo || user.has_image),
+        has_image: Boolean(user.has_image),
       },
     });
   } catch (error) {
@@ -5067,10 +5071,21 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
       });
     }
 
-    const tableName = role === "admin" ? "admin_users" : "developer_users";
+        const tableName = role === "admin" ? "admin_users" : "developer_users";
 
+    // Check BOTH storage locations:
+    // 1. profile_photo_blob directly on the admin/developer table
+    //    (used by server.js inline POST /api/admin/profile-photo)
+    // 2. images table via profile_image_id
+    //    (used by admin-verification.js POST /profile/:id/photo)
     const [users] = await mainDb.query(
-      `SELECT profile_photo_blob, profile_photo_mime_type, profile_photo_file_name FROM ${tableName} WHERE id = ? AND profile_photo_blob IS NOT NULL`,
+      `SELECT admin.profile_photo_blob, admin.profile_photo_mime_type,
+              admin.profile_photo_file_name, admin.profile_image_id,
+              img.data as img_data, img.content_type as img_type, img.filename as img_name
+       FROM ${tableName} admin
+       LEFT JOIN images img ON img.id = admin.profile_image_id
+       WHERE admin.id = ? 
+       AND (admin.profile_photo_blob IS NOT NULL OR admin.profile_image_id IS NOT NULL)`,
       [userId],
     );
 
@@ -5082,13 +5097,17 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
     }
 
     const user = users[0];
+    // Prefer the direct BLOB; fall back to the images table join
+    const blob = user.profile_photo_blob || user.img_data;
+    const mimeType = user.profile_photo_mime_type || user.img_type || "image/jpeg";
+    const fileName = user.profile_photo_file_name || user.img_name || "profile.jpg";
 
     res.set({
-      "Content-Type": user.profile_photo_mime_type || "image/jpeg",
-      "Content-Disposition": `inline; filename="${user.profile_photo_file_name || "profile.jpg"}"`,
+      "Content-Type": mimeType,
+      "Content-Disposition": `inline; filename="${fileName}"`,
     });
 
-    res.send(user.profile_photo_blob);
+    res.send(blob);
   } catch (error) {
     console.error("Admin profile photo retrieval error:", error);
     res.status(500).json({
@@ -5099,7 +5118,26 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
   }
 });
 
-// SMS Routes
+// Admin/Developer profile photo removal endpoint
+app.delete("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
+  try {
+    const { userId, role } = req.body;
+    if (!userId || !role) {
+      return res.status(400).json({ success: false, message: "userId and role are required" });
+    }
+    const tableName = role === "admin" ? "admin_users" : "developer_users";
+    await mainDb.query(
+      `UPDATE ${tableName} SET profile_photo_blob = NULL, profile_photo_mime_type = NULL, profile_photo_file_name = NULL, profile_image_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [userId],
+    );
+    res.json({ success: true, message: "Profile photo removed" });
+  } catch (error) {
+    console.error("Admin profile photo removal error:", error);
+    res.status(500).json({ success: false, message: "Failed to remove profile photo", error: error.message });
+  }
+});
+
+
 try {
   const smsRoutes = require("./backend/routes/sms");
   app.use("/api/sms", smsRoutes);

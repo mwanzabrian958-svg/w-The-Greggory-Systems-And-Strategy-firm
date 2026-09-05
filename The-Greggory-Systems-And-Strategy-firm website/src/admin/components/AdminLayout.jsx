@@ -32,14 +32,25 @@ function AdminLayout({ user, children, onLogout }) {
     return <Icon {...props} />;
   };
 
+    useEffect(() => {
+    const fetchPhoto = () => {
+      if (user?.id) {
+        const role = user.role === 'developer' ? 'developer' : 'admin';
+        setProfilePhotoUrl(`/api/admin/profile-photo/${role}/${user.id}?v=${Date.now()}`);
+        setImagePhotoError(false);
+      } else {
+        setProfilePhotoUrl(null);
+      }
+    };
+    fetchPhoto();
+    // Re-fetch photo when session changes (e.g. after upload in Settings)
+    window.addEventListener('gf-admin-session-changed', fetchPhoto);
+    return () => window.removeEventListener('gf-admin-session-changed', fetchPhoto);
+  }, [user]);
+
+  // Sync the role-permissions matrix from the DB so the sidebar reflects
+  // what was saved in Roles & Permissions (admin_settings table).
   useEffect(() => {
-    if (user?.id) {
-      const role = user.role === 'developer' ? 'developer' : 'admin';
-      setProfilePhotoUrl(`/api/admin/profile-photo/${role}/${user.id}?v=${Date.now()}`);
-      setImagePhotoError(false);
-    }
-    // Sync the role-permissions matrix from the DB so the sidebar reflects
-    // what was saved in Roles & Permissions (admin_settings table).
     apiCall("/admin/settings").then((res) => {
       const settings = res?.settings || {};
       const matrix = {};
