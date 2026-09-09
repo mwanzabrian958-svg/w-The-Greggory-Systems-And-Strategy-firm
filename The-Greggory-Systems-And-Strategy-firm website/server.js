@@ -5817,7 +5817,7 @@ app.get("/api/company-personnel/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await mainDb.query(
-      "SELECT * FROM company_personnel WHERE id = ? AND (deleted_at IS NULL OR deleted_at = '')",
+      "SELECT * FROM company_personnel WHERE id = ? AND deleted_at IS NULL",
       [id]
     );
     if (rows.length === 0) return res.status(404).json({ error: "Personnel not found" });

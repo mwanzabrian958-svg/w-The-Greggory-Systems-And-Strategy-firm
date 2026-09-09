@@ -18,8 +18,9 @@ const About = () => {
     return () => { mounted = false }
   }, [])
 
-  const fallbackPerson = { id: 0, name: 'Brian Mwanza', position: 'Founder & Managing Director', bio: '<p>Brian Mwanza is the visionary force behind The-Greggory-Systems-And-Strategy-firm...</p>', image_url: '/images/brian-mwanza-ceo.jpg' }
-  const displayPersonnel = personnel.length > 0 ? personnel : [fallbackPerson]
+  // Use personnel from database only - fallback removed to prevent "Person not found" errors
+  // The database should always have personnel seeded via database/fix-missing-brian-mwanza.sql
+  const displayPersonnel = personnel
 
   const [searchQuery, setSearchQuery] = useState('');
   const trackRef = useRef(null);
@@ -79,6 +80,11 @@ const About = () => {
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="aspect-[4/5] rounded-[32px] bg-slate-100 animate-pulse" />
               ))}
+            </div>
+          ) : displayPersonnel.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No personnel profiles available yet.</p>
+              <p className="text-xs text-slate-400 mt-2">Please check back later or contact the administrator.</p>
             </div>
           ) : visiblePersonnel.length === 0 ? (
             <div className="text-center py-12">
