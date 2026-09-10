@@ -139,12 +139,12 @@ const About = () => {
               <span className="text-[10px] font-bold uppercase tracking-[0.4em]">The Architectural Identity</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-              We design the underlying operating systems <br className="hidden md:block" />
-              that allow strategy to breathe <span className="text-[#8fb28a]">independently.</span>
+              We build the systems <br className="hidden md:block" />
+              that help your strategy <span className="text-[#8fb28a]">work on its own.</span>
             </h1>
 
             <p className="text-2xl md:text-3xl font-bold leading-[1.5] text-[#111] mb-8 max-w-3xl">
-              The-Greggory-Systems-And-Strategy-firm was founded on a singular premise:that complexity is the greatest tax on human ambition.We exist to dismantle that tax: by engineering the invisible operating systems, the decision rhythms, the feedback loops,and the digital nerve-centers,that turn strategic ambition into sustainable momentum.Every engagement begins not with a slide deck,but with a forensic reading of how your organization actually works:where energy leaks,where clarity stalls,and where momentum dies.We rebuild from the ground up,so that strategy is no longer a document,but a pulse.
+              The-Greggory-Systems-And-Strategy-firm was founded on one simple idea: complexity holds people back. We remove that burden by creating clear processes, smart tools, and smooth workflows that turn your plans into real results. Every project starts with understanding how your business really works, finding what's slowing you down, and fixing it from the ground up. So your strategy isn't just a plan on paper, it's something that lives and grows every day.
             </p>
 
           </div>
