@@ -1,0 +1,5 @@
+4de040c Simplify About Us section language for better client readability
+03f5fdf Fix personnel profile 'Person not found' error and improve Brian Mwanza bio
+53a35c9 fix(billing): harden M-Pesa ledger FK + project resolution, full audit 58/58
+a969368 fix: admin profile photo end-to-end + restore auth platform mappings after reset
+32fb233 content: finalize 'What We Do' narrative for About page

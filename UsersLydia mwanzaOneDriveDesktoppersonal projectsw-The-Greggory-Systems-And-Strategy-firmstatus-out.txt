@@ -1,0 +1,29 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	new file:   git-check.ps1
+	new file:   git-out.txt
+	new file:   push.bat
+	new file:   push.js
+	new file:   push.ps1
+	new file:   push.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	UsersLydia mwanzaOneDriveDesktoppersonal projectsw-The-Greggory-Systems-And-Strategy-firmgit-err.txt
+	UsersLydia mwanzaOneDriveDesktoppersonal projectsw-The-Greggory-Systems-And-Strategy-firmgit-out.txt
+	UsersLydia mwanzaOneDriveDesktoppersonal projectsw-The-Greggory-Systems-And-Strategy-firmps-out2.txt
+	UsersLydia mwanzaOneDriveDesktoppersonal projectsw-The-Greggory-Systems-And-Strategy-firmremote-out.txt
+	UsersLydia mwanzaOneDriveDesktoppersonal projectsw-The-Greggory-Systems-And-Strategy-firmstatus-out.txt
+	bat-err.txt
+	bat-out.txt
+	git-log.txt
+	git-run.bat
+	git-run.ps1
+	log.txt
+	remote-out.txt
+	remote.txt
+	status.txt
+

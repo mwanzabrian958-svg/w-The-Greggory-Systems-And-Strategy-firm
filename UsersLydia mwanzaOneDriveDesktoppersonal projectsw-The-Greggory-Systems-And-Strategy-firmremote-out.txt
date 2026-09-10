@@ -1,0 +1,4 @@
+﻿legacy	https://github.com/Brianmwanza-bit/Website-for-Greggory-Foundation-Ltd.git (fetch)
+legacy	https://github.com/Brianmwanza-bit/Website-for-Greggory-Foundation-Ltd.git (push)
+origin	https://github.com/mwanzabrian958-svg/w-The-Greggory-Systems-And-Strategy-firm.git (fetch)
+origin	https://github.com/mwanzabrian958-svg/w-The-Greggory-Systems-And-Strategy-firm.git (push)
