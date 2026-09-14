@@ -64,6 +64,19 @@ services:
       # --- Frontend URL (CORS + email links) ---
       - key: FRONTEND_URL
         sync: false
+      # --- Crawler / SEO (build-time) ---
+      # Baked into public/sitemap.xml + public/robots.txt (scripts/generate-sitemap.js)
+      # and index.html's canonical/og:url/JSON-LD (vite-plugin-seo.js). Set it to
+      # this service's real origin; if unset, seo.config.json's `siteUrl` is used.
+      - key: SITE_URL
+        sync: false
+      # Optional analytics / search-engine ownership tokens (omit tag if unset).
+      - key: VITE_GA_MEASUREMENT_ID
+        sync: false
+      - key: VITE_GOOGLE_SITE_VERIFICATION
+        sync: false
+      - key: VITE_BING_SITE_VERIFICATION
+        sync: false
       # --- Optional integrations (leave unset to disable) ---
       # MONGODB_URI, GOOGLE_CLIENT_ID, VITE_GOOGLE_CLIENT_ID,
       # MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_PASSKEY,

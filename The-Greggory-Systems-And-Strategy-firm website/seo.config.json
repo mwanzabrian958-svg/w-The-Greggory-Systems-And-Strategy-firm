@@ -1,0 +1,17 @@
+{
+  "_comment": "Single source of truth for crawler-facing SEO. Consumed by scripts/generate-sitemap.js (writes public/sitemap.xml + public/robots.txt at build time) and by vite-plugin-seo.js (canonical + og:url + JSON-LD in index.html). Set the SITE_URL env var to override `siteUrl` without editing this file — required if the Render service URL differs (the suffix is assigned per service).",
+  "_routesComment": "Public, crawlable routes ONLY. Authenticated areas (/admin/*, /portal, /login, /dashboard) must never be listed — see the Disallow rules generated into robots.txt.",
+  "siteUrl": "https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com",
+  "routes": [
+    { "path": "/", "changefreq": "weekly", "priority": "1.0" },
+    { "path": "/about", "changefreq": "monthly", "priority": "0.8" },
+    { "path": "/services", "changefreq": "monthly", "priority": "0.8" },
+    { "path": "/projects", "changefreq": "weekly", "priority": "0.8" },
+    { "path": "/case-studies", "changefreq": "monthly", "priority": "0.7" },
+    { "path": "/blog", "changefreq": "weekly", "priority": "0.7" },
+    { "path": "/contact", "changefreq": "monthly", "priority": "0.9" },
+    { "path": "/pricing", "changefreq": "monthly", "priority": "0.6" },
+    { "path": "/terms", "changefreq": "yearly", "priority": "0.4" },
+    { "path": "/privacy", "changefreq": "yearly", "priority": "0.4" }
+  ]
+}

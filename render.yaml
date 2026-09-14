@@ -79,6 +79,24 @@ services:
         sync: false
       - key: MPESA_CALLBACK_URL
         sync: false
+      # ---- Crawler / SEO (build-time) ----
+      # SITE_URL is baked into public/sitemap.xml, public/robots.txt (via
+      # scripts/generate-sitemap.js) and into index.html's canonical/og:url/
+      # JSON-LD (via vite-plugin-seo.js). Set it to this service's real origin,
+      # e.g. https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com
+      # (copy the exact origin from the Render dashboard — the suffix is
+      # assigned per service).
+      # If omitted, the build falls back to `siteUrl` in seo.config.json.
+      - key: SITE_URL
+        sync: false
+      # Google Analytics 4 + search-engine ownership tokens. All optional: an
+      # unset value simply omits the corresponding tag in index.html.
+      - key: VITE_GA_MEASUREMENT_ID
+        sync: false
+      - key: VITE_GOOGLE_SITE_VERIFICATION
+        sync: false
+      - key: VITE_BING_SITE_VERIFICATION
+        sync: false
       # ---- Optional integrations (copy from local .env if you use them) ----
       # Build-time Google Sign-In (baked into the React bundle). If blank,
       # the Google button simply hides itself — the site still works.

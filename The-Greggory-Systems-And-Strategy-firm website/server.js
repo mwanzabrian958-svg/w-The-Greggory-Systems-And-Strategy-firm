@@ -6089,6 +6089,29 @@ app.get("/api/blog-articles/:id", async (req, res) => {
   catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
+// ── Crawler files (robots.txt / sitemap.xml) ───────────────────────────────
+// These must NEVER fall through to the React shell: a crawler that receives
+// index.html (HTTP 200, content-type text/html) treats the directive as
+// missing — Search Console then reports "sitemap could not be read" and the
+// robots rules are ignored. express.static covers the normal case (the build
+// copies both files from public/ into dist/), while this route guarantees the
+// right content type and a genuine 404 when a file is absent.
+const CRAWLER_FILES = {
+  "/robots.txt": { file: "robots.txt", type: "text/plain; charset=utf-8" },
+  "/sitemap.xml": { file: "sitemap.xml", type: "application/xml; charset=utf-8" },
+};
+app.get(Object.keys(CRAWLER_FILES), (req, res, next) => {
+  const entry = CRAWLER_FILES[req.path];
+  if (!entry) return next();
+  const candidates = [
+    path.join(distDir, entry.file),
+    path.join(__dirname, "public", entry.file),
+  ];
+  const found = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!found) return next(); // -> 404 handler, never the SPA shell
+  res.type(entry.type).sendFile(found);
+});
+
 // ── SPA fallback + 404 — registered LAST so every API route above wins ──────
 // Any GET that doesn't target /api serves the React app, so client-side routes
 // (e.g. /login, /admin, /portal) survive refresh/deep links in production —

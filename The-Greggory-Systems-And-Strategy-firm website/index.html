@@ -21,8 +21,18 @@
       property="og:description"
       content="Project development, maintenance, upgrades, and upkeep — for individuals and organizations, for-profit and non-profit, backed by complete business consultancy, across every industry."
     />
-    <meta property="og:image" content="/hero-phoenix.png" />
-    <meta name="twitter:card" content="summary" />
+    <!-- og:url, og:image (+ dimensions) and twitter:image are injected with
+         ABSOLUTE URLs by vite-plugin-seo at build time; scrapers reject
+         relative image URLs, so they intentionally live there instead. -->
+    <meta property="og:locale" content="en_US" />
+    <!-- Twitter Card (enhanced for link unfurls) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="The Greggory Systems And Strategy Firm" />
+    <meta name="twitter:description" content="Project development, maintenance, upgrades, and upkeep — for individuals and organizations, for-profit and non-profit, backed by complete business consultancy, across every industry." />
+    <!-- Windows / Bing tile + theme -->
+    <meta name="msapplication-TileColor" content="#0f172a" />
+    <meta name="msapplication-TileImage" content="/favicon-256.png" />
+    <meta name="application-name" content="The Greggory Systems And Strategy Firm" />
     <meta name="theme-color" content="#0f172a" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
