@@ -14,7 +14,6 @@ endpoints().forEach((cfg, i) => {
   const { label, ...opts } = cfg;
   cluster.add(`db-${label || i}`, {
     ...opts,
-    database: DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,

@@ -6133,6 +6133,32 @@ app.listen(PORT, "0.0.0.0", async () => {
     const { label, ...opts } = cfg;
     console.log(`[DATABASE] MySQL endpoint ${i + 1} (${label || "?"}): ${opts.host}:${opts.port}`);
   });
+
+  // Ensure PDF tables exist
+  try {
+    await mainDb.query(`
+      CREATE TABLE IF NOT EXISTS project_reports (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        project_id BIGINT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        summary TEXT,
+        file_data LONGBLOB,
+        file_type VARCHAR(100) DEFAULT 'application/pdf',
+        file_size BIGINT DEFAULT 0,
+        report_date DATE NOT NULL,
+        status ENUM('draft', 'review', 'final') DEFAULT 'final',
+        admin_id BIGINT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        deleted_at TIMESTAMP NULL,
+        FOREIGN KEY (project_id) REFERENCES user_projects(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB;
+    `);
+    console.log('[DATABASE] Verified project_reports table.');
+  } catch (err) {
+    console.error('[DATABASE] Schema sync error:', err.message);
+  }
+
   console.log(
     `Connected to MySQL server at ${process.env.DB_HOST || "localhost"} (fails over to claude if it goes down)`,
   );

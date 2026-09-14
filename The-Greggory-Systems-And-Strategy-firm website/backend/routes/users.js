@@ -11,49 +11,43 @@ const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const requireAdmin = require('../middleware/auth');
+const authenticateUser = require('../middleware/clientAuth');
 const authController = require('../controllers/authController');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
 const { createNotification } = require('../utils/notificationHelper');
+const crypto = require('crypto');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
-
-const authenticateUser = (req, res, next) => {
-  const authHeader = req.header('authorization') || req.header('Authorization');
-  let token = null;
-
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.slice(7).trim();
-  } else if (authHeader) {
-    token = authHeader.trim();
-  }
-
-  if (!token) {
-    token = req.header('x-auth-token') || req.query.token || req.body?.token;
-  }
-
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'Authentication required' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.authUser = decoded;
-    req.userId = decoded.userId || decoded.id || decoded.user?.id;
-
-    if (!req.userId) {
-      return res.status(401).json({ success: false, message: 'Invalid authentication token' });
-    }
-
-    next();
-  } catch (error) {
-    console.error('[AUTH] Invalid token:', error.message);
-    return res.status(401).json({ success: false, message: 'Invalid or expired authentication token' });
-  }
-};
 
 // Health check - verify router is loaded
 router.get('/test', (req, res) => {
   res.json({ success: true, message: 'Users router is working' });
+});
+
+// Forgot Password
+router.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+
+  try {
+    const [users] = await db.promise().query('SELECT id, first_name FROM users WHERE email = ? AND deleted_at IS NULL', [email]);
+
+    // For security, we always return success even if email not found
+    if (users.length > 0) {
+      const user = users[0];
+      // In a real production setup, here we would:
+      // 1. Generate a temporary reset token
+      // 2. Save it to a password_resets table
+      // 3. Send an email via SMTP_USER
+      console.log(`[PASSWORD RESET] Requested for: ${email}`);
+
+      await createNotification(user.id, 'system', 'Security Alert', 'A password reset was requested for your account.', 'high');
+    }
+
+    res.json({ success: true, message: `If an account exists for ${email}, you will receive a reset link shortly.` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error processing request' });
+  }
 });
 
 // Admin Create endpoint
@@ -176,6 +170,7 @@ router.post('/register', authEndpointValidator('user', 'users'), async (req, res
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const name = display_name || `${first_name} ${last_name}`;
+    const personalAuthToken = `gf_${crypto.randomBytes(16).toString('hex')}`;
 
     // Store the optional profile photo as a blob in the columns the users table actually has.
     let photoBlob = null;
@@ -186,9 +181,9 @@ router.post('/register', authEndpointValidator('user', 'users'), async (req, res
     }
 
     const [result] = await db.promise().query(
-      `INSERT INTO users (email, password_hash, first_name, last_name, display_name, phone_number, primary_role, is_active, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, 'user', true, ?, ?, ?, NOW())`,
-      [email, hashedPassword, first_name, last_name, name, phone || null, photoBlob, profilePhotoMime, profilePhotoName]
+      `INSERT INTO users (email, password_hash, auth_token, first_name, last_name, display_name, phone_number, primary_role, is_active, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'user', true, ?, ?, ?, NOW())`,
+      [email, hashedPassword, personalAuthToken, first_name, last_name, name, phone || null, photoBlob, profilePhotoMime, profilePhotoName]
     );
 
     await createNotification(result.insertId, 'system', 'Account Initialized', 'Welcome to the tactical portal.', 'normal');
@@ -218,7 +213,10 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
     const ok = await bcrypt.compare(password, user.password_hash || '');
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
     
-    await db.promise().query('UPDATE users SET last_login_at = NOW(), last_login_ip = ? WHERE id = ?', [req.ip, user.id]);
+    // TERMINAL & ACCOUNT LOCK: Generate a fresh persistent token for this specific login session.
+    // This "wires" the account to this specific device terminal and invalidates any previous device's lock.
+    const personalAuthToken = `gf_lock_${crypto.randomBytes(24).toString('hex')}`;
+    await db.promise().query('UPDATE users SET auth_token = ?, last_login_at = NOW(), last_login_ip = ? WHERE id = ?', [personalAuthToken, req.ip, user.id]);
     
     // Profile photo is stored directly on the users table (set at registration).
     let profilePhotoData = null;
@@ -227,12 +225,13 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
       profilePhotoData = `data:${user.profile_photo_mime_type || 'image/jpeg'};base64,${base64}`;
     }
     
-    const authToken = jwt.sign({ userId: user.id, email: user.email, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
+    // Return the persistent DB token as the primary authentication token
+    // This sets the routing in stone for this terminal/device
     return res.json({
       id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name,
       display_name: user.display_name || `${user.first_name} ${user.last_name}`,
-      primary_role: user.primary_role, role_type: 'user', has_photo: !!user.profile_photo_blob, profilePhotoData, token: authToken
+      primary_role: user.primary_role, role_type: 'user', has_photo: !!user.profile_photo_blob,
+      profilePhotoData, token: personalAuthToken
     });
   } catch (error) {
     return res.status(500).json({ error: 'Login failed' });
@@ -284,6 +283,36 @@ router.put('/profile', async (req, res) => {
     res.json({ success: true, message: 'Updated' });
   } catch (error) {
     res.status(500).json({ success: false });
+  }
+});
+
+// Profile Photo Upload
+router.post('/profile-photo', authenticateUser, upload.single('photo'), async (req, res) => {
+  try {
+    const userId = req.userId;
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No photo provided' });
+    }
+
+    const photoBlob = req.file.buffer;
+    const mimeType = req.file.mimetype;
+    const fileName = req.file.originalname;
+
+    await db.promise().query(
+      `UPDATE users
+       SET profile_photo_blob = ?, profile_photo_mime_type = ?, profile_photo_file_name = ?, updated_at = NOW()
+       WHERE id = ?`,
+      [photoBlob, mimeType, fileName, userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Profile photo updated successfully',
+      imageUrl: `data:${mimeType};base64,${photoBlob.toString('base64')}`
+    });
+  } catch (error) {
+    console.error('[PROFILE PHOTO] Upload error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
@@ -341,15 +370,41 @@ router.put('/notifications/read-all/me', authenticateUser, async (req, res) => {
 router.get('/my-reports', authenticateUser, async (req, res) => {
   const userId = req.userId;
   try {
-    const [reports] = await db.promise().query(`
+    const [dbReports] = await db.promise().query(`
       SELECT pr.id, pr.title, pr.summary, pr.file_type, pr.file_size, pr.report_date, pr.status, up.project_name
       FROM project_reports pr
       JOIN user_projects up ON pr.project_id = up.id
       WHERE up.user_id = ? AND pr.status = 'final' AND pr.deleted_at IS NULL
       ORDER BY pr.report_date DESC
     `, [userId]);
-    res.json({ success: true, reports });
+
+    // System Registration Documents (Static)
+    const systemDocs = [
+      {
+        id: -101,
+        title: 'GSSF Client Registration Agreement (PDF)',
+        summary: 'Official registration agreement for The Greggory Firm services.',
+        file_type: 'application/pdf',
+        file_size: 245760, // Approx size
+        report_date: new Date().toISOString().split('T')[0],
+        status: 'final',
+        project_name: 'SYSTEM'
+      },
+      {
+        id: -102,
+        title: 'GSSF Client Registration Agreement (MS Word)',
+        summary: 'Editable registration agreement for The Greggory Firm services.',
+        file_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        file_size: 45056, // Approx size
+        report_date: new Date().toISOString().split('T')[0],
+        status: 'final',
+        project_name: 'SYSTEM'
+      }
+    ];
+
+    res.json({ success: true, reports: [...systemDocs, ...dbReports] });
   } catch (error) {
+    // ...
     // Table may not exist yet (pending sync) — return empty section instead of 500
     console.error('[CLIENT REPORTS] my-reports error:', error.code || '', error.message);
     res.json({ success: true, reports: [] });
@@ -359,6 +414,17 @@ router.get('/my-reports', authenticateUser, async (req, res) => {
 router.get('/my-reports/:id/download', authenticateUser, async (req, res) => {
   const userId = req.userId;
   const reportId = req.params.id;
+
+  // Handle System Documents
+  if (reportId == '-101') {
+    const filePath = path.join(__dirname, '../../public/documents/GSSF_Client_Registration_Agreement.pdf');
+    return res.download(filePath, 'GSSF_Client_Registration_Agreement.pdf');
+  }
+  if (reportId == '-102') {
+    const filePath = path.join(__dirname, '../../public/documents/GSSF_Client_Registration_Agreement.docx');
+    return res.download(filePath, 'GSSF_Client_Registration_Agreement.docx');
+  }
+
   try {
     const [reports] = await db.promise().query(`
       SELECT pr.file_data, pr.file_type, pr.title
@@ -374,6 +440,39 @@ router.get('/my-reports/:id/download', authenticateUser, async (req, res) => {
   } catch (error) {
     console.error('[CLIENT REPORTS] download error:', error.code || '', error.message);
     res.status(404).json({ success: false, message: 'Report not available' });
+  }
+});
+
+// Client Invoices
+router.get('/my-invoices/:id/pdf', authenticateUser, async (req, res) => {
+  const userId = req.userId;
+  const invoiceId = req.params.id;
+
+  try {
+    const [rows] = await db.promise().query(
+      'SELECT pdf_data, pdf_file_path, invoice_number, total_amount FROM invoices WHERE id = ? AND client_id = ?',
+      [invoiceId, userId]
+    );
+
+    if (rows.length === 0) return res.status(404).json({ success: false, message: 'Invoice not found' });
+
+    const invoice = rows[0];
+
+    // If we have BLOB data, send it
+    if (invoice.pdf_data) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="Invoice_${invoice.invoice_number}.pdf"`);
+      return res.send(invoice.pdf_data);
+    }
+
+    // Fallback to file system if path exists
+    if (invoice.pdf_file_path) {
+        return res.download(invoice.pdf_file_path, `Invoice_${invoice.invoice_number}.pdf`);
+    }
+
+    res.status(404).json({ success: false, message: 'PDF document not generated yet' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

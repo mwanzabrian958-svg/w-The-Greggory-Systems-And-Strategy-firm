@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { createNotification } = require('../utils/notificationHelper');
+const authenticateUser = require('../middleware/clientAuth');
 
-router.get('/', async (req, res) => {
+router.get('/', authenticateUser, async (req, res) => {
   try {
+    const userId = req.userId;
     const [rows] = await db.promise().query(`
       SELECT *
       FROM user_projects
-      WHERE deleted_at IS NULL
+      WHERE user_id = ? AND deleted_at IS NULL
       ORDER BY created_at DESC
-    `);
+    `, [userId]);
 
     res.json(rows);
   } catch (error) {
@@ -19,10 +20,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.promise().query('SELECT * FROM user_projects WHERE id = ? AND deleted_at IS NULL', [id]);
+    const userId = req.userId;
+    const [rows] = await db.promise().query('SELECT * FROM user_projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL', [id, userId]);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Project not found' });

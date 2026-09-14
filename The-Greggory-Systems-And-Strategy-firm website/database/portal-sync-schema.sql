@@ -127,3 +127,21 @@ CREATE TABLE IF NOT EXISTS client_project_summary (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- 9. Project Reports (The PDF Tables)
+CREATE TABLE IF NOT EXISTS project_reports (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    project_id BIGINT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    summary TEXT,
+    file_data LONGBLOB,
+    file_type VARCHAR(100) DEFAULT 'application/pdf',
+    file_size BIGINT DEFAULT 0,
+    report_date DATE NOT NULL,
+    status ENUM('draft', 'review', 'final') DEFAULT 'final',
+    admin_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    FOREIGN KEY (project_id) REFERENCES user_projects(id) ON DELETE CASCADE
+) ENGINE=InnoDB;

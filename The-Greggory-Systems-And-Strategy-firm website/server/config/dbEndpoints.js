@@ -40,12 +40,13 @@ function cloudSslEnabled() {
 }
 const DEFAULT_SSL = cloudSslEnabled();
 
-function buildEndpoint({ host, port, user, password, ssl, label }) {
+function buildEndpoint({ host, port, user, password, database, ssl, label }) {
   const cfg = {
     host: host || "localhost",
     port: Number(port || 3306),
     user: user || "root",
     password: password || "",
+    database: database || DB_NAME,
     label: label || `${host || "localhost"}:${port || 3306}`,
     connectTimeout: 15000,
     // Cloud MySQL (Aiven, claude...) requires TLS; local XAMPP does not.
@@ -71,6 +72,7 @@ function endpoints() {
           process.env.DB_PASSWORD_2 !== undefined
             ? process.env.DB_PASSWORD_2
             : "",
+        database: process.env.DB_NAME_2,
         ssl: process.env.DB_SSL_2 === "true",
         label: "local",
       })
@@ -91,6 +93,7 @@ function endpoints() {
           process.env.DB_PASSWORD !== undefined
             ? process.env.DB_PASSWORD
             : process.env.DB_CLOUD_PASSWORD,
+        database: process.env.DB_NAME,
         ssl: cloudSslEnabled(),
         label: IS_LOCAL_HOST(h1) ? "local" : "claude",
       })
