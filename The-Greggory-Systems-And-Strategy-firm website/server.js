@@ -6089,6 +6089,12 @@ app.get("/api/blog-articles/:id", async (req, res) => {
   catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
+// ── Legacy social-image redirect ─────────────────────────────────────────
+// /hero-phoenix.png was a byte-identical copy of a JPEG (now deleted); all
+// og:image tags point at /hero-phoenix.jpg instead. 301 the old URL so cached
+// shares and old scrapes keep unfurling instead of 404ing — and, most
+// importantly, so the request never falls through to the SPA shell below.
+app.get("/hero-phoenix.png", (req, res) => res.redirect(301, "/hero-phoenix.jpg"));
 // ── Crawler files (robots.txt / sitemap.xml) ───────────────────────────────
 // These must NEVER fall through to the React shell: a crawler that receives
 // index.html (HTTP 200, content-type text/html) treats the directive as

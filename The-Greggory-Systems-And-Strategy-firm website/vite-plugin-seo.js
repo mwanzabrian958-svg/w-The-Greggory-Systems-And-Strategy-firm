@@ -28,10 +28,9 @@ const SITE_DESCRIPTION =
   'The Greggory Systems And Strategy Firm \u2014 strategic systems engineering and business consultancy across every industry. Develop, maintain, upgrade, and stand behind the projects and platforms clients depend on.';
 const SITE_TAGLINE = 'Strategic Systems \u00b7 Practical Strategy \u00b7 Lasting Confidence';
 const LOGO_PATH = '/favicon-256.png';
-// NOTE: public/hero-phoenix.png is a byte-identical copy of a JPEG (magic
-// FFD8, 1324x783) — scrapers sniff MIME, so an og:image ending in .png that
-// serves JPEG bytes (as image/png via extension sniffing) can fail to unfurl.
-// Point social tags at the real .jpg and advertise its true dimensions.
+// Social image is the real hero JPEG (1324x783). The old .png of the same
+// bytes was deleted — scrapers sniff MIME, so a .png URL serving JPEG bytes
+// could fail to unfurl. server.js 301s the legacy /hero-phoenix.png URL here.
 const HERO_IMAGE = '/hero-phoenix.jpg';
 const HERO_IMAGE_TYPE = 'image/jpeg';
 const HERO_IMAGE_WIDTH = '1324';

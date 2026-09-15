@@ -15,12 +15,20 @@ services:
     name: greggory-systems-strategy
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run build
+    buildCommand: npm install --no-audit --no-fund --include=dev && npm run build
     startCommand: node scripts/import-if-empty.js && node scripts/sync-db-schema.js && node server.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      # Pin the Node major (matches "engines": ">=20 <23") so Render's default
+      # image drift can never break the build or runtime.
+      - key: NODE_VERSION
+        value: "22"
+      # Free-tier build containers have 512 MB RAM. Cap the heap so the Vite
+      # bundler garbage-collects before the container gets OOM-killed mid-build.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=460
       # --- Cloud MySQL (Aiven) — primary endpoint on Render ---
       - key: DB_HOST
         sync: false
@@ -45,6 +53,9 @@ services:
       - key: ADMIN_CODE
         sync: false
       - key: SESSION_SECRET
+        sync: false
+      # Admin API key — sent as the x-admin-key header by protected admin routes
+      - key: ADMIN_KEY
         sync: false
       # --- Email relay (Gmail App Password) ---
       - key: SMTP_HOST
@@ -78,7 +89,33 @@ services:
       - key: VITE_BING_SITE_VERIFICATION
         sync: false
       # --- Optional integrations (leave unset to disable) ---
-      # MONGODB_URI, GOOGLE_CLIENT_ID, VITE_GOOGLE_CLIENT_ID,
-      # MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_PASSKEY,
-      # MPESA_SHORTCODE, MPESA_CALLBACK_URL, AFRICASTALKING_USERNAME,
-      # AFRICASTALKING_API_KEY, WHATSAPP_CLOUD_TOKEN, WHATSAPP_CLOUD_PHONE_ID
+      # Build-time Google Sign-In (baked into the React bundle). If blank,
+      # the Google button simply hides itself — the site still works.
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      # M-Pesa Daraja API (copy from local .env if you take payments)
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_SHORTCODE
+        sync: false
+      # M-Pesa callback (public backend URL + /api/mpesa/callback)
+      - key: MPESA_CALLBACK_URL
+        sync: false
+      # SMS / WhatsApp + company numbers (copy from local .env if you use them)
+      - key: AFRICASTALKING_USERNAME
+        sync: false
+      - key: AFRICASTALKING_API_KEY
+        sync: false
+      - key: COMPANY_PHONE_NUMBER
+        sync: false
+      - key: COMPANY_WHATSAPP_NUMBER
+        sync: false
+      # NOTE: MONGODB_URI and REDIS_URL are intentionally omitted — the server
+      # skips MongoDB when unset and falls back to in-memory rate-limit/session
+      # storage without Redis. Add them later only if you actually need them.
