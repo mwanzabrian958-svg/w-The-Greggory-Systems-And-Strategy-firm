@@ -2299,6 +2299,498 @@ app.get("/api/accounting/periods", async (req, res) => {
     });
   }
 });
+// ── Accounting Categories CRUD ──────────────────────────────────────────────
+app.post("/api/accounting/categories", async (req, res) => {
+  try {
+    const {
+      name, description, category_type, default_budget_percentage,
+      is_tax_deductible, requires_approval, display_order, color_code,
+      icon, is_active,
+    } = req.body || {};
+
+    if (!name || !String(name).trim()) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Category name is required" });
+    }
+
+    const [result] = await db.execute(
+      `INSERT INTO accounting_categories
+        (name, description, category_type, default_budget_percentage,
+         is_tax_deductible, requires_approval, display_order, color_code, icon, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        String(name).trim(),
+        description || null,
+        category_type || "expense",
+        parseFloat(default_budget_percentage) || 0,
+        is_tax_deductible ? 1 : 0,
+        requires_approval ? 1 : 0,
+        parseInt(display_order, 10) || 0,
+        color_code || "#000000",
+        icon || null,
+        is_active === false || is_active === 0 ? 0 : 1,
+      ],
+    );
+
+    res.status(201).json({
+      success: true,
+      id: result.insertId,
+      message: "Category created",
+    });
+  } catch (error) {
+    console.error("Error creating accounting category:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create category",
+      error: error.message,
+    });
+  }
+});
+
+app.put("/api/accounting/categories/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      name, description, category_type, default_budget_percentage,
+      is_tax_deductible, requires_approval, display_order, color_code,
+      icon, is_active,
+    } = req.body || {};
+
+    if (!name || !String(name).trim()) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Category name is required" });
+    }
+
+    const [result] = await db.execute(
+      `UPDATE accounting_categories
+          SET name = ?, description = ?, category_type = ?,
+              default_budget_percentage = ?, is_tax_deductible = ?,
+              requires_approval = ?, display_order = ?, color_code = ?,
+              icon = ?, is_active = ?
+        WHERE id = ?`,
+      [
+        String(name).trim(),
+        description || null,
+        category_type || "expense",
+        parseFloat(default_budget_percentage) || 0,
+        is_tax_deductible ? 1 : 0,
+        requires_approval ? 1 : 0,
+        parseInt(display_order, 10) || 0,
+        color_code || "#000000",
+        icon || null,
+        is_active === false || is_active === 0 ? 0 : 1,
+        id,
+      ],
+    );
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    res.json({ success: true, message: "Category updated" });
+  } catch (error) {
+    console.error("Error updating accounting category:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update category",
+      error: error.message,
+    });
+  }
+});
+app.delete("/api/accounting/categories/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [result] = await db.execute(
+      "UPDATE accounting_categories SET is_active = 0 WHERE id = ?",
+      [id],
+    );
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Category not found" });
+    }
+
+    res.json({ success: true, message: "Category archived" });
+  } catch (error) {
+    console.error("Error deleting accounting category:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete category",
+      error: error.message,
+    });
+  }
+});
+
+// ── Financial Periods CRUD ──────────────────────────────────────────────────
+app.post("/api/accounting/periods", async (req, res) => {
+  try {
+    const {
+      project_id, period_name, period_type, start_date, end_date,
+      total_budget, allocated_budget, status, locked, description, notes,
+    } = req.body || {};
+
+    if (!period_name || !String(period_name).trim()) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Period name is required" });
+    }
+    if (!start_date || !end_date) {
+      return res.status(400).json({
+        success: false,
+        message: "Start date and end date are required",
+      });
+    }
+    if (new Date(end_date) < new Date(start_date)) {
+      return res.status(400).json({
+        success: false,
+        message: "End date cannot be before start date",
+      });
+    }
+
+    // `created_by` is NOT NULL in the schema — resolve an attribution user
+    let createdBy = req.body?.created_by || null;
+    if (!createdBy) {
+      const [uRows] = await db.execute(
+        "SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1",
+      );
+      createdBy = uRows[0]?.id || null;
+    }
+    if (!createdBy) {
+      const [anyRows] = await db.execute(
+        "SELECT id FROM users ORDER BY id ASC LIMIT 1",
+      );
+      createdBy = anyRows[0]?.id || null;
+    }
+    if (!createdBy) {
+      return res.status(400).json({
+        success: false,
+        message: "No user exists to attribute this period to",
+      });
+    }
+
+    const [result] = await db.execute(
+      `INSERT INTO accounting_periods
+        (project_id, period_name, period_type, start_date, end_date,
+         total_budget, allocated_budget, status, locked, description, notes, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        project_id || null,
+        String(period_name).trim(),
+        period_type || "monthly",
+        start_date,
+        end_date,
+        parseFloat(total_budget) || 0,
+        parseFloat(allocated_budget) || 0,
+        status || "planning",
+        locked ? 1 : 0,
+        description || null,
+        notes || null,
+        createdBy,
+      ],
+    );
+
+    res.status(201).json({
+      success: true,
+      id: result.insertId,
+      message: "Period created",
+    });
+  } catch (error) {
+    console.error("Error creating accounting period:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to create period",
+      error: error.message,
+    });
+  }
+});
+
+app.put("/api/accounting/periods/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      project_id, period_name, period_type, start_date, end_date,
+      total_budget, allocated_budget, status, locked, description, notes,
+    } = req.body || {};
+
+    if (!period_name || !String(period_name).trim()) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Period name is required" });
+    }
+    if (start_date && end_date && new Date(end_date) < new Date(start_date)) {
+      return res.status(400).json({
+        success: false,
+        message: "End date cannot be before start date",
+      });
+    }
+
+    const [result] = await db.execute(
+      `UPDATE accounting_periods
+          SET project_id = ?, period_name = ?, period_type = ?,
+              start_date = ?, end_date = ?, total_budget = ?,
+              allocated_budget = ?, status = ?, locked = ?,
+              description = ?, notes = ?
+        WHERE id = ?`,
+      [
+        project_id || null,
+        String(period_name).trim(),
+        period_type || "monthly",
+        start_date,
+        end_date,
+        parseFloat(total_budget) || 0,
+        parseFloat(allocated_budget) || 0,
+        status || "planning",
+        locked ? 1 : 0,
+        description || null,
+        notes || null,
+        id,
+      ],
+    );
+
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Period not found" });
+    }
+
+    res.json({ success: true, message: "Period updated" });
+  } catch (error) {
+    console.error("Error updating accounting period:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update period",
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/api/accounting/periods/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [lockedRows] = await db.execute(
+      "SELECT locked FROM accounting_periods WHERE id = ?",
+      [id],
+    );
+    if (lockedRows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Period not found" });
+    }
+    if (lockedRows[0].locked) {
+      return res.status(409).json({
+        success: false,
+        message: "Period is locked — unlock it before deleting",
+      });
+    }
+
+    await db.execute("DELETE FROM accounting_periods WHERE id = ?", [id]);
+    res.json({ success: true, message: "Period deleted" });
+  } catch (error) {
+    console.error("Error deleting accounting period:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete period",
+      error: error.message,
+    });
+  }
+});
+
+// ── Profit & Loss summary (powers Reports + Dashboard tabs) ─────────────────
+app.get("/api/accounting/reports/summary", async (req, res) => {
+  try {
+    const { project_id, start_date, end_date } = req.query;
+
+    const filters = ["deleted_at IS NULL"];
+    const params = [];
+
+    if (project_id) {
+      filters.push("project_id = ?");
+      params.push(project_id);
+    }
+    if (start_date) {
+      filters.push("transaction_date >= ?");
+      params.push(start_date);
+    }
+    if (end_date) {
+      filters.push("transaction_date <= ?");
+      params.push(end_date);
+    }
+
+    const whereClause = filters.join(" AND ");
+
+    const [totalsRows] = await db.execute(
+      `SELECT
+         COALESCE(SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END), 0) AS total_income,
+         COALESCE(SUM(CASE WHEN entry_type = 'expense' THEN amount ELSE 0 END), 0) AS total_expenses,
+         COALESCE(SUM(tax_amount), 0) AS total_tax,
+         COUNT(*) AS entry_count
+       FROM accounting_entries
+       WHERE ${whereClause}`,
+      params,
+    );
+
+    const [byCategory] = await db.execute(
+      `SELECT entry_type, category,
+              COALESCE(SUM(amount), 0) AS total,
+              COUNT(*) AS entry_count
+         FROM accounting_entries
+        WHERE ${whereClause}
+        GROUP BY entry_type, category
+        ORDER BY total DESC`,
+      params,
+    );
+
+    const [byMonth] = await db.execute(
+      `SELECT DATE_FORMAT(transaction_date, '%Y-%m') AS month,
+              COALESCE(SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END), 0) AS income,
+              COALESCE(SUM(CASE WHEN entry_type = 'expense' THEN amount ELSE 0 END), 0) AS expenses
+         FROM accounting_entries
+        WHERE ${whereClause}
+        GROUP BY month
+        ORDER BY month ASC`,
+      params,
+    );
+
+    const [byStatus] = await db.execute(
+      `SELECT payment_status,
+              COALESCE(SUM(amount), 0) AS total,
+              COUNT(*) AS entry_count
+         FROM accounting_entries
+        WHERE ${whereClause}
+        GROUP BY payment_status`,
+      params,
+    );
+
+    const totals = totalsRows[0] || {
+      total_income: 0,
+      total_expenses: 0,
+      total_tax: 0,
+      entry_count: 0,
+    };
+
+    res.json({
+      success: true,
+      summary: {
+        total_income: parseFloat(totals.total_income) || 0,
+        total_expenses: parseFloat(totals.total_expenses) || 0,
+        net_profit:
+          (parseFloat(totals.total_income) || 0) -
+          (parseFloat(totals.total_expenses) || 0),
+        total_tax: parseFloat(totals.total_tax) || 0,
+        entry_count: parseInt(totals.entry_count, 10) || 0,
+      },
+      by_category: byCategory.map((row) => ({
+        ...row,
+        total: parseFloat(row.total) || 0,
+        entry_count: parseInt(row.entry_count, 10) || 0,
+      })),
+      by_month: byMonth.map((row) => ({
+        month: row.month,
+        income: parseFloat(row.income) || 0,
+        expenses: parseFloat(row.expenses) || 0,
+      })),
+      by_status: byStatus.map((row) => ({
+        ...row,
+        total: parseFloat(row.total) || 0,
+        entry_count: parseInt(row.entry_count, 10) || 0,
+      })),
+      range: {
+        project_id: project_id || null,
+        start_date: start_date || null,
+        end_date: end_date || null,
+      },
+    });
+  } catch (error) {
+    console.error("Error building accounting summary:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to build accounting summary",
+      error: error.message,
+    });
+  }
+});
+
+app.post("/api/financial/reports", async (req, res) => {
+  try {
+    const {
+      project_id, report_type, report_name, period_start, period_end,
+      data, summary, generated_by, status,
+    } = req.body || {};
+
+    if (!report_type) {
+      return res
+        .status(400)
+        .json({ success: false, message: "report_type is required" });
+    }
+    if (!project_id) {
+      return res
+        .status(400)
+        .json({ success: false, message: "project_id is required" });
+    }
+
+    // `created_by` is NOT NULL in the schema — resolve an attribution user
+    let createdBy = generated_by || req.body?.created_by || null;
+    if (!createdBy) {
+      const [uRows] = await db.execute(
+        "SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1",
+      );
+      createdBy = uRows[0]?.id || null;
+    }
+    if (!createdBy) {
+      const [anyRows] = await db.execute(
+        "SELECT id FROM users ORDER BY id ASC LIMIT 1",
+      );
+      createdBy = anyRows[0]?.id || null;
+    }
+    if (!createdBy) {
+      return res.status(400).json({
+        success: false,
+        message: "No user exists to attribute this report to",
+      });
+    }
+
+    const [result] = await db.execute(
+      `INSERT INTO financial_reports
+        (project_id, report_type, report_name, period_start, period_end,
+         report_data, summary, report_date, generated_by, created_by, status, generated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, NOW())`,
+      [
+        project_id,
+        report_type,
+        report_name || `${report_type} report`,
+        period_start || null,
+        period_end || null,
+        JSON.stringify(data || {}),
+        summary || null,
+        createdBy,
+        createdBy,
+        status || "draft",
+      ],
+    );
+
+    res.status(201).json({
+      success: true,
+      id: result.insertId,
+      message: "Report saved",
+    });
+  } catch (error) {
+    console.error("Error saving financial report:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to save report",
+      error: error.message,
+    });
+  }
+});
+
+
+
 
 app.get("/api/financial/reports", async (req, res) => {
   try {

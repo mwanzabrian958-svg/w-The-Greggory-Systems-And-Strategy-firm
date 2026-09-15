@@ -24,6 +24,7 @@ import {
   PieChart,
   Receipt,
   CreditCard,
+  Lock,
 } from "lucide-react";
 
 const FinancialManagement = ({
@@ -280,6 +281,103 @@ const FinancialManagement = ({
     }
   };
 
+  // ── Categories / Periods / Reports / Dashboard state ───────────────────────
+  const [localCategories, setLocalCategories] = useState(categories || []);
+  const [localPeriods, setLocalPeriods] = useState(periods || []);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [editingPeriod, setEditingPeriod] = useState(null);
+  const [financeLoading, setFinanceLoading] = useState(false);
+  const [financeError, setFinanceError] = useState(null);
+  const [financeSummary, setFinanceSummary] = useState(null);
+  const [reportRange, setReportRange] = useState({
+    start_date: "",
+    end_date: "",
+  });
+
+  useEffect(() => {
+    setLocalCategories(categories || []);
+  }, [categories]);
+
+  useEffect(() => {
+    setLocalPeriods(periods || []);
+  }, [periods]);
+
+  const loadFinanceData = async () => {
+    setFinanceLoading(true);
+    setFinanceError(null);
+    try {
+      const [catRes, perRes] = await Promise.all([
+        fetch(getApiUrl("/api/accounting/categories")),
+        fetch(getApiUrl("/api/accounting/periods")),
+      ]);
+      const catJson = await catRes.json().catch(() => ({}));
+      const perJson = await perRes.json().catch(() => ({}));
+      if (catJson.success) setLocalCategories(catJson.categories || []);
+      if (perJson.success) setLocalPeriods(perJson.periods || []);
+
+      const params = new URLSearchParams();
+      if (selectedProject?.id) params.set("project_id", selectedProject.id);
+      if (reportRange.start_date)
+        params.set("start_date", reportRange.start_date);
+      if (reportRange.end_date) params.set("end_date", reportRange.end_date);
+
+      const sumRes = await fetch(
+        getApiUrl(`/api/accounting/reports/summary?${params.toString()}`),
+      );
+      const sumJson = await sumRes.json().catch(() => ({}));
+      if (sumJson.success) setFinanceSummary(sumJson);
+    } catch (error) {
+      console.error("Error loading finance data:", error);
+      setFinanceError(String(error.message || error));
+    } finally {
+      setFinanceLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (
+      ["categories", "periods", "reports", "dashboard"].includes(activeSection)
+    ) {
+      loadFinanceData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection]);
+
+  const handleAddCategory = () => {
+    setEditingCategory(null);
+    setCategoryForm({
+      name: "",
+      description: "",
+      category_type: "expense",
+      default_budget_percentage: "0",
+      is_tax_deductible: false,
+      requires_approval: false,
+      display_order: "0",
+      color_code: "#000000",
+      icon: "",
+      is_active: true,
+    });
+    setShowAddCategoryForm(true);
+  };
+
+  const handleEditCategory = (cat) => {
+    setEditingCategory(cat);
+    setCategoryForm({
+      name: cat.name || "",
+      description: cat.description || "",
+      category_type: cat.category_type || "expense",
+      default_budget_percentage: String(cat.default_budget_percentage ?? "0"),
+      is_tax_deductible: Boolean(cat.is_tax_deductible),
+      requires_approval: Boolean(cat.requires_approval),
+      display_order: String(cat.display_order ?? "0"),
+      color_code: cat.color_code || "#000000",
+      icon: cat.icon || "",
+      is_active: Boolean(cat.is_active),
+    });
+    setShowAddCategoryForm(true);
+  };
+
+
   const filteredEntries = entries.filter((entry) => {
     const matchesSearch =
       entry.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -291,6 +389,185 @@ const FinancialManagement = ({
     const matchesCategory =
       filterCategory === "all" || entry.category === filterCategory;
     const matchesStatus =
+  const handleSaveCategory = async () => {
+    const isEdit = Boolean(editingCategory);
+    try {
+      const response = await fetch(
+        isEdit
+          ? getApiUrl(`/api/accounting/categories/${editingCategory.id}`)
+          : getApiUrl("/api/accounting/categories"),
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(categoryForm),
+        },
+      );
+      const json = await response.json().catch(() => ({}));
+      if (response.ok && json.success) {
+        setShowAddCategoryForm(false);
+        setEditingCategory(null);
+        await loadFinanceData();
+        onRefresh();
+      } else {
+        window.alert(json.message || "Failed to save category");
+      }
+    } catch (error) {
+      console.error("Error saving category:", error);
+      window.alert("Failed to save category. Please try again.");
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (
+      !window.confirm("Archive this category? It will no longer be selectable.")
+    )
+      return;
+    try {
+      const response = await fetch(
+        getApiUrl(`/api/accounting/categories/${categoryId}`),
+        { method: "DELETE" },
+      );
+      const json = await response.json().catch(() => ({}));
+      if (response.ok && json.success) {
+        await loadFinanceData();
+        onRefresh();
+      } else {
+        window.alert(json.message || "Failed to archive category");
+      }
+    } catch (error) {
+      console.error("Error deleting category:", error);
+    }
+  };
+
+  const handleAddPeriod = () => {
+    setEditingPeriod(null);
+    setPeriodForm({
+      project_id: selectedProject?.id || "",
+      period_name: "",
+      period_type: "monthly",
+      start_date: new Date().toISOString().split("T")[0],
+      end_date: new Date().toISOString().split("T")[0],
+      total_budget: "0",
+      allocated_budget: "0",
+      status: "planning",
+      locked: false,
+      description: "",
+      notes: "",
+    });
+    setShowAddPeriodForm(true);
+  };
+
+  const handleEditPeriod = (period) => {
+    setEditingPeriod(period);
+    setPeriodForm({
+      project_id: period.project_id || "",
+      period_name: period.period_name || "",
+      period_type: period.period_type || "monthly",
+      start_date: (period.start_date || "").split("T")[0],
+      end_date: (period.end_date || "").split("T")[0],
+      total_budget: String(period.total_budget ?? "0"),
+      allocated_budget: String(period.allocated_budget ?? "0"),
+      status: period.status || "planning",
+      locked: Boolean(period.locked),
+      description: period.description || "",
+      notes: period.notes || "",
+    });
+    setShowAddPeriodForm(true);
+  };
+
+  const handleSavePeriod = async () => {
+    const isEdit = Boolean(editingPeriod);
+    try {
+      const response = await fetch(
+        isEdit
+          ? getApiUrl(`/api/accounting/periods/${editingPeriod.id}`)
+          : getApiUrl("/api/accounting/periods"),
+        {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(periodForm),
+        },
+      );
+      const json = await response.json().catch(() => ({}));
+      if (response.ok && json.success) {
+        setShowAddPeriodForm(false);
+        setEditingPeriod(null);
+        await loadFinanceData();
+        onRefresh();
+      } else {
+        window.alert(json.message || "Failed to save period");
+      }
+    } catch (error) {
+      console.error("Error saving period:", error);
+      window.alert("Failed to save period. Please try again.");
+    }
+  };
+
+  const handleDeletePeriod = async (periodId) => {
+    if (
+      !window.confirm("Delete this period? Locked periods cannot be deleted.")
+    )
+      return;
+    try {
+      const response = await fetch(
+        getApiUrl(`/api/accounting/periods/${periodId}`),
+        { method: "DELETE" },
+      );
+      const json = await response.json().catch(() => ({}));
+      if (response.ok && json.success) {
+        await loadFinanceData();
+        onRefresh();
+      } else {
+        window.alert(json.message || "Failed to delete period");
+      }
+    } catch (error) {
+      console.error("Error deleting period:", error);
+    }
+  };
+
+  const handleSaveReport = async (reportName) => {
+    if (!financeSummary) {
+      window.alert("Load the summary first, then save the report.");
+      return;
+    }
+    if (!selectedProject?.id) {
+      window.alert(
+        "Select a project first — reports are saved against a project.",
+      );
+      return;
+    }
+    try {
+      const response = await fetch(getApiUrl("/api/financial/reports"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: selectedProject.id,
+          report_type: "profit_loss",
+          report_name:
+            reportName ||
+            `P&L — ${selectedProject.name} (${new Date()
+              .toISOString()
+              .split("T")[0]})`,
+          period_start: reportRange.start_date || null,
+          period_end: reportRange.end_date || null,
+          data: financeSummary,
+          summary: `Income ${financeSummary.summary.total_income} | Expenses ${financeSummary.summary.total_expenses} | Net ${financeSummary.summary.net_profit}`,
+        }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (response.ok && json.success) {
+        window.alert("Report saved.");
+        onRefresh();
+      } else {
+        window.alert(json.message || "Failed to save report");
+      }
+    } catch (error) {
+      console.error("Error saving report:", error);
+      window.alert("Failed to save report. Please try again.");
+    }
+  };
+
+
       filterStatus === "all" || entry.payment_status === filterStatus;
 
     return matchesSearch && matchesType && matchesCategory && matchesStatus;
@@ -2692,51 +2969,993 @@ const FinancialManagement = ({
       {/* Other sections can be added here - categories, periods, reports, dashboard */}
       {activeSection === "categories" && (
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Accounting Categories
-          </h3>
-          <div className="text-center py-8">
-            <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">Categories management coming soon</p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Accounting Categories
+            </h3>
+            <button
+              onClick={handleAddCategory}
+              className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Category
+            </button>
           </div>
+
+          {financeError && (
+            <div className="mb-4 px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm">
+              {financeError}
+            </div>
+          )}
+
+          {financeLoading ? (
+            <div className="text-center py-8 text-gray-500">
+              Loading categories…
+            </div>
+          ) : localCategories.length === 0 ? (
+            <div className="text-center py-8">
+              <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">
+                No categories yet — add your first one.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-500 border-b">
+                    <th className="py-2 pr-4">Name</th>
+                    <th className="py-2 pr-4">Type</th>
+                    <th className="py-2 pr-4">Budget %</th>
+                    <th className="py-2 pr-4">Tax</th>
+                    <th className="py-2 pr-4">Approval</th>
+                    <th className="py-2 pr-4">Order</th>
+                    <th className="py-2 pr-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {localCategories.map((cat) => (
+                    <tr key={cat.id} className="border-b last:border-0">
+                      <td className="py-2 pr-4 font-medium text-gray-900">
+                        <span
+                          className="inline-block w-3 h-3 rounded-full mr-2"
+                          style={{
+                            backgroundColor: cat.color_code || "#000000",
+                          }}
+                        />
+                        {cat.name}
+                      </td>
+                      <td className="py-2 pr-4 capitalize">
+                        {cat.category_type}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {cat.default_budget_percentage}%
+                      </td>
+                      <td className="py-2 pr-4">
+                        {cat.is_tax_deductible ? (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-gray-300" />
+                        )}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {cat.requires_approval ? (
+                          <CheckCircle className="w-4 h-4 text-amber-500" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-gray-300" />
+                        )}
+                      </td>
+                      <td className="py-2 pr-4">{cat.display_order}</td>
+                      <td className="py-2 pr-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditCategory(cat)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                            title="Archive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {showAddCategoryForm && (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <div className="p-6 border-b">
+                  <h4 className="text-lg font-semibold text-gray-900">
+                    {editingCategory ? "Edit Category" : "Add Category"}
+                  </h4>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={categoryForm.name}
+                      onChange={(e) =>
+                        setCategoryForm({
+                          ...categoryForm,
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Type
+                      </label>
+                      <select
+                        value={categoryForm.category_type}
+                        onChange={(e) =>
+                          setCategoryForm({
+                            ...categoryForm,
+                            category_type: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="expense">Expense</option>
+                        <option value="income">Income</option>
+                        <option value="both">Both</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Default Budget %
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={categoryForm.default_budget_percentage}
+                        onChange={(e) =>
+                          setCategoryForm({
+                            ...categoryForm,
+                            default_budget_percentage: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={categoryForm.description}
+                      onChange={(e) =>
+                        setCategoryForm({
+                          ...categoryForm,
+                          description: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Display Order
+                      </label>
+                      <input
+                        type="number"
+                        value={categoryForm.display_order}
+                        onChange={(e) =>
+                          setCategoryForm({
+                            ...categoryForm,
+                            display_order: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Color
+                      </label>
+                      <input
+                        type="color"
+                        value={categoryForm.color_code}
+                        onChange={(e) =>
+                          setCategoryForm({
+                            ...categoryForm,
+                            color_code: e.target.value,
+                          })
+                        }
+                        className="w-full h-10 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Icon
+                      </label>
+                      <input
+                        type="text"
+                        value={categoryForm.icon}
+                        onChange={(e) =>
+                          setCategoryForm({
+                            ...categoryForm,
+                            icon: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={categoryForm.is_tax_deductible}
+                        onChange={(e) =>
+                          setCategoryForm({
+                            ...categoryForm,
+                            is_tax_deductible: e.target.checked,
+                          })
+                        }
+                      />
+                      Tax deductible
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={categoryForm.requires_approval}
+                        onChange={(e) =>
+                          setCategoryForm({
+                            ...categoryForm,
+                            requires_approval: e.target.checked,
+                          })
+                        }
+                      />
+                      Requires approval
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={categoryForm.is_active}
+                        onChange={(e) =>
+                          setCategoryForm({
+                            ...categoryForm,
+                            is_active: e.target.checked,
+                          })
+                        }
+                      />
+                      Active
+                    </label>
+                  </div>
+                </div>
+                <div className="p-6 border-t flex justify-end gap-3">
+                  <button
+                    onClick={() => {
+                      setShowAddCategoryForm(false);
+                      setEditingCategory(null);
+                    }}
+                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveCategory}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                  >
+                    {editingCategory ? "Update Category" : "Create Category"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {activeSection === "periods" && (
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Financial Periods
-          </h3>
-          <div className="text-center py-8">
-            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">
-              Financial periods management coming soon
-            </p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Financial Periods
+            </h3>
+            <button
+              onClick={handleAddPeriod}
+              className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Period
+            </button>
           </div>
+
+          {financeError && (
+            <div className="mb-4 px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm">
+              {financeError}
+            </div>
+          )}
+
+          {financeLoading ? (
+            <div className="text-center py-8 text-gray-500">
+              Loading periods…
+            </div>
+          ) : localPeriods.length === 0 ? (
+            <div className="text-center py-8">
+              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">
+                No financial periods yet — create one to start budgeting.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-500 border-b">
+                    <th className="py-2 pr-4">Period</th>
+                    <th className="py-2 pr-4">Type</th>
+                    <th className="py-2 pr-4">Start</th>
+                    <th className="py-2 pr-4">End</th>
+                    <th className="py-2 pr-4">Total Budget</th>
+                    <th className="py-2 pr-4">Allocated</th>
+                    <th className="py-2 pr-4">Status</th>
+                    <th className="py-2 pr-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {localPeriods.map((period) => (
+                    <tr key={period.id} className="border-b last:border-0">
+                      <td className="py-2 pr-4 font-medium text-gray-900">
+                        {period.period_name}
+                        {period.project_name && (
+                          <span className="block text-xs text-gray-500">
+                            {period.project_name}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 pr-4 capitalize">
+                        {period.period_type}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {(period.start_date || "").split("T")[0]}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {(period.end_date || "").split("T")[0]}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {parseFloat(period.total_budget || 0).toLocaleString()}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {parseFloat(
+                          period.allocated_budget || 0,
+                        ).toLocaleString()}
+                      </td>
+                      <td className="py-2 pr-4">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            period.status === "active"
+                              ? "bg-green-100 text-green-700"
+                              : period.status === "closed"
+                                ? "bg-gray-100 text-gray-600"
+                                : period.status === "archived"
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {period.locked && <Lock className="w-3 h-3" />}
+                          {period.status || "planning"}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditPeriod(period)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeletePeriod(period.id)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                            title="Delete"
+                            disabled={period.locked}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {showAddPeriodForm && (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                <div className="p-6 border-b">
+                  <h4 className="text-lg font-semibold text-gray-900">
+                    {editingPeriod ? "Edit Period" : "Add Period"}
+                  </h4>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Period Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={periodForm.period_name}
+                      onChange={(e) =>
+                        setPeriodForm({
+                          ...periodForm,
+                          period_name: e.target.value,
+                        })
+                      }
+                      placeholder="e.g. Q1 2026"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Period Type
+                      </label>
+                      <select
+                        value={periodForm.period_type}
+                        onChange={(e) =>
+                          setPeriodForm({
+                            ...periodForm,
+                            period_type: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="yearly">Yearly</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Status
+                      </label>
+                      <select
+                        value={periodForm.status}
+                        onChange={(e) =>
+                          setPeriodForm({
+                            ...periodForm,
+                            status: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="planning">Planning</option>
+                        <option value="active">Active</option>
+                        <option value="closed">Closed</option>
+                        <option value="archived">Archived</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Start Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={periodForm.start_date}
+                        onChange={(e) =>
+                          setPeriodForm({
+                            ...periodForm,
+                            start_date: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        End Date *
+                      </label>
+                      <input
+                        type="date"
+                        value={periodForm.end_date}
+                        onChange={(e) =>
+                          setPeriodForm({
+                            ...periodForm,
+                            end_date: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Total Budget
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={periodForm.total_budget}
+                        onChange={(e) =>
+                          setPeriodForm({
+                            ...periodForm,
+                            total_budget: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Allocated Budget
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={periodForm.allocated_budget}
+                        onChange={(e) =>
+                          setPeriodForm({
+                            ...periodForm,
+                            allocated_budget: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={periodForm.description}
+                      onChange={(e) =>
+                        setPeriodForm({
+                          ...periodForm,
+                          description: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Notes
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={periodForm.notes}
+                      onChange={(e) =>
+                        setPeriodForm({ ...periodForm, notes: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={periodForm.locked}
+                      onChange={(e) =>
+                        setPeriodForm({
+                          ...periodForm,
+                          locked: e.target.checked,
+                        })
+                      }
+                    />
+                    Locked (prevents edits and deletion)
+                  </label>
+                </div>
+                <div className="p-6 border-t flex justify-end gap-3">
+                  <button
+                    onClick={() => {
+                      setShowAddPeriodForm(false);
+                      setEditingPeriod(null);
+                    }}
+                    className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSavePeriod}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                  >
+                    {editingPeriod ? "Update Period" : "Create Period"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {activeSection === "reports" && (
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Financial Reports
-          </h3>
-          <div className="text-center py-8">
-            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">Financial reports coming soon</p>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Financial Reports
+            </h3>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="date"
+                value={reportRange.start_date}
+                onChange={(e) =>
+                  setReportRange({ ...reportRange, start_date: e.target.value })
+                }
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <span className="text-gray-400 text-sm">to</span>
+              <input
+                type="date"
+                value={reportRange.end_date}
+                onChange={(e) =>
+                  setReportRange({ ...reportRange, end_date: e.target.value })
+                }
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <button
+                onClick={loadFinanceData}
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Apply
+              </button>
+              <button
+                onClick={() => handleSaveReport()}
+                className="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              >
+                Save Report
+              </button>
+            </div>
           </div>
+
+          {financeError && (
+            <div className="mb-4 px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm">
+              {financeError}
+            </div>
+          )}
+
+          {!financeSummary && financeLoading ? (
+            <div className="text-center py-8 text-gray-500">
+              Building report…
+            </div>
+          ) : financeSummary ? (
+            <div className="space-y-6">
+              {/* Profit & Loss Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-green-50 rounded-lg p-4">
+                  <p className="text-sm font-medium text-green-600">
+                    Total Income
+                  </p>
+                  <p className="text-2xl font-bold text-green-900">
+                    ${financeSummary.summary.total_income.toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-red-50 rounded-lg p-4">
+                  <p className="text-sm font-medium text-red-600">
+                    Total Expenses
+                  </p>
+                  <p className="text-2xl font-bold text-red-900">
+                    ${financeSummary.summary.total_expenses.toLocaleString()}
+                  </p>
+                </div>
+                <div
+                  className={`rounded-lg p-4 ${
+                    financeSummary.summary.net_profit >= 0
+                      ? "bg-blue-50"
+                      : "bg-orange-50"
+                  }`}
+                >
+                  <p
+                    className={`text-sm font-medium ${
+                      financeSummary.summary.net_profit >= 0
+                        ? "text-blue-600"
+                        : "text-orange-600"
+                    }`}
+                  >
+                    Net Profit
+                  </p>
+                  <p
+                    className={`text-2xl font-bold ${
+                      financeSummary.summary.net_profit >= 0
+                        ? "text-blue-900"
+                        : "text-orange-900"
+                    }`}
+                  >
+                    ${Math.abs(financeSummary.summary.net_profit).toLocaleString()}
+                    {financeSummary.summary.net_profit < 0 && " loss"}
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500">
+                Based on {financeSummary.summary.entry_count} entries
+                {financeSummary.summary.total_tax
+                  ? ` • Tax recorded: $${financeSummary.summary.total_tax.toLocaleString()}`
+                  : ""}
+              </p>
+              {/* Breakdown by Category */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                  Breakdown by Category
+                </h4>
+                {financeSummary.by_category.length === 0 ? (
+                  <p className="text-sm text-gray-500 py-4 text-center">
+                    No entries in this range.
+                  </p>
+                ) : (
+                  <table className="min-w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-gray-500 border-b">
+                        <th className="py-2 pr-4">Type</th>
+                        <th className="py-2 pr-4">Category</th>
+                        <th className="py-2 pr-4">Entries</th>
+                        <th className="py-2 pr-4 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {financeSummary.by_category.map((row, idx) => (
+                        <tr key={idx} className="border-b last:border-0">
+                          <td className="py-2 pr-4">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-full text-xs capitalize ${
+                                row.entry_type === "income"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {row.entry_type}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-4">{row.category || "—"}</td>
+                          <td className="py-2 pr-4">{row.entry_count}</td>
+                          <td className="py-2 pr-4 text-right font-medium">
+                            ${row.total.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+              {/* Monthly Trend */}
+              {financeSummary.by_month.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                    Monthly Trend
+                  </h4>
+                  <div className="space-y-2">
+                    {financeSummary.by_month.map((row) => {
+                      const maxVal = Math.max(
+                        ...financeSummary.by_month.map((m) =>
+                          Math.max(m.income, m.expenses),
+                        ),
+                        1,
+                      );
+                      return (
+                        <div key={row.month} className="flex items-center gap-3">
+                          <span className="text-xs text-gray-500 w-16">
+                            {row.month}
+                          </span>
+                          <div className="flex-1">
+                            <div
+                              className="h-3 bg-green-400 rounded"
+                              style={{ width: `${(row.income / maxVal) * 100}%` }}
+                              title={`Income $${row.income.toLocaleString()}`}
+                            />
+                            <div
+                              className="h-3 bg-red-400 rounded mt-1"
+                              style={{
+                                width: `${(row.expenses / maxVal) * 100}%`,
+                              }}
+                              title={`Expenses $${row.expenses.toLocaleString()}`}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <span className="w-3 h-2 bg-green-400 rounded" /> Income
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-3 h-2 bg-red-400 rounded" /> Expenses
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">
+                Set a date range and click Apply to generate a report.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
       {activeSection === "dashboard" && (
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Financial Dashboard
-          </h3>
-          <div className="text-center py-8">
-            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">Financial dashboard coming soon</p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Financial Dashboard
+            </h3>
+            {selectedProject && (
+              <span className="text-xs font-medium text-blue-900 bg-blue-50 px-3 py-1 rounded-full">
+                {selectedProject.name}
+              </span>
+            )}
           </div>
+
+          {financeError && (
+            <div className="mb-4 px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm">
+              {financeError}
+            </div>
+          )}
+
+          {financeLoading && !financeSummary ? (
+            <div className="text-center py-8 text-gray-500">
+              Loading dashboard…
+            </div>
+          ) : financeSummary ? (
+            <div className="space-y-6">
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-green-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-600">
+                        Income
+                      </p>
+                      <p className="text-xl font-bold text-green-900">
+                        ${financeSummary.summary.total_income.toLocaleString()}
+                      </p>
+                    </div>
+                    <TrendingUp className="w-8 h-8 text-green-500" />
+                  </div>
+                </div>
+                <div className="bg-red-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-red-600">
+                        Expenses
+                      </p>
+                      <p className="text-xl font-bold text-red-900">
+                        ${financeSummary.summary.total_expenses.toLocaleString()}
+                      </p>
+                    </div>
+                    <TrendingDown className="w-8 h-8 text-red-500" />
+                  </div>
+                </div>
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-600">
+                        Net Balance
+                      </p>
+                      <p className="text-xl font-bold text-blue-900">
+                        ${financeSummary.summary.net_profit.toLocaleString()}
+                      </p>
+                    </div>
+                    <DollarSign className="w-8 h-8 text-blue-500" />
+                  </div>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-600">
+                        Entries
+                      </p>
+                      <p className="text-xl font-bold text-purple-900">
+                        {financeSummary.summary.entry_count}
+                      </p>
+                    </div>
+                    <Receipt className="w-8 h-8 text-purple-500" />
+                  </div>
+                </div>
+              </div>
+              {/* Payment status breakdown */}
+              {financeSummary.by_status.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                    Payment Status
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {financeSummary.by_status.map((row, idx) => (
+                      <div
+                        key={idx}
+                        className="border border-gray-200 rounded-lg p-3"
+                      >
+                        <p className="text-xs text-gray-500 capitalize">
+                          {row.payment_status || "unknown"}
+                        </p>
+                        <p className="text-lg font-bold text-gray-900">
+                          ${row.total.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {row.entry_count} entries
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Top categories */}
+              {financeSummary.by_category.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                    Top Categories
+                  </h4>
+                  <div className="space-y-2">
+                    {financeSummary.by_category.slice(0, 5).map((row, idx) => {
+                      const maxTotal = Math.max(
+                        ...financeSummary.by_category.map((c) => c.total),
+                        1,
+                      );
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-3 text-sm"
+                        >
+                          <span className="w-32 truncate text-gray-600">
+                            {row.category || "—"}
+                          </span>
+                          <div className="flex-1 bg-gray-100 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full ${
+                                row.entry_type === "income"
+                                  ? "bg-green-400"
+                                  : "bg-red-400"
+                              }`}
+                              style={{
+                                width: `${(row.total / maxTotal) * 100}%`,
+                              }}
+                            />
+                          </div>
+                          <span className="w-24 text-right font-medium text-gray-900">
+                            ${row.total.toLocaleString()}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => setActiveSection("reports")}
+                className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+              >
+                View detailed P&L report →
+              </button>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">No financial data to display yet.</p>
+            </div>
+          )}
         </div>
       )}
     </div>
