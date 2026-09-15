@@ -386,7 +386,7 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
 // Single-origin production mode: serve the built React app (dist/) from this
 // same server, exactly like the Vite dev proxy does on localhost. One origin

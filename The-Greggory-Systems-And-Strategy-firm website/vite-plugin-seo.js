@@ -28,7 +28,15 @@ const SITE_DESCRIPTION =
   'The Greggory Systems And Strategy Firm \u2014 strategic systems engineering and business consultancy across every industry. Develop, maintain, upgrade, and stand behind the projects and platforms clients depend on.';
 const SITE_TAGLINE = 'Strategic Systems \u00b7 Practical Strategy \u00b7 Lasting Confidence';
 const LOGO_PATH = '/favicon-256.png';
-const HERO_IMAGE = '/hero-phoenix.png';
+// NOTE: public/hero-phoenix.png is a byte-identical copy of a JPEG (magic
+// FFD8, 1324x783) — scrapers sniff MIME, so an og:image ending in .png that
+// serves JPEG bytes (as image/png via extension sniffing) can fail to unfurl.
+// Point social tags at the real .jpg and advertise its true dimensions.
+const HERO_IMAGE = '/hero-phoenix.jpg';
+const HERO_IMAGE_TYPE = 'image/jpeg';
+const HERO_IMAGE_WIDTH = '1324';
+const HERO_IMAGE_HEIGHT = '783';
+const HERO_IMAGE_ALT = 'The Greggory Systems And Strategy Firm — phoenix rising';
 const PHONE = '+254115525854';
 const EMAIL = 'thegreggorysystemsandstrategyf@gmail.com';
 const SAME_AS = [
@@ -148,9 +156,13 @@ export default function vitePluginSeo(env = {}) {
       // relative image URLs — a link to the site would unfurl with no image.
       const heroImage = cleanUrl ? cleanUrl + HERO_IMAGE : HERO_IMAGE;
       tags.push('  <meta property="og:image" content="' + escapeHtml(heroImage) + '">');
-      tags.push('  <meta property="og:image:width" content="1200">');
-      tags.push('  <meta property="og:image:height" content="630">');
+      tags.push('  <meta property="og:image:secure_url" content="' + escapeHtml(heroImage) + '">');
+      tags.push('  <meta property="og:image:type" content="' + HERO_IMAGE_TYPE + '">');
+      tags.push('  <meta property="og:image:width" content="' + HERO_IMAGE_WIDTH + '">');
+      tags.push('  <meta property="og:image:height" content="' + HERO_IMAGE_HEIGHT + '">');
+      tags.push('  <meta property="og:image:alt" content="' + escapeHtml(HERO_IMAGE_ALT) + '">');
       tags.push('  <meta name="twitter:image" content="' + escapeHtml(heroImage) + '">');
+      tags.push('  <meta name="twitter:image:alt" content="' + escapeHtml(HERO_IMAGE_ALT) + '">');
 
       // Google Search Console ownership verification.
       const gsc =
