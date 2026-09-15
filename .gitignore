@@ -1,5 +1,7 @@
 # Database backups (contain user data - never commit)
 backups/
+The-Greggory-Systems-And-Strategy-firm website/backups/
+The-Greggory-Systems-And-Strategy-firm website/backup/
 
 # Logs
 logs

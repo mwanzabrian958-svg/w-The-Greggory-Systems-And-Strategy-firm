@@ -1,2 +1,5 @@
 backup/
+backups/
+*.log
+last-backup-status.json
 

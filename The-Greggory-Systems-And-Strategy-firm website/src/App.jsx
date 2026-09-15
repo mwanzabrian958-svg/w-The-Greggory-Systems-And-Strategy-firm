@@ -32,6 +32,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const Terms = lazy(() => import('./pages/Terms'))
 const Privacy = lazy(() => import('./pages/Privacy'))
 const Pricing = lazy(() => import('./pages/Pricing'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 const ClientReports = lazy(() => import('./pages/ClientReports'))
 const ClientAlerts = lazy(() => import('./pages/ClientAlerts'))
 const PersonnelProfile = lazy(() => import('./pages/PersonnelProfile'))
@@ -163,6 +164,9 @@ function Layout() {
           />
 
           <Route path="/pricing" element={<Pricing />} />
+
+          {/* Catch-all: unknown URLs get a branded 404 instead of an empty <main>. */}
+          <Route path="*" element={<NotFound />} />
 
           </Routes>
         </Suspense>

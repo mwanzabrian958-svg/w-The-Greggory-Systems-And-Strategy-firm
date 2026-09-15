@@ -20,6 +20,9 @@
     "backup:cloud-to-local": "node scripts/backup-cloud-to-local.js",
     "backup:schedule": "node scripts/setup-backup-schedule.js",
     "db:whatsapp": "node scripts/setup-whatsapp-verification.js",
+    "test": "node scripts/verify-features.js",
+    "test:env": "node scripts/validate-env.js",
+    "prepush": "node scripts/validate-env.js",
     "start": "node server.js",
     "start:cloud": "node scripts/import-if-empty.js && node server.js",
     "server": "nodemon server.js"
