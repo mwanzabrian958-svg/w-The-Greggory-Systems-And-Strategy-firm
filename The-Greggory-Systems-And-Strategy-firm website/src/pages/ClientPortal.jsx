@@ -500,6 +500,27 @@ const ClientPortal = () => {
     }
   };
 
+  // System documents (the GSSF registration agreement) are streamed by the
+  // client reports endpoint — fetch as a blob so the browser saves the file.
+  const handleDownloadSystemDoc = async (doc) => {
+    if (!doc?.downloadPath) return;
+    try {
+      const res = await authFetch(getApiUrl(doc.downloadPath));
+      if (!res.ok) throw new Error("Document unavailable");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.name || "document";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Document download failed:", err);
+    }
+  };
+
   const handleDownloadInvoicePdf = async (inv) => {
     try {
       const res = await authFetch(getApiUrl(`/api/users/my-invoices/${inv.id}/pdf`));
@@ -1003,6 +1024,15 @@ const ClientPortal = () => {
                     </div>
                   </div>
                   {d.date && <span className="hidden sm:inline text-[7px] text-slate-600 dark:text-slate-300 font-mono shrink-0">{new Date(d.date).toLocaleDateString()}</span>}
+                  {d.downloadPath && (
+                    <button
+                      onClick={() => handleDownloadSystemDoc(d)}
+                      title="Download document"
+                      className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-gold-600 hover:bg-gold-500 hover:text-white transition-all shrink-0"
+                    >
+                      <Download size={11} />
+                    </button>
+                  )}
                 </div>
               )) : (
                 <div className="py-14 text-center opacity-30"><Folder size={24} className="mx-auto mb-2" /><p className="text-[9px] uppercase font-bold">Vault empty</p><p className="text-[8px] text-slate-600 dark:text-slate-300 mt-1">Contracts and deliverables appear here as your firm shares them.</p></div>

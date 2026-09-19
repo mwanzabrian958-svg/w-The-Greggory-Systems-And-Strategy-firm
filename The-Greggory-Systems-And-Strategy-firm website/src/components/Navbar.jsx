@@ -53,8 +53,11 @@ const Navbar = () => {
     }] : []),
   ]
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    // Fire the backend invalidation + local cleanup, then navigate.
+    // We don't await so the UI transitions immediately; any backend
+    // failure is logged but doesn't block the redirect.
+    logout().catch(err => console.warn('[Navbar] logout error:', err))
     navigate('/')
   }
 

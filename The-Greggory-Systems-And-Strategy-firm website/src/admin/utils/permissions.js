@@ -107,7 +107,8 @@ const NAV_PERMISSION_MAP = {
   '/admin/personnel': 'VIEW_CONTENT',
   '/admin/billing': 'VIEW_FINANCIAL',
   '/admin/reports': 'VIEW_REPORTS',
-  '/admin/settings': 'VIEW_SETTINGS'
+  '/admin/settings': 'VIEW_SETTINGS',
+  '/admin/notifications': 'VIEW_SETTINGS'
 };
 
 function cachedRoleLevel(user) {
@@ -140,7 +141,8 @@ export function getNavigationItems(user) {
     { path: '/admin/personnel', label: 'Personnel Management', icon: 'Users' },
     { path: '/admin/billing', label: 'Financial Hub', icon: 'Calculator' },
     { path: '/admin/reports', label: 'Reports', icon: 'FileText' },
-    { path: '/admin/settings', label: 'Settings', icon: 'ShieldCheck' }
+    { path: '/admin/settings', label: 'Settings', icon: 'ShieldCheck' },
+    { path: '/admin/notifications', label: 'Push Notifications', icon: 'Bell' }
   ];
 
   if (!isAdmin(user)) return [{ path: '/admin', label: 'Dashboard', icon: 'Home' }];

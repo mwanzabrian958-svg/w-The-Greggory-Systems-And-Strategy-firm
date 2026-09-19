@@ -60,6 +60,18 @@ function check(name, cond, extra) {
   const ud = J(ul.body);
   check("user login 200 + token (no email-token gating)", ul.status === 200 && !!ud?.token, ul.body.substring(0, 80));
 
+  // Clean up the throw-away admin/developer/client accounts created above.
+  // Without this every run left residue in BOTH databases (this script used to
+  // have no cleanup at all).
+  console.log("\n--- CLEANUP ---");
+  try {
+    const { purgeTestData } = require("./purge-test-data");
+    const summary = await purgeTestData({ log: console.log });
+    console.log(`   removed ${summary.deleted} test row(s)`);
+  } catch (e) {
+    console.warn("   cleanup skipped:", e.message);
+  }
+
   console.log("\n==================================================");
   console.log("AUTH VERIFICATION: " + pass + " passed, " + fail + " failed, " + (pass + fail) + " total");
   if (failures.length) console.log("FAILURES: " + failures.join(" | "));

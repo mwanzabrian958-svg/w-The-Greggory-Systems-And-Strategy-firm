@@ -246,7 +246,7 @@ const ClientReports = () => {
                      rel="noopener noreferrer"
                      className="p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-teal-600 text-white rounded-lg transition-all flex items-center gap-2 group/dl"
                    >
-                     <span className="text-[7px] font-black uppercase hidden sm:block text-slate-500 dark:text-slate-400 group-hover/dl:text-white">PDF Spec</span>
+                     <span className="text-[7px] font-black uppercase hidden sm:block text-slate-500 dark:text-slate-400 group-hover/dl:text-white">{String(report.file_type || "").includes("pdf") ? "PDF" : "DOCX"}</span>
                      <Download size={14} className="text-teal-600 dark:text-teal-400 group-hover/dl:text-white" />
                    </a>
                 </div>

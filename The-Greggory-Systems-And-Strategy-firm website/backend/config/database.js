@@ -20,8 +20,18 @@ const cluster = mysql.createPoolCluster({
   defaultSelector: 'ORDER', // always prefer endpoint #1 (local), then #2 (claude)
 });
 
+// Guard: skip endpoints with missing required credentials so the cluster
+// never builds an empty node list (which would make every query throw).
+// This replaces the old approach of re-exporting server.js's mainDb (which
+// created a circular dependency: server.js → users.js → database.js → server.js
+// and returned an empty module object, breaking db.promise() for all consumers).
 endpoints().forEach((cfg, i) => {
   const { label, ...opts } = cfg;
+  const missing = ['host', 'user', 'password'].filter(k => !opts[k] && !(k in opts));
+  if (missing.length > 0) {
+    console.warn(`[DB CLUSTER] skipping endpoint ${label || i} — missing: ${missing.join(', ')}`);
+    return;
+  }
   cluster.add(`db-${label || i}`, {
     ...opts,
     waitForConnections: true,

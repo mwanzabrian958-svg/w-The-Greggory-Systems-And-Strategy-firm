@@ -67,31 +67,56 @@ const Login = () => {
 
       const userData = response.user || response;
 
-      // Store user information in auth context
+      // --- Normalize the login response into a stable shape ---
+      // The backend /users/login endpoint MUST return `{ token, id, email,
+      // display_name, first_name, last_name, has_photo, profilePhotoData }`.
+      // Older or alternative backends may nest those fields under
+      // `response.user`, embed `id` as `userId`, or omit optional fields —
+      // this block tolerates all of those shapes so a successful login
+      // always produces a usable auth session instead of silently storing
+      // a null token (which makes PrivateRoute bounce the user back to
+      // /login with "Access Restricted").
+      const token =
+        response.token ||
+        userData.token ||
+        (typeof response.access_token === 'string' ? response.access_token : null) ||
+        null;
+
+      if (!token) {
+        // The request reached the backend and returned 200-ish, but the
+        // response had no recognizable token. Treat it like a login failure
+        // rather than persisting a hollow session.
+        throw new Error('Login succeeded but no auth token was returned');
+      }
+
       const userInfo = {
         role: 'user',
-        name: userData.display_name || (userData.first_name && userData.last_name
-          ? `${userData.first_name} ${userData.last_name}`
-          : formData.email.split('@')[0]),
+        name:
+          userData.display_name ||
+          (userData.first_name && userData.last_name
+            ? `${userData.first_name} ${userData.last_name}`
+            : formData.email.split('@')[0]),
         email: userData.email || formData.email,
         userId: userData.id || userData.userId,
         id: userData.id || userData.userId,
         first_name: userData.first_name,
         last_name: userData.last_name,
         display_name: userData.display_name,
-        token: response.token || userData.token || null,
+        token,
         has_photo: !!userData.has_photo,
         profilePhotoData: userData.profilePhotoData || null,
         profile_image_id: userData.profile_image_id || null,
-        whatsapp_verified: true
+        whatsapp_verified: true,
       };
 
       // Update auth context with user info
       login(userInfo);
 
-      // Redirect to home page after login
-      const from = location.state?.from || '/'
-      navigate(from, { replace: true })
+      // Redirect after login: if we came from a protected page, go back there;
+      // otherwise drop the client into the portal instead of the home page.
+      const from = location.state?.from;
+      const defaultPath = '/client-portal';
+      navigate(from || defaultPath, { replace: true })
     } catch (err) {
       console.error('Login failed:', err)
       setIsLoading(false)

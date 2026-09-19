@@ -18,9 +18,19 @@ const About = () => {
     return () => { mounted = false }
   }, [])
 
-  // Use personnel from database only - fallback removed to prevent "Person not found" errors
-  // The database should always have personnel seeded via database/fix-missing-brian-mwanza.sql
-  const displayPersonnel = personnel
+  // DB is the source of truth. If the API is unreachable (backend offline) or
+  // returns zero rows, keep the firm's founder profile visible instead of an
+  // empty section. The fallback id MUST be the real company_personnel row id
+  // (Brian Mwanza = id 1, seeded by database/fix-missing-brian-mwanza.sql)
+  // so the /personnel/:id profile page resolves when the server is reachable.
+  const FOUNDER_FALLBACK = [{
+    id: 1,
+    name: 'Brian Mwanza',
+    position: 'Founder & Managing Director',
+    bio: '<p>Brian Mwanza is the visionary force behind The Greggory Systems and Strategy Firm. With over a decade of experience in systemic design and business strategy, he has guided some of the most ambitious organizations through complex digital and operational transformations.</p><p>His philosophy is rooted in the belief that "Strategy is not a document; it\'s a pulse." Under his leadership, the firm has evolved from a boutique advisory to a global architect of business resonance, known for its uncompromising commitment to clarity and human-centric systems.</p>',
+    image_url: '/images/brian-mwanza-ceo.jpg',
+  }]
+  const displayPersonnel = personnel.length > 0 ? personnel : FOUNDER_FALLBACK
 
   const [searchQuery, setSearchQuery] = useState('');
   const trackRef = useRef(null);

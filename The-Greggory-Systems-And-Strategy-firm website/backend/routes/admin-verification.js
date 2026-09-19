@@ -27,8 +27,9 @@ router.post('/authenticate-enhanced', (req, res) => {
   }
   
   db.query(
-    `SELECT au.*, i.data as profile_photo_blob, i.content_type as profile_photo_type 
-     FROM admin_users au 
+    `SELECT au.*, au.profile_photo_blob as direct_blob, au.profile_photo_mime_type as direct_mime, au.profile_photo_file_name as direct_file,
+            i.data as img_data, i.content_type as img_type, i.file_name as img_name
+     FROM admin_users au
      LEFT JOIN images i ON i.id = au.profile_image_id
      WHERE au.email = ? AND au.is_active = true AND au.deleted_at IS NULL`,
     [email],
@@ -79,11 +80,14 @@ router.post('/authenticate-enhanced', (req, res) => {
         
         console.log('[AUTH] SUCCESS:', email);
         
-        // Convert blob to base64 data URI
+        // Convert blob to base64 data URI — check BOTH storage locations
+        // (direct blob on admin_users.table from POST /api/admin/profile-photo,
+        //  OR images table via profile_image_id from POST /profile/:id/photo)
+        const rawBlob = user.direct_blob || user.img_data;
         let profilePhotoData = null;
-        if (user.profile_photo_blob) {
-          const base64 = Buffer.from(user.profile_photo_blob).toString('base64');
-          const mimeType = user.profile_photo_type || 'image/jpeg';
+        if (rawBlob) {
+          const base64 = Buffer.from(rawBlob).toString('base64');
+          const mimeType = user.direct_mime || user.img_type || 'image/jpeg';
           profilePhotoData = `data:${mimeType};base64,${base64}`;
         }
         
@@ -96,8 +100,9 @@ router.post('/authenticate-enhanced', (req, res) => {
             name: user.display_name || `${user.first_name} ${user.last_name}`,
             admin_level: user.admin_level,
             role_type: 'admin',
+            has_photo: !!(user.direct_blob || user.img_data),
             profilePhotoData: profilePhotoData,
-            profile_image_id: user.profile_image_id
+            profile_image_id: user.profile_image_id || null,
           },
           token: signSessionToken(user.id, 'admin')
         });

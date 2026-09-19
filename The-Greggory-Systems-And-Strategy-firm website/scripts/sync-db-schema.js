@@ -77,6 +77,7 @@ async function resolveEndpoint() {
       console.log(`[sync] endpoint ${label || opts.host}:${opts.port} unreachable (${e.code || e.message})`);
     }
   }
+
   throw lastErr || new Error("No MySQL endpoint reachable");
 }
 
@@ -153,6 +154,32 @@ async function capture() {
     tables[name] = { create: ddl, columns };
   }
   await conn.end();
+  // Code-required users columns (auth_token + last_login_at/ip). Mirror the
+  // same list used by backend/config/database.js and sync-db-schema.js's
+  // apply() step below so register/login can store/verify persistent tokens
+  // even when the manifest source is stale or the cloud users table was
+  // created before these columns existed.
+  const USERS_CODE_COLUMNS = {
+    name: "users",
+    columns: [
+      { name: "auth_token", def: "varchar(255)" },
+      { name: "last_login_at", def: "timestamp NULL" },
+      { name: "last_login_ip", def: "varchar(45)" },
+      { name: "primary_role", def: "varchar(50)" },
+      { name: "phone_number", def: "varchar(20)" },
+      { name: "profile_photo_blob", def: "longblob" },
+      { name: "profile_photo_mime_type", def: "varchar(100)" },
+      { name: "profile_photo_file_name", def: "varchar(255)" },
+    ],
+  };
+  if (USERS_CODE_COLUMNS.columns) {
+    const existingCols = new Set((tables["users"] && tables["users"].columns || []).map((c) => c.name));
+    for (const col of USERS_CODE_COLUMNS.columns) {
+      if (!existingCols.has(col.name)) {
+        (tables["users"] = tables["users"] || { create: null, columns: [] }).columns.push(col);
+      }
+    }
+  }
   const manifest = {
     generatedAt: new Date().toISOString(),
     source: "local XAMPP (phpMyAdmin) database",

@@ -16,6 +16,8 @@ const authController = require('../controllers/authController');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
 const { createNotification } = require('../utils/notificationHelper');
 const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -366,63 +368,151 @@ router.put('/notifications/read-all/me', authenticateUser, async (req, res) => {
   }
 });
 
-// Client Reports — degrade gracefully if project_reports table is missing
-router.get('/my-reports', authenticateUser, async (req, res) => {
-  const userId = req.userId;
+// ── System Registration Documents (static, always available) ────────────────
+// These files ship with the app in public/documents, so they are listed for
+// EVERY authenticated client — independent of whether the optional
+// project_reports table exists or is in sync. They are streamed by
+// GET /my-reports/:id/download below. Ids are negative so they can never
+// collide with real project_reports rows.
+const SYSTEM_DOCUMENTS_DIR = path.join(__dirname, '..', '..', 'public', 'documents');
+
+const SYSTEM_REPORTS = [
+  {
+    id: -101,
+    title: 'GSSF Client Registration Agreement (PDF)',
+    summary: 'Official registration agreement for The Greggory Firm services.',
+    file_type: 'application/pdf',
+    file_name: 'GSSF_Client_Registration_Agreement.pdf',
+    file_size: 243570, // Actual file size in bytes
+    report_date: new Date().toISOString().split('T')[0],
+    status: 'final',
+    project_name: 'SYSTEM'
+  },
+  {
+    id: -102,
+    title: 'GSSF Client Registration Agreement (MS Word)',
+    summary: 'Editable registration agreement for The Greggory Firm services.',
+    file_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    file_name: 'GSSF_Client_Registration_Agreement.docx',
+    file_size: 18548, // Actual file size in bytes
+    report_date: new Date().toISOString().split('T')[0],
+    status: 'final',
+    project_name: 'SYSTEM'
+  }
+];
+
+/** Resolve a static system document by its negative id. */
+const findSystemReport = (id) =>
+  SYSTEM_REPORTS.find((r) => String(r.id) === String(id)) || null;
+
+/**
+ * Read a system registration document from the database — stored in
+ * client_documents under category 'SYSTEM_REGISTRATION' by
+ * scripts/seed-system-documents.js. Returns null when the table/column/row is
+ * unavailable so the caller can fall back to the copy shipped on disk.
+ */
+async function fetchSystemDocumentFromDb(doc) {
   try {
-    const [dbReports] = await db.promise().query(`
+    const [rows] = await db.promise().query(
+      `SELECT file_data, file_type, file_name
+         FROM client_documents
+        WHERE category = 'SYSTEM_REGISTRATION' AND document_name = ?
+          AND deleted_at IS NULL
+        ORDER BY id ASC
+        LIMIT 1`,
+      [doc.title],
+    );
+    const row = rows[0];
+    if (!row || !row.file_data) return null;
+    return row;
+  } catch (error) {
+    console.error('[CLIENT REPORTS] system document DB lookup failed:', error.code || '', error.message);
+    return null;
+  }
+}
+
+/**
+ * Fetch the client's OWN finalized project reports.
+ *
+ * project_reports exists in two shapes: the full schema shipped in
+ * database/*.sql has NO `deleted_at` column, while the table auto-created at
+ * boot by server.js DOES. Selecting the missing column throws
+ * ER_BAD_FIELD_ERROR, which previously wiped the entire Documents panel — so
+ * we try the soft-delete-aware query first and remember which variant works.
+ */
+let projectReportsHasDeletedAt = null; // null = unknown, true/false = probed
+
+async function fetchClientProjectReports(userId) {
+  const base = `
       SELECT pr.id, pr.title, pr.summary, pr.file_type, pr.file_size, pr.report_date, pr.status, up.project_name
       FROM project_reports pr
       JOIN user_projects up ON pr.project_id = up.id
-      WHERE up.user_id = ? AND pr.status = 'final' AND pr.deleted_at IS NULL
-      ORDER BY pr.report_date DESC
-    `, [userId]);
+      WHERE up.user_id = ? AND pr.status = 'final'`;
+  const withSoftDelete = `${base} AND pr.deleted_at IS NULL
+      ORDER BY pr.report_date DESC`;
+  const withoutSoftDelete = `${base}
+      ORDER BY pr.report_date DESC`;
+  const run = (sql) => db.promise().query(sql, [userId]);
 
-    // System Registration Documents (Static)
-    const systemDocs = [
-      {
-        id: -101,
-        title: 'GSSF Client Registration Agreement (PDF)',
-        summary: 'Official registration agreement for The Greggory Firm services.',
-        file_type: 'application/pdf',
-        file_size: 245760, // Approx size
-        report_date: new Date().toISOString().split('T')[0],
-        status: 'final',
-        project_name: 'SYSTEM'
-      },
-      {
-        id: -102,
-        title: 'GSSF Client Registration Agreement (MS Word)',
-        summary: 'Editable registration agreement for The Greggory Firm services.',
-        file_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        file_size: 45056, // Approx size
-        report_date: new Date().toISOString().split('T')[0],
-        status: 'final',
-        project_name: 'SYSTEM'
-      }
-    ];
-
-    res.json({ success: true, reports: [...systemDocs, ...dbReports] });
-  } catch (error) {
-    // ...
-    // Table may not exist yet (pending sync) — return empty section instead of 500
-    console.error('[CLIENT REPORTS] my-reports error:', error.code || '', error.message);
-    res.json({ success: true, reports: [] });
+  if (projectReportsHasDeletedAt === false) {
+    const [rows] = await run(withoutSoftDelete);
+    return rows;
   }
+
+  try {
+    const [rows] = await run(withSoftDelete);
+    projectReportsHasDeletedAt = true;
+    return rows;
+  } catch (error) {
+    // 1054 = ER_BAD_FIELD_ERROR → this schema has no deleted_at column.
+    if (error && (error.code === 'ER_BAD_FIELD_ERROR' || error.errno === 1054)) {
+      projectReportsHasDeletedAt = false;
+      const [rows] = await run(withoutSoftDelete);
+      return rows;
+    }
+    throw error;
+  }
+}
+
+// Client Reports — the static system registration documents are ALWAYS
+// returned (they must never vanish because the optional project_reports table
+// is missing or out of sync); the client's own DB reports are appended when
+// that table is reachable.
+router.get('/my-reports', authenticateUser, async (req, res) => {
+  const userId = req.userId;
+  let dbReports = [];
+  try {
+    dbReports = await fetchClientProjectReports(userId);
+  } catch (error) {
+    // Degrade gracefully — table may not exist yet (pending sync).
+    console.error('[CLIENT REPORTS] project reports unavailable:', error.code || '', error.message);
+  }
+  res.json({ success: true, reports: [...SYSTEM_REPORTS, ...dbReports] });
 });
 
 router.get('/my-reports/:id/download', authenticateUser, async (req, res) => {
   const userId = req.userId;
   const reportId = req.params.id;
 
-  // Handle System Documents
-  if (reportId == '-101') {
-    const filePath = path.join(__dirname, '../../public/documents/GSSF_Client_Registration_Agreement.pdf');
-    return res.download(filePath, 'GSSF_Client_Registration_Agreement.pdf');
-  }
-  if (reportId == '-102') {
-    const filePath = path.join(__dirname, '../../public/documents/GSSF_Client_Registration_Agreement.docx');
-    return res.download(filePath, 'GSSF_Client_Registration_Agreement.docx');
+  // System registration documents — served from the database copy
+  // (client_documents) when present, otherwise from the file shipped with the
+  // app in public/documents.
+  const systemDoc = findSystemReport(reportId);
+  if (systemDoc) {
+    const dbDoc = await fetchSystemDocumentFromDb(systemDoc);
+    if (dbDoc) {
+      const name = dbDoc.file_name || systemDoc.file_name;
+      res.setHeader('Content-Type', dbDoc.file_type || systemDoc.file_type);
+      res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+      return res.send(dbDoc.file_data);
+    }
+
+    const filePath = path.join(SYSTEM_DOCUMENTS_DIR, systemDoc.file_name);
+    if (!fs.existsSync(filePath)) {
+      console.error('[CLIENT REPORTS] system document missing on disk:', filePath);
+      return res.status(404).json({ success: false, message: 'System document not available' });
+    }
+    return res.download(filePath, systemDoc.file_name);
   }
 
   try {
@@ -434,8 +524,20 @@ router.get('/my-reports/:id/download', authenticateUser, async (req, res) => {
     `, [reportId, userId]);
     if (reports.length === 0) return res.status(403).json({ success: false });
     const report = reports[0];
-    res.setHeader('Content-Type', report.file_type);
-    res.setHeader('Content-Disposition', `attachment; filename="${report.title}.pdf"`);
+    if (!report.file_data) {
+      return res.status(404).json({ success: false, message: 'Report file not available' });
+    }
+    // Derive the download extension from the stored MIME type (reports are not
+    // always PDFs) so browsers save the file with a usable name.
+    const type = String(report.file_type || '');
+    const ext = type.includes('pdf') ? 'pdf'
+      : type.includes('word') || type.includes('officedocument') ? 'docx'
+      : type.includes('excel') || type.includes('spreadsheet') ? 'xlsx'
+      : type.includes('csv') ? 'csv'
+      : 'bin';
+    const safeTitle = String(report.title || 'report').replace(/[\\/:*?"<>|]/g, '_');
+    res.setHeader('Content-Type', type || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.${ext}"`);
     res.send(report.file_data);
   } catch (error) {
     console.error('[CLIENT REPORTS] download error:', error.code || '', error.message);
@@ -473,6 +575,25 @@ router.get('/my-invoices/:id/pdf', authenticateUser, async (req, res) => {
     res.status(404).json({ success: false, message: 'PDF document not generated yet' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Logout — invalidate the current token
+router.post('/logout', authenticateUser, async (req, res) => {
+  try {
+    // clientAuth already validated the token and set req.userId.
+    // Invalidate by clearing the auth_token on the users table.
+    const [result] = await db.promise().query(
+      `UPDATE users SET auth_token = NULL, updated_at = NOW() WHERE id = ? AND auth_token IS NOT NULL`,
+      [req.userId]
+    );
+
+    // If affectedRows is 0, the token was already cleared (e.g. previous logout).
+    // Still return success — the session is gone either way.
+    res.json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('[LOGOUT] Error:', error);
+    res.status(500).json({ success: false, message: 'Logout failed' });
   }
 });
 

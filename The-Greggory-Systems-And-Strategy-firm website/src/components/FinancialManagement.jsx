@@ -477,6 +477,12 @@ const FinancialManagement = ({
 
   const handleSavePeriod = async () => {
     const isEdit = Boolean(editingPeriod);
+    if (!periodForm.project_id) {
+      window.alert(
+        "Select a project first — budget periods belong to a project.",
+      );
+      return;
+    }
     try {
       const response = await fetch(
         isEdit
@@ -3409,6 +3415,30 @@ const FinancialManagement = ({
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                     />
                   </div>
+                  {(projects || []).length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Project *
+                      </label>
+                      <select
+                        value={periodForm.project_id}
+                        onChange={(e) =>
+                          setPeriodForm({
+                            ...periodForm,
+                            project_id: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="">— Select a project —</option>
+                        {(projects || []).map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name || p.project_name || `Project #${p.id}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">

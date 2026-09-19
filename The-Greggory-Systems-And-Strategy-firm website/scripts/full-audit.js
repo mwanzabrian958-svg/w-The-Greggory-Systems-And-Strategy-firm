@@ -192,21 +192,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function cleanupAll() {
   try {
-    const db = require("../backend/config/database");
-    for (const em of trash.emails) {
-      await db.promise().query("DELETE FROM admin_users WHERE email = ?", [em]).catch(() => {});
-      await db.promise().query("DELETE FROM users WHERE email = ?", [em]).catch(() => {});
-    }
-    if (trash.invoiceId) await db.promise().query("DELETE FROM invoices WHERE id = ?", [trash.invoiceId]).catch(() => {});
-    if (trash.templateId) {
-      await db.promise().query("DELETE FROM team_template_members WHERE template_id = ?", [trash.templateId]).catch(() => {});
-      await db.promise().query("DELETE FROM team_templates WHERE id = ?", [trash.templateId]).catch(() => {});
-    }
-    await db.promise().query("DELETE FROM mpesa_transactions WHERE account_reference LIKE 'AUD%'").catch(() => {});
-    await db.promise().query("DELETE FROM accounting_entries WHERE description LIKE '%AUDIT%'").catch(() => {});
-    await db.promise().query("DELETE FROM user_projects WHERE project_name LIKE 'Audit Project %'").catch(() => {});
-    await db.promise().query("DELETE FROM user_feedback WHERE comment LIKE 'audit %'").catch(() => {});
-    console.log("[CLEANUP] test data removed");
+    // Shared purger — runs against EVERY configured endpoint. The old version
+    // cleaned through a single pool, so anything written via mainDb (the cloud
+    // endpoint) survived every audit run and slowly polluted the live DB.
+    const { purgeTestData } = require("./purge-test-data");
+    const summary = await purgeTestData({ log: () => {} });
+    console.log(
+      `[CLEANUP] test data removed (${summary.deleted} row(s) across ${summary.perEndpoint.length} endpoint(s))`,
+    );
   } catch (e) {
     console.warn("[CLEANUP] partial:", e.message);
   }

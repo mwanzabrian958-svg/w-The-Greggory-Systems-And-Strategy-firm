@@ -1,7 +1,25 @@
 // Live end-to-end verification: every API call the rebuilt/new pages make,
 // exercised exactly the way the frontend calls it (with admin token),
 // including create -> read-back -> delete round-trips.
+//
+// Default target is localhost:3000 so the script still works from a dev
+// machine with the primary server running locally. To verify the deployed
+// service instead, set TARGET_ORIGIN to the live base URL (with protocol,
+// no trailing slash), e.g.:
+//   node scripts/verify-features.js
+// or
+//   TARGET_ORIGIN=https://your-live-origin.example.com node scripts/verify-features.js
 const http = require("http");
+
+const DEFAULT_TARGET = "http://127.0.0.1:3000";
+const TARGET_ORIGIN = (process.env.TARGET_ORIGIN || "").trim() || DEFAULT_TARGET;
+if (!/^https?:\/\//i.test(TARGET_ORIGIN)) {
+  throw new Error(
+    "TARGET_ORIGIN must be a full base URL (e.g. http://127.0.0.1:3000 or " +
+      "https://your-live-origin.example.com). Set the env var or edit DEFAULT_TARGET."
+  );
+}
+const targetUrl = new URL(TARGET_ORIGIN);
 
 function api(path, method, body, token) {
   return new Promise((resolve, reject) => {
@@ -9,10 +27,31 @@ function api(path, method, body, token) {
     const headers = { "Content-Type": "application/json" };
     if (data) headers["Content-Length"] = Buffer.byteLength(data);
     if (token) headers["Authorization"] = "Bearer " + token;
-    const req = http.request({ hostname: "127.0.0.1", port: 3000, path, method, headers }, (res) => {
-      let b = ""; res.on("data", (c) => (b += c)); res.on("end", () => resolve({ status: res.statusCode, body: b }));
-    });
-    req.on("error", reject); if (data) req.write(data); req.end();
+
+    const requestModule = targetUrl.protocol === "https:" ? require("https") : http;
+    const req = requestModule.request(
+      {
+        hostname: targetUrl.hostname,
+        port: targetUrl.port || (targetUrl.protocol === "https:" ? 443 : 80),
+        path,
+        method,
+        headers,
+      },
+      (res) => {
+        let b = "";
+        res.on("data", (c) => (b += c));
+        res.on("end", () => resolve({ status: res.statusCode, body: b }));
+      }
+    );
+    req.on("error", (err) =>
+      reject(
+        new Error(
+          `request to ${TARGET_ORIGIN}${path} failed: ${err.code || err.message}`
+        )
+      )
+    );
+    if (data) req.write(data);
+    req.end();
   });
 }
 const J = (b) => { try { return JSON.parse(b); } catch { return null; } };
@@ -120,6 +159,76 @@ function check(name, cond, extra) {
   check("user-projects list (status chart)", Array.isArray(projects));
   check("dashboard budget-overview (AdvancedDashboard)", (await api("/api/admin/budget-overview", "GET", null, tok)).status === 200);
 
+  console.log("--- ACCOUNTING CATEGORIES (FinancialManagement.jsx -> Categories tab) ---");
+  const catName = "VerifyCat " + stamp;
+  r = await api("/api/accounting/categories", "POST", { name: catName, category_type: "expense", default_budget_percentage: "10", display_order: "99", color_code: "#4c6a4d", is_active: true }, tok);
+  check("create category 201", r.status === 201, (r.body || "").substring(0, 90));
+  r = await api("/api/accounting/categories", "GET", null, tok);
+  let cat = (J(r.body)?.categories || []).find(c => c.name === catName);
+  check("category persisted & listed", !!cat);
+  if (cat) {
+    r = await api("/api/accounting/categories/" + cat.id, "PUT", { name: catName + " U", category_type: "both", default_budget_percentage: "20", display_order: "98", color_code: "#4c6a4d", is_active: true }, tok);
+    check("update category 200", r.status === 200, (r.body || "").substring(0, 80));
+    r = await api("/api/accounting/categories", "GET", null, tok);
+    check("category update persisted", (J(r.body)?.categories || []).some(c => c.name === catName + " U"));
+    // UNIQUE(name) — duplicate must be rejected cleanly, not crash the process
+    r = await api("/api/accounting/categories", "POST", { name: catName + " U", category_type: "expense" }, tok);
+    check("duplicate category name rejected", r.status >= 400 && r.status < 600, "status=" + r.status);
+    r = await api("/api/accounting/categories/" + cat.id, "DELETE", null, tok);
+    check("archive category 200", r.status === 200);
+    r = await api("/api/accounting/categories", "GET", null, tok);
+    check("archived category gone from active list", !(J(r.body)?.categories || []).some(c => c.id === cat.id));
+  }
+
+  console.log("--- ACCOUNTING PERIODS (FinancialManagement.jsx -> Periods tab) ---");
+  // NOTE: compute the test project id locally — `pid` is declared later in the
+  // PROJECT DETAIL section (TDZ), and the General/Unassigned fallback project
+  // created by the invoice resolver is exactly what we want to attach to.
+  const testPid = projects[0]?.id || projects[0]?.project_id;
+  if (projects.length > 0 && testPid) {
+    const perName = "VerifyPeriod " + stamp;
+    r = await api("/api/accounting/periods", "POST", { project_id: testPid, period_name: perName, period_type: "monthly", start_date: "2026-01-01", end_date: "2026-01-31", total_budget: "10000", allocated_budget: "5000", status: "planning", locked: false }, tok);
+    check("create period 201", r.status === 201, (r.body || "").substring(0, 90));
+    r = await api("/api/accounting/periods", "GET", null, tok);
+    let per = (J(r.body)?.periods || []).find(p => p.period_name === perName);
+    check("period persisted & listed", !!per);
+    if (per) {
+      r = await api("/api/accounting/periods/" + per.id, "PUT", { project_id: testPid, period_name: perName + " U", period_type: "quarterly", start_date: "2026-01-01", end_date: "2026-03-31", total_budget: "20000", allocated_budget: "8000", status: "active", locked: false }, tok);
+      check("update period 200", r.status === 200, (r.body || "").substring(0, 80));
+      r = await api("/api/accounting/periods/" + per.id, "DELETE", null, tok);
+      check("delete unlocked period 200", r.status === 200, (r.body || "").substring(0, 80));
+    }
+    const lockName = "VerifyLocked " + stamp;
+    r = await api("/api/accounting/periods", "POST", { project_id: testPid, period_name: lockName, period_type: "monthly", start_date: "2026-02-01", end_date: "2026-02-28", locked: true }, tok);
+    const lockId = J(r.body)?.id;
+    check("create locked period 201", r.status === 201, (r.body || "").substring(0, 80));
+    if (lockId) {
+      r = await api("/api/accounting/periods/" + lockId, "DELETE", null, tok);
+      check("locked period delete rejected 409", r.status === 409, "status=" + r.status + " " + (r.body || "").substring(0, 60));
+      await api("/api/accounting/periods/" + lockId, "PUT", { project_id: testPid, period_name: lockName, period_type: "monthly", start_date: "2026-02-01", end_date: "2026-02-28", locked: false }, tok);
+      r = await api("/api/accounting/periods/" + lockId, "DELETE", null, tok);
+      check("cleanup: unlock then delete period", r.status === 200);
+    }
+    r = await api("/api/accounting/periods", "POST", { project_id: testPid, period_name: "Bad " + stamp, period_type: "monthly", start_date: "2026-03-10", end_date: "2026-03-01" }, tok);
+    check("end-before-start rejected 400", r.status === 400, "status=" + r.status);
+    r = await api("/api/accounting/periods", "POST", { period_name: "NoProject " + stamp, start_date: "2026-01-01", end_date: "2026-01-31" }, tok);
+    check("missing project_id rejected 400", r.status === 400, "status=" + r.status);
+  } else check("period tests (skipped - no projects exist)", true);
+
+  console.log("--- P&L SUMMARY + SAVED REPORTS (Reports + Dashboard tabs) ---");
+  r = await api("/api/accounting/reports/summary", "GET", null, tok);
+  const sum = J(r.body)?.summary;
+  check("summary 200 + income/expenses/net_profit", r.status === 200 && sum && "total_income" in sum && "total_expenses" in sum && "net_profit" in sum, (r.body || "").substring(0, 80));
+  check("summary has by_category/by_month/by_status arrays", Array.isArray(J(r.body)?.by_category) && Array.isArray(J(r.body)?.by_month) && Array.isArray(J(r.body)?.by_status));
+  r = await api("/api/accounting/reports/summary?start_date=2020-01-01&end_date=2020-12-31", "GET", null, tok);
+  check("summary date-range filter (assumes no 2020 entries)", r.status === 200 && Number(J(r.body)?.summary?.entry_count) === 0, "entry_count=" + J(r.body)?.summary?.entry_count);
+  if (projects.length > 0 && testPid) {
+    r = await api("/api/financial/reports", "POST", { project_id: testPid, report_type: "profit_loss", report_name: "Verify Report " + stamp, data: { verify: true }, summary: "smoke test report" }, tok);
+    check("save P&L report 201", r.status === 201, (r.body || "").substring(0, 90));
+    r = await api("/api/financial/reports", "GET", null, tok);
+    check("saved report listed", JSON.stringify(J(r.body)?.reports || []).includes("Verify Report " + stamp));
+  } else check("report save (skipped - no projects exist)", true);
+
   console.log("--- PERMISSIONS MANAGER ---");
   const perms = JSON.stringify(["VIEW_USERS", "VIEW_REPORTS"]);
   r = await api("/api/admin/settings", "PUT", { role_permissions_tester2: perms }, tok);
@@ -155,6 +264,15 @@ function check(name, cond, extra) {
   check("admin dashboard 200", (await api("/api/admin/dashboard", "GET", null, tok)).status === 200);
   check("pending approvals 200", (await api("/api/admin/pending-approvals", "GET", null, tok)).status === 200);
   check("team list 200", (await api("/api/admin/team", "GET", null, tok)).status === 200);
+
+  console.log("--- CLEANUP ---");
+  try {
+    const { purgeTestData } = require("./purge-test-data");
+    const summary = await purgeTestData({ log: console.log });
+    console.log(`   removed ${summary.deleted} test row(s)`);
+  } catch (e) {
+    console.warn("   cleanup skipped:", e.message);
+  }
 
   console.log("\n==================================================");
   console.log("FEATURE VERIFICATION: " + pass + " passed, " + fail + " failed, " + (pass + fail) + " total");

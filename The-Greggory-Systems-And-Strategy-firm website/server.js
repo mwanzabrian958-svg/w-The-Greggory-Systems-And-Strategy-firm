@@ -1,3 +1,17 @@
+"use strict";
+const path = require("path");
+
+// ── ENV MUST LOAD FIRST ─────────────────────────────────────────────────────
+// backend/config/database.js builds its MySQL pool cluster from DB_* env vars
+// AT REQUIRE TIME. Loading dotenv any later (it used to sit at ~line 55, after
+// the usersRouter import below) meant the cluster was created with ZERO
+// endpoints — every modular-route query then failed with POOL_NOEXIST, which
+// surfaced as "Validation engine error" on ALL admin + client logins.
+require("dotenv").config();
+
+const usersRouter = require("./backend/routes/users");
+
+
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -15,8 +29,6 @@ const {
   Finance, Company, BlogArticle, CaseStudy, Video,
   ContactForm, Transaction, ActivityLog
 } = models;
-const path = require("path");
-const fs = require("fs");
 const multer = require("multer");
 const crypto = require("crypto");
 
@@ -49,7 +61,7 @@ const { generatePDFContent, buildDocumentEmailHtml } = require("./server/lib/inv
 const { normalizeRate, rateToPct } = require("./server/lib/kraTax");
 // PDF co-generator for completion records
 const { generateCompletionPdf } = require("./server/services/pdfGenerator");
-require("dotenv").config();
+// (dotenv is loaded at the very top of this file — see "ENV MUST LOAD FIRST".)
 
 // Initialize Security & Auth Clients
 const redis = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
@@ -58,7 +70,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // ── AUTH MIDDLEWARE ──────────────────────────────────────────
 
-const authenticateUser = (req, res, next) => {
+const authenticateUser = async (req, res, next) => {
   const authHeader = req.header('authorization') || req.header('Authorization');
   let token = null;
 
@@ -87,6 +99,24 @@ const authenticateUser = (req, res, next) => {
 
     next();
   } catch (error) {
+    // Not a JWT — the modular users routes (backend/routes/users.js) issue
+    // persistent DB tokens ("gf_…") as the portal auth protocol. Accept those
+    // by direct lookup so /api/users/login sessions work on JWT-only routes.
+    if (token.startsWith("gf_")) {
+      try {
+        const [rows] = await db.query(
+          "SELECT id, email FROM users WHERE auth_token = ? AND deleted_at IS NULL LIMIT 1",
+          [token],
+        );
+        if (rows.length) {
+          req.authUser = { userId: rows[0].id, email: rows[0].email, role: "user" };
+          req.userId = rows[0].id;
+          return next();
+        }
+      } catch (dbErr) {
+        console.error("[AUTH] DB-token lookup failed:", dbErr.code || dbErr.message);
+      }
+    }
     console.error('[AUTH] Invalid token:', error.message);
     return res.status(401).json({ success: false, message: 'Invalid or expired authentication token' });
   }
@@ -501,7 +531,14 @@ function _withTimeout(promise, ms, label) {
 }
 
 // Run fn(pool) against the first endpoint that answers; fall through on error.
+// IMPORTANT: fail over ONLY on connectivity failures. Retrying on SQL errors
+// (ER_DUP_ENTRY, WARN_DATA_TRUNCATED, ER_NO_DEFAULT_FOR_FIELD…) would silently
+// re-run writes against the OTHER database and split data across endpoints.
 async function _dbRun(fn) {
+  const CONNECTIVITY = new Set([
+    "ECONNREFUSED", "ETIMEDOUT", "ECONNRESET", "EPIPE", "ENOTFOUND",
+    "PROTOCOL_CONNECTION_LOST", "POOL_NOOFFLINE",
+  ]);
   let lastErr;
   for (const { label, pool } of _dbPools) {
     try {
@@ -509,6 +546,7 @@ async function _dbRun(fn) {
     } catch (err) {
       lastErr = err;
       console.error(`[DATABASE] endpoint ${label} failed:`, err.code || err.message, "— failing over");
+      if (!CONNECTIVITY.has(err.code)) throw err; // SQL-level error: do NOT retry elsewhere
     }
   }
   throw lastErr;
@@ -520,7 +558,11 @@ const mainDb = {
     return _dbRun((pool) => pool.query(sql, values));
   },
   execute(sql, values) {
-    return _dbRun((pool) => pool.execute(sql, values));
+    // mysql2 prepared statements reject bound LIMIT/OFFSET on this MySQL
+    // (ER_WRONG_ARGUMENTS 1210), which broke every "LIMIT ?" list endpoint.
+    // Route execute() through query() — identical escaping/parameterization,
+    // no server-side prepare — so all call sites behave uniformly.
+    return _dbRun((pool) => pool.query(sql, values));
   },
   async getConnection() {
     let lastErr;
@@ -1451,6 +1493,33 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
       projectIds.length > 0 ? projectIds : [],
     );
 
+    // Global system documents (the GSSF client registration agreement) belong
+    // to EVERY client's vault — they are not tied to a project. Negative ids
+    // mark them as system rows; the file is stored in client_documents and
+    // streamed by /api/users/my-reports/:id/download (see backend/routes/users.js).
+    const systemDocumentRows = [
+      {
+        id: -101,
+        project_id: null,
+        name: "GSSF Client Registration Agreement (PDF)",
+        category: "legal",
+        project_name: "SYSTEM",
+        file_size: 243570,
+        version: "v1.0",
+        created_at: null,
+      },
+      {
+        id: -102,
+        project_id: null,
+        name: "GSSF Client Registration Agreement (MS Word)",
+        category: "legal",
+        project_name: "SYSTEM",
+        file_size: 18548,
+        version: "v1.0",
+        created_at: null,
+      },
+    ];
+
     const [feedbackRows] = await safeQuery(
       "feedback",
       `SELECT id, title, message, feedback_type, status, priority, created_at, admin_response, responded_at, rating
@@ -1494,7 +1563,7 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
       tasks: taskRows,
       activities: activityRows,
       invoices: invoiceRows,
-      documents: documentRows,
+      documents: [...systemDocumentRows, ...documentRows],
       feedback: feedbackRows,
       summary,
       teamMembers,
@@ -2434,6 +2503,14 @@ app.post("/api/accounting/periods", async (req, res) => {
       total_budget, allocated_budget, status, locked, description, notes,
     } = req.body || {};
 
+    // `project_id` is NOT NULL + FK in the schema — budget periods belong to a project
+    if (!project_id) {
+      return res.status(400).json({
+        success: false,
+        message: "project_id is required (budget periods belong to a project)",
+      });
+    }
+
     if (!period_name || !String(period_name).trim()) {
       return res
         .status(400)
@@ -2452,19 +2529,25 @@ app.post("/api/accounting/periods", async (req, res) => {
       });
     }
 
-    // `created_by` is NOT NULL in the schema — resolve an attribution user
+    // `created_by` is NOT NULL in the schema — resolve an attribution user.
+    // Schema-agnostic: the admin marker column differs between endpoints
+    // (users.role vs users.primary_role), so try variants and fall back to
+    // any user rather than failing the write.
     let createdBy = req.body?.created_by || null;
     if (!createdBy) {
-      const [uRows] = await db.execute(
+      for (const q of [
         "SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1",
-      );
-      createdBy = uRows[0]?.id || null;
-    }
-    if (!createdBy) {
-      const [anyRows] = await db.execute(
+        "SELECT id FROM users WHERE primary_role = 'admin' ORDER BY id ASC LIMIT 1",
         "SELECT id FROM users ORDER BY id ASC LIMIT 1",
-      );
-      createdBy = anyRows[0]?.id || null;
+      ]) {
+        try {
+          const [uRows] = await db.query(q);
+          createdBy = uRows[0]?.id || null;
+          if (createdBy) break;
+        } catch {
+          /* admin column missing on this endpoint — try the next variant */
+        }
+      }
     }
     if (!createdBy) {
       return res.status(400).json({
@@ -2516,6 +2599,14 @@ app.put("/api/accounting/periods/:id", async (req, res) => {
       project_id, period_name, period_type, start_date, end_date,
       total_budget, allocated_budget, status, locked, description, notes,
     } = req.body || {};
+
+    // `project_id` is NOT NULL + FK in the schema — budget periods belong to a project
+    if (!project_id) {
+      return res.status(400).json({
+        success: false,
+        message: "project_id is required (budget periods belong to a project)",
+      });
+    }
 
     if (!period_name || !String(period_name).trim()) {
       return res
@@ -2734,19 +2825,25 @@ app.post("/api/financial/reports", async (req, res) => {
         .json({ success: false, message: "project_id is required" });
     }
 
-    // `created_by` is NOT NULL in the schema — resolve an attribution user
+    // `created_by` is NOT NULL in the schema — resolve an attribution user.
+    // Schema-agnostic: the admin marker column differs between endpoints
+    // (users.role vs users.primary_role), so try variants and fall back to
+    // any user rather than failing the write.
     let createdBy = generated_by || req.body?.created_by || null;
     if (!createdBy) {
-      const [uRows] = await db.execute(
+      for (const q of [
         "SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1",
-      );
-      createdBy = uRows[0]?.id || null;
-    }
-    if (!createdBy) {
-      const [anyRows] = await db.execute(
+        "SELECT id FROM users WHERE primary_role = 'admin' ORDER BY id ASC LIMIT 1",
         "SELECT id FROM users ORDER BY id ASC LIMIT 1",
-      );
-      createdBy = anyRows[0]?.id || null;
+      ]) {
+        try {
+          const [uRows] = await db.query(q);
+          createdBy = uRows[0]?.id || null;
+          if (createdBy) break;
+        } catch {
+          /* admin column missing on this endpoint — try the next variant */
+        }
+      }
     }
     if (!createdBy) {
       return res.status(400).json({
@@ -2873,10 +2970,13 @@ app.get("/api/invoices", async (req, res) => {
       params.push(payment_status);
     }
 
-    query += " ORDER BY i.issue_date DESC, i.created_at DESC LIMIT ? OFFSET ?";
-    params.push(parseInt(limit), parseInt(offset));
+    // mysql2 prepared statements cannot bind LIMIT/OFFSET on this server
+    // (ER_WRONG_ARGUMENTS 1210) — inline sanitized integers instead.
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 500);
+    const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
+    query += ` ORDER BY i.issue_date DESC, i.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
-    const [invoices] = await db.execute(query, params);
+    const [invoices] = await db.query(query, params);
 
     res.json({
       success: true,
@@ -5875,6 +5975,13 @@ app.delete("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
   }
 });
 
+// Users Routes (modular backend/routes/users.js)
+try {
+  app.use("/api/users", usersRouter);
+  console.log("[SERVER] Users routes mounted at /api/users");
+} catch (err) {
+  console.error("[SERVER] Failed to mount Users routes:", err.message);
+}
 
 try {
   const smsRoutes = require("./backend/routes/sms");
@@ -5891,6 +5998,15 @@ try {
   console.log("[SERVER] WhatsApp routes loaded successfully");
 } catch (error) {
   console.error("[SERVER] Error loading WhatsApp routes:", error.message);
+}
+
+// FCM Routes (Firebase Cloud Messaging — pushes to Android app)
+try {
+  const fcmRoutes = require("./backend/routes/fcm");
+  app.use("/api/fcm", fcmRoutes);
+  console.log("[SERVER] FCM routes mounted at /api/fcm");
+} catch (error) {
+  console.error("[SERVER] Error loading FCM routes:", error.message);
 }
 
 // Health Check API — synchronous 200 for the platform healthcheck (Render).
@@ -6202,7 +6318,7 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
        } catch (nErr) { console.warn('[INVOICE] notification skipped:', nErr.message); }
      }
      res.status(201).json({ success: true, id: result.insertId });
-  } catch (error) { console.error('[POST /api/invoices]', error.code || '', error.message); res.status(500).json({ error: 'Failed', detail: error.message }); }
+  } catch (error) { console.error('[POST /api/invoices]', error.code || '', error.message, '\nSQL:', String(error.sql || '').substring(0, 500)); res.status(500).json({ error: 'Failed', detail: error.message }); }
 });
 
 // Accounting Entries Create

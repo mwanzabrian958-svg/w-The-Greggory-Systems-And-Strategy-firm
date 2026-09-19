@@ -13,7 +13,7 @@ const createNotification = async (userId, type, title, message, priority = 'norm
     if (!userId) return;
 
     await db.promise().query(
-      'INSERT INTO notifications (user_id, notification_type, title, message, priority, status, created_at) VALUES (?, ?, ?, ?, ?, "unread", NOW())',
+      'INSERT INTO notifications (user_id, notification_type, title, message, priority, status, created_at) VALUES (?, ?, ?, ?, ?, \'unread\', NOW())',
       [userId, type, title, message, priority]
     );
     console.log(`[REAL-LIFE NOTIF] Created for User ${userId}: ${title}`);

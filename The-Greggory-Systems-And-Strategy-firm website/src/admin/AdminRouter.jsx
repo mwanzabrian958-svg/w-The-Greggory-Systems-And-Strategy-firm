@@ -35,6 +35,7 @@ import { EmailInbox } from './pages/EmailInbox';
 import { PermissionsManager } from './pages/PermissionsManager';
 import { PERMISSIONS } from './utils/permissions';
 import { apiCall } from '../services/api';
+import PushNotificationsPage from './pages/PushNotifications';
 
 export function AdminRouter() {
   const [user, setUser] = useState(null);
@@ -109,7 +110,8 @@ export function AdminRouter() {
                 <Route path="media" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><MediaLibrary /></AdminRoute>} />
                 <Route path="messages" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><EmailInbox /></AdminRoute>} />
                 <Route path="permissions" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><PermissionsManager /></AdminRoute>} />
-               <Route path="search" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><SearchResults /></AdminRoute>} />
+               <Route path="push-notifications" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><PushNotificationsPage /></AdminRoute>} />
+                <Route path="search" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><SearchResults /></AdminRoute>} />
               <Route path="*" element={<Navigate to="/admin" replace />} />
             </Routes>
           </AdminLayout>

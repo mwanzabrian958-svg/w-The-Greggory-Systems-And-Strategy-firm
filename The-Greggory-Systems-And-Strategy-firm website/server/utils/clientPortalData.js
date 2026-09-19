@@ -223,8 +223,17 @@ function buildClientPortalPayload({
       category: doc.category || doc.document_type || "General",
       project: doc.project_name || "Project Node",
       date: doc.created_at || doc.date || null,
-      size: doc.file_size ? `${(doc.file_size / (1024 * 1024)).toFixed(1)} MB` : "0.5 MB",
-      version: doc.version || "v1.0"
+      // Small files would render as "0.0 MB", so switch to KB below 1 MB.
+      size: doc.file_size
+        ? doc.file_size >= 1024 * 1024
+          ? `${(doc.file_size / (1024 * 1024)).toFixed(1)} MB`
+          : `${Math.max(1, Math.round(doc.file_size / 1024))} KB`
+        : "0.5 MB",
+      version: doc.version || "v1.0",
+      // System documents carry negative ids (e.g. the GSSF registration
+      // agreement) and are streamed by the client reports endpoint — expose the
+      // path so the portal can render a working browser download.
+      downloadPath: Number(doc.id) < 0 ? `/api/users/my-reports/${doc.id}/download` : null,
     })),
     budgetOverview: {
       planned: plannedBudget,

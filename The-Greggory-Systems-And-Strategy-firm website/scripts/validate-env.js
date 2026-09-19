@@ -6,9 +6,9 @@
  * scripts/, render.yaml) and prints a MASKED report — secret values are never
  * printed. Exit code 0 = ready, 1 = a required variable has a problem.
  */
-require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 // ---- Raw-file checks (BOM, duplicate keys) -------------------------------
 const envPath = path.join(__dirname, '..', '.env');
@@ -105,6 +105,49 @@ if (process.env.COMPANY_WHATSAPP_NUMBER && !phoneOk(process.env.COMPANY_WHATSAPP
 }
 if (/(^|[^:\w])\/\//.test(process.env.RATE_LIMIT_WINDOW_MS || '') || /\/\//.test(process.env.RATE_LIMIT_MAX || '')) {
   console.log('--  RATE_LIMIT_* contains an inline "//" comment (not read by code; limits are hardcoded)');
+}
+
+console.log('\n-- secret strength (deploy gate) --');
+const PLACEHOLDER_PATTERNS = [
+  /^(your|change|replace|enter|my|the|default|insert)[-_ ]?/i,
+  /(changeme|change_this|change-this|_here$|_here\b|placeholder|example\.com|dummy|sample|todo|fixme)/i,
+  /^(secret|password|test|test123|admin|123456|12345678|qwerty|letmein|iloveyou)\b/i,
+  /^(x{3,}|\.{3,}|-{3,}|_{3,})$/i,
+];
+const looksPlaceholder = (v) => PLACEHOLDER_PATTERNS.some((re) => re.test(v.trim()));
+const MIN_SECRET_LEN = 32;
+const genHint =
+  'generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"';
+for (const k of ['JWT_SECRET', 'ADMIN_SESSION_SECRET', 'SESSION_SECRET', 'ADMIN_KEY']) {
+  const v = (process.env[k] || '').trim();
+  if (!v) continue; // missing values are already reported in the required section
+  if (looksPlaceholder(v)) {
+    problems++;
+    console.log(`!!  ${k} looks like a placeholder — ${genHint}`);
+  } else if (v.length < MIN_SECRET_LEN) {
+    problems++;
+    console.log(`!!  ${k} is only ${v.length} chars — secrets must be >= ${MIN_SECRET_LEN} random chars. ${genHint}`);
+  } else {
+    console.log(`OK  ${k} strength (${v.length} chars)`);
+  }
+}
+{
+  const ac = (process.env.ADMIN_CODE || '').trim();
+  if (ac) {
+    if (looksPlaceholder(ac) || /^\d{1,7}$/.test(ac) || ac.length < 8) {
+      problems++;
+      console.log(`!!  ADMIN_CODE is weak (${ac.length} chars) — use >= 8 chars mixing letters+digits; not a placeholder or short PIN`);
+    } else {
+      console.log(`OK  ADMIN_CODE strength (${ac.length} chars)`);
+    }
+  }
+}
+{
+  const j = (process.env.JWT_SECRET || '').trim();
+  const s = (process.env.ADMIN_SESSION_SECRET || '').trim();
+  if (j && s && j === s) {
+    console.log('--  JWT_SECRET and ADMIN_SESSION_SECRET are identical — rotating them independently is safer');
+  }
 }
 
 console.log(
