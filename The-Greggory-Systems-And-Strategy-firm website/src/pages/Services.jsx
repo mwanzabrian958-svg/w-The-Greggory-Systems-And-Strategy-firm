@@ -92,7 +92,7 @@ const Services = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
               {[
                 { icon: Microscope, name: 'Change Planning', desc: 'Roadmaps accounting for technical milestones and cultural readiness.' },
-                { icon: Radio, name: 'Stakeholder Resonance', desc: 'Aligning personal vision with firm evolution to turn resistance into stewardship.' },
+                { icon: Radio, name: 'Stakeholder alignment', desc: 'Aligning personal vision with firm evolution to turn resistance into stewardship.' },
                 { icon: ShieldCheck, name: 'Adoption Stewardship', desc: 'Hands-on support turning architecture into reality. Ensuring change sticks.' },
                 { icon: Eye, name: 'Impact Verification', desc: 'Feedback loops measuring real impact and adjusting strategy in real-time.' }
               ].map(item => (
@@ -126,7 +126,7 @@ const Services = () => {
                 { icon: Cpu, name: 'AI-Driven Decision Ops', desc: 'Integrating custom LLM architectures for real-time strategic insights.' },
                 { icon: Binary, name: 'Digital Twin Modeling', desc: 'Digital replicas of your operating system to simulate change impact.' },
                 { icon: Globe, name: 'Global Resilience Systems', desc: 'Border-less models for volatile international markets.' },
-                { icon: BarChart3, name: 'Predictive Pulse Dashboards', desc: 'Real-time resonance metrics that predict organizational friction.' }
+                { icon: BarChart3, name: 'Predictive Pulse Dashboards', desc: 'Live metrics that surface friction before it slows delivery.' }
               ].map(item => (
                 <div key={item.name} className="space-y-4 group opacity-70 hover:opacity-100 transition-opacity">
                   <div className="flex items-center gap-4">
@@ -162,21 +162,21 @@ const Services = () => {
                   <span className="block text-[8px] font-black uppercase tracking-[0.4em] text-slate-400 mb-2">Phase 01</span>
                   <h4 className="text-sm font-bold uppercase tracking-widest mb-4 group-hover:text-[#8fb28a]">Diagnostic Framing</h4>
                   <div className="flex items-center gap-2 text-[8px] font-black uppercase text-[#aa7d3f] opacity-60 group-hover:opacity-100">
-                     Explore Node <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+                     View service <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                </button>
                <button onClick={() => scrollToTopic('protocol')} className="group text-left p-8 bg-white border border-black/5 hover:border-black/20 transition-all shadow-sm">
                   <span className="block text-[8px] font-black uppercase tracking-[0.4em] text-slate-400 mb-2">Phase 02</span>
                   <h4 className="text-sm font-bold uppercase tracking-widest mb-4 group-hover:text-[#8fb28a]">Architecture Design</h4>
                   <div className="flex items-center gap-2 text-[8px] font-black uppercase text-[#aa7d3f] opacity-60 group-hover:opacity-100">
-                     Explore Node <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+                     View service <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                </button>
                <button onClick={() => scrollToTopic('habit')} className="group text-left p-8 bg-white border border-black/5 hover:border-black/20 transition-all shadow-sm">
                   <span className="block text-[8px] font-black uppercase tracking-[0.4em] text-slate-400 mb-2">Phase 03</span>
                   <h4 className="text-sm font-bold uppercase tracking-widest mb-4 group-hover:text-[#8fb28a]">Active Activation</h4>
                   <div className="flex items-center gap-2 text-[8px] font-black uppercase text-[#aa7d3f] opacity-60 group-hover:opacity-100">
-                     Explore Node <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
+                     View service <ArrowRight size={10} className="group-hover:translate-x-1 transition-transform" />
                   </div>
                </button>
             </div>
@@ -209,7 +209,7 @@ const Services = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
                    <div className="space-y-2">
                       <span className="block font-black text-[10px] uppercase opacity-40">Methodology</span>
-                      <p className="text-xs font-medium">Kinetic energy audits. Measuring the literal speed of decision transfer between leadership and execution nodes.</p>
+                      <p className="text-xs font-medium">Decision-flow audits. Measuring the speed of decision transfer between leadership and execution nodes.</p>
                    </div>
                    <div className="space-y-2">
                       <span className="block font-black text-[10px] uppercase opacity-40">Objective</span>
@@ -264,7 +264,7 @@ const Services = () => {
                         <p className="opacity-60">The speed at which a decision traverses the logic tree from input to execution.</p>
                      </div>
                      <div className="space-y-1">
-                        <span className="text-black font-bold uppercase">E-Resonance</span>
+                        <span className="text-black font-bold uppercase">Live metrics</span>
                         <p className="opacity-60">The percentage of adherence to the protocol without manual override or error.</p>
                      </div>
                      <div className="space-y-1">
@@ -283,7 +283,7 @@ const Services = () => {
                   <Activity className="w-8 h-8 text-white" />
                </div>
                <h4 className="text-3xl font-bold uppercase tracking-tighter text-black">Flow <br/> Prototyping.</h4>
-               <p className="text-[10px] font-mono text-black/40 uppercase tracking-[0.3em]">Kinetic Optimization Spec</p>
+               <p className="text-[10px] font-mono text-black/40 uppercase tracking-[0.3em]">Decision-flow spec</p>
             </div>
             <div className="lg:col-span-8 space-y-12">
                <p className="text-xl font-medium tracking-tight text-black/90 leading-tight">
@@ -295,7 +295,7 @@ const Services = () => {
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                      <div className="space-y-4">
-                        <h5 className="font-bold uppercase tracking-widest text-[10px] text-black">Kinetic Mapping</h5>
+                        <h5 className="font-bold uppercase tracking-widest text-[10px] text-black">Decision-flow mapping</h5>
                         <p className="text-[12px] text-black/60 leading-relaxed">Visualizing your organization as a series of pipes and reservoirs. Identifying where information "pools" for too long, causing strategic stagnation.</p>
                      </div>
                      <div className="space-y-4">
@@ -307,7 +307,7 @@ const Services = () => {
                <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-black/10 border border-black/5">
                   {['Modeling', 'Execution', 'Measurement', 'Refinement'].map(step => (
                     <div key={step} className="p-6 bg-white text-center">
-                       <span className="block text-[10px] font-black uppercase tracking-widest text-[#8fb28a] mb-2">Node</span>
+                       <span className="block text-[10px] font-black uppercase tracking-widest text-[#8fb28a] mb-2">Metric</span>
                        <span className="font-bold text-[10px] uppercase">{step}</span>
                     </div>
                   ))}
@@ -362,7 +362,7 @@ const Services = () => {
                         <span className="text-[#aa7d3f]">Verified</span>
                      </div>
                      <div className="flex justify-between pl-4">
-                        <span>Resonance Detection</span>
+                        <span>Early-warning signals</span>
                         <span className="text-[#aa7d3f]">Active</span>
                      </div>
                   </div>
@@ -396,7 +396,7 @@ const Services = () => {
                      {[
                        { title: 'Stress Simulation', desc: 'Wargaming scenarios like 300% load or 50% node loss.' },
                        { title: 'Redundancy Design', desc: 'Engineering fail-safes so no single point can halt momentum.' },
-                       { title: 'Recovery Logic', desc: 'Defining sequences to return the firm to peak resonance.' }
+                       { title: 'Recovery Logic', desc: 'Defining sequences to return the team to full speed.' }
                      ].map(item => (
                        <div key={item.title} className="p-6 border border-black/10 hover:bg-black hover:text-white transition-all group">
                           <h6 className="font-black text-[10px] uppercase mb-4 text-[#aa7d3f]">{item.title}</h6>
@@ -420,7 +420,7 @@ const Services = () => {
       {/* 4. FINAL CALL TO ACTION */}
       <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
         <div
-          className="absolute inset-0 bg-[#223028] transition-transform duration-[4s] hover:scale-105"
+          className="absolute inset-0 bg-[#223028] "
           style={{
             borderRadius: '100% 100% 0 0 / 100% 100% 0 0',
             transform: 'translateY(10%)'
@@ -429,8 +429,8 @@ const Services = () => {
 
         <div className="relative z-10 text-center px-10">
           <h2 className="text-4xl md:text-5xl font-bold text-white leading-none tracking-tight mb-10">
-            INITIATE <br />
-            <span className="italic font-light text-[#8fb28a]">RESONANCE.</span>
+            START THE <br />
+            <span className="italic font-light text-[#8fb28a]">WORK.</span>
           </h2>
           <Link
             to="/contact"

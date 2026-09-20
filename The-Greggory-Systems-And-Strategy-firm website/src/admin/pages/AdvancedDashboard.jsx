@@ -127,7 +127,7 @@ export function AdvancedDashboard({ user }) {
     { label: "Active Projects", value: stats.activeProjects, icon: Briefcase, color: "text-sky-400", bg: "bg-sky-500/10", path: "/admin/projects" },
     { label: "Live Now", value: stats.liveUsers, icon: Activity, color: "text-rose-400", bg: "bg-rose-500/10", path: "/admin/users" },
     { label: "Pending Prot.", value: stats.pendingApprovals, icon: ClipboardList, color: "text-orange-400", bg: "bg-orange-500/10", path: "/admin/projects" },
-    { label: "Team Active", value: teamStats.active, icon: UserCheck, color: "text-violet-400", bg: "bg-violet-500/10", path: "/admin/team" },
+    { label: "Team Active", value: teamStats.active, icon: UserCheck, color: "text-teal-400", bg: "bg-slate-500/10", path: "/admin/team" },
   ];
 
   return (
@@ -158,7 +158,7 @@ export function AdvancedDashboard({ user }) {
         {[
           { label: "New Invoice", icon: DollarSign, path: "/admin/billing/create", tone: "text-emerald-600 bg-emerald-50" },
           { label: "Add Personnel", icon: UserCheck, path: "/admin/users", tone: "text-sky-600 bg-sky-50" },
-          { label: "Team Management", icon: Users, path: "/admin/team", tone: "text-violet-600 bg-violet-50" },
+          { label: "Team Management", icon: Users, path: "/admin/team", tone: "text-teal-700 bg-teal-50" },
           { label: "Data Safety", icon: Shield, path: "/admin/data-safety", tone: "text-rose-600 bg-rose-50" },
         ].map((a) => (
           <button key={a.label} onClick={() => navigate(a.path)} className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm flex items-center gap-3 hover:border-teal-500/40 hover:shadow-md transition-all group text-left">
@@ -201,7 +201,7 @@ export function AdvancedDashboard({ user }) {
             { label: "Total Burn", val: budgetOverview?.expenses, color: "text-slate-900" },
             { label: "Spent Node", val: budgetOverview?.spent, color: "text-teal-600" },
             { label: "Remaining", val: budgetOverview?.remaining, color: "text-blue-600" },
-            { label: "Forecast", val: budgetOverview?.forecast, color: "text-violet-600" }
+            { label: "Forecast", val: budgetOverview?.forecast, color: "text-teal-700" }
           ].map(node => (
             <div
               key={node.label}
@@ -355,7 +355,7 @@ export function AdvancedDashboard({ user }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: "Classified Levels", value: "4", icon: Shield, color: "text-sky-400", bg: "bg-sky-500/10" },
-            { label: "Active Team", value: teamStats.active, icon: Users, color: "text-violet-400", bg: "bg-violet-500/10" },
+            { label: "Active Team", value: teamStats.active, icon: Users, color: "text-teal-400", bg: "bg-slate-500/10" },
             { label: "Pending Prot.", value: stats.pendingApprovals, icon: ClipboardList, color: "text-orange-400", bg: "bg-orange-500/10" },
             { label: "Audit Ready", value: "ON", icon: ShieldCheck, color: "text-emerald-400", bg: "bg-emerald-500/10" },
           ].map((stat) => (

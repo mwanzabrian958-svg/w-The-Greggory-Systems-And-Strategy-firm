@@ -130,7 +130,7 @@ export function Users() {
           { label: "Total Assets", value: users.length, icon: UsersIcon, color: "text-blue-500", bg: "bg-blue-50" },
           { label: "Live Now", value: users.filter(u => u.last_active_at && (new Date() - new Date(u.last_active_at)) < 300000).length, icon: Activity, color: "text-rose-500", bg: "bg-rose-50" },
           { label: "Active Nodes", value: users.filter(u => u.is_active).length, icon: CheckCircle, color: "text-emerald-500", bg: "bg-emerald-50" },
-          { label: "Admins", value: users.filter(u => u.source_table === "admin").length, icon: Shield, color: "text-purple-500", bg: "bg-purple-50" },
+          { label: "Admins", value: users.filter(u => u.source_table === "admin").length, icon: Shield, color: "text-slate-500", bg: "bg-purple-50" },
         ].map((stat) => (
           <div key={stat.label} className="bg-white rounded-xl p-3 border border-slate-100 shadow-md flex items-center justify-between">
             <div>

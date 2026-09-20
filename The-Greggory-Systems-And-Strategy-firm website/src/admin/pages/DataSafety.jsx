@@ -158,7 +158,7 @@ export function DataSafety() {
 
             <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-md">
               <div className="flex items-center gap-3 mb-4">
-                <Users size={14} className="text-violet-500" />
+                <Users size={14} className="text-slate-500" />
                 <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-widest">Consent Status</h3>
               </div>
               <div className="space-y-2">

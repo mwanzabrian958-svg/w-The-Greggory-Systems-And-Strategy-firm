@@ -113,7 +113,7 @@ export function ProjectTasks() {
         </div>
 
         <div className="flex-1 max-w-sm mx-6 hidden md:block">
-          <SearchBlock variant="admin" placeholder="Query task nodes..." />
+          <SearchBlock variant="admin" placeholder="Search tasks..." />
         </div>
         <div className="flex gap-3">
           <button

@@ -86,7 +86,7 @@ export function UserForm() {
         </div>
 
         <div className="flex-1 max-w-md mx-8">
-          <SearchBlock variant="admin" placeholder="Query identity nodes..." />
+          <SearchBlock variant="admin" placeholder="Search users..." />
         </div>
         <button onClick={() => navigate('/admin/users')} className="p-2.5 bg-white/5 text-slate-400 rounded-xl hover:text-white transition-all"><X size={16} /></button>
       </div>

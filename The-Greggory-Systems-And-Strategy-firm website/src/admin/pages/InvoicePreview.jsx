@@ -103,7 +103,7 @@ export function InvoicePreview() {
          </div>
 
          <div className="flex-1 max-w-lg mx-10 hidden md:block">
-            <SearchBlock variant="admin" placeholder="Query mission database..." />
+            <SearchBlock variant="admin" placeholder="Search invoices..." />
          </div>
          <div className="flex gap-4">
             <button onClick={handleSendInvoice} disabled={sending} className={`flex items-center gap-3 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${invoice.email_sent ? "bg-emerald-600/90 border-emerald-400 text-white" : "bg-white/5 border-white/10 text-white hover:bg-emerald-600 hover:border-emerald-400"} disabled:opacity-60`}>

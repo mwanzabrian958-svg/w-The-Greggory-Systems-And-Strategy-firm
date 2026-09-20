@@ -213,7 +213,7 @@ export function UserDetail() {
          </div>
 
          <div className="flex-1 max-w-xl mx-8 hidden md:block">
-            <SearchBlock variant="admin" placeholder="Search other personnel nodes..." />
+            <SearchBlock variant="admin" placeholder="Search team members..." />
          </div>
          <div className="flex items-center gap-3">
             <button

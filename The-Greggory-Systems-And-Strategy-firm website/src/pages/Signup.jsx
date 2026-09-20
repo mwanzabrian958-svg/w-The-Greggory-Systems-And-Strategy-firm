@@ -116,7 +116,7 @@ const Signup = () => {
   }
 
   return (
-    <AuthLayout title="Create Strategic Account" subtitle="Join our elite systems network">
+    <AuthLayout title="Create your account" subtitle="Access your projects, invoices and documents">
       <div className="relative z-10 font-sans">
         <div className="flex flex-col items-center mb-8">
           <div className="relative group">
@@ -129,7 +129,7 @@ const Signup = () => {
             </label>
             <input id="profilePhoto" type="file" accept="image/*" className="hidden" onChange={handleProfileChange} />
           </div>
-          <p className="mt-4 text-[8px] text-slate-500 font-black uppercase tracking-widest">Establish Identity Node</p>
+          <p className="mt-4 text-[8px] text-slate-500 font-black uppercase tracking-widest">Add a profile photo</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -137,16 +137,16 @@ const Signup = () => {
             <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} placeholder="First Name" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold outline-none" />
             <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Last Name" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold outline-none" />
           </div>
-          <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email Node" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold outline-none" />
-          <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="M-Pesa Relay" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold outline-none" />
+          <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email address" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold outline-none" />
+          <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone number" required className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold outline-none" />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="relative">
-              <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} placeholder="Access Key" required className="w-full px-4 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold outline-none" />
+              <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} placeholder="Password" required className="w-full px-4 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold outline-none" />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-slate-500">{showPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button>
             </div>
             <div className="relative">
-              <input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirm" required className="w-full px-4 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold outline-none" />
+              <input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirm password" required className="w-full px-4 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-[11px] font-bold outline-none" />
               <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-3 text-slate-500">{showConfirmPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button>
             </div>
           </div>
@@ -167,28 +167,28 @@ const Signup = () => {
                 </button>
                 <div className="space-y-8 font-mono text-[11px] leading-relaxed text-slate-300">
                   <div className="border-b border-white/10 pb-6">
-                    <h3 className="text-xl font-bold text-white uppercase tracking-tighter mb-2">Systems Engagement Protocol</h3>
-                    <p className="text-gold-500 opacity-60">Status: MANDATORY / INTERNAL USE ONLY</p>
+                    <h3 className="text-xl font-bold text-white uppercase tracking-tighter mb-2">Terms of use</h3>
+                    <p className="text-gold-500 opacity-60">Status: Please read before continuing</p>
                   </div>
 
                   <section className="space-y-4">
-                    <h4 className="text-white font-bold uppercase tracking-widest border-l-2 border-gold-500 pl-4">01 / Data Integrity</h4>
-                    <p>Users agree to provide high-fidelity data nodes during account initialization. Any obfuscation of identity may result in immediate node termination.</p>
+                    <h4 className="text-white font-bold uppercase tracking-widest border-l-2 border-gold-500 pl-4">1. Your information</h4>
+                    <p>You agree to provide accurate information when you create your account. Accounts created with false details may be suspended.</p>
                   </section>
 
                   <section className="space-y-4">
-                    <h4 className="text-white font-bold uppercase tracking-widest border-l-2 border-gold-500 pl-4">02 / Systemic Resonance</h4>
-                    <p>Engagement with the firm's digital resources must follow the established architectural blueprints. Users are stewards of the firm's kinetic velocity and must not introduce structural friction.</p>
+                    <h4 className="text-white font-bold uppercase tracking-widest border-l-2 border-gold-500 pl-4">2. Acceptable use</h4>
+                    <p>You agree to use this platform lawfully and to follow the instructions we provide. Please do not attempt to disrupt or misuse the service.</p>
                   </section>
 
                   <section className="space-y-4">
-                    <h4 className="text-white font-bold uppercase tracking-widest border-l-2 border-gold-500 pl-4">03 / Confidentiality</h4>
-                    <p>The technical specifications and strategic innovations previewed within the member portal are strictly classified. Distribution of internal telemetry data is prohibited.</p>
+                    <h4 className="text-white font-bold uppercase tracking-widest border-l-2 border-gold-500 pl-4">3. Confidentiality</h4>
+                    <p>Documents, pricing and project information shared in your portal are confidential. Please do not share them with third parties without our written consent.</p>
                   </section>
 
                   <div className="pt-8 border-t border-white/10 flex justify-between items-center">
-                    <p className="text-[8px] opacity-40 uppercase tracking-[0.2em]">© {new Date().getFullYear()} G.S.S.F. ARCHITECTURAL UNIT</p>
-                    <button onClick={() => { setAgreedToTerms(true); setShowProtocols(false); }} className="px-6 py-2 bg-gold-500 text-slate-950 font-black uppercase text-[10px] rounded-lg shadow-lg hover:bg-yellow-400 transition-all">Acknowledge & Close</button>
+                    <p className="text-[8px] opacity-40 uppercase tracking-[0.2em]">© {new Date().getFullYear()} {SITE_NAME}</p>
+                    <button onClick={() => { setAgreedToTerms(true); setShowProtocols(false); }} className="px-6 py-2 bg-gold-500 text-slate-950 font-black uppercase text-[10px] rounded-lg shadow-lg hover:bg-yellow-400 transition-all">I understand</button>
                   </div>
                 </div>
               </div>
@@ -205,12 +205,12 @@ const Signup = () => {
         {isLoading ? (
           <>
             <Spinner size={16} tone="ink" />
-            <span>Registering Node…</span>
+            <span>Creating your account…</span>
           </>
         ) : 'Register'}
       </button>
 
-          <p className="text-center text-[8px] font-black text-slate-500 uppercase tracking-widest">Node exists? <Link to="/login" className="text-gold-500">Access Login</Link></p>
+          <p className="text-center text-[8px] font-black text-slate-500 uppercase tracking-widest">Already have an account? <Link to="/login" className="text-gold-500">Sign in</Link></p>
         </form>
 
         <div className="relative py-6">
@@ -231,20 +231,20 @@ const Signup = () => {
         <LoadingOverlay
           show={isLoading || showSuccess}
           success={showSuccess}
-          successLabel="Node Solidified"
-          label="Deploying Identity"
+          successLabel="Account created"
+          label="Creating your account"
           messages={[
-            'Deploying Identity',
-            'Provisioning Credential Chain',
-            'Linking Security Session',
+            'Creating your account',
+            'Saving your details',
+            'Signing you in',
           ]}
-          sublabel={showSuccess ? 'Redirecting to secure terminal…' : 'Authorising systemic credentials'}
-          status={showSuccess ? [] : ['Identity node accepted', 'Credential chain issued', 'Session link active']}
+          sublabel={showSuccess ? 'Taking you to the sign-in page…' : 'Setting up your account'}
+          status={showSuccess ? [] : ['Details saved', 'Account created', 'You can sign in now']}
           tone="gold"
         />
       )}
 
-      <div className="text-center text-[7px] font-black text-slate-700 uppercase tracking-[0.4em] mt-8">&copy; {new Date().getFullYear()} GSS SYSTEMS NODE</div>
+      <div className="text-center text-[7px] font-black text-slate-700 uppercase tracking-[0.4em] mt-8">&copy; {new Date().getFullYear()} {SITE_NAME}</div>
     </AuthLayout>
   )
 }

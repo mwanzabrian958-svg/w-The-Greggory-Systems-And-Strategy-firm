@@ -117,8 +117,8 @@ export function ReportsModal({ isOpen, onClose }) {
                             <button className="p-1 hover:bg-green-100 rounded transition-colors">
                               <Download className="w-4 h-4 text-green-600" />
                             </button>
-                            <button className="p-1 hover:bg-purple-100 rounded transition-colors">
-                              <Share2 className="w-4 h-4 text-purple-600" />
+                            <button className="p-1 hover:bg-slate-100 rounded transition-colors">
+                              <Share2 className="w-4 h-4 text-teal-700" />
                             </button>
                           </div>
                         </td>

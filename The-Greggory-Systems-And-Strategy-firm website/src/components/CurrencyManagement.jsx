@@ -201,7 +201,7 @@ const CurrencyManagement = ({ onRefresh }) => {
         <div className="flex gap-3">
           <button
             onClick={() => setShowConvertModal(true)}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+            className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors flex items-center gap-2"
           >
             <Calculator className="w-4 h-4" />
             Convert Currency
@@ -631,14 +631,14 @@ const CurrencyManagement = ({ onRefresh }) => {
               
               <button
                 onClick={handleConvertCurrency}
-                className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                className="w-full bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors"
               >
                 Convert
               </button>
               
               {conversionResult && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <h4 className="font-medium text-purple-900 mb-2">Conversion Result</h4>
+                <div className="bg-purple-50 border border-teal-200 rounded-lg p-4">
+                  <h4 className="font-medium text-slate-900 mb-2">Conversion Result</h4>
                   <div className="text-sm space-y-1">
                     <p><span className="font-medium">Original:</span> {conversionResult.original_amount} {conversionResult.from_currency}</p>
                     <p><span className="font-medium">Converted:</span> {conversionResult.converted_amount.toFixed(2)} {conversionResult.to_currency}</p>

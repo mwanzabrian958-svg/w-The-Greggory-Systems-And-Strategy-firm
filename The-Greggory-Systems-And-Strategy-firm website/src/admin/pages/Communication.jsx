@@ -208,7 +208,7 @@ export function Communication() {
               )}
 
               <button type="submit" disabled={isSending} className="w-full bg-teal-600 text-white py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50">
-                {isSending ? <Spinner size={12} tone="white" /> : <Send size={12} />} Solidify Relay
+                {isSending ? <Spinner size={12} tone="white" /> : <Send size={12} />} Send message
               </button>
             </form>
           )}

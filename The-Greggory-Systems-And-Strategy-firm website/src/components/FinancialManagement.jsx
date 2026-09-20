@@ -678,14 +678,14 @@ const FinancialManagement = ({
           <div className="bg-purple-50 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600">
+                <p className="text-sm font-medium text-teal-700">
                   Total Entries
                 </p>
-                <p className="text-2xl font-bold text-purple-900">
+                <p className="text-2xl font-bold text-slate-900">
                   {filteredEntries.length}
                 </p>
               </div>
-              <FileText className="w-8 h-8 text-purple-500" />
+              <FileText className="w-8 h-8 text-slate-500" />
             </div>
           </div>
         </div>
@@ -1238,10 +1238,10 @@ const FinancialManagement = ({
             <div className="bg-purple-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-600">
+                  <p className="text-sm font-medium text-teal-700">
                     Total Value
                   </p>
-                  <p className="text-2xl font-bold text-purple-900">
+                  <p className="text-2xl font-bold text-slate-900">
                     KES{" "}
                     {quotes
                       .reduce(
@@ -1252,7 +1252,7 @@ const FinancialManagement = ({
                       .toLocaleString()}
                   </p>
                 </div>
-                <DollarSign className="w-8 h-8 text-purple-500" />
+                <DollarSign className="w-8 h-8 text-slate-500" />
               </div>
             </div>
           </div>
@@ -1332,7 +1332,7 @@ const FinancialManagement = ({
                                 : quote.status === "expired"
                                   ? "bg-red-100 text-red-800"
                                   : quote.status === "converted"
-                                    ? "bg-purple-100 text-purple-800"
+                                    ? "bg-slate-100 text-slate-700"
                                     : "bg-gray-100 text-gray-800"
                         }`}
                       >
@@ -1467,10 +1467,10 @@ const FinancialManagement = ({
             <div className="bg-purple-50 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-600">
+                  <p className="text-sm font-medium text-teal-700">
                     Total Amount
                   </p>
-                  <p className="text-2xl font-bold text-purple-900">
+                  <p className="text-2xl font-bold text-slate-900">
                     KES{" "}
                     {invoices
                       .reduce(
@@ -1481,7 +1481,7 @@ const FinancialManagement = ({
                       .toLocaleString()}
                   </p>
                 </div>
-                <DollarSign className="w-8 h-8 text-purple-500" />
+                <DollarSign className="w-8 h-8 text-slate-500" />
               </div>
             </div>
           </div>
@@ -3355,7 +3355,7 @@ const FinancialManagement = ({
                               : period.status === "closed"
                                 ? "bg-gray-100 text-gray-600"
                                 : period.status === "archived"
-                                  ? "bg-purple-100 text-purple-700"
+                                  ? "bg-slate-100 text-teal-700"
                                   : "bg-blue-100 text-blue-700"
                           }`}
                         >
@@ -3895,14 +3895,14 @@ const FinancialManagement = ({
                 <div className="bg-purple-50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-purple-600">
+                      <p className="text-sm font-medium text-teal-700">
                         Entries
                       </p>
-                      <p className="text-xl font-bold text-purple-900">
+                      <p className="text-xl font-bold text-slate-900">
                         {financeSummary.summary.entry_count}
                       </p>
                     </div>
-                    <Receipt className="w-8 h-8 text-purple-500" />
+                    <Receipt className="w-8 h-8 text-slate-500" />
                   </div>
                 </div>
               </div>

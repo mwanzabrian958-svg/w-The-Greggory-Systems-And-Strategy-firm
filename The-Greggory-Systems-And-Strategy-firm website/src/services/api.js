@@ -63,7 +63,7 @@ export const apiCall = async (endpoint, options = {}) => {
     }
 
     if (!response.ok) {
-      throw new Error(data?.message || data?.error || `Node Relay Failure: ${response.status}`);
+      throw new Error(data?.message || data?.error || `Request failed: ${response.status}`);
     }
 
     return data;

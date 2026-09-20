@@ -33,7 +33,7 @@ export function ContentModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="bg-gradient-to-r from-violet-600 to-purple-700 px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Briefcase className="w-6 h-6 text-white" />
             <h2 className="text-xl font-bold text-white">Content Management</h2>
@@ -44,10 +44,10 @@ export function ContentModal({ isOpen, onClose }) {
         </div>
 
         <div className="bg-gray-50 border-b px-6 flex gap-1">
-          <button onClick={() => setActiveTab('pages')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'pages' ? 'bg-white border-b-2 border-violet-600 text-violet-600' : 'text-gray-600 hover:text-gray-900'}`}>Pages</button>
-          <button onClick={() => setActiveTab('posts')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'posts' ? 'bg-white border-b-2 border-violet-600 text-violet-600' : 'text-gray-600 hover:text-gray-900'}`}>Blog Posts</button>
-          <button onClick={() => setActiveTab('media')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'media' ? 'bg-white border-b-2 border-violet-600 text-violet-600' : 'text-gray-600 hover:text-gray-900'}`}>Media Library</button>
-          <button onClick={() => setActiveTab('editor')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'editor' ? 'bg-white border-b-2 border-violet-600 text-violet-600' : 'text-gray-600 hover:text-gray-900'}`}>Editor</button>
+          <button onClick={() => setActiveTab('pages')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'pages' ? 'bg-white border-b-2 border-teal-600 text-slate-500' : 'text-gray-600 hover:text-gray-900'}`}>Pages</button>
+          <button onClick={() => setActiveTab('posts')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'posts' ? 'bg-white border-b-2 border-teal-600 text-slate-500' : 'text-gray-600 hover:text-gray-900'}`}>Blog Posts</button>
+          <button onClick={() => setActiveTab('media')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'media' ? 'bg-white border-b-2 border-teal-600 text-slate-500' : 'text-gray-600 hover:text-gray-900'}`}>Media Library</button>
+          <button onClick={() => setActiveTab('editor')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'editor' ? 'bg-white border-b-2 border-teal-600 text-slate-500' : 'text-gray-600 hover:text-gray-900'}`}>Editor</button>
         </div>
 
         <div className="flex-1 overflow-auto p-6">
@@ -56,9 +56,9 @@ export function ContentModal({ isOpen, onClose }) {
               <div className="flex justify-between items-center">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input type="text" placeholder="Search pages..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+                  <input type="text" placeholder="Search pages..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
                 </div>
-                <button onClick={() => { setEditingContent({}); setActiveTab('editor'); }} className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">
+                <button onClick={() => { setEditingContent({}); setActiveTab('editor'); }} className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
                   <Plus className="w-4 h-4" /> New Page
                 </button>
               </div>
@@ -92,8 +92,8 @@ export function ContentModal({ isOpen, onClose }) {
                             <button className="p-1 hover:bg-blue-100 rounded transition-colors">
                               <Eye className="w-4 h-4 text-blue-600" />
                             </button>
-                            <button onClick={() => { setEditingContent(page); setActiveTab('editor'); }} className="p-1 hover:bg-violet-100 rounded transition-colors">
-                              <Edit className="w-4 h-4 text-violet-600" />
+                            <button onClick={() => { setEditingContent(page); setActiveTab('editor'); }} className="p-1 hover:bg-slate-100 rounded transition-colors">
+                              <Edit className="w-4 h-4 text-slate-500" />
                             </button>
                             <button className="p-1 hover:bg-red-100 rounded transition-colors">
                               <Trash2 className="w-4 h-4 text-red-600" />
@@ -113,9 +113,9 @@ export function ContentModal({ isOpen, onClose }) {
               <div className="flex justify-between items-center">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input type="text" placeholder="Search posts..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+                  <input type="text" placeholder="Search posts..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
                 </div>
-                <button onClick={() => { setEditingContent({}); setActiveTab('editor'); }} className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">
+                <button onClick={() => { setEditingContent({}); setActiveTab('editor'); }} className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
                   <Plus className="w-4 h-4" /> New Post
                 </button>
               </div>
@@ -151,8 +151,8 @@ export function ContentModal({ isOpen, onClose }) {
                             <button className="p-1 hover:bg-blue-100 rounded transition-colors">
                               <Eye className="w-4 h-4 text-blue-600" />
                             </button>
-                            <button onClick={() => { setEditingContent(post); setActiveTab('editor'); }} className="p-1 hover:bg-violet-100 rounded transition-colors">
-                              <Edit className="w-4 h-4 text-violet-600" />
+                            <button onClick={() => { setEditingContent(post); setActiveTab('editor'); }} className="p-1 hover:bg-slate-100 rounded transition-colors">
+                              <Edit className="w-4 h-4 text-slate-500" />
                             </button>
                             <button className="p-1 hover:bg-red-100 rounded transition-colors">
                               <Trash2 className="w-4 h-4 text-red-600" />
@@ -172,9 +172,9 @@ export function ContentModal({ isOpen, onClose }) {
               <div className="flex justify-between items-center">
                 <div className="relative flex-1 max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input type="text" placeholder="Search media..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent" />
+                  <input type="text" placeholder="Search media..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
                   <Plus className="w-4 h-4" /> Upload Media
                 </button>
               </div>
@@ -182,8 +182,8 @@ export function ContentModal({ isOpen, onClose }) {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
                   <div key={item} className="bg-white rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition-shadow">
-                    <div className="aspect-video bg-gradient-to-br from-violet-200 to-purple-300 flex items-center justify-center">
-                      <Image className="w-8 h-8 text-violet-600" />
+                    <div className="aspect-video bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                      <Image className="w-8 h-8 text-slate-500" />
                     </div>
                     <div className="p-3">
                       <p className="text-sm font-medium text-gray-900 truncate">image-{item}.jpg</p>
@@ -205,7 +205,7 @@ export function ContentModal({ isOpen, onClose }) {
                   <button onClick={() => setActiveTab('pages')} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                     Cancel
                   </button>
-                  <button className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">
+                  <button className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
                     <Save className="w-4 h-4" /> Save
                   </button>
                 </div>
@@ -214,16 +214,16 @@ export function ContentModal({ isOpen, onClose }) {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                  <input type="text" defaultValue={editingContent?.title || ''} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="Enter title" />
+                  <input type="text" defaultValue={editingContent?.title || ''} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="Enter title" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
-                    <input type="text" defaultValue={editingContent?.slug || ''} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent" placeholder="/url-slug" />
+                    <input type="text" defaultValue={editingContent?.slug || ''} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent" placeholder="/url-slug" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent">
+                    <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
                       <option value="">Select category</option>
                       <option value="Insights">Insights</option>
                       <option value="Education">Education</option>

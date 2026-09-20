@@ -397,7 +397,7 @@ export function StatDetailModal({ isOpen, onClose, stat, data }) {
     <Modal isOpen={isOpen} onClose={onClose} title={stat.label} size="lg">
       <div className="space-y-6">
         {/* Summary */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
+        <div className="bg-slate-50 rounded-xl p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Count</p>

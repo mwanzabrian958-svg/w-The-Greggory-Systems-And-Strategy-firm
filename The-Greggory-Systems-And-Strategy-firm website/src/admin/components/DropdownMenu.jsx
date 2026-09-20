@@ -109,7 +109,7 @@ export function UserProfileDropdown({ user, onLogout, onViewProfile, onChangePas
 
   const trigger = (
     <button className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-xl transition-colors">
-      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+      <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center text-white font-semibold text-sm">
         {displayName.charAt(0).toUpperCase()}
       </div>
       <div className="text-left hidden md:block">

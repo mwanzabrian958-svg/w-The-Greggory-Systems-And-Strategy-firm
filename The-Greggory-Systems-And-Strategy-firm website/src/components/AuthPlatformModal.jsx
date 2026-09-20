@@ -221,14 +221,14 @@ export default function AuthPlatformModal({
 
         <div className="overflow-y-auto flex-1">
           {view === "platform" && (
-            <section className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white border-b border-purple-400/40 px-6 pt-10 pb-8 sm:px-8">
+            <section className="bg-gradient-to-r from-slate-900 via-teal-900 to-slate-900 text-white border-b border-teal-400/40 px-6 pt-10 pb-8 sm:px-8">
               <div className="flex items-start gap-3 mb-6">
                 <div className="mt-0.5 p-2.5 rounded-lg bg-white/10 border border-white/20 shrink-0">
-                  <Shield className="w-6 h-6 text-purple-200" />
+                  <Shield className="w-6 h-6 text-teal-200" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-purple-200">
-                    Authentication platform
+                  <p className="text-[10px] font-black uppercase tracking-widest text-teal-200">
+                    Sign in
                   </p>
                   <p className="text-sm text-gray-200 mt-1.5 leading-relaxed">
                     Member sign-in for protected pages, or admin access for the console.
@@ -245,7 +245,7 @@ export default function AuthPlatformModal({
                 <button
                   type="button"
                   onClick={handleAdminCta}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-purple-400 transition-colors sm:ml-auto"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-teal-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-400 transition-colors sm:ml-auto"
                 >
                   <Shield className="w-4 h-4" />
                   {hasAdminSessionToken ? "Open admin" : "access"}
@@ -265,7 +265,7 @@ export default function AuthPlatformModal({
 
               <div className="text-center mb-6">
                 <div className="relative w-20 h-20 mb-4 shrink-0 mx-auto">
-                  <div className="w-full h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 overflow-hidden flex items-center justify-center border-2 border-slate-100 shadow-lg">
+                  <div className="w-full h-full rounded-full bg-teal-600 overflow-hidden flex items-center justify-center border-2 border-slate-100 shadow-lg">
                     {profilePhotoPreview ? (
                       <img src={profilePhotoPreview} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
@@ -281,7 +281,7 @@ export default function AuthPlatformModal({
                   Administrative Access
                 </h2>
                 <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest mt-2">
-                  Initialize Secure Access Protocol
+                  Sign in with your administrator credentials
                 </p>
               </div>
 
@@ -294,7 +294,7 @@ export default function AuthPlatformModal({
 
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Email Node</label>
+                  <label className="block text-[8px] font-black text-gray-500 uppercase tracking-widest mb-1">Email address</label>
                   <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="admin@thegreggoryfirm.org" />
                 </div>
                 <div>
@@ -304,14 +304,14 @@ export default function AuthPlatformModal({
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2 text-gray-400 hover:text-gray-600 transition-colors">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                   </div>
                 </div>
-                <button type="submit" disabled={loginLoading} className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-purple-900/10">
+                <button type="submit" disabled={loginLoading} className="w-full px-4 py-3 bg-teal-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-teal-900/10">
                   {loginLoading ? "Synchronizing..." : <><Shield className="w-4 h-4" />Sign In</>}
                 </button>
               </form>
 
               <div className="mt-6 pt-6 border-t border-gray-100">
-                <p className="text-center text-[8px] font-black text-gray-400 uppercase tracking-widest mb-4">Request New Authorization Node?</p>
-                <button onClick={handleRegisterStart} className="w-full px-4 py-2 border border-purple-200 text-purple-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-purple-50 transition-all">Register Admin Node</button>
+                <p className="text-center text-[8px] font-black text-gray-400 uppercase tracking-widest mb-4">Need an administrator account?</p>
+                <button onClick={handleRegisterStart} className="w-full px-4 py-2 border border-teal-200 text-teal-700 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-teal-50 transition-all">Create one</button>
               </div>
             </div>
           )}
@@ -321,13 +321,13 @@ export default function AuthPlatformModal({
               <button onClick={() => setView("platform")} className="absolute left-6 top-6 text-gray-400 hover:text-gray-600"><ArrowLeft className="w-6 h-6" /></button>
               <div className="text-center mb-6">
                 <div className="relative w-20 h-20 mb-4 shrink-0 mx-auto">
-                  <div className="w-full h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center overflow-hidden border-2 border-slate-100 shadow-lg">
+                  <div className="w-full h-full rounded-full bg-teal-600 flex items-center justify-center overflow-hidden border-2 border-slate-100 shadow-lg">
                     {profilePhotoPreview ? <img src={profilePhotoPreview} alt="Profile" className="w-full h-full object-cover" /> : <Shield className="w-10 h-10 text-white" />}
                   </div>
                   <label className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer hover:bg-green-600 shadow-md"><span className="text-white text-sm font-bold">+</span><input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" /></label>
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Identity Initialization</h2>
-                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-2">ADMINISTRATOR NODE</p>
+                <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Create administrator account</h2>
+                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-2">ADMINISTRATOR</p>
               </div>
 
               {regError && <div className="mb-4 p-3 bg-red-50 text-red-700 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-red-100">{regError}</div>}
@@ -335,8 +335,8 @@ export default function AuthPlatformModal({
               {regStep === 3 ? (
                 <div className="text-center py-8">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 mb-4 border border-emerald-100"><CheckCircle className="w-8 h-8 text-emerald-500" /></div>
-                  <h3 className="text-xl font-black uppercase tracking-tight mb-2">Node Solidified!</h3>
-                  <button onClick={() => setView("admin")} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">Proceed to Verification</button>
+                  <h3 className="text-xl font-black uppercase tracking-tight mb-2">Account created</h3>
+                  <button onClick={() => setView("admin")} className="w-full px-4 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl">Continue to sign in</button>
                 </div>
               ) : (
                 <form onSubmit={handleRegisterSubmit} className="space-y-4">
@@ -344,14 +344,14 @@ export default function AuthPlatformModal({
                     <input type="text" value={regData.first_name} onChange={(e) => setRegData({ ...regData, first_name: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="First Name" />
                     <input type="text" value={regData.last_name} onChange={(e) => setRegData({ ...regData, last_name: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Last Name" />
                   </div>
-                  <input type="email" value={regData.email} onChange={(e) => setRegData({ ...regData, email: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Identity Relay (Email)" />
+                  <input type="email" value={regData.email} onChange={(e) => setRegData({ ...regData, email: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Email address" />
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} value={regData.password} onChange={(e) => setRegData({ ...regData, password: e.target.value })} required minLength={6} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Access Key" />
+                    <input type={showPassword ? "text" : "password"} value={regData.password} onChange={(e) => setRegData({ ...regData, password: e.target.value })} required minLength={6} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Password" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2 text-gray-400 hover:text-gray-600 transition-colors">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                   </div>
-                  <input type="password" value={regData.confirmPassword} onChange={(e) => setRegData({ ...regData, confirmPassword: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Confirm Key" />
-                  <button type="submit" disabled={isSubmitting} className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">{isSubmitting ? "Solidifying..." : "Initialize Node"}</button>
-                  <p className="text-center text-[7px] font-black text-gray-400 uppercase tracking-widest">Pre-existing Node? <button type="button" onClick={() => setView("admin")} className="text-purple-600">Access Console here</button></p>
+                  <input type="password" value={regData.confirmPassword} onChange={(e) => setRegData({ ...regData, confirmPassword: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Confirm password" />
+                  <button type="submit" disabled={isSubmitting} className="w-full px-4 py-3 bg-teal-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">{isSubmitting ? "Creating account..." : "Create account"}</button>
+                  <p className="text-center text-[7px] font-black text-gray-400 uppercase tracking-widest">Already have an account? <button type="button" onClick={() => setView("admin")} className="text-teal-700">Sign in here</button></p>
                 </form>
               )}
             </div>

@@ -22,7 +22,7 @@ export function ApplicationsModal({ isOpen, onClose }) {
     switch(status) {
       case 'Pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'Review': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'Interview': return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'Interview': return 'bg-slate-100 text-slate-800 border-slate-300';
       case 'Accepted': return 'bg-green-100 text-green-800 border-green-300';
       case 'Rejected': return 'bg-red-100 text-red-800 border-red-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
@@ -139,8 +139,8 @@ export function ApplicationsModal({ isOpen, onClose }) {
                             <button className="p-1 hover:bg-green-100 rounded transition-colors">
                               <Download className="w-4 h-4 text-green-600" />
                             </button>
-                            <button className="p-1 hover:bg-purple-100 rounded transition-colors">
-                              <Send className="w-4 h-4 text-purple-600" />
+                            <button className="p-1 hover:bg-slate-100 rounded transition-colors">
+                              <Send className="w-4 h-4 text-slate-600" />
                             </button>
                           </div>
                         </td>
@@ -274,7 +274,7 @@ export function ApplicationsModal({ isOpen, onClose }) {
                   </div>
                   <div className="text-2xl font-bold">{applications.filter(a => a.status === 'Accepted').length}</div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
+                <div className="bg-teal-600 rounded-xl p-4 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle className="w-5 h-5" />
                     <span className="text-sm opacity-90">Interview Rate</span>
@@ -404,7 +404,7 @@ export function ApplicationsModal({ isOpen, onClose }) {
                     <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                       <CheckCircle className="w-4 h-4" /> Accept
                     </button>
-                    <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                    <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors">
                       <Clock className="w-4 h-4" /> Schedule Interview
                     </button>
                     <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">

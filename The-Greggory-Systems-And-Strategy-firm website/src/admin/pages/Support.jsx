@@ -370,12 +370,12 @@ export function Support() {
         <section className="bg-[#0f172a] rounded-2xl p-5 border border-white/5 shadow-xl overflow-hidden flex flex-col">
           <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-3 flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <FileSignature size={14} className="text-purple-400" />
+              <FileSignature size={14} className="text-teal-400" />
               <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Signature Requests</h3>
             </div>
             <button
               onClick={loadSignatures}
-              className="p-1.5 rounded bg-white/5 text-slate-400 hover:text-purple-400 hover:bg-white/10 transition-all border border-white/5"
+              className="p-1.5 rounded bg-white/5 text-slate-400 hover:text-teal-400 hover:bg-white/10 transition-all border border-white/5"
             >
               <RefreshCw size={10} />
             </button>
@@ -393,11 +393,11 @@ export function Support() {
           ) : (
             <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
               {sigRequests.map((sig) => (
-                <div key={sig.id} className="p-3 rounded-xl bg-white/5 border border-white/5 hover:border-purple-500/20 transition-all">
+                <div key={sig.id} className="p-3 rounded-xl bg-white/5 border border-white/5 hover:border-teal-500/20 transition-all">
                   <div className="flex items-start justify-between gap-2 mb-1.5">
                     <div className="min-w-0">
                       <p className="text-[9px] font-black text-white uppercase truncate">{sig.document_title || `Document #${sig.document_id}`}</p>
-                      <p className="text-[7px] font-bold text-purple-300 uppercase tracking-widest mt-0.5 truncate">
+                      <p className="text-[7px] font-bold text-teal-300 uppercase tracking-widest mt-0.5 truncate">
                         {sig.signer_name} ({sig.signer_email || ""})
                       </p>
                     </div>

@@ -91,7 +91,7 @@ export function CreateInvoice() {
           </div>
 
           <div className="flex-1 max-w-md mx-6">
-            <SearchBlock variant="admin" placeholder="Search mission nodes..." />
+            <SearchBlock variant="admin" placeholder="Search clients..." />
           </div>
           <button onClick={() => navigate('/admin/billing')} className="p-2 hover:bg-rose-600/20 text-slate-400 hover:text-rose-500 rounded-lg transition-all"><X size={16} /></button>
         </div>

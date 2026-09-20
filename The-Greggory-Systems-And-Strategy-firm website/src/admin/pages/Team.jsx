@@ -15,7 +15,7 @@ function TemplateMembers({ templateId }) {
     <div className="space-y-1.5">
       {members.map(m => (
         <div key={m.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-100">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white text-[7px] font-black shrink-0">
+          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center text-white text-[7px] font-black shrink-0">
             {(m.name || '?').split(' ').map(n => n?.[0] || '').join('').slice(0, 2).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">

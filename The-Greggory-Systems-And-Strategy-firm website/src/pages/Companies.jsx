@@ -110,7 +110,7 @@ const Companies = () => {
   const getIndustryColor = (industry) => {
     switch (industry) {
       case 'Construction': return 'bg-orange-100 text-orange-600'
-      case 'Consulting': return 'bg-purple-100 text-purple-600'
+      case 'Consulting': return 'bg-teal-50 text-teal-700'
       default: return 'bg-gray-100 text-gray-600'
     }
   }

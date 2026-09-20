@@ -59,7 +59,7 @@ export function BillingModal({ isOpen, onClose }) {
                     <TrendingDown className="w-4 h-4" /> -8%
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 text-white">
+                <div className="bg-slate-700 rounded-xl p-6 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-5 h-5" />
                     <span className="text-sm opacity-90">Net Profit</span>
@@ -69,7 +69,7 @@ export function BillingModal({ isOpen, onClose }) {
                     <TrendingUp className="w-4 h-4" /> +15%
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl p-6 text-white">
+                <div className="bg-teal-600 rounded-xl p-6 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <CreditCard className="w-5 h-5" />
                     <span className="text-sm opacity-90">Pending</span>
@@ -86,7 +86,7 @@ export function BillingModal({ isOpen, onClose }) {
                     {[
                       { name: 'Projects', amount: 'KES 2.5M', percent: 56, color: 'bg-green-500' },
                       { name: 'Services', amount: 'KES 1.2M', percent: 27, color: 'bg-blue-500' },
-                      { name: 'Consulting', amount: 'KES 500K', percent: 11, color: 'bg-purple-500' },
+                      { name: 'Consulting', amount: 'KES 500K', percent: 11, color: 'bg-slate-500' },
                       { name: 'Other', amount: 'KES 300K', percent: 6, color: 'bg-orange-500' },
                     ].map((item) => (
                       <div key={item.name} className="flex items-center gap-4">

@@ -25,7 +25,7 @@ export function CommunicationModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="bg-gradient-to-r from-pink-600 to-rose-600 px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MessageSquare className="w-6 h-6 text-white" />
             <h2 className="text-xl font-bold text-white">Communication Hub</h2>
@@ -36,10 +36,10 @@ export function CommunicationModal({ isOpen, onClose }) {
         </div>
 
         <div className="bg-gray-50 border-b px-6 flex gap-1">
-          <button onClick={() => setActiveTab('messages')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'messages' ? 'bg-white border-b-2 border-pink-600 text-pink-600' : 'text-gray-600 hover:text-gray-900'}`}>Messages</button>
-          <button onClick={() => setActiveTab('announcements')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'announcements' ? 'bg-white border-b-2 border-pink-600 text-pink-600' : 'text-gray-600 hover:text-gray-900'}`}>Announcements</button>
-          <button onClick={() => setActiveTab('channels')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'channels' ? 'bg-white border-b-2 border-pink-600 text-pink-600' : 'text-gray-600 hover:text-gray-900'}`}>Channels</button>
-          <button onClick={() => setActiveTab('video')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'video' ? 'bg-white border-b-2 border-pink-600 text-pink-600' : 'text-gray-600 hover:text-gray-900'}`}>Video Calls</button>
+          <button onClick={() => setActiveTab('messages')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'messages' ? 'bg-white border-b-2 border-teal-600 text-teal-700' : 'text-gray-600 hover:text-gray-900'}`}>Messages</button>
+          <button onClick={() => setActiveTab('announcements')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'announcements' ? 'bg-white border-b-2 border-teal-600 text-teal-700' : 'text-gray-600 hover:text-gray-900'}`}>Announcements</button>
+          <button onClick={() => setActiveTab('channels')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'channels' ? 'bg-white border-b-2 border-teal-600 text-teal-700' : 'text-gray-600 hover:text-gray-900'}`}>Channels</button>
+          <button onClick={() => setActiveTab('video')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'video' ? 'bg-white border-b-2 border-teal-600 text-teal-700' : 'text-gray-600 hover:text-gray-900'}`}>Video Calls</button>
         </div>
 
         <div className="flex-1 overflow-auto">
@@ -49,7 +49,7 @@ export function CommunicationModal({ isOpen, onClose }) {
                 <div className="p-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input type="text" placeholder="Search conversations..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent" />
+                    <input type="text" placeholder="Search conversations..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -61,7 +61,7 @@ export function CommunicationModal({ isOpen, onClose }) {
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-medium text-sm">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center text-white font-medium text-sm">
                             {conv.avatar}
                           </div>
                           {conv.online && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />}
@@ -73,7 +73,7 @@ export function CommunicationModal({ isOpen, onClose }) {
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-gray-600 truncate">{conv.lastMessage}</span>
-                            {conv.unread > 0 && <span className="bg-pink-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{conv.unread}</span>}
+                            {conv.unread > 0 && <span className="bg-teal-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{conv.unread}</span>}
                           </div>
                         </div>
                       </div>
@@ -87,7 +87,7 @@ export function CommunicationModal({ isOpen, onClose }) {
                   <>
                     <div className="px-6 py-4 border-b flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-medium text-sm">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center text-white font-medium text-sm">
                           {selectedConversation.avatar}
                         </div>
                         <div>
@@ -111,9 +111,9 @@ export function CommunicationModal({ isOpen, onClose }) {
                     <div className="flex-1 overflow-auto p-6 space-y-4">
                       {messages.map(msg => (
                         <div key={msg.id} className={`flex ${msg.isMe ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-md ${msg.isMe ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-2xl px-4 py-3`}>
+                          <div className={`max-w-md ${msg.isMe ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-900'} rounded-2xl px-4 py-3`}>
                             <p className="text-sm">{msg.content}</p>
-                            <p className={`text-xs mt-1 ${msg.isMe ? 'text-pink-200' : 'text-gray-500'}`}>{msg.time}</p>
+                            <p className={`text-xs mt-1 ${msg.isMe ? 'text-teal-100' : 'text-gray-500'}`}>{msg.time}</p>
                           </div>
                         </div>
                       ))}
@@ -124,11 +124,11 @@ export function CommunicationModal({ isOpen, onClose }) {
                         <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                           <Paperclip className="w-5 h-5 text-gray-600" />
                         </button>
-                        <input type="text" placeholder="Type a message..." className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent" />
+                        <input type="text" placeholder="Type a message..." className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
                         <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                           <Smile className="w-5 h-5 text-gray-600" />
                         </button>
-                        <button className="p-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors">
+                        <button className="p-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
                           <Send className="w-5 h-5" />
                         </button>
                       </div>
@@ -150,7 +150,7 @@ export function CommunicationModal({ isOpen, onClose }) {
             <div className="p-6 space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Announcements</h3>
-                <button className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
                   <Plus className="w-4 h-4" /> New Announcement
                 </button>
               </div>
@@ -163,7 +163,7 @@ export function CommunicationModal({ isOpen, onClose }) {
                 <div key={announcement.title} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Bell className="w-5 h-5 text-pink-600" />
+                      <Bell className="w-5 h-5 text-teal-700" />
                       <h4 className="font-semibold text-gray-900">{announcement.title}</h4>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -194,7 +194,7 @@ export function CommunicationModal({ isOpen, onClose }) {
             <div className="p-6 space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Communication Channels</h3>
-                <button className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
                   <Plus className="w-4 h-4" /> Create Channel
                 </button>
               </div>
@@ -211,8 +211,8 @@ export function CommunicationModal({ isOpen, onClose }) {
                   const Icon = channel.icon;
                   return (
                     <div key={channel.name} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                      <div className="w-12 h-12 rounded-lg bg-pink-100 flex items-center justify-center mb-4">
-                        <Icon className="w-6 h-6 text-pink-600" />
+                      <div className="w-12 h-12 rounded-lg bg-teal-50 flex items-center justify-center mb-4">
+                        <Icon className="w-6 h-6 text-teal-700" />
                       </div>
                       <h4 className="font-semibold text-gray-900 mb-1">{channel.name}</h4>
                       <p className="text-sm text-gray-600 mb-3">{channel.description}</p>
@@ -231,7 +231,7 @@ export function CommunicationModal({ isOpen, onClose }) {
             <div className="p-6 space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Video Calls</h3>
-                <button className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors">
+                <button className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
                   <Video className="w-4 h-4" /> Start Meeting
                 </button>
               </div>
@@ -260,7 +260,7 @@ export function CommunicationModal({ isOpen, onClose }) {
                         <Users className="w-4 h-4" />
                         {meeting.participants} participants
                       </div>
-                      <button className="flex items-center gap-2 px-3 py-1 text-sm text-pink-600 hover:bg-pink-50 rounded-lg transition-colors">
+                      <button className="flex items-center gap-2 px-3 py-1 text-sm text-teal-700 hover:bg-teal-50 rounded-lg transition-colors">
                         <Video className="w-4 h-4" /> Join
                       </button>
                     </div>

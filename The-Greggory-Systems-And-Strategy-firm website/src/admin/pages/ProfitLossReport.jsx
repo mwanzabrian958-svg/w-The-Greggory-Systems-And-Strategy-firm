@@ -94,7 +94,7 @@ export function ProfitLossReport() {
          </div>
 
          <div className="flex-1 max-w-xl mx-8 relative z-10 hidden md:block">
-            <SearchBlock variant="admin" placeholder="Query financial telemetry..." />
+            <SearchBlock variant="admin" placeholder="Search reports..." />
          </div>
          <button onClick={() => navigate('/admin/billing')} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 relative z-10 transition-all group">
           <X className="w-6 h-6 text-slate-500 group-hover:text-rose-500 transition-colors" />

@@ -137,7 +137,7 @@ const StatusBadge = ({ status }) => {
     paid:         'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     'In Progress':'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
     'To Do':      'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10',
-    'Review':     'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    'Review':     'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20',
     'Complete':   'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     Success:      'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
     Failed:       'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
@@ -170,7 +170,7 @@ const GradientBar = ({ value, max = 100 }) => {
       ? 'from-blue-500 to-sky-400'
       : pct >= 40
         ? 'from-gold-500 to-yellow-400'
-        : 'from-rose-500 to-pink-400'
+        : 'from-rose-500 to-rose-400'
   return (
     <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
       <div
@@ -208,7 +208,7 @@ const KpiCard = ({ icon: Icon, label, value, delta, deltaLabel, color = 'bg-gold
   </SectionCard>
 )
 
-const Avatar = ({ initials, src = null, size = 'sm', color = 'bg-gradient-to-br from-blue-500 to-indigo-600' }) => {
+const Avatar = ({ initials, src = null, size = 'sm', color = 'bg-slate-700' }) => {
   const sz = size === 'lg' ? 'w-16 h-16 text-lg' : size === 'md' ? 'w-10 h-10 text-sm' : 'w-8 h-8 text-[10px]'
   return (
     <div className={`${sz} ${color} rounded-full flex items-center justify-center text-white font-black uppercase tracking-tighter border-2 border-white/10 shadow-lg flex-shrink-0 overflow-hidden`}>
@@ -262,7 +262,7 @@ const OverviewSection = ({ data = null, notifs = [], isLoading = false }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <KpiCard icon={FolderKanban} label="Portfolio Units" value={realProjects.length} delta={0} deltaLabel="Live Project Nodes" color="bg-gold-500/10 text-gold-500 border-gold-500/20" />
         <KpiCard icon={Star} label="Satisfaction Relay" value={data?.kpiMetrics?.find(m => m.label === 'Satisfaction Index')?.value || '5.0/5'} delta={0} deltaLabel="Performance Index" color="bg-teal-500/10 text-teal-500 border-teal-500/20" />
-        <KpiCard icon={AlertCircle} label="Resource Overruns" value={data?.budgetOverview?.variance > 0 ? formatKSH(data.budgetOverview.variance) : 'Normal'} delta={0} deltaLabel="Capital Delta" color="bg-rose-500/10 text-rose-500 border-rose-500/20" />
+        <KpiCard icon={AlertCircle} label="Resource Overruns" value={data?.budgetOverview?.variance > 0 ? formatKSH(data.budgetOverview.variance) : 'Normal'} delta={0} deltaLabel="vs last month" color="bg-rose-500/10 text-rose-500 border-rose-500/20" />
       </div>
 
       {/* Project Summary Cards */}
@@ -280,7 +280,7 @@ const OverviewSection = ({ data = null, notifs = [], isLoading = false }) => {
           ) : realProjects.length === 0 ? (
              <div className="lg:col-span-3 py-20 text-center border-2 border-dashed border-white/5 rounded-[40px]">
                 <Layers className="w-12 h-12 text-slate-800 mx-auto mb-4" />
-                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">No Active Missions Found</p>
+                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">No projects yet</p>
              </div>
           ) : (
             realProjects.map(p => (
@@ -339,9 +339,9 @@ const OverviewSection = ({ data = null, notifs = [], isLoading = false }) => {
         </div>
         <div className="space-y-4">
           {isLoading ? (
-             <InlineLoader label="Syncing Transmissions…" tone="gold" />
+             <InlineLoader label="Loading updates…" tone="gold" />
           ) : notifs.length === 0 ? (
-             <div className="py-10 text-center text-[10px] font-black text-slate-600 uppercase tracking-widest">No Recent Transmissions</div>
+             <div className="py-10 text-center text-[10px] font-black text-slate-600 uppercase tracking-widest">No updates yet</div>
           ) : (
             notifs.slice(0, 3).map(n => {
               const { icon: Icon, color } = getNotifConfig(n.notification_type)
@@ -570,12 +570,12 @@ const BillingSection = ({ projects = [], invoices = [], budget = null }) => {
             </SectionCard>
 
             <SectionCard className="p-8 border border-white/10 overflow-hidden">
-              <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em] mb-8">Capital Transmission Records</h3>
+              <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em] mb-8">Payment records</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-white/5">
-                      {['Transmission','Value','Status'].map(h => <th key={h} className="pb-4 text-[9px] font-black text-slate-500 uppercase tracking-widest">{h}</th>)}
+                      {['Payment','Amount','Status'].map(h => <th key={h} className="pb-4 text-[9px] font-black text-slate-500 uppercase tracking-widest">{h}</th>)}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -681,7 +681,7 @@ const CommunicationSection = ({ messages = [] }) => {
               className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-medium text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-gold-500/40 mb-6 h-32 resize-none"
             />
             <button onClick={() => { setMsg(''); toast('Relay Queued', 'success') }} className="w-full bg-gold-500 text-slate-950 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-gold-400 transition-all flex items-center justify-center gap-3">
-              <Send size={14} /> Initialize Transmission
+              <Send size={14} /> Send message
             </button>
           </SectionCard>
         </div>
@@ -696,7 +696,7 @@ const CommunicationSection = ({ messages = [] }) => {
 const NotificationsSection = ({ notifs = [], isLoading = false, onToggleRead, onRefresh }) => (
   <div className="space-y-10">
     <div className="flex items-center justify-between">
-      <SectionHeader title="Data Inbox" subtitle="Incoming tactical alerts and system relays" />
+      <SectionHeader title="Notifications" subtitle="Updates about your projects and invoices" />
       <button onClick={onRefresh} disabled={isLoading} className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-gold-500 disabled:opacity-50">
         <Spinner size={20} tone="gold" />
       </button>
@@ -705,7 +705,7 @@ const NotificationsSection = ({ notifs = [], isLoading = false, onToggleRead, on
     {notifs.length === 0 ? (
       <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[32px]">
          <Bell className="w-10 h-10 text-slate-700 mx-auto mb-4" />
-         <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Relay Silence</p>
+         <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">No notifications yet</p>
       </div>
     ) : (
       <div className="space-y-4 max-w-4xl">
@@ -754,16 +754,16 @@ const FeedbackSection = ({ user }) => {
           feedback_type: 'satisfaction',
           rating: rating,
           message: `Client satisfaction rating: ${rating}/5`,
-          title: 'Satisfaction Relay'
+          title: 'Service rating'
         })
       })
       const data = await response.json()
       if (data.success) {
-        toast('Satisfaction relay synchronized', 'success')
+        toast('Thanks — your rating was saved', 'success')
         setRating(0)
       }
     } catch (err) {
-      toast('Relay failure', 'error')
+      toast('Could not send your rating', 'error')
     } finally {
       setIsSubmitting(false)
     }
@@ -795,7 +795,7 @@ const FeedbackSection = ({ user }) => {
         setIncidentMsg('')
       }
     } catch (err) {
-      toast('Alert transmission failure', 'error')
+      toast('Could not send your message', 'error')
     } finally {
       setIsSubmitting(false)
     }
@@ -806,8 +806,8 @@ const FeedbackSection = ({ user }) => {
       <SectionHeader title="Feedback & Support" subtitle="Direct operational reports and feature requests" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <SectionCard className="p-8">
-          <h3 className="font-black text-white uppercase text-sm mb-6 flex items-center gap-3"><Star className="w-5 h-5 text-gold-500" />Satisfaction Relay</h3>
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-[0.2em] mb-8">Synchronize your experience rating with the firm command.</p>
+          <h3 className="font-black text-white uppercase text-sm mb-6 flex items-center gap-3"><Star className="w-5 h-5 text-gold-500" />Rate our service</h3>
+          <p className="text-xs font-medium text-slate-500 uppercase tracking-[0.2em] mb-8">Tell us how we are doing so we can improve.</p>
           <div className="flex gap-4 mb-8">
             {[1, 2, 3, 4, 5].map(s => (
               <button
@@ -830,7 +830,7 @@ const FeedbackSection = ({ user }) => {
             disabled={isSubmitting}
             className="w-full bg-gold-500 text-slate-950 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-gold-400 transition-all disabled:opacity-50"
           >
-            {isSubmitting ? 'Synchronizing...' : 'Execute Submission'}
+            {isSubmitting ? 'Sending...' : 'Submit'}
           </button>
         </SectionCard>
 
@@ -848,7 +848,7 @@ const FeedbackSection = ({ user }) => {
             disabled={isSubmitting}
             className="w-full bg-rose-500 text-white py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-400 transition-all disabled:opacity-50"
           >
-            {isSubmitting ? 'Initializing...' : 'Initialize Alert'}
+            {isSubmitting ? 'Sending...' : 'Send message'}
           </button>
         </SectionCard>
       </div>

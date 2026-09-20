@@ -28,7 +28,7 @@ export function ProjectsModal({ isOpen, onClose }) {
   const getStatusColor = (status) => {
     switch(status) {
       case 'In Progress': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'Planning': return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'Planning': return 'bg-slate-100 text-slate-800 border-slate-300';
       case 'Review': return 'bg-orange-100 text-orange-800 border-orange-300';
       case 'Completed': return 'bg-green-100 text-green-800 border-green-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
@@ -244,7 +244,7 @@ export function ProjectsModal({ isOpen, onClose }) {
                   </div>
                   <div className="text-2xl font-bold">{projects.filter(p => p.status === 'In Progress').length}</div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
+                <div className="bg-teal-600 rounded-xl p-4 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="w-5 h-5" />
                     <span className="text-sm opacity-90">Total Budget</span>

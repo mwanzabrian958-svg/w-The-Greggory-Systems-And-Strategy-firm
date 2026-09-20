@@ -9,7 +9,7 @@ export function SecurityModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="bg-gradient-to-r from-red-600 to-pink-600 px-6 py-4 flex items-center justify-between">
+        <div className="bg-red-600 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-6 h-6 text-white" />
             <h2 className="text-xl font-bold text-white">Security Center</h2>
@@ -38,7 +38,7 @@ export function SecurityModal({ isOpen, onClose }) {
                   <div className="text-3xl font-bold">92%</div>
                   <div className="text-sm opacity-75 mt-1">Excellent</div>
                 </div>
-                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 text-white">
+                <div className="bg-slate-700 rounded-xl p-6 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="w-5 h-5" />
                     <span className="text-sm opacity-90">Active Users</span>
@@ -54,7 +54,7 @@ export function SecurityModal({ isOpen, onClose }) {
                   <div className="text-3xl font-bold">156</div>
                   <div className="text-sm opacity-75 mt-1">Last 30 days</div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl p-6 text-white">
+                <div className="bg-teal-600 rounded-xl p-6 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <Activity className="w-5 h-5" />
                     <span className="text-sm opacity-90">Failed Logins</span>

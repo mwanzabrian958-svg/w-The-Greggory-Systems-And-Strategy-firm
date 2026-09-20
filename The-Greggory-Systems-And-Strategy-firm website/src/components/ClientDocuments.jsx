@@ -387,7 +387,7 @@ const ClientDocuments = ({
                         <Printer className="w-4 h-4" />
                       </button>
                       <button
-                        className="text-purple-600 hover:text-purple-800"
+                        className="text-teal-700 hover:text-teal-800"
                         title="Share"
                       >
                         <Share2 className="w-4 h-4" />

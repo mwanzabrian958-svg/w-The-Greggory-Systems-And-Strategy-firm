@@ -129,8 +129,8 @@ const ProjectDetails = () => {
   if (loading) {
     return (
       <PageLoader
-        label="Synchronising Entity Telemetry"
-        messages={['Synchronising Entity Telemetry…', 'Verifying Access Rights…', 'Compiling Project Dossier…']}
+        label="Loading project"
+        messages={['Loading project…', 'Checking access…', 'Preparing details…']}
         tone="gold"
         className="bg-[#0f172a]"
       />

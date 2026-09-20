@@ -80,12 +80,12 @@ export function Content({ user }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">Content Management</h1>
-          <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[7px] mt-0.5">Global Relay Control</p>
+          <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[7px] mt-0.5">Website content</p>
         </div>
         <div className="flex gap-2">
            <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
-              <button onClick={() => setActiveTab("blogs")} className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'blogs' ? 'bg-white shadow-sm text-teal-600' : 'text-slate-400'}`}>Manuscripts</button>
-              <button onClick={() => setActiveTab("website")} className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'website' ? 'bg-white shadow-sm text-teal-600' : 'text-slate-400'}`}>Site Elements</button>
+              <button onClick={() => setActiveTab("blogs")} className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'blogs' ? 'bg-white shadow-sm text-teal-600' : 'text-slate-400'}`}>Blog posts</button>
+              <button onClick={() => setActiveTab("website")} className={`px-4 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeTab === 'website' ? 'bg-white shadow-sm text-teal-600' : 'text-slate-400'}`}>Page content</button>
            </div>
            {activeTab === "blogs" && (
              <button onClick={() => navigate("/admin/content/create")} className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-teal-600 text-white font-black text-[8px] uppercase tracking-widest shadow-lg hover:bg-teal-700 transition-all border border-teal-400/20"><Plus size={12} /> New Post</button>
@@ -97,20 +97,20 @@ export function Content({ user }) {
         <>
           <div className="bg-[#0f172a] rounded-2xl p-4 border border-white/10 shadow-xl flex justify-between items-center">
             <div className="text-[7px] font-black uppercase text-teal-400 tracking-[0.4em] px-2">
-               Manuscript Repository Matrix
+               Blog posts
             </div>
-            <div className="px-3 text-[7px] font-black uppercase text-slate-500 tracking-widest whitespace-nowrap">Active Nodes: {blogs.length}</div>
+            <div className="px-3 text-[7px] font-black uppercase text-slate-500 tracking-widest whitespace-nowrap">Published: {blogs.length}</div>
           </div>
 
           {loading ? (
-            <InlineLoader label="Loading Content Nodes…" tone="teal" />
+            <InlineLoader label="Loading posts…" tone="teal" />
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
               {paginatedBlogs.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => navigate(`/admin/content/preview/${item.id}`)}
-                  className="bg-white rounded-2xl p-3 border border-slate-100 shadow-md hover:shadow-xl hover:scale-[1.03] transition-all group flex flex-col h-full cursor-pointer"
+                  className="bg-white rounded-2xl p-3 border border-slate-100 shadow-md hover:shadow-md transition-colors group flex flex-col h-full cursor-pointer"
                 >
                   <div className="aspect-[4/3] bg-slate-100 rounded-xl mb-3 overflow-hidden border border-slate-50 relative">
                      {item.image_url ? (
@@ -138,7 +138,7 @@ export function Content({ user }) {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-6 pb-12">
               <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ChevronLeft size={14} /></button>
-              <div className="px-4 py-2 bg-[#0f172a] rounded-xl text-[8px] font-black text-white uppercase tracking-widest border border-white/10 shadow-lg">Node {currentPage} / {totalPages}</div>
+              <div className="px-4 py-2 bg-[#0f172a] rounded-xl text-[8px] font-black text-white uppercase tracking-widest border border-white/10 shadow-lg">Page {currentPage} of {totalPages}</div>
               <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} className="p-2 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-slate-900 shadow-sm transition-all"><ChevronRight size={14} /></button>
             </div>
           )}
@@ -146,7 +146,7 @@ export function Content({ user }) {
       ) : (
         <div className="grid gap-6">
            <div className="bg-[#0f172a] rounded-3xl p-8 border border-white/10 shadow-2xl">
-              <div className="flex items-center gap-3 mb-8 text-teal-400 border-b border-white/5 pb-4"><FileText size={18} /><h4 className="text-[11px] font-black uppercase tracking-widest">Master site elements</h4></div>
+              <div className="flex items-center gap-3 mb-8 text-teal-400 border-b border-white/5 pb-4"><FileText size={18} /><h4 className="text-[11px] font-black uppercase tracking-widest">Site text</h4></div>
               <div className="grid gap-6">
                  {siteContent.map(item => (
                    <div key={item.content_key} className="bg-white/2 border border-white/5 rounded-2xl p-6 group hover:bg-white/5 transition-all">
@@ -172,7 +172,7 @@ export function Content({ user }) {
               {isUpdating && (
                 <div className="fixed bottom-10 right-10 bg-teal-600 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 ldr-toast-in">
                    <Spinner size={14} tone="white" />
-                   <span className="text-[8px] font-black uppercase tracking-widest">Synchronizing Matrix...</span>
+                   <span className="text-[8px] font-black uppercase tracking-widest">Saving changes…</span>
                 </div>
               )}
            </div>

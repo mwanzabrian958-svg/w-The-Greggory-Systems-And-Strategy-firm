@@ -53,7 +53,7 @@ export function UsersModal({ isOpen, onClose }) {
 
   const getRoleColor = (role) => {
     switch(role) {
-      case 'Admin': return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'Admin': return 'bg-slate-100 text-slate-800 border-slate-300';
       case 'Developer': return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'User': return 'bg-slate-100 text-slate-800 border-slate-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
@@ -64,7 +64,7 @@ export function UsersModal({ isOpen, onClose }) {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Users className="w-6 h-6 text-white" />
             <h2 className="text-xl font-bold text-white">User Management</h2>

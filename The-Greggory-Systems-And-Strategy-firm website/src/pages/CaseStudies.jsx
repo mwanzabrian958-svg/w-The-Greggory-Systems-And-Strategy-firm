@@ -229,10 +229,10 @@ const CaseStudies = () => {
       <section className="relative z-10 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="max-w-3xl mx-auto">
-            <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-4">Verification Matrix</p>
-            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-8">Mission Artifacts</h1>
+            <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.4em] mb-4">Our track record</p>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight mb-8">Our work</h1>
             <p className="text-lg text-slate-400 font-medium leading-relaxed uppercase tracking-widest mb-12">
-              Real-world telemetry from successful systemic synchronizations across global entities.
+              A sample of projects we have delivered and the results they produced.
             </p>
           </div>
         </div>

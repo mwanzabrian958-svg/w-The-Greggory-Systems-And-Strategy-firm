@@ -38,7 +38,7 @@ export function ClientSearchResults() {
     switch (type) {
       case "user": return <User className="text-teal-400" size={20} />;
       case "project": return <FolderKanban className="text-blue-400" size={20} />;
-      case "task": return <CheckSquare className="text-purple-400" size={20} />;
+      case "task": return <CheckSquare className="text-teal-400" size={20} />;
       case "ledger": return <Calculator className="text-emerald-400" size={20} />;
       default: return <Search className="text-slate-400" size={20} />;
     }

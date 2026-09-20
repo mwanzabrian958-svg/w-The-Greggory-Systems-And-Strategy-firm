@@ -20,14 +20,14 @@ export function CRMModal({ isOpen, onClose }) {
       case 'Lead': return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'Prospect': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       case 'Inactive': return 'bg-gray-100 text-gray-800 border-gray-300';
-      default: return 'bg-purple-100 text-purple-800 border-purple-300';
+      default: return 'bg-slate-100 text-slate-800 border-slate-300';
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Building2 className="w-6 h-6 text-white" />
             <h2 className="text-xl font-bold text-white">Client Relationship Management</h2>
@@ -80,7 +80,7 @@ export function CRMModal({ isOpen, onClose }) {
                       <tr key={client.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-semibold">
+                            <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center text-white font-semibold">
                               {client.name.substring(0, 2).toUpperCase()}
                             </div>
                             <div>
@@ -106,8 +106,8 @@ export function CRMModal({ isOpen, onClose }) {
                             <button className="p-1 hover:bg-green-100 rounded transition-colors">
                               <FileText className="w-4 h-4 text-green-600" />
                             </button>
-                            <button className="p-1 hover:bg-purple-100 rounded transition-colors">
-                              <Star className="w-4 h-4 text-purple-600" />
+                            <button className="p-1 hover:bg-slate-100 rounded transition-colors">
+                              <Star className="w-4 h-4 text-slate-600" />
                             </button>
                           </div>
                         </td>
@@ -127,7 +127,7 @@ export function CRMModal({ isOpen, onClose }) {
                 {[
                   { stage: 'Lead', count: 5, value: 150000, color: 'from-blue-500 to-blue-600' },
                   { stage: 'Qualified', count: 3, value: 450000, color: 'from-yellow-500 to-orange-600' },
-                  { stage: 'Proposal', count: 2, value: 890000, color: 'from-purple-500 to-purple-600' },
+                  { stage: 'Proposal', count: 2, value: 890000, color: 'from-teal-500 to-teal-600' },
                   { stage: 'Closed', count: 8, value: 1200000, color: 'from-green-500 to-green-600' },
                 ].map((stage) => (
                   <div key={stage.stage} className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
@@ -179,7 +179,7 @@ export function CRMModal({ isOpen, onClose }) {
                         </div>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           deal.stage === 'Negotiation' ? 'bg-orange-100 text-orange-800' :
-                          deal.stage === 'Proposal' ? 'bg-purple-100 text-purple-800' :
+                          deal.stage === 'Proposal' ? 'bg-teal-50 text-teal-800' :
                           'bg-blue-100 text-blue-800'
                         }`}>
                           {deal.stage}
@@ -201,7 +201,7 @@ export function CRMModal({ isOpen, onClose }) {
               <h3 className="text-lg font-semibold text-gray-900">CRM Analytics</h3>
               
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-6 text-white">
+                <div className="bg-slate-700 rounded-xl p-6 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <Building2 className="w-5 h-5" />
                     <span className="text-sm opacity-90">Total Clients</span>
@@ -215,7 +215,7 @@ export function CRMModal({ isOpen, onClose }) {
                   </div>
                   <div className="text-3xl font-bold">KES 3.0M</div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl p-6 text-white">
+                <div className="bg-teal-600 rounded-xl p-6 text-white">
                   <div className="flex items-center gap-2 mb-2">
                     <TrendingUp className="w-5 h-5" />
                     <span className="text-sm opacity-90">Conversion Rate</span>
@@ -237,7 +237,7 @@ export function CRMModal({ isOpen, onClose }) {
                   {[
                     { name: 'Technology', count: 2, percent: 40, color: 'bg-blue-500' },
                     { name: 'Finance', count: 1, percent: 20, color: 'bg-green-500' },
-                    { name: 'Software', count: 1, percent: 20, color: 'bg-purple-500' },
+                    { name: 'Software', count: 1, percent: 20, color: 'bg-slate-500' },
                     { name: 'Manufacturing', count: 1, percent: 20, color: 'bg-orange-500' },
                   ].map((item) => (
                     <div key={item.name} className="flex items-center gap-4">

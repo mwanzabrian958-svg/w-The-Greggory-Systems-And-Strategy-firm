@@ -82,7 +82,7 @@ export function BlogPreview() {
         </div>
 
         <div className="flex-1 max-w-sm mx-6 hidden md:block">
-           <SearchBlock variant="admin" placeholder="Search manuscripts..." />
+           <SearchBlock variant="admin" placeholder="Search posts..." />
         </div>
         <button
           onClick={() => navigate("/admin/content")}
@@ -107,7 +107,7 @@ export function BlogPreview() {
             </div>
             <div className="w-1 h-1 bg-slate-800 rounded-full"></div>
             <div className="flex items-center gap-2 text-[8px] font-black uppercase text-slate-500 tracking-widest">
-              <User size={10} className="text-purple-500" />
+              <User size={10} className="text-slate-500" />
               <span>{article.author || "Admin"}</span>
             </div>
             <div className="w-1 h-1 bg-slate-800 rounded-full"></div>

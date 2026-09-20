@@ -29,7 +29,7 @@ export function AnalyticsModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-700 px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BarChart3 className="w-6 h-6 text-white" />
             <h2 className="text-xl font-bold text-white">Analytics Dashboard</h2>
@@ -48,11 +48,11 @@ export function AnalyticsModal({ isOpen, onClose }) {
         </div>
 
         <div className="bg-gray-50 border-b px-6 flex gap-1">
-          <button onClick={() => setActiveTab('overview')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'overview' ? 'bg-white border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>Overview</button>
-          <button onClick={() => setActiveTab('users')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'users' ? 'bg-white border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>User Analytics</button>
-          <button onClick={() => setActiveTab('projects')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'projects' ? 'bg-white border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>Project Analytics</button>
-          <button onClick={() => setActiveTab('revenue')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'revenue' ? 'bg-white border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>Revenue</button>
-          <button onClick={() => setActiveTab('traffic')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'traffic' ? 'bg-white border-b-2 border-indigo-600 text-indigo-600' : 'text-gray-600 hover:text-gray-900'}`}>Traffic</button>
+          <button onClick={() => setActiveTab('overview')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'overview' ? 'bg-white border-b-2 border-teal-600 text-teal-700' : 'text-gray-600 hover:text-gray-900'}`}>Overview</button>
+          <button onClick={() => setActiveTab('users')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'users' ? 'bg-white border-b-2 border-teal-600 text-teal-700' : 'text-gray-600 hover:text-gray-900'}`}>User Analytics</button>
+          <button onClick={() => setActiveTab('projects')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'projects' ? 'bg-white border-b-2 border-teal-600 text-teal-700' : 'text-gray-600 hover:text-gray-900'}`}>Project Analytics</button>
+          <button onClick={() => setActiveTab('revenue')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'revenue' ? 'bg-white border-b-2 border-teal-600 text-teal-700' : 'text-gray-600 hover:text-gray-900'}`}>Revenue</button>
+          <button onClick={() => setActiveTab('traffic')} className={`px-4 py-3 font-medium text-sm transition-colors ${activeTab === 'traffic' ? 'bg-white border-b-2 border-teal-600 text-teal-700' : 'text-gray-600 hover:text-gray-900'}`}>Traffic</button>
         </div>
 
         <div className="flex-1 overflow-auto p-6">
@@ -64,8 +64,8 @@ export function AnalyticsModal({ isOpen, onClose }) {
                   return (
                     <div key={metric.name} className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                       <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
-                          <Icon className="w-6 h-6 text-indigo-600" />
+                        <div className="w-12 h-12 rounded-lg bg-teal-50 flex items-center justify-center">
+                          <Icon className="w-6 h-6 text-teal-700" />
                         </div>
                         <div className={`flex items-center gap-1 text-sm font-medium ${getChangeColor(metric.change)}`}>
                           {getChangeIcon(metric.change)}
@@ -87,7 +87,7 @@ export function AnalyticsModal({ isOpen, onClose }) {
                       <div key={source} className="flex items-center gap-4">
                         <div className="w-32 text-sm text-gray-600">{source}</div>
                         <div className="flex-1 bg-gray-200 rounded-full h-3">
-                          <div className="bg-indigo-600 h-3 rounded-full" style={{ width: `${100 - i * 15}%` }} />
+                          <div className="bg-teal-600 h-3 rounded-full" style={{ width: `${100 - i * 15}%` }} />
                         </div>
                         <div className="text-sm font-medium text-gray-900">{100 - i * 15}%</div>
                       </div>
@@ -101,7 +101,7 @@ export function AnalyticsModal({ isOpen, onClose }) {
                     {[
                       { name: 'New Users', value: 234, color: 'bg-green-500' },
                       { name: 'Returning Users', value: 456, color: 'bg-blue-500' },
-                      { name: 'Active Sessions', value: 89, color: 'bg-purple-500' },
+                      { name: 'Active Sessions', value: 89, color: 'bg-teal-500' },
                       { name: 'Page Views', value: '2.3K', color: 'bg-orange-500' },
                     ].map((item) => (
                       <div key={item.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -141,11 +141,11 @@ export function AnalyticsModal({ isOpen, onClose }) {
 
               <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                 <h4 className="font-semibold text-gray-900 mb-4">User Growth Trend</h4>
-                <div className="h-64 bg-gradient-to-t from-indigo-50 to-white rounded-lg flex items-end justify-around p-4">
+                <div className="h-64 bg-gradient-to-t from-slate-100 to-white rounded-lg flex items-end justify-around p-4">
                   {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'].map((month, i) => (
                     <div key={month} className="flex flex-col items-center gap-2">
                       <div
-                        className="w-12 bg-indigo-600 rounded-t-lg transition-all hover:bg-indigo-700"
+                        className="w-12 bg-teal-600 rounded-t-lg transition-all hover:bg-teal-700"
                         style={{ height: `${40 + i * 15}%` }}
                       />
                       <div className="text-xs text-gray-600">{month}</div>
@@ -181,7 +181,7 @@ export function AnalyticsModal({ isOpen, onClose }) {
                 <div className="flex items-center gap-8">
                   <div className="flex-1">
                     {[
-                      { name: 'Planning', value: 5, color: 'bg-purple-500' },
+                      { name: 'Planning', value: 5, color: 'bg-slate-500' },
                       { name: 'In Progress', value: 8, color: 'bg-blue-500' },
                       { name: 'Review', value: 4, color: 'bg-orange-500' },
                       { name: 'Completed', value: 17, color: 'bg-green-500' },
@@ -291,7 +291,7 @@ export function AnalyticsModal({ isOpen, onClose }) {
           <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
             <Download className="w-4 h-4" /> Export Report
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
             <RefreshCw className="w-4 h-4" /> Refresh Data
           </button>
         </div>

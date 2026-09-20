@@ -28,7 +28,7 @@ export function SupportModal({ isOpen, onClose }) {
   const getStatusColor = (status) => {
     switch(status) {
       case 'Open': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'In Progress': return 'bg-purple-100 text-purple-800 border-purple-300';
+      case 'In Progress': return 'bg-slate-100 text-slate-700 border-slate-300';
       case 'Resolved': return 'bg-green-100 text-green-800 border-green-300';
       case 'Closed': return 'bg-gray-100 text-gray-800 border-gray-300';
       default: return 'bg-gray-100 text-gray-800 border-gray-300';
@@ -116,8 +116,8 @@ export function SupportModal({ isOpen, onClose }) {
                             <button className="p-1 hover:bg-green-100 rounded transition-colors">
                               <CheckCircle className="w-4 h-4 text-green-600" />
                             </button>
-                            <button className="p-1 hover:bg-purple-100 rounded transition-colors">
-                              <Star className="w-4 h-4 text-purple-600" />
+                            <button className="p-1 hover:bg-slate-100 rounded transition-colors">
+                              <Star className="w-4 h-4 text-teal-700" />
                             </button>
                           </div>
                         </td>

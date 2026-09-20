@@ -81,7 +81,7 @@ export function CreatePersonnel() {
               <section className="space-y-4 bg-white/2 p-5 rounded-2xl border border-white/5">
                 <div className="flex items-center gap-2 text-teal-500 border-b border-white/5 pb-2"><ImageIcon size={10} /><h4 className="text-[8px] font-black uppercase tracking-[0.2em]">Profile Image</h4></div>
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                <div onClick={() => fileInputRef.current?.click()} className={`aspect-[4/5] max-h-[320px] rounded-2xl border border-dashed border-white/10 bg-white/2 overflow-hidden cursor-pointer flex items-center justify-center transition-all duration-500 ${form.image_base64 || form.image_url ? "border-purple-500/30" : ""}`}>
+                <div onClick={() => fileInputRef.current?.click()} className={`aspect-[4/5] max-h-[320px] rounded-2xl border border-dashed border-white/10 bg-white/2 overflow-hidden cursor-pointer flex items-center justify-center transition-all duration-500 ${form.image_base64 || form.image_url ? "border-teal-500/30" : ""}`}>
                   {form.image_base64 || form.image_url ? (
                     <img src={form.image_base64 || form.image_url} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
@@ -90,7 +90,7 @@ export function CreatePersonnel() {
                 </div>
                 <div>
                   <label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Or Image URL (optional)</label>
-                  <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value, image_base64: "" })} placeholder="https://... or /images/....jpg" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[9px] font-bold text-white outline-none focus:border-purple-500" />
+                  <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value, image_base64: "" })} placeholder="https://... or /images/....jpg" className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[9px] font-bold text-white outline-none focus:border-teal-500" />
                 </div>
               </section>
             </div>
