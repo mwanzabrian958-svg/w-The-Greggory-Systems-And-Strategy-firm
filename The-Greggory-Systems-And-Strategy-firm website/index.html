@@ -44,15 +44,32 @@
          it on mount (main.jsx also removes it explicitly as a belt-and-braces).
          Self-contained by design: no external CSS, no fonts dependency. -->
     <style>
-      #gssf-boot{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
-        background:radial-gradient(120% 120% at 20% 0%,#0f172a 0%,#020617 58%,#010409 100%);
+      #gssf-boot{position:fixed;inset:0;z-index:9999;overflow:hidden;display:flex;align-items:center;justify-content:center;
+        background:radial-gradient(130% 120% at 50% 4%,#101d34 0%,#0a1120 44%,#04070f 80%,#01030a 100%);
         font-family:Poppins,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-      #gssf-boot .gb-grid{position:absolute;inset:0;pointer-events:none;
-        background-image:linear-gradient(rgba(148,163,184,.08) 1px,transparent 1px),
-                         linear-gradient(90deg,rgba(148,163,184,.08) 1px,transparent 1px);
-        background-size:34px 34px;
-        -webkit-mask-image:radial-gradient(circle at 50% 50%,#000 0%,transparent 72%);
-        mask-image:radial-gradient(circle at 50% 50%,#000 0%,transparent 72%)}
+      /* Backdrop: a slow aurora wash (gold / teal / emerald) rather than a mesh
+         grid — no hard lines, no repeating pattern, just drifting light behind
+         the emblem. The top pair sits staggered (left-centre / right-high):
+         symmetric blobs merged into one fat horizontal bar on 16:9. */
+      #gssf-boot .gb-aurora{position:absolute;inset:-14%;pointer-events:none;
+        filter:blur(62px) saturate(125%);
+        background-image:
+          radial-gradient(30% 44% at 30% 36%,rgba(234,179,8,.30),transparent 66%),
+          radial-gradient(26% 40% at 76% 22%,rgba(45,212,191,.24),transparent 66%),
+          radial-gradient(40% 38% at 54% 76%,rgba(16,185,129,.18),transparent 68%),
+          radial-gradient(56% 50% at 50% 48%,rgba(255,255,255,.06),transparent 70%);
+        animation:gbDrift 28s ease-in-out infinite}
+      /* Vignette so the emblem sits in a pool of light instead of a flat field. */
+      #gssf-boot .gb-veil{position:absolute;inset:0;pointer-events:none;
+        background:radial-gradient(74% 64% at 50% 46%,transparent 40%,rgba(1,3,8,.62) 100%)}
+      /* Film grain: texture without pattern, and it stops the dark gradient from
+         banding on cheap panels. Inline SVG — no network request. */
+      #gssf-boot .gb-grain{position:absolute;inset:0;pointer-events:none;opacity:.18;mix-blend-mode:overlay;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E")}
+      @keyframes gbDrift{
+        0%{transform:translate3d(-3%,-2%,0) scale(1.08)}
+        50%{transform:translate3d(2%,3%,0) scale(1.16)}
+        100%{transform:translate3d(3%,-1%,0) scale(1.1)}}
       #gssf-boot .gb-halo{position:absolute;width:520px;height:520px;border-radius:50%;pointer-events:none;
         background:radial-gradient(circle,rgba(234,179,8,.5),transparent 68%);filter:blur(90px);animation:gbGlow 2.4s ease-in-out infinite}
       #gssf-boot .gb-stack{position:relative;display:flex;flex-direction:column;align-items:center;padding:0 24px}
@@ -90,8 +107,10 @@
     <div id="root">
       <!-- Replaced by the React app on mount — see src/main.jsx -->
       <div id="gssf-boot" role="status" aria-live="polite">
-        <span class="gb-grid"></span>
+        <span class="gb-aurora"></span>
         <span class="gb-halo"></span>
+        <span class="gb-veil"></span>
+        <span class="gb-grain"></span>
         <div class="gb-stack">
           <div class="gb-emblem">
             <span class="gb-ring gb-r1"></span>

@@ -214,7 +214,6 @@ export function PageLoader({
         className="absolute w-[440px] h-[440px] rounded-full blur-[100px] pointer-events-none"
         style={{ background: 'radial-gradient(circle, currentColor, transparent 70%)', opacity: 0.16 }}
       />
-      <span className="ldr-scanline" />
       <div className="relative flex flex-col items-center px-6">
         <Emblem size={emblemSize} tone={tone} />
         <div className="mt-9 flex flex-col items-center gap-4">
