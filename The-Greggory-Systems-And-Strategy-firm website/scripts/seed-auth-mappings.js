@@ -17,20 +17,30 @@ const { endpoints, clean, DB_NAME } = require("../server/config/dbEndpoints");
 // Default: use the shared cluster (prefers local XAMPP, fails over to cloud).
 // With --cloud: seed the CLOUD (Aiven) endpoint explicitly so production is
 // unblocked too, regardless of whether local XAMPP is running.
-let query;
-if (process.argv.includes("--cloud")) {
-  const cloud = endpoints().find((e) => e.label === "claude");
-  if (!cloud) {
-    console.error("No cloud endpoint configured (DB_HOST unset)");
-    process.exit(1);
+//
+// Lazy on purpose: the connection is only created on the first real query, so
+// `require("./seed-auth-mappings")` (e.g. from scripts/preflight-db.js to reuse
+// MAPPINGS) does NOT open a pool or keep the process alive.
+let _query = null;
+function query(sql, values) {
+  if (!_query) {
+    if (process.argv.includes("--cloud")) {
+      const mysql = require("mysql2");
+      const cloud = endpoints().find((e) => e.label === "claude");
+      if (!cloud) {
+        console.error("No cloud endpoint configured (DB_HOST unset)");
+        process.exit(1);
+      }
+      const conn = mysql.createConnection({ ...clean(cloud), database: DB_NAME });
+      _query = (s, v) => conn.promise().query(s, v);
+      console.log("[SEED] targeting CLOUD endpoint:", cloud.host + ":" + cloud.port);
+    } else {
+      const db = require("../backend/config/database");
+      _query = (s, v) => db.promise().query(s, v);
+      console.log("[SEED] targeting cluster (local-first, cloud failover)");
+    }
   }
-  const conn = mysql.createConnection({ ...clean(cloud), database: DB_NAME });
-  query = (sql, vals) => conn.promise().query(sql, vals);
-  console.log("[SEED] targeting CLOUD endpoint:", cloud.host + ":" + cloud.port);
-} else {
-  const db = require("../backend/config/database");
-  query = (sql, vals) => db.promise().query(sql, vals);
-  console.log("[SEED] targeting cluster (local-first, cloud failover)");
+  return _query(sql, values);
 }
 
 const MAPPINGS = [
@@ -169,16 +179,20 @@ async function verify() {
   }
 }
 
-(async () => {
-  try {
-    await ensureTables();
-    await seedMappings();
-    await seedRules();
-    await verify();
-    console.log("[SEED] DONE — admin/user/developer auth endpoints are unblocked");
-    process.exit(0);
-  } catch (e) {
-    console.error("[SEED] FAILED:", e.message);
-    process.exit(1);
-  }
-})();
+// CLI only — guarded so the module (MAPPINGS, ensureTables, seedMappings) can be
+// reused by scripts/preflight-db.js without re-running the whole seed.
+if (require.main === module) {
+  (async () => {
+    try {
+      await ensureTables();
+      await seedMappings();
+      await seedRules();
+      await verify();
+      console.log("[SEED] DONE — admin/user/developer auth endpoints are unblocked");
+      process.exit(0);
+    } catch (e) {
+      console.error("[SEED] FAILED:", e.message);
+      process.exit(1);
+    }
+  })();
+}

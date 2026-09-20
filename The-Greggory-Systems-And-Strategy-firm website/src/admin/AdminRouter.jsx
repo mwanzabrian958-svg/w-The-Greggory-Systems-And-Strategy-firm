@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { AdminRoute } from './components/AdminRoute';
 import AdminLayout from './components/AdminLayout';
+import { PageLoader } from '../components/Loading';
 import { Login } from './pages/Login';
 import { AdvancedDashboard } from './pages/AdvancedDashboard';
 import { Users } from './pages/Users';
@@ -64,10 +65,16 @@ export function AdminRouter() {
   };
 
   if (isLoading) return (
-    <div className="min-h-screen bg-[#020617] flex flex-col items-center justify-center">
-      <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-      <p className="mt-4 text-[7px] font-black text-slate-600 uppercase tracking-[0.6em]">Synchronizing Secure Relay...</p>
-    </div>
+    <PageLoader
+      label="Synchronising Secure Relay"
+      messages={[
+        'Synchronising Secure Relay',
+        'Verifying Admin Token',
+        'Restoring Session State',
+        'Loading Workstation Routing',
+      ]}
+      tone="teal"
+    />
   );
 
   return (

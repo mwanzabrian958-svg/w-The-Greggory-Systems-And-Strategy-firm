@@ -36,6 +36,15 @@ function check(name, cond, extra) {
   const stamp = Date.now();
   console.log("=== AUTH FLOW VERIFICATION (no email-token gating) ===\n");
 
+  // Pre-flight: without a locked auth_platform_mapping row every auth call here
+  // returns 400 MAPPING_NOT_LOCKED (seed data purged by system-reset scripts).
+  try {
+    const { ensureAuthSeedData } = require("./preflight-db");
+    await ensureAuthSeedData({});
+  } catch (e) {
+    console.warn("   pre-flight skipped:", e.message);
+  }
+
   // --- ADMIN ---
   const adm = "authadm" + stamp + "@test.com";
   const ar = await api("/api/admin-verification/register", "POST", { email: adm, password: "Test1234", first_name: "Adm", last_name: "In", role: "admin" });

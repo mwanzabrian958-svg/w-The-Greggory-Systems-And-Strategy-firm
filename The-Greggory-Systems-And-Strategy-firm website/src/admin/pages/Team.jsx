@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { InlineLoader, Spinner } from "../../components/Loading";
 import { apiCall } from "../../services/api";
 import { Users, Plus, Edit2, Trash2, RefreshCw, Search, Briefcase, ChevronDown, ChevronUp, Upload, X } from "lucide-react";
 
@@ -164,8 +165,8 @@ export function Team() {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-40">
-      <RefreshCw className="animate-spin text-teal-600 w-8 h-8" />
-      <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Loading Team Nodes...</p>
+      <Spinner size={34} tone="teal" />
+      <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Loading Team Nodes…</p>
     </div>
   );
 

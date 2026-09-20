@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
-import { X, Settings, Save, RefreshCw, Bell, Shield, Database, Globe, Mail, Smartphone, Palette, Users, Lock, Key, Server, HardDrive, Wifi, Monitor, Moon, Sun, ChevronRight, AlertCircle, CheckCircle, ToggleLeft, ToggleRight, Building, CreditCard, MapPin, Phone } from 'lucide-react';
+import { X, Settings, Save, Bell, Shield, Database, Globe, Mail, Smartphone, Palette, Users, Lock, Key, Server, HardDrive, Wifi, Monitor, Moon, Sun, ChevronRight, AlertCircle, CheckCircle, ToggleLeft, ToggleRight, Building, CreditCard, MapPin, Phone } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
+import { Spinner } from '../../../components/Loading';
 
 export function SettingsModal({ isOpen, onClose }) {
   const { darkMode, setDarkMode } = useTheme();
@@ -505,8 +506,8 @@ export function SettingsModal({ isOpen, onClose }) {
             >
               {saving ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Saving...
+                  <Spinner size={14} tone="white" />
+                  Saving…
                 </>
               ) : (
                 <>

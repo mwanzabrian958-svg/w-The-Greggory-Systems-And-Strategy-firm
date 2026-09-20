@@ -38,10 +38,17 @@ const STEPS = [
   },
   {
     table: "invoices",
-    where: "invoice_number LIKE 'AUD%' OR invoice_number LIKE 'INV-TEST%' OR client_name IN ('Audit Client','Verify Client')",
+    where:
+      "invoice_number LIKE 'AUD%' OR invoice_number LIKE 'INV-TEST%' " +
+      "OR client_name IN ('Audit Client','Verify Client','KRA Test Client') " +
+      "OR title LIKE 'KRA VAT %' OR title LIKE 'Verify %'",
     label: "audit/verify invoices",
   },
-  { table: "accounting_entries", where: "description LIKE '%AUDIT%'", label: "audit ledger entries" },
+  {
+    table: "accounting_entries",
+    where: "description LIKE '%AUDIT%' OR description LIKE 'Verify V%'",
+    label: "audit ledger entries",
+  },
   { table: "mpesa_transactions", where: "account_reference LIKE 'AUD%'", label: "audit mpesa rows" },
   { table: "user_feedback", where: "title LIKE 'audit %'", label: "audit feedback" },
   { table: "accounting_categories", where: "name LIKE 'VerifyCat %'", label: "verify categories" },

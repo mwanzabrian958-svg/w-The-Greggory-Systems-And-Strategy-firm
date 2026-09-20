@@ -5,6 +5,7 @@ import {
   Upload, Trash2,
 } from "lucide-react";
 import { apiCall } from "../../services/api";
+import { InlineLoader, Spinner } from "../../components/Loading";
 
 /* Defaults mirror the server whitelist (GET /api/admin/node-settings) */
 const DEFAULTS = {
@@ -243,7 +244,7 @@ export function Settings({ user }) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-3 animate-fade-in">
-        <Loader2 size={18} className="animate-spin text-teal-600" />
+        <Spinner size={30} tone="teal" />
         <p className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-400">Loading Node Calibration…</p>
       </div>
     );
@@ -261,7 +262,7 @@ export function Settings({ user }) {
             <RefreshCw size={12} /> Refresh
           </button>
           <button onClick={commit} disabled={saving || loading} className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-teal-600 text-white font-black text-[8px] uppercase tracking-widest shadow-md hover:bg-teal-700 transition-all disabled:opacity-50">
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} {saving ? "Committing…" : "Commit Changes"}
+            {saving ? <Spinner size={12} tone="white" /> : <Save size={12} />} {saving ? "Committing…" : "Commit Changes"}
           </button>
         </div>
       </div>
@@ -406,13 +407,13 @@ export function Settings({ user }) {
            </div>
            <div className="space-y-2 flex-1">
               <button onClick={runCalibration} disabled={calibrating} className="w-full py-2 flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white rounded-lg text-[7px] font-black uppercase tracking-widest border border-white/5 transition-all disabled:opacity-50">
-                 {calibrating ? <Loader2 size={11} className="animate-spin" /> : <Activity size={11} />} {calibrating ? "Calibrating…" : "Run System Calibration"}
+                 {calibrating ? <Spinner size={11} tone="white" /> : <Activity size={11} />} {calibrating ? "Calibrating…" : "Run System Calibration"}
               </button>
               <button onClick={clearCache} disabled={clearing} className="w-full py-2 flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white rounded-lg text-[7px] font-black uppercase tracking-widest border border-white/5 transition-all disabled:opacity-50">
-                 {clearing ? <Loader2 size={11} className="animate-spin" /> : <Eraser size={11} />} {clearing ? "Purging…" : "Clear System Cache"}
+                 {clearing ? <Spinner size={11} tone="white" /> : <Eraser size={11} />} {clearing ? "Purging…" : "Clear System Cache"}
               </button>
               <button onClick={toggleLockdown} disabled={locking} className={`w-full py-2 flex items-center justify-center gap-1.5 rounded-lg text-[7px] font-black uppercase tracking-widest border transition-all disabled:opacity-50 ${lockdownOn ? "bg-rose-600 text-white border-rose-500 hover:bg-rose-700" : "bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border-rose-600/20"}`}>
-                 {locking ? <Loader2 size={11} className="animate-spin" /> : <Lock size={11} />} {lockdownOn ? "Lift Hub Lockdown" : "Emergency Hub Lockdown"}
+                 {locking ? <Spinner size={11} tone="white" /> : <Lock size={11} />} {lockdownOn ? "Lift Hub Lockdown" : "Emergency Hub Lockdown"}
               </button>
            </div>
            {system && (

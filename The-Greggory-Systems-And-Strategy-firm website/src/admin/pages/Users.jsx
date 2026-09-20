@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner } from "../../components/Loading";
 import { useNavigate } from "react-router-dom";
 import { apiCall } from "../../services/api";
 import { Filter, UserPlus, Shield, User, CheckCircle, Download, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Users as UsersIcon, Trash2, AlertCircle, Activity, KeyRound, Copy, Check } from "lucide-react";
@@ -102,8 +103,8 @@ export function Users() {
 
   if (loading && users.length === 0) return (
     <div className="flex flex-col items-center justify-center py-40">
-       <RefreshCw className="animate-spin text-teal-600 w-8 h-8" />
-       <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Polling Identity Nodes...</p>
+       <Spinner size={34} tone="teal" />
+       <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Polling Identity Nodes…</p>
     </div>
   );
 
@@ -224,7 +225,7 @@ export function Users() {
                   <div className="flex gap-3">
                      <button onClick={() => setShowResetModal(false)} className="flex-1 py-3 bg-slate-100 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-600 transition-all">Cancel</button>
                      <button onClick={handleResetPassword} disabled={resetting || !resetUser.phone_number} className="flex-1 py-3 bg-emerald-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        {resetting ? <RefreshCw className="animate-spin" size={10} /> : <KeyRound size={10} />} Reset & Send
+                        {resetting ? <Spinner size={10} tone="white" /> : <KeyRound size={10} />} Reset & Send
                      </button>
                   </div>
                 </>
@@ -273,7 +274,7 @@ export function Users() {
               <div className="flex gap-3">
                  <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 bg-slate-100 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-600 transition-all">Abort</button>
                  <button onClick={handleDeleteUser} disabled={isDeleting} className="flex-1 py-3 bg-rose-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-2">
-                    {isDeleting ? <RefreshCw className="animate-spin" size={10} /> : <Trash2 size={10} />} Terminate
+                    {isDeleting ? <Spinner size={10} tone="white" /> : <Trash2 size={10} />} Terminate
                  </button>
               </div>
            </div>

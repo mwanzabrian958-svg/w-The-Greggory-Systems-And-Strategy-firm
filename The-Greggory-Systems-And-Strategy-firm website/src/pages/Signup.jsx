@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, User, Phone, Camera, CheckCircle } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, Phone, Camera } from 'lucide-react'
 import GoogleSignIn from '../components/GoogleSignIn'
 import AuthLayout from '../components/AuthLayout'
 import { usersAPI } from '../services/api'
 import { SITE_NAME } from '../constants/siteBrand'
+import { LoadingOverlay, Spinner } from '../components/Loading'
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -196,9 +197,18 @@ const Signup = () => {
 
           {errors.submit && <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-[8px] text-rose-400 font-bold rounded-lg text-center uppercase">{errors.submit}</div>}
 
-          <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-gold-500 to-yellow-500 text-slate-950 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 disabled:opacity-50">
-            {isLoading ? 'Relaying Data...' : 'Register'}
-          </button>
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full flex items-center justify-center gap-2.5 py-4 px-4 border border-transparent rounded-xl shadow-xl text-[10px] font-black text-slate-950 bg-gradient-to-r from-gold-500 to-yellow-500 hover:from-gold-400 hover:to-yellow-400 transition-all transform uppercase tracking-[0.2em]"
+      >
+        {isLoading ? (
+          <>
+            <Spinner size={16} tone="ink" />
+            <span>Registering Node…</span>
+          </>
+        ) : 'Register'}
+      </button>
 
           <p className="text-center text-[8px] font-black text-slate-500 uppercase tracking-widest">Node exists? <Link to="/login" className="text-gold-500">Access Login</Link></p>
         </form>
@@ -218,54 +228,20 @@ const Signup = () => {
       </div>
 
       {(isLoading || showSuccess) && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex items-center justify-center">
-          <div className="relative flex flex-col items-center">
-            {/* High-Tech Loading Hexagon/Ring System */}
-            <div className="relative w-32 h-32 flex items-center justify-center">
-              {/* Outer Scanning Ring */}
-              <div className="absolute inset-0 border-2 border-gold-500/20 rounded-full"></div>
-              <div className="absolute inset-0 border-t-2 border-gold-500 rounded-full animate-spin"></div>
-
-              {/* Inner Pulsing Ring */}
-              <div className="absolute inset-4 border border-cyan-500/30 rounded-full animate-pulse"></div>
-
-              {/* Center Status Icon */}
-              <div className="relative z-10">
-                {showSuccess ? (
-                  <CheckCircle className="w-12 h-12 text-emerald-500 animate-[bounce_1s_infinite]" />
-                ) : (
-                  <div className="w-8 h-8 bg-gold-500/10 rounded-lg flex items-center justify-center animate-pulse">
-                    <div className="w-2 h-2 bg-gold-500 rounded-full animate-ping"></div>
-                  </div>
-                )}
-              </div>
-
-              {/* Orbiting Nodes */}
-              {!showSuccess && (
-                <>
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gold-500 rounded-full shadow-[0_0_10px_#eab308]"></div>
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-cyan-500 rounded-full shadow-[0_0_10px_#06b6d4]"></div>
-                </>
-              )}
-            </div>
-
-            <div className="mt-12 text-center space-y-4">
-              <h3 className="text-white text-[12px] font-black uppercase tracking-[0.5em] animate-pulse">
-                {showSuccess ? 'Node Solidified' : 'Deploying Identity'}
-              </h3>
-              {!showSuccess && (
-                <div className="flex gap-1 justify-center">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="w-1 h-1 bg-gold-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.2}s` }}></div>
-                  ))}
-                </div>
-              )}
-              <p className="text-[8px] text-slate-500 font-mono uppercase tracking-widest">
-                {showSuccess ? 'Redirecting to secure terminal...' : 'Authorizing systemic credentials...'}
-              </p>
-            </div>
-          </div>
-        </div>
+        <LoadingOverlay
+          show={isLoading || showSuccess}
+          success={showSuccess}
+          successLabel="Node Solidified"
+          label="Deploying Identity"
+          messages={[
+            'Deploying Identity',
+            'Provisioning Credential Chain',
+            'Linking Security Session',
+          ]}
+          sublabel={showSuccess ? 'Redirecting to secure terminal…' : 'Authorising systemic credentials'}
+          status={showSuccess ? [] : ['Identity node accepted', 'Credential chain issued', 'Session link active']}
+          tone="gold"
+        />
       )}
 
       <div className="text-center text-[7px] font-black text-slate-700 uppercase tracking-[0.4em] mt-8">&copy; {new Date().getFullYear()} GSS SYSTEMS NODE</div>

@@ -4,6 +4,17 @@ import { SITE_NAME } from '../constants/siteBrand'
 import { Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
 
+import { Skeleton } from '../components/Loading'
+
+// ── PERSONNEL SKELETON GRID (shown while the API responds) ──────────────
+const PersonnelSkeleton = () => (
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full py-6" aria-hidden="true">
+    {[1, 2, 3, 4].map((i) => (
+      <Skeleton key={i} className="aspect-[4/5] rounded-[32px]" />
+    ))}
+  </div>
+)
+
 const About = () => {
   const [personnel, setPersonnel] = useState([])
   const [personnelLoading, setPersonnelLoading] = useState(true)
@@ -86,11 +97,7 @@ const About = () => {
           </div>
 
           {personnelLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full py-6">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="aspect-[4/5] rounded-[32px] bg-slate-100 animate-pulse" />
-              ))}
-            </div>
+            <PersonnelSkeleton />
           ) : displayPersonnel.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No personnel profiles available yet.</p>

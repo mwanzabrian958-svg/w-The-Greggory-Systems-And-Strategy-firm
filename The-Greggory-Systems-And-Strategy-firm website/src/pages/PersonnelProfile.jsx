@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
 import { X } from 'lucide-react'
 import DOMPurify from 'dompurify'
+import { PageLoader } from '../components/Loading'
 
 const PersonnelProfile = () => {
   const { id } = useParams()
@@ -32,7 +33,7 @@ const PersonnelProfile = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#fdfaf6] flex items-center justify-center pt-32">
-        <div className="h-10 w-10 rounded-full border-4 border-white/10 border-t-[#8fb28a] animate-spin" />
+        <PageLoader label="Loading Profile" minHeight="min-h-[40vh]" tone="sage" />
       </div>
     )
   }

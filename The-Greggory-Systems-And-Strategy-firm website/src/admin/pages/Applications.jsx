@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner } from "../../components/Loading";
 import { ClipboardList, CheckCircle, XCircle, Clock, Search, Filter, RefreshCw, ChevronRight } from "lucide-react";
 import { apiCall } from "../../services/api";
 
@@ -27,7 +28,7 @@ export function Applications() {
 
   const filtered = apps.filter(a => (a.project || "").toLowerCase().includes(searchQuery.toLowerCase()));
 
-  if (loading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-teal-600 w-6 h-6" /></div>;
+  if (loading) return <InlineLoader label="Fetching Inbound Applications…" tone="teal" rail />;
 
   return (
     <div className="space-y-6 animate-fade-in font-sans max-w-[1400px] mx-auto">

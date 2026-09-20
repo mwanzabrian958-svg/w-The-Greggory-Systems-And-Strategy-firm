@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X, Bell } from 'lucide-react';
+import { Emblem, toneOf } from '../../components/Loading';
 
 /**
  * Alert Component
@@ -309,12 +310,12 @@ export function AlertBanner({ type = 'info', title, message, onClose }) {
 /**
  * Loading Alert
  */
-export function LoadingAlert({ message = 'Loading...' }) {
+export function LoadingAlert({ message = 'processing', tone = 'teal' }) {
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4" role="status" aria-live="polite">
       <div className="flex items-center gap-3">
-        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
-        <p className="text-blue-700 text-sm font-medium">{message}</p>
+        <Emblem size={14} tone={tone} />
+        <p className={`font-medium ${toneOf(tone).text}`}>{message}</p>
       </div>
     </div>
   );

@@ -62,6 +62,16 @@ function check(name, cond, extra) {
 }
 
 (async () => {
+  // Pre-flight: auth_platform_mapping must be locked+active or every register /
+  // login below is rejected with 400 MAPPING_NOT_LOCKED.
+  console.log("--- DB PRE-FLIGHT ---");
+  try {
+    const { ensureAuthSeedData } = require("./preflight-db");
+    await ensureAuthSeedData({});
+  } catch (e) {
+    console.warn("   pre-flight skipped:", e.message);
+  }
+
   const em = "verify" + Date.now() + "@test.com";
   await api("/api/admin-verification/register", "POST", { email: em, password: "Verify123", first_name: "Ver", last_name: "Ify", role: "admin" });
   // Login can transiently hit the global 100-req/15-min rate limiter (plain-text

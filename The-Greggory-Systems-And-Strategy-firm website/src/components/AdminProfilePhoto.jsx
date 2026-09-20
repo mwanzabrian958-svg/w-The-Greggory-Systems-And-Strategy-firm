@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { getApiUrl } from "../services/api";
 import { Camera, X, Check, Loader2, User } from "lucide-react";
+import { Spinner } from "./Loading";
 
 export default function AdminProfilePhoto({
   adminId,
@@ -150,7 +151,7 @@ export default function AdminProfilePhoto({
 
           {isUploading && (
             <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-              <Loader2 className="w-8 h-8 text-white animate-spin" />
+              <Spinner size={26} tone="white" />
             </div>
           )}
         </div>

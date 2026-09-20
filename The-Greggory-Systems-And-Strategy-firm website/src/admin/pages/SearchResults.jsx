@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Search, User, FolderKanban, CheckSquare, Calculator, ArrowRight, RefreshCw, Mail, Phone, Globe, Shield } from "lucide-react";
 import { apiCall } from "../../services/api";
+import { InlineLoader, Spinner } from "../../components/Loading";
 
 /**
  * SearchResults - Detailed System Query Display
@@ -64,16 +65,13 @@ export function SearchResults() {
           </p>
         </div>
         <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-slate-400">
-           <RefreshCw size={10} className={loading ? 'animate-spin' : ''} />
+           <Spinner size={12} tone="teal" />
            {loading ? 'Re-indexing...' : 'Index Current'}
         </div>
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-40">
-           <RefreshCw className="animate-spin text-teal-600 w-10 h-10 mb-4" />
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Scanning System Backbone...</p>
-        </div>
+        <InlineLoader label="Scanning System Backbone…" tone="teal" rail />
       ) : results.length > 0 ? (
         <div className="grid gap-6">
           {results.map((item, idx) => (

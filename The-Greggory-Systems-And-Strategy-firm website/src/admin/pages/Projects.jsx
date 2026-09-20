@@ -4,6 +4,7 @@ import { apiCall } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import { CreateProjectModal, EditProjectModal } from "../components/ProjectModals";
 import { FolderKanban, Plus, Search, Edit2, Trash2, Calendar, User, DollarSign, Clock, MoreVertical, Filter, TrendingUp, RefreshCw, LayoutDashboard, BarChart3, ChevronRight, CheckSquare, X } from "lucide-react";
+import { Emblem, PageLoader } from "../../components/Loading";
 
 /**
  * Projects - Mission Node Management
@@ -91,10 +92,16 @@ export function Projects({ user }) {
   });
 
   if (loading && projects.length === 0) return (
-    <div className="flex flex-col items-center justify-center py-40">
-       <RefreshCw className="animate-spin text-teal-600 w-8 h-8" />
-       <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Polling Project Nodes...</p>
-    </div>
+    <PageLoader
+      label="Polling Project Nodes"
+      messages={[
+        'Polling Project Nodes',
+        'Querying Deployment Registry',
+        'Syncing Mission Registry',
+        'Preparing Sector Telemetry',
+      ]}
+      tone="gold"
+    />
   );
 
   return (

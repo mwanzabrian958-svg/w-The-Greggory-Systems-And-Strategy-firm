@@ -5,6 +5,7 @@ import {
   ArrowLeft, CheckCircle, RefreshCw
 } from "lucide-react";
 import { apiCall } from "../../services/api";
+import { Spinner } from "../../components/Loading";
 
 /**
  * RESTORED: Authentication Platform UI
@@ -179,7 +180,7 @@ export function Login({ onLoginSuccess }) {
                     </div>
                   </div>
                   <button type="submit" disabled={loading} className="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] shadow-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-                    {loading ? <RefreshCw className="animate-spin" size={16} /> : "Verify Identity"}
+                    {loading ? <Spinner size={16} tone="white" /> : "Verify Identity"}
                   </button>
                 </form>
 
@@ -219,7 +220,7 @@ export function Login({ onLoginSuccess }) {
                     {error && <p className="text-[8px] font-black text-rose-500 uppercase text-center">{error}</p>}
 
                     <button type="submit" disabled={loading} className="w-full bg-purple-600 hover:bg-purple-500 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] shadow-xl transition-all">
-                      {loading ? <RefreshCw className="animate-spin" size={16} /> : "Solidify Admin Node"}
+                      {loading ? <Spinner size={16} tone="white" /> : "Solidify Admin Node"}
                     </button>
                   </form>
                 )}

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Search, RefreshCw, X, ArrowRight, Globe, FolderKanban, CheckSquare, Calculator, User } from "lucide-react";
 import { apiCall } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
+import { Spinner } from "./Loading";
 
 /**
  * SearchBlock — reusable, system-wide search input + dropdown.
@@ -113,7 +114,7 @@ export default function SearchBlock({
               : "w-full pl-10 pr-8 py-1.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-[10px] font-bold focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all placeholder-slate-400"
           }
         />
-        {loading && <RefreshCw className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-teal-500" />}
+        {loading && <Spinner size={14} tone="teal" className="absolute right-2 top-1/2 -translate-y-1/2" />}
         {!loading && query && (
           <button
             onClick={() => { setQuery(""); setResults([]); setShow(false); }}

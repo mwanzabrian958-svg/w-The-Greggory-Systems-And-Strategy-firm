@@ -227,3 +227,185 @@ html {
 }
 
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   GSSF "SIGNAL CORE" LOADING SYSTEM
+   ───────────────────────────────────────────────────────────────────────────
+   One premium loader language for the whole product: an animated emblem
+   (counter-rotating arcs + gold sweep + breathing hex core + orbiting node),
+   micro-caps status copy with a shimmer sweep, and a travelling progress rail.
+   Skeletons share the same shimmer, so content and chrome feel like one system.
+
+   Composed from <Loading.jsx>. Only brand tokens (gold / teal / emerald /
+   slate) are used, so it reads correctly on light, dark and admin surfaces.
+   Keys are prefixed `ldr-` to avoid collisions with Tailwind keyframes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@keyframes ldr-spin-slow { to { transform: rotate(360deg); } }
+@keyframes ldr-spin-rev { to { transform: rotate(-360deg); } }
+@keyframes ldr-core {
+  0%, 100% { transform: scale(0.84) rotate(0deg); opacity: 0.85; }
+  50% { transform: scale(1.08) rotate(45deg); opacity: 1; }
+}
+@keyframes ldr-sweep {
+  0% { stroke-dashoffset: 165; stroke-dasharray: 30 300; opacity: 0.15; }
+  50% { opacity: 1; }
+  100% { stroke-dashoffset: -165; stroke-dasharray: 30 300; opacity: 0.15; }
+}
+@keyframes ldr-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes ldr-rail {
+  0% { transform: translateX(-110%) scaleX(0.55); }
+  55% { transform: translateX(45%) scaleX(1.15); }
+  100% { transform: translateX(210%) scaleX(0.55); }
+}
+@keyframes ldr-glow {
+  0%, 100% { opacity: 0.28; transform: scale(0.9); }
+  50% { opacity: 0.6; transform: scale(1.12); }
+}
+@keyframes ldr-rise {
+  0%, 100% { transform: scaleY(0.35); opacity: 0.35; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+@keyframes ldr-scan {
+  0% { transform: translateY(-130%); opacity: 0; }
+  35% { opacity: 0.9; }
+  100% { transform: translateY(130%); opacity: 0; }
+}
+@keyframes ldr-text {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+@keyframes ldr-sweep-x {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ── Emblem ────────────────────────────────────────────────────────────── */
+.ldr-emblem { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.ldr-emblem svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.ldr-arc-slow { transform-origin: 50% 50%; animation: ldr-spin-slow 2.6s linear infinite; }
+.ldr-arc-rev { transform-origin: 50% 50%; animation: ldr-spin-rev 1.7s linear infinite; }
+.ldr-arc-fast { transform-origin: 50% 50%; animation: ldr-spin-slow 1.05s linear infinite; }
+.ldr-core { transform-origin: 50% 50%; animation: ldr-core 2.1s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+.ldr-sweep { animation: ldr-sweep 2.1s ease-in-out infinite; }
+.ldr-glow {
+  position: absolute; inset: 0; border-radius: 9999px; pointer-events: none;
+  background: radial-gradient(circle, currentColor 0%, transparent 68%);
+  filter: blur(14px); opacity: 0.3;
+  animation: ldr-glow 2.4s ease-in-out infinite;
+}
+
+/* ── Status copy ───────────────────────────────────────────────────────── */
+.ldr-label {
+  font-size: 9px; font-weight: 900; letter-spacing: 0.42em; text-transform: uppercase;
+  background: linear-gradient(90deg, currentColor 0%, currentColor 38%, #fff 50%, currentColor 62%, currentColor 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ldr-shimmer 2.6s linear infinite, ldr-text 2.6s ease-in-out infinite;
+}
+.ldr-label-solid {
+  font-size: 9px; font-weight: 900; letter-spacing: 0.42em; text-transform: uppercase;
+  animation: ldr-text 2.6s ease-in-out infinite;
+}
+.ldr-sublabel {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase;
+  opacity: 0.55; font-variant-numeric: tabular-nums;
+}
+
+/* ── Travelling progress rail ──────────────────────────────────────────── */
+.ldr-rail {
+  position: relative; overflow: hidden; border-radius: 9999px; height: 2px; width: 100%;
+  background: currentColor; opacity: 0.16;
+}
+.ldr-rail-bar {
+  position: absolute; inset: 0; border-radius: 9999px; transform-origin: left center;
+  background: linear-gradient(90deg, transparent, currentColor 22%, currentColor 78%, transparent);
+  animation: ldr-rail 1.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ── Equaliser bars (replaces the old row of bouncing dots) ────────────── */
+.ldr-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 12px; }
+.ldr-bars i {
+  display: block; width: 2px; height: 100%; border-radius: 9999px; background: currentColor;
+  transform-origin: bottom center; animation: ldr-rise 1.15s ease-in-out infinite;
+}
+.ldr-bars i:nth-child(2) { animation-delay: 0.16s; }
+.ldr-bars i:nth-child(3) { animation-delay: 0.32s; }
+.ldr-bars i:nth-child(4) { animation-delay: 0.48s; }
+.ldr-bars i:nth-child(5) { animation-delay: 0.64s; }
+
+/* ── Skeletons (same shimmer language) ─────────────────────────────────── */
+.ldr-skel {
+  position: relative; overflow: hidden; border-radius: 12px;
+  background: currentColor; opacity: 0.1;
+}
+.ldr-skel::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  transform: translateX(-100%);
+  animation: ldr-sweep-x 1.9s ease-in-out infinite;
+}
+
+/* ── Scanning sheen for full-screen / card loaders ─────────────────────── */
+.ldr-scanline {
+  position: absolute; left: 0; right: 0; height: 35%; pointer-events: none;
+  background: linear-gradient(180deg, transparent, currentColor, transparent);
+  opacity: 0.12; animation: ldr-scan 3.4s ease-in-out infinite;
+}
+
+/* ── Grid floor + halo backdrop for page-level loaders ─────────────────── */
+.ldr-backdrop {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.09) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(circle at 50% 50%, black 0%, transparent 72%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, black 0%, transparent 72%);
+}
+
+/* ── Hero scroll cue: a light that travels down a gradient hairline ─────── */
+.ldr-scroll-cue {
+  position: relative; width: 1px; height: 28px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(234, 179, 8, 0.55), transparent);
+}
+.ldr-scroll-cue::after {
+  content: ''; position: absolute; left: 0; width: 1px; height: 10px;
+  background: linear-gradient(180deg, transparent, #eab308);
+  animation: ldr-cue 2.1s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+@keyframes ldr-cue {
+  0%   { transform: translateY(-12px); opacity: 0; }
+  25%  { opacity: 1; }
+  100% { transform: translateY(30px); opacity: 0; }
+}
+
+/* ── Toasts / inline notices: rise instead of bouncing ─────────────────── */
+.ldr-toast-in { animation: ldr-toast 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+@keyframes ldr-toast {
+  from { transform: translateY(14px) scale(0.97); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Reduced motion: keep the composition, drop the movement (accessibility).
+   The global rule above already clamps durations; these turn the moving parts
+   into static, readable states instead of a frozen off-centre frame. */
+@media (prefers-reduced-motion: reduce) {
+  .ldr-arc-slow, .ldr-arc-rev, .ldr-arc-fast, .ldr-core, .ldr-sweep,
+  .ldr-glow, .ldr-label, .ldr-label-solid, .ldr-rail-bar,
+  .ldr-bars i, .ldr-skel::after, .ldr-scanline,
+  .ldr-scroll-cue::after, .ldr-toast-in {
+    animation: none !important;
+  }
+  .ldr-arc-slow, .ldr-arc-rev, .ldr-arc-fast { opacity: 0.9; }
+  .ldr-label, .ldr-label-solid { -webkit-text-fill-color: currentColor; background: none; opacity: 1; }
+  .ldr-skel { opacity: 0.16; }
+  .ldr-rail-bar { transform: none; opacity: 0.7; }
+  .ldr-scroll-cue::after { opacity: 0.8; transform: none; }
+}
+
+
+

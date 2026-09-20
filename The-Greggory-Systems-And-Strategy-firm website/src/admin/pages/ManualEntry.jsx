@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, X, Save, RefreshCw } from "lucide-react";
 import { getApiUrl, API_BASE_URL } from "../../services/api";
+import { Spinner } from "../../components/Loading";
 import SearchBlock from "../../components/SearchBlock";
 
 export function ManualEntry() {
@@ -86,7 +87,7 @@ export function ManualEntry() {
             <div className="pt-4 flex gap-3">
                <button type="button" onClick={() => navigate('/admin/billing')} className="flex-1 bg-white/5 text-slate-400 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest border border-white/5 hover:bg-white/10 transition-all">Abort</button>
                <button type="submit" disabled={isSubmitting} className="flex-[2] bg-teal-600 hover:bg-teal-500 text-white py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl transition-all flex items-center justify-center gap-2">
-                 {isSubmitting ? <RefreshCw className="animate-spin" size={12} /> : <Save size={12} />} Commit Entry
+                 {isSubmitting ? <Spinner size={12} tone="white" /> : <Save size={12} />} Commit Entry
                </button>
             </div>
           </div>

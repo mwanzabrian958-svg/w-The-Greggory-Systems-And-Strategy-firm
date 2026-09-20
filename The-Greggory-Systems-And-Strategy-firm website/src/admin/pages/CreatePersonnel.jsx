@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, X, RefreshCw, Send, Type, Briefcase, ImageIcon, Upload } from "lucide-react";
 import { getApiUrl } from "../../services/api";
+import { Spinner } from "../../components/Loading";
 
 const normalizeBio = (rawContent) => {
   if (!rawContent || !rawContent.trim()) return "";
@@ -121,7 +122,7 @@ export function CreatePersonnel() {
               <div className="bg-white/5 px-6 py-3 rounded-xl border border-white/10"><p className="text-[6px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Display Sort Order</p><input type="number" min="0" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} className="w-16 bg-transparent text-lg font-black text-white outline-none" /></div>
             </div>
             <button type="submit" disabled={isSubmitting} className="bg-teal-600 hover:bg-teal-500 text-white px-10 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-xl flex items-center gap-3 border border-teal-400/20 transition-all active:scale-95">
-              {isSubmitting ? <RefreshCw className="animate-spin" size={12} /> : <Send size={12} />} Publish Node
+              {isSubmitting ? <Spinner size={12} tone="white" /> : <Send size={12} />} Publish Node
             </button>
           </div>
         </div>

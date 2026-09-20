@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   User, Mail, Phone, Calendar, Shield, MapPin,
@@ -42,8 +43,7 @@ export function UserDetail() {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center p-20">
-       <RefreshCw className="animate-spin text-teal-500 w-10 h-10 mb-4" />
-       <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.5em]">Initializing Identity Depth-Scan...</p>
+       <InlineLoader label="Initialising Identity Depth-Scan…" tone="teal" />
     </div>
   );
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { MessageSquare, Mail, Phone, Send, Plus, Search, Clock, RefreshCw, ChevronRight } from "lucide-react";
 import { getApiUrl, apiCall } from "../../services/api";
+import { InlineLoader, Spinner } from "../../components/Loading";
 
 const MESSAGES = [
   { id: 1, sender: "Amaka Wanjiru", message: "Grant applications reviewed and approved.", time: "2 hours ago", channel: "email", unread: false },
@@ -84,7 +85,7 @@ export function Communication() {
     }
   };
 
-  if (loading && clients.length === 0) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-teal-600 w-6 h-6" /></div>;
+  if (loading && clients.length === 0) return <InlineLoader label="Opening Secure Relay…" tone="teal" rail />;
 
   return (
     <div className="space-y-6 animate-fade-in font-sans">
@@ -207,7 +208,7 @@ export function Communication() {
               )}
 
               <button type="submit" disabled={isSending} className="w-full bg-teal-600 text-white py-3 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50">
-                {isSending ? <RefreshCw className="animate-spin" size={12} /> : <Send size={12} />} Solidify Relay
+                {isSending ? <Spinner size={12} tone="white" /> : <Send size={12} />} Solidify Relay
               </button>
             </form>
           )}

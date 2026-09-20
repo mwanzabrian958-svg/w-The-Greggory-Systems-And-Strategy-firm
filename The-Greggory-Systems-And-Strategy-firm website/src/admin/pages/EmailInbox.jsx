@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner } from "../../components/Loading";
 import { apiCall } from "../../services/api";
 import { Mail, MessageSquare, RefreshCw, Send, Clock } from "lucide-react";
 
@@ -23,7 +24,7 @@ export function EmailInbox() {
 
   if (loading) return (
     <div className="flex items-center justify-center py-40">
-      <RefreshCw className="animate-spin text-teal-600 w-8 h-8" />
+      <Spinner size={34} tone="teal" />
     </div>
   );
 

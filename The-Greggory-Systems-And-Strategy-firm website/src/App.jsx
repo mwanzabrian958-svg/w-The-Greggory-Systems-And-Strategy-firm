@@ -9,6 +9,7 @@ import PrivateRoute from './components/PrivateRoute'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
+import { PageLoader } from './components/Loading'
 
 // Landing page stays eager: it's the most common entry point, so we avoid
 // an extra network round-trip before first meaningful paint.
@@ -48,12 +49,7 @@ const AdminRouter = lazy(() =>
 
 // Minimal themed loading state shown while a route chunk is downloading.
 function PageFallback() {
-  return (
-    <div className="flex items-center justify-center min-h-[50vh]" role="status" aria-live="polite">
-      <div className="h-10 w-10 rounded-full border-4 border-white/10 border-t-teal-500 animate-spin" />
-      <span className="sr-only">Loading…</span>
-    </div>
-  )
+  return <PageLoader label="Loading" minHeight="min-h-[60vh]" tone="teal" emblemSize={72} />
 }
 
 function Layout() {

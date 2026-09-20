@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   CheckSquare, Plus, X, Save, RefreshCw, Trash2,
@@ -95,7 +96,7 @@ export function ProjectTasks() {
     } catch (e) { console.error(e); }
   };
 
-  if (loading) return <div className="fixed inset-0 bg-[#0f172a] flex items-center justify-center"><RefreshCw className="animate-spin text-teal-500" size={24} /></div>;
+  if (loading) return <PageLoader label="Loading Task Matrix…" tone="teal" className="bg-[#0f172a]" />;
 
   return (
     <div className="fixed inset-0 bg-[#0f172a] z-[500] flex flex-col overflow-hidden font-sans text-white">
@@ -241,7 +242,7 @@ export function ProjectTasks() {
                  <div className="pt-10 flex gap-4">
                     <button type="button" onClick={() => setShowAddForm(false)} className="flex-1 bg-white/5 py-4 rounded-2xl text-[9px] font-black uppercase">Cancel</button>
                     <button type="submit" disabled={isSubmitting} className="flex-[2] bg-teal-600 hover:bg-teal-500 py-4 rounded-2xl text-[10px] font-black uppercase flex items-center justify-center gap-3">
-                       {isSubmitting ? <RefreshCw className="animate-spin" size={14} /> : <Save size={14} />} Commit Node
+                       {isSubmitting ? <Spinner size={14} tone="white" /> : <Save size={14} />} Commit Node
                     </button>
                  </div>
               </form>

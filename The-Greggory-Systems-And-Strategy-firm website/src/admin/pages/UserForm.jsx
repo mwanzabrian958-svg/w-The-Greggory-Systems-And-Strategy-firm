@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { User, X, Save, RefreshCw, Shield } from "lucide-react";
 import { apiCall } from "../../services/api";
@@ -71,7 +72,7 @@ export function UserForm() {
     }
   };
 
-  if (loading) return <div className="fixed inset-0 bg-[#0f172a] flex items-center justify-center"><RefreshCw className="animate-spin text-teal-500" /></div>;
+  if (loading) return <PageLoader label="Loading Identity Record…" tone="teal" className="bg-[#0f172a]" />;
 
   return (
     <div className="fixed inset-0 bg-[#0f172a] z-[500] flex flex-col overflow-hidden">
@@ -185,7 +186,7 @@ export function UserForm() {
           <div className="pt-6 flex gap-4 pb-12">
               <button type="button" onClick={() => navigate('/admin/users')} className="flex-1 bg-white/5 text-slate-400 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest border border-white/5 hover:bg-white/10 transition-all">Cancel Protocol</button>
               <button type="submit" disabled={isSubmitting} className="flex-[2] bg-teal-600 hover:bg-teal-500 text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95">
-                {isSubmitting ? <RefreshCw className="animate-spin" size={14} /> : <Shield size={14} />} Commit Identity Change
+                {isSubmitting ? <Spinner size={14} tone="white" /> : <Shield size={14} />} Commit Identity Change
               </button>
           </div>
         </div>

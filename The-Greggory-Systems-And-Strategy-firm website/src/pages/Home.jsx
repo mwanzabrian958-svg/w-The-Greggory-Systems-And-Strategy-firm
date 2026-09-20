@@ -60,8 +60,8 @@ const Home = () => {
           <img src="/hero-phoenix.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
         </div>
 
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 animate-bounce opacity-40">
-          <div className="h-6 w-px bg-gradient-to-b from-gold-500 to-transparent" />
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 opacity-50">
+          <div className="ldr-scroll-cue" />
           <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Scroll</span>
         </div>
       </section>

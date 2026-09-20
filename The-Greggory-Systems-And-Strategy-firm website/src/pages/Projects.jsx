@@ -18,6 +18,7 @@ import {
   Tag, Hash, Briefcase, Building, MapPin, Link2, Share2, Printer,
   HelpCircle, LifeBuoy, GitBranch, GitMerge, Columns, Rows, Archive
 } from 'lucide-react'
+import { SectionLoader, InlineLoader, Spinner } from '../components/Loading'
 
 // ── TOAST ──────────────────────────────────────────────
 let _toastFn = null
@@ -273,9 +274,8 @@ const OverviewSection = ({ data = null, notifs = [], isLoading = false }) => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {isLoading ? (
-             <div className="lg:col-span-3 py-20 text-center border-2 border-dashed border-white/5 rounded-[40px]">
-                <RefreshCw className="w-12 h-12 text-gold-500/20 animate-spin mx-auto mb-4" />
-                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Compiling Deployment Matrix…</p>
+             <div className="lg:col-span-3">
+               <SectionLoader label="Compiling Deployment Matrix…" rows={2} tone="gold" />
              </div>
           ) : realProjects.length === 0 ? (
              <div className="lg:col-span-3 py-20 text-center border-2 border-dashed border-white/5 rounded-[40px]">
@@ -339,7 +339,7 @@ const OverviewSection = ({ data = null, notifs = [], isLoading = false }) => {
         </div>
         <div className="space-y-4">
           {isLoading ? (
-             <div className="py-10 text-center"><RefreshCw className="w-6 h-6 animate-spin mx-auto text-gold-500/20" /></div>
+             <InlineLoader label="Syncing Transmissions…" tone="gold" />
           ) : notifs.length === 0 ? (
              <div className="py-10 text-center text-[10px] font-black text-slate-600 uppercase tracking-widest">No Recent Transmissions</div>
           ) : (
@@ -698,7 +698,7 @@ const NotificationsSection = ({ notifs = [], isLoading = false, onToggleRead, on
     <div className="flex items-center justify-between">
       <SectionHeader title="Data Inbox" subtitle="Incoming tactical alerts and system relays" />
       <button onClick={onRefresh} disabled={isLoading} className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-gold-500 disabled:opacity-50">
-        <RefreshCw size={20} className={isLoading ? 'animate-spin' : ''} />
+        <Spinner size={20} tone="gold" />
       </button>
     </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner } from "../../components/Loading";
 import { apiCall } from "../../services/api";
 import { RefreshCw, Shield, ShieldCheck, ShieldAlert, ShieldX, Activity, Users, FileText, Database, Play } from "lucide-react";
 
@@ -95,8 +96,8 @@ export function DataSafety() {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-40">
-      <RefreshCw className="animate-spin text-teal-600 w-8 h-8" />
-      <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Scanning Data Safety Protocols...</p>
+      <Spinner size={34} tone="teal" />
+      <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Scanning Data Safety Protocols…</p>
     </div>
   );
 

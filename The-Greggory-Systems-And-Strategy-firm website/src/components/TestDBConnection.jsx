@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { getApiUrl } from "../services/api";
+import { InlineLoader, Spinner } from "./Loading";
 
 const TestDBConnection = () => {
   const [testResult, setTestResult] = useState(null);
@@ -174,10 +175,7 @@ const TestDBConnection = () => {
           </div>
 
           {isLoading.users ? (
-            <div className="text-center py-4">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="mt-2 text-gray-600">Loading users...</p>
-            </div>
+            <InlineLoader label="Loading Users…" tone="teal" />
           ) : users.length === 0 ? (
             <div className="text-center py-6 text-gray-500">
               No users found in the database

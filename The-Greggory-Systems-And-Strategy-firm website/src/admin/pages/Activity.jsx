@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner } from "../../components/Loading";
 import {
   Activity,
   Search,
@@ -49,7 +50,7 @@ export function ActivityLogs() {
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
   const paginatedLogs = filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  if (loading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-teal-600 w-6 h-6" /></div>;
+  if (loading) return <InlineLoader label="Retrieving Operation Logs…" tone="teal" rail />;
 
   return (
     <div className="space-y-6 animate-fade-in font-sans max-w-[1400px] mx-auto">

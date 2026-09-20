@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, X, RefreshCw, Send, Type, Tag, Clock, User, ImageIcon, Link, Upload } from "lucide-react";
 import { getApiUrl, API_BASE_URL } from "../../services/api";
+import { Spinner } from "../../components/Loading";
 import SearchBlock from "../../components/SearchBlock";
 
 /**
@@ -156,7 +157,7 @@ export function CreateBlog() {
           <div className="lg:col-span-3 bg-[#0f172a] rounded-2xl p-6 border border-white/10 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-6 mt-4">
             <div className="flex gap-6"><div className="bg-white/5 px-6 py-3 rounded-xl border border-white/10"><p className="text-[6px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Status</p><p className="text-lg font-black text-teal-400 leading-none">READY</p></div></div>
             <button type="submit" disabled={isSubmitting} className="bg-teal-600 hover:bg-teal-500 text-white px-10 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-xl flex items-center gap-3 border border-teal-400/20 transition-all active:scale-95">
-              {isSubmitting ? <RefreshCw className="animate-spin" size={12} /> : <Send size={12} />} Broadcast
+              {isSubmitting ? <Spinner size={12} tone="white" /> : <Send size={12} />} Broadcast
             </button>
           </div>
         </div>

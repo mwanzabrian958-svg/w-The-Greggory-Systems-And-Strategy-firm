@@ -40,6 +40,7 @@ import { getApiUrl, mpesaAPI } from "../services/api";
 import SearchBlock from "../components/SearchBlock";
 import { useNavigate } from "react-router-dom";
 import { formatKSH } from "../utils/currencyUtils";
+import { Emblem, Spinner, PageLoader } from "../components/Loading";
 
 const ClientPortal = () => {
   const { user, logout } = useAuth();
@@ -540,10 +541,7 @@ const ClientPortal = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col items-center justify-center text-slate-900 dark:text-white">
-      <RefreshCw className="animate-spin text-teal-600 w-6 h-6 mb-2" />
-      <p className="text-[10px] font-bold uppercase tracking-widest">Loading...</p>
-    </div>
+    <PageLoader label="Loading Client Portal" tone="teal" />
   );
 
   if (error) return (
@@ -922,7 +920,7 @@ const ClientPortal = () => {
                         {inv.status !== 'paid' && (
                           <button onClick={() => handleMpesaPay(inv)} disabled={mpesaLoading === inv.id}
                             className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg text-[8px] font-bold uppercase flex items-center gap-1 transition-all">
-                            {mpesaLoading === inv.id ? <RefreshCw size={9} className="animate-spin" /> : 'M-Pesa'}
+                                                        {mpesaLoading === inv.id ? <Spinner size={9} tone="white" /> : 'M-Pesa'}
                           </button>
                         )}
                       </div>
@@ -1106,7 +1104,7 @@ const ClientPortal = () => {
                     </div>
 
                     <button type="submit" disabled={isSubmittingFeedback} className="w-full py-3 bg-gradient-to-r from-gold-500 to-yellow-500 text-slate-950 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
-                       {isSubmittingFeedback ? <RefreshCw className="animate-spin size-3" /> : <>Send Transmission <ArrowRight size={12} /></>}
+                                          {isSubmittingFeedback ? <Spinner size={12} tone="gold" /> : <>Send Transmission <ArrowRight size={12} /></>}
                     </button>
                   </form>
                 </div>

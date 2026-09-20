@@ -618,7 +618,13 @@ async function resolveInvoiceProjectId(provided) {
 // table accounting_entries.project_id must point at. Read the live schema's FK
 // so the same endpoint that answers the SELECT also accepts the INSERT.
 async function resolveAccountingProjectId(provided) {
-  if (provided && Number(provided) > 0) return Number(provided);
+  // Validate against the live FK target instead of trusting the id: the UI
+  // supplies user_projects ids, but on the cloud endpoint this column points at
+  // the legacy `projects` table, so an unchecked id used to 500 the entry save.
+  if (provided && Number(provided) > 0) {
+    const resolved = await resolveFkProjectId("accounting_entries", provided);
+    if (resolved) return resolved;
+  }
   let ref = "user_projects";
   try {
     const [fkr] = await mainDb.query(
@@ -647,6 +653,128 @@ async function resolveAccountingProjectId(provided) {
   }
   const [res] = await mainDb.query(
     "INSERT INTO user_projects (user_id, project_name, project_type, status, created_by) VALUES (?, 'General / Unassigned', 'consulting', 'planning', ?)",
+    [uid, uid]
+  );
+  return res.insertId;
+}
+
+// ── FK-aware project resolver for accounting_periods + financial_reports ─────
+// BUG THIS FIXES: the app's real projects live in `user_projects` (every writer
+// — /api/user-projects, the M-Pesa + invoice fallbacks — inserts there), and
+// that is what GET /api/user-projects hands to the UI. But on BOTH endpoints
+// `accounting_periods.project_id` and `financial_reports.project_id` are
+// NOT NULL FKs pointing at the LEGACY `projects` table, so saving a Period or a
+// saved report for a project picked in the UI died with
+// ER_NO_REFERENCED_ROW_2 ("Cannot add or update a child row") -> HTTP 500.
+//
+// Fix: read the live FK target for the calling table (schema-agnostic, mirrors
+// resolveAccountingProjectId) and GUARANTEE a parent row exists before insert:
+//   1. provided id already valid on this endpoint  -> use it
+//   2. provided id belongs to the sibling project table -> mirror it across
+//      (same name, so the period/report keeps showing the right project)
+//   3. any existing parent row
+//   4. lazily seed 'General / Unassigned' (self-heals on a fresh database)
+async function fkProjectTarget(table) {
+  try {
+    const [rows] = await mainDb.query(
+      `SELECT REFERENCED_TABLE_NAME AS t
+         FROM information_schema.KEY_COLUMN_USAGE
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = 'project_id'
+        LIMIT 1`,
+      [table]
+    );
+    if (rows && rows[0] && rows[0].t) return rows[0].t;
+  } catch {
+    /* information_schema unavailable — fall back to the legacy table */
+  }
+  return "projects";
+}
+
+async function fkParentExists(table, id) {
+  try {
+    const [rows] = await mainDb.query(`SELECT id FROM \`${table}\` WHERE id = ? LIMIT 1`, [Number(id)]);
+    return rows && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveFkProjectId(table, provided) {
+  const wanted = Number(provided);
+  if (!wanted || wanted <= 0) return null;
+
+  const target = await fkProjectTarget(table);
+  if (await fkParentExists(target, wanted)) return wanted; // happy path
+
+  // The id belongs to the OTHER project table — mirror the row across so the FK
+  // parent exists while the record still points at the project the user picked.
+  const sibling = target === "projects" ? "user_projects" : "projects";
+  let source = null;
+  try {
+    const [rows] = await mainDb.query(`SELECT * FROM \`${sibling}\` WHERE id = ? LIMIT 1`, [wanted]);
+    source = (rows && rows[0]) || null;
+  } catch {
+    source = null;
+  }
+  if (source && source.deleted_at) source = null;
+  if (source) {
+    const name = source.project_name || source.name || `Project #${wanted}`;
+    try {
+      const [dup] = await mainDb.query(
+        "SELECT id FROM `" + target + "` WHERE " +
+          (target === "projects" ? "name = ?" : "project_name = ?") +
+          " ORDER BY id LIMIT 1",
+        [name]
+      );
+      if (dup && dup[0]) return dup[0].id; // mirror already exists — reuse it
+      const uid = source.user_id || (await getFirstUserId());
+      let res;
+      if (target === "projects") {
+        [res] = await mainDb.query(
+          `INSERT INTO projects (name, description, status, start_date, expected_completion, client_name, created_by)
+           VALUES (?, ?, 'active', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), ?, ?)`,
+          [
+            name,
+            source.project_description || "Mirrored from user_projects for accounting linkage.",
+            source.client_name || name,
+            uid,
+          ]
+        );
+      } else {
+        [res] = await mainDb.query(
+          `INSERT INTO user_projects (user_id, project_name, project_description, project_type, status, created_by, created_at)
+           VALUES (?, ?, ?, 'consulting', 'active', ?, NOW())`,
+          [uid, name, source.description || "Mirrored from projects for accounting linkage.", uid]
+        );
+      }
+      if (res && res.insertId) return res.insertId;
+    } catch (e) {
+      console.warn(`[FK PROJECT MIRROR] ${sibling}#${wanted} -> ${target} failed: ${e.code || e.message}`);
+    }
+  }
+
+  // Any existing parent row beats failing the write.
+  try {
+    const [any] = await mainDb.query(`SELECT id FROM \`${target}\` ORDER BY id LIMIT 1`);
+    if (any && any[0]) return any[0].id;
+  } catch {
+    /* fall through to seeding */
+  }
+
+  // Nothing in the target table yet — seed the 'General / Unassigned' fallback.
+  const uid = await getFirstUserId();
+  if (!uid) return null;
+  if (target === "projects") {
+    const [res] = await mainDb.query(
+      `INSERT INTO projects (name, description, status, start_date, expected_completion, client_name, created_by)
+       VALUES ('General / Unassigned', 'Auto-created fallback engagement for accounting records.', 'active', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'General', ?)`,
+      [uid]
+    );
+    return res.insertId;
+  }
+  const [res] = await mainDb.query(
+    `INSERT INTO user_projects (user_id, project_name, project_type, status, created_by)
+     VALUES (?, 'General / Unassigned', 'consulting', 'planning', ?)`,
     [uid, uid]
   );
   return res.insertId;
@@ -2339,9 +2467,10 @@ app.get("/api/accounting/periods", async (req, res) => {
     const { project_id } = req.query;
 
     let query = `
-      SELECT ap.*, p.name as project_name
+      SELECT ap.*, COALESCE(p.name, up.project_name) as project_name
       FROM accounting_periods ap
       LEFT JOIN projects p ON ap.project_id = p.id
+      LEFT JOIN user_projects up ON ap.project_id = up.id
       WHERE 1=1
     `;
     const params = [];
@@ -2556,13 +2685,18 @@ app.post("/api/accounting/periods", async (req, res) => {
       });
     }
 
+    // project_id is NOT NULL + FK on this endpoint (may point at the legacy
+    // `projects` table while the UI supplies user_projects ids) — resolve it so
+    // a period can never fail with ER_NO_REFERENCED_ROW_2.
+    const resolvedProjectId = await resolveFkProjectId("accounting_periods", project_id);
+
     const [result] = await db.execute(
       `INSERT INTO accounting_periods
         (project_id, period_name, period_type, start_date, end_date,
          total_budget, allocated_budget, status, locked, description, notes, created_by)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        project_id || null,
+        resolvedProjectId,
         String(period_name).trim(),
         period_type || "monthly",
         start_date,
@@ -2628,7 +2762,7 @@ app.put("/api/accounting/periods/:id", async (req, res) => {
               description = ?, notes = ?
         WHERE id = ?`,
       [
-        project_id || null,
+        project_id ? await resolveFkProjectId("accounting_periods", project_id) : null,
         String(period_name).trim(),
         period_type || "monthly",
         start_date,
@@ -2852,13 +2986,17 @@ app.post("/api/financial/reports", async (req, res) => {
       });
     }
 
+    // Same FK mismatch as accounting_periods: the UI supplies user_projects ids
+    // while financial_reports.project_id points at the legacy `projects` table.
+    const resolvedReportProjectId = await resolveFkProjectId("financial_reports", project_id);
+
     const [result] = await db.execute(
       `INSERT INTO financial_reports
         (project_id, report_type, report_name, period_start, period_end,
          report_data, summary, report_date, generated_by, created_by, status, generated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, NOW())`,
       [
-        project_id,
+        resolvedReportProjectId,
         report_type,
         report_name || `${report_type} report`,
         period_start || null,
@@ -2894,9 +3032,10 @@ app.get("/api/financial/reports", async (req, res) => {
     const { project_id, report_type, limit = 20 } = req.query;
 
     let query = `
-      SELECT fr.*, p.name as project_name, u.first_name, u.last_name
+      SELECT fr.*, COALESCE(p.name, up.project_name) as project_name, u.first_name, u.last_name
       FROM financial_reports fr
       LEFT JOIN projects p ON fr.project_id = p.id
+      LEFT JOIN user_projects up ON fr.project_id = up.id
       LEFT JOIN users u ON fr.generated_by = u.id
       WHERE 1=1
     `;

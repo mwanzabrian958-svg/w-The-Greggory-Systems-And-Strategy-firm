@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useParams, useNavigate } from "react-router-dom";
 import { Download, Printer, X, RefreshCw, Send, MailCheck, BadgeCheck } from "lucide-react";
 import { getApiUrl, apiCall } from "../../services/api";
@@ -48,7 +49,7 @@ export function InvoicePreview() {
     setSending(false);
   };
 
-  if (loading) return <div className="fixed inset-0 bg-[#020617] flex items-center justify-center"><RefreshCw className="animate-spin text-teal-500" /></div>;
+  if (loading) return <PageLoader label="Compiling Invoice…" tone="teal" className="bg-[#020617]" />;
   if (!invoice) return <div className="fixed inset-0 bg-[#020617] flex items-center justify-center text-white">Invoice Not Found <button onClick={() => navigate('/admin/billing')} className="ml-4 underline">Back</button></div>;
 
   // ── Contractor-template layout: mirror the client-facing PDF renderer ──
@@ -106,7 +107,7 @@ export function InvoicePreview() {
          </div>
          <div className="flex gap-4">
             <button onClick={handleSendInvoice} disabled={sending} className={`flex items-center gap-3 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${invoice.email_sent ? "bg-emerald-600/90 border-emerald-400 text-white" : "bg-white/5 border-white/10 text-white hover:bg-emerald-600 hover:border-emerald-400"} disabled:opacity-60`}>
-               {sending ? <RefreshCw size={16} className="animate-spin" /> : invoice.email_sent ? <MailCheck size={16} /> : <Send size={16} />}
+               {sending ? <Spinner size={16} tone="white" /> : invoice.email_sent ? <MailCheck size={16} /> : <Send size={16} />}
                {invoice.email_sent ? "Sent" : "Send to Client"}
             </button>
             <a href={getApiUrl(`/api/documents/invoices/${id}/pdf`)} className="flex items-center gap-3 bg-teal-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-500 transition-all border border-teal-500"><Download size={16} /> Download PDF</a>

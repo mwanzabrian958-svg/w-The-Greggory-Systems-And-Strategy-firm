@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Briefcase, User, X, Save, RefreshCw, Send } from "lucide-react";
 import { getApiUrl, API_BASE_URL } from "../../services/api";
+import { Spinner } from "../../components/Loading";
 import { formatKSH } from "../../utils/currencyUtils";
 import { TAX_PRESETS, taxLabel, roundMoney } from "../../utils/kraTax";
 import SearchBlock from "../../components/SearchBlock";
@@ -184,7 +185,7 @@ export function CreateInvoice() {
               </div>
            </div>
            <button onClick={handleInvoiceSubmit} disabled={isSubmitting} className="w-full md:w-auto bg-teal-600 hover:bg-teal-500 text-white px-8 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-xl flex items-center justify-center gap-2">
-              {isSubmitting ? <RefreshCw className="animate-spin" size={12} /> : <Send size={12} />} Deploy to Ledger
+              {isSubmitting ? <Spinner size={12} tone="white" /> : <Send size={12} />} Deploy to Ledger
            </button>
         </div>
       </div>

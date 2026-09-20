@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner } from "../../components/Loading";
 import { useNavigate } from "react-router-dom";
 import { apiCall } from "../../services/api";
 import {
@@ -106,8 +107,8 @@ export function AdvancedDashboard({ user }) {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-40 animate-fade-in">
-       <RefreshCw className="animate-spin text-teal-600 w-8 h-8" />
-       <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Polling Telemetry Node...</p>
+       <Spinner size={34} tone="teal" />
+       <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Polling Telemetry Node…</p>
     </div>
   );
 

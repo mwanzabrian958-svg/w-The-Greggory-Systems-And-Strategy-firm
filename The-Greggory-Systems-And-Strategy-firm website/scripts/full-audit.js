@@ -55,6 +55,15 @@ function record(area, name, r, expect, note) {
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 (async () => {
+  // Pre-flight: a locked auth_platform_mapping row is mandatory for every auth
+  // call below (system-reset scripts purge the seed rows -> 400 MAPPING_NOT_LOCKED).
+  try {
+    const { ensureAuthSeedData } = require("./preflight-db");
+    await ensureAuthSeedData({ log: () => {} });
+  } catch (e) {
+    console.warn("[PRE-FLIGHT] skipped:", e.message);
+  }
+
   const stamp = Date.now();
   const ce = `auditclient${stamp}@test.com`;
   const ae = `auditadmin${stamp}@test.com`;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, BookOpen, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getApiUrl } from '../services/api';
+import { SectionLoader } from '../components/Loading';
 
 /**
  * Blog - Main Journal Grid
@@ -47,10 +48,7 @@ const Blog = () => {
         </header>
 
         {loading ? (
-          <div className="flex flex-col items-center py-40">
-            <RefreshCw className="animate-spin mb-4" size={32} />
-            <p className="text-[10px] font-black uppercase tracking-widest">Polling Database Matrix...</p>
-          </div>
+          <SectionLoader label="Polling Database Matrix…" rows={2} maxWidth="max-w-md" />
         ) : articles.length === 0 ? (
           <div className="text-center py-40 border-4 border-dashed border-slate-100 rounded-[40px]">
             <p className="text-xl font-bold uppercase opacity-20">Zero Archives Found</p>

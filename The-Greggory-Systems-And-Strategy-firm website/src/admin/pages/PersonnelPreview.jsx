@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useParams, useNavigate } from "react-router-dom";
 import { X, RefreshCw, Briefcase, ChevronLeft } from "lucide-react";
 import { getApiUrl } from "../../services/api";
@@ -36,7 +37,7 @@ export function PersonnelPreview() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-[#020617] flex items-center justify-center"><RefreshCw className="animate-spin text-teal-500" size={24} /></div>
+      <PageLoader label="Loading Profile Preview…" tone="teal" className="bg-[#020617]" />
     );
   }
 

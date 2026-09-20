@@ -21,6 +21,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { getApiUrl } from "../services/api";
+import { PageLoader } from "../components/Loading";
 import SearchBlock from "../components/SearchBlock";
 import { useNavigate } from "react-router-dom";
 
@@ -107,10 +108,7 @@ const ClientAlerts = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center text-slate-900">
-      <RefreshCw className="animate-spin text-teal-600 w-6 h-6 mb-2" />
-      <p className="text-[10px] font-bold uppercase tracking-widest">Scanning Protocols...</p>
-    </div>
+    <PageLoader label="Scanning Protocols" sublabel="Fetching your alert stream" tone="teal" />
   );
 
   if (error) return (

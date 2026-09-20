@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Globe, Shield, Bell, Mail, Database, Lock, Users, Clock } from 'lucide-react';
 import { ToggleSwitch, ToggleGroup } from './ToggleSwitch';
 import { FormInput, EmailInput, Select } from './FormInput';
+import { Spinner } from '../../components/Loading';
 
 /**
  * Settings Form Component
@@ -116,8 +117,8 @@ export function SettingsForm({ settings, onSave, user }) {
         >
           {loading ? (
             <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-              Saving...
+              <Spinner size={14} tone="white" />
+              Saving…
             </>
           ) : saved ? (
             <>

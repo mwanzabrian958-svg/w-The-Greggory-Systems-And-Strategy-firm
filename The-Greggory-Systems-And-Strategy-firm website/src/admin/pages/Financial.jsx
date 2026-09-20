@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner } from "../../components/Loading";
 import { useNavigate } from "react-router-dom";
 import { apiCall, getApiUrl } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
@@ -110,8 +111,8 @@ export function Billing() {
 
   if (loading && financials.invoices.length === 0 && financials.entries.length === 0) return (
     <div className="flex flex-col items-center justify-center py-40">
-       <RefreshCw className="animate-spin text-teal-600 w-8 h-8" />
-       <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Loading financial data...</p>
+       <Spinner size={34} tone="teal" />
+       <p className="mt-4 text-[7px] font-black text-slate-400 uppercase tracking-[0.6em]">Loading Financial Data…</p>
     </div>
   );
 
@@ -214,7 +215,7 @@ export function Billing() {
                       <td className="py-3 px-2">
                         <div className="flex gap-1 justify-end">
                           <button onClick={() => handleSendInvoice(inv)} disabled={sendingId === inv.id} title={inv.client_email ? `Send invoice to ${inv.client_email}` : "No client email"} className={`p-1.5 rounded-lg transition-all ${inv.email_sent ? "bg-emerald-50 text-emerald-600" : "bg-slate-50 text-slate-400 hover:bg-teal-500 hover:text-white"} disabled:opacity-60`}>
-                            {sendingId === inv.id ? <RefreshCw size={11} className="animate-spin" /> : <Send size={11} />}
+                           {sendingId === inv.id ? <Spinner size={11} tone="white" /> : <Send size={11} />}
                           </button>
                           <button onClick={() => handleDownloadCompletion("invoices", inv.id)} title="Download completion PDF" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-teal-600 hover:text-white transition-all"><FileDown size={11} /></button>
                           <button onClick={() => navigate(`/admin/billing/preview/${inv.id}`)} title="View invoice" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-teal-500 hover:text-white transition-all"><Eye size={11} /></button>

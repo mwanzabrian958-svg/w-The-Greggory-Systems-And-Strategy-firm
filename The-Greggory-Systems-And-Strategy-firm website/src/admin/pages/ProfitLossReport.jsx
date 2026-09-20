@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PieChart, X, ArrowUpRight, ArrowDownRight, FileText, Download, RefreshCw } from "lucide-react";
 import { getApiUrl } from "../../services/api";
@@ -78,7 +79,7 @@ export function ProfitLossReport() {
     fetchData();
   }, [location.search]);
 
-  if (loading) return <div className="fixed inset-0 bg-[#020617] flex items-center justify-center text-white"><RefreshCw className="animate-spin" /></div>;
+  if (loading) return <PageLoader label="Building Profit & Loss Statement…" tone="teal" className="bg-[#020617]" />;
 
   return (
     <div className="fixed inset-0 bg-[#020617] z-[500] flex flex-col overflow-hidden font-sans">
@@ -155,7 +156,7 @@ export function ProfitLossReport() {
       <div className="bg-[#0f172a] p-10 border-t border-white/5 flex justify-between items-center flex-shrink-0">
          <p className="text-[8px] font-black text-slate-600 uppercase tracking-[0.6em]">Property of Greggory Systems & Strategy Firm © {new Date().getFullYear()}</p>
          <button onClick={handleDownload} disabled={downloading} className="bg-white/5 text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] border border-white/10 hover:bg-white/10 transition-all disabled:opacity-50 flex items-center gap-3">
-           {downloading ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
+           {downloading ? <Spinner size={14} tone="white" /> : <Download size={14} />}
            {downloading ? 'Generating...' : 'Download Audit (CSV)'}
          </button>
       </div>

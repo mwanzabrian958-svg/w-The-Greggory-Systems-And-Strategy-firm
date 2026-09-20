@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useParams, useNavigate } from "react-router-dom";
 import { X, RefreshCw, Clock, User, Tag, Calendar, ChevronLeft } from "lucide-react";
 import { getApiUrl } from "../../services/api";
@@ -34,9 +35,7 @@ export function BlogPreview() {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-[#0f172a] flex items-center justify-center">
-        <RefreshCw className="animate-spin text-teal-500" size={24} />
-      </div>
+      <PageLoader label="Loading Article…" tone="teal" className="bg-[#0f172a]" />
     );
   }
 

@@ -37,9 +37,82 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Lato:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- ═══ BOOT SCREEN (critical, inlined) ═══════════════════════════════
+         Rendered before any JS/CSS bundle arrives, so the first paint is the
+         branded "Signal Core" loader instead of a blank screen. React replaces
+         it on mount (main.jsx also removes it explicitly as a belt-and-braces).
+         Self-contained by design: no external CSS, no fonts dependency. -->
+    <style>
+      #gssf-boot{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+        background:radial-gradient(120% 120% at 20% 0%,#0f172a 0%,#020617 58%,#010409 100%);
+        font-family:Poppins,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+      #gssf-boot .gb-grid{position:absolute;inset:0;pointer-events:none;
+        background-image:linear-gradient(rgba(148,163,184,.08) 1px,transparent 1px),
+                         linear-gradient(90deg,rgba(148,163,184,.08) 1px,transparent 1px);
+        background-size:34px 34px;
+        -webkit-mask-image:radial-gradient(circle at 50% 50%,#000 0%,transparent 72%);
+        mask-image:radial-gradient(circle at 50% 50%,#000 0%,transparent 72%)}
+      #gssf-boot .gb-halo{position:absolute;width:520px;height:520px;border-radius:50%;pointer-events:none;
+        background:radial-gradient(circle,rgba(234,179,8,.5),transparent 68%);filter:blur(90px);animation:gbGlow 2.4s ease-in-out infinite}
+      #gssf-boot .gb-stack{position:relative;display:flex;flex-direction:column;align-items:center;padding:0 24px}
+      #gssf-boot .gb-emblem{position:relative;width:132px;height:132px;display:flex;align-items:center;justify-content:center}
+      #gssf-boot .gb-emblem img{position:relative;z-index:2;width:72px;height:72px;object-fit:contain;border-radius:50%;
+        box-shadow:0 0 34px rgba(234,179,8,.28);animation:gbCore 2.1s cubic-bezier(.45,0,.55,1) infinite}
+      #gssf-boot .gb-ring{position:absolute;border-radius:50%}
+      #gssf-boot .gb-r1{inset:0;background:conic-gradient(from 0deg,transparent 0 58%,#eab308 86%,transparent 100%);
+        -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 0);
+        mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 0);animation:gbSpin 2.6s linear infinite}
+      #gssf-boot .gb-r2{inset:13px;background:conic-gradient(from 180deg,transparent 0 55%,#2dd4bf 82%,transparent 100%);opacity:.85;
+        -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 0);
+        mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 0);animation:gbSpinRev 1.7s linear infinite}
+      #gssf-boot .gb-r3{inset:26px;border:1px dashed rgba(234,179,8,.32);animation:gbSpin 14s linear infinite}
+      #gssf-boot .gb-copy{margin-top:34px;display:flex;flex-direction:column;align-items:center;gap:15px}
+      #gssf-boot .gb-title{margin:0;font-size:10px;font-weight:800;letter-spacing:.42em;text-transform:uppercase;text-align:center;
+        background:linear-gradient(90deg,#eab308 0%,#eab308 36%,#ffffff 50%,#eab308 64%,#eab308 100%);
+        background-size:200% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+        animation:gbShimmer 2.6s linear infinite}
+      #gssf-boot .gb-rail{position:relative;width:224px;height:2px;border-radius:99px;overflow:hidden;background:rgba(234,179,8,.18)}
+      #gssf-boot .gb-rail span{position:absolute;inset:0;border-radius:99px;transform-origin:left center;
+        background:linear-gradient(90deg,transparent,#eab308 25%,#2dd4bf 75%,transparent);
+        animation:gbRail 1.75s cubic-bezier(.4,0,.2,1) infinite}
+      #gssf-boot .gb-status{margin:0;font-size:9px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#64748b}
+      @keyframes gbSpin{to{transform:rotate(360deg)}}
+      @keyframes gbSpinRev{to{transform:rotate(-360deg)}}
+      @keyframes gbCore{0%,100%{transform:scale(.9)}50%{transform:scale(1.06)}}
+      @keyframes gbGlow{0%,100%{opacity:.28;transform:scale(.9)}50%{opacity:.6;transform:scale(1.12)}}
+      @keyframes gbRail{0%{transform:translateX(-110%) scaleX(.55)}55%{transform:translateX(45%) scaleX(1.15)}100%{transform:translateX(210%) scaleX(.55)}}
+      @keyframes gbShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+      @media (prefers-reduced-motion: reduce){#gssf-boot *,#gssf-boot *::after{animation:none!important}}
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Replaced by the React app on mount — see src/main.jsx -->
+      <div id="gssf-boot" role="status" aria-live="polite">
+        <span class="gb-grid"></span>
+        <span class="gb-halo"></span>
+        <div class="gb-stack">
+          <div class="gb-emblem">
+            <span class="gb-ring gb-r1"></span>
+            <span class="gb-ring gb-r2"></span>
+            <span class="gb-ring gb-r3"></span>
+            <img src="/brand-header.png/sja.PNG" alt="" width="72" height="72" />
+          </div>
+          <div class="gb-copy">
+            <p class="gb-title">The Greggory Systems &amp; Strategy Firm</p>
+            <div class="gb-rail"><span></span></div>
+            <p class="gb-status">Initialising secure workspace…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <noscript>
+      <div style="padding:40px;font-family:Poppins,sans-serif;text-align:center;color:#0f172a">
+        <h1 style="font-size:18px">JavaScript is required</h1>
+        <p style="font-size:13px">Please enable JavaScript to use The Greggory Systems And Strategy Firm platform.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

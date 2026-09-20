@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useNavigate } from "react-router-dom";
 import {
   Users,
@@ -78,7 +79,7 @@ export function Personnel() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-teal-500" size={20} /></div>
+        <InlineLoader label="Loading Personnel Nodes…" tone="teal" />
       ) : paginated.length === 0 ? (
         <div className="bg-white rounded-3xl border border-slate-100 p-12 text-center">
           <Users className="w-10 h-10 text-slate-200 mx-auto mb-4" />

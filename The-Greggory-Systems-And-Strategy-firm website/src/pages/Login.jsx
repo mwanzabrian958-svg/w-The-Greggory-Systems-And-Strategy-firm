@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import AuthLayout from '../components/AuthLayout'
 import GoogleSignIn from '../components/GoogleSignIn'
+import { LoadingOverlay, Spinner } from '../components/Loading'
 import { useAuth } from '../context/AuthContext'
 import { usersAPI } from '../services/api'
 import { SITE_NAME } from '../constants/siteBrand'
@@ -207,9 +208,14 @@ const Login = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-xl text-[10px] font-black text-slate-950 bg-gradient-to-r from-gold-500 to-yellow-500 hover:from-gold-400 hover:to-yellow-400 transition-all transform uppercase tracking-[0.2em]"
+            className="w-full flex items-center justify-center gap-2.5 py-4 px-4 border border-transparent rounded-xl shadow-xl text-[10px] font-black text-slate-950 bg-gradient-to-r from-gold-500 to-yellow-500 hover:from-gold-400 hover:to-yellow-400 transition-all transform uppercase tracking-[0.2em]"
           >
-            {isLoading ? 'Synchronizing...' : 'Log In'}
+            {isLoading ? (
+              <>
+                <Spinner size={16} tone="ink" />
+                <span>Synchronizing…</span>
+              </>
+            ) : 'Log In'}
           </button>
 
           <div className="flex items-center justify-between px-2">
@@ -248,56 +254,20 @@ const Login = () => {
         </div>
       </form>
 
-      {(isLoading || showSuccess) && (
-        <div className="fixed inset-0 bg-black/95 backdrop-blur-xl z-[200] flex items-center justify-center">
-          <div className="relative flex flex-col items-center">
-            {/* High-Tech Loading Hexagon/Ring System */}
-            <div className="relative w-32 h-32 flex items-center justify-center">
-              {/* Outer Scanning Ring */}
-              <div className="absolute inset-0 border-2 border-gold-500/20 rounded-full"></div>
-              <div className="absolute inset-0 border-t-2 border-gold-500 rounded-full animate-spin"></div>
-
-              {/* Inner Pulsing Ring */}
-              <div className="absolute inset-4 border border-cyan-500/30 rounded-full animate-pulse"></div>
-
-              {/* Center Status Icon */}
-              <div className="relative z-10">
-                {showSuccess ? (
-                  <CheckCircle className="w-12 h-12 text-emerald-500 animate-[bounce_1s_infinite]" />
-                ) : (
-                  <div className="w-8 h-8 bg-gold-500/10 rounded-lg flex items-center justify-center animate-pulse">
-                    <div className="w-2 h-2 bg-gold-500 rounded-full animate-ping"></div>
-                  </div>
-                )}
-              </div>
-
-              {/* Orbiting Nodes */}
-              {!showSuccess && (
-                <>
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gold-500 rounded-full shadow-[0_0_10px_#eab308]"></div>
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-cyan-500 rounded-full shadow-[0_0_10px_#06b6d4]"></div>
-                </>
-              )}
-            </div>
-
-            <div className="mt-12 text-center space-y-4">
-              <h3 className="text-white text-[12px] font-black uppercase tracking-[0.5em] animate-pulse">
-                {showSuccess ? 'Access Solidified' : 'Authorizing Access'}
-              </h3>
-              {!showSuccess && (
-                <div className="flex gap-1 justify-center">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="w-1 h-1 bg-gold-500 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.2}s` }}></div>
-                  ))}
-                </div>
-              )}
-              <p className="text-[8px] text-slate-500 font-mono uppercase tracking-widest">
-                {showSuccess ? 'Redirecting to command center...' : 'Synchronizing credentials with core...'}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <LoadingOverlay
+        show={isLoading || showSuccess}
+        success={showSuccess}
+        successLabel="Access Solidified"
+        label="Authorizing Access"
+        messages={[
+          'Authorizing Access',
+          'Verifying Credential Signature',
+          'Establishing Secure Channel',
+        ]}
+        sublabel={showSuccess ? 'Redirecting to command center…' : 'Synchronising credentials with core'}
+        status={showSuccess ? [] : ['Identity accepted', 'Token issuance', 'Routing session']}
+        tone="gold"
+      />
     </AuthLayout>
   )
 }

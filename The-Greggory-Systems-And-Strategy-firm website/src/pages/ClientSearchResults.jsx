@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Search, User, FolderKanban, CheckSquare, Calculator, ArrowRight, RefreshCw, Mail, Globe } from "lucide-react";
 import { apiCall } from "../services/api";
 import { useTheme } from "../context/ThemeContext";
+import { InlineLoader, Spinner } from "../components/Loading";
 
 /**
  * ClientSearchResults — themed deep results page for client-side global search.
@@ -62,16 +63,13 @@ export function ClientSearchResults() {
             </p>
           </div>
           <div className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-slate-400">
-            <RefreshCw size={10} className={loading ? "animate-spin" : ""} />
+            <Spinner size={12} tone="teal" />
             {loading ? "Re-indexing..." : "Index Current"}
           </div>
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-32">
-            <RefreshCw className="animate-spin text-teal-600 dark:text-teal-400 w-8 h-8 mb-4" />
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Scanning Your Workspace...</p>
-          </div>
+          <InlineLoader label="Scanning Your Workspace…" tone="teal" rail />
         ) : results.length > 0 ? (
           <div className="grid gap-3">
             {results.map((item, idx) => (

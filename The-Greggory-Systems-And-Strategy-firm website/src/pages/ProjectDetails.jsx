@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getApiUrl } from '../services/api'
+import { PageLoader } from '../components/Loading'
 
 const ProjectDetails = () => {
   const { id } = useParams()
@@ -127,15 +128,12 @@ const ProjectDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
-        <div className="text-center relative">
-          <div className="absolute inset-0 bg-gold-500/20 blur-[60px] rounded-full animate-pulse" />
-          <div className="relative z-10">
-            <Activity className="h-16 w-16 text-gold-500 mx-auto animate-spin mb-6" />
-            <p className="text-[10px] font-black text-gold-500 uppercase tracking-[0.5em]">Synchronizing Entity Telemetry...</p>
-          </div>
-        </div>
-      </div>
+      <PageLoader
+        label="Synchronising Entity Telemetry"
+        messages={['Synchronising Entity Telemetry…', 'Verifying Access Rights…', 'Compiling Project Dossier…']}
+        tone="gold"
+        className="bg-[#0f172a]"
+      />
     )
   }
 

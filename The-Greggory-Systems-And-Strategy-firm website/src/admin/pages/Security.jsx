@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useNavigate } from "react-router-dom";
 import { ShieldCheck, Lock, Key, Eye, EyeOff, AlertTriangle, Shield, RefreshCw, ChevronRight, FileText } from "lucide-react";
 
@@ -13,7 +14,7 @@ export function Security() {
     { label: "Data Safety", status: "Compliant", node: "GDPR/KRA" },
   ];
 
-  if (loading) return <div className="flex items-center justify-center py-20"><RefreshCw className="animate-spin text-teal-600 w-6 h-6" /></div>;
+  if (loading) return <InlineLoader label="Verifying Security Posture…" tone="teal" rail />;
 
   return (
     <div className="space-y-6 animate-fade-in font-sans max-w-[1400px] mx-auto">

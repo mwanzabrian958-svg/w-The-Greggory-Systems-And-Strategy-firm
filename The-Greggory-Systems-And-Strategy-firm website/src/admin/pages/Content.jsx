@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useNavigate } from "react-router-dom";
 import {
   FileText,
@@ -102,7 +103,7 @@ export function Content({ user }) {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12"><RefreshCw className="animate-spin text-teal-600 w-6 h-6" /></div>
+            <InlineLoader label="Loading Content Nodes…" tone="teal" />
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
               {paginatedBlogs.map((item) => (
@@ -169,8 +170,8 @@ export function Content({ user }) {
                  ))}
               </div>
               {isUpdating && (
-                <div className="fixed bottom-10 right-10 bg-teal-600 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce">
-                   <RefreshCw size={14} className="animate-spin" />
+                <div className="fixed bottom-10 right-10 bg-teal-600 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 ldr-toast-in">
+                   <Spinner size={14} tone="white" />
                    <span className="text-[8px] font-black uppercase tracking-widest">Synchronizing Matrix...</span>
                 </div>
               )}

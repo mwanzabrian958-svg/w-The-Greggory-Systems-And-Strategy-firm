@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { InlineLoader, Spinner } from "../../components/Loading";
 import { useNavigate } from "react-router-dom";
 import {
   HelpCircle, Plus, Search, Clock, CheckCircle, MessageCircle, RefreshCw,
@@ -107,9 +108,7 @@ export function Support() {
 
   if (loading)
     return (
-      <div className="flex items-center justify-center py-20">
-        <RefreshCw className="animate-spin text-teal-600 w-6 h-6" />
-      </div>
+      <InlineLoader label="Loading Support Hub…" tone="teal" rail />
     );
 
   return (
@@ -180,9 +179,7 @@ export function Support() {
             <div className="text-[6px] font-black text-slate-300 uppercase">Live Relay</div>
           </div>
           {ticketsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="animate-spin text-teal-600 w-6 h-6" />
-            </div>
+            <InlineLoader label="Loading Support Tickets…" tone="teal" />
           ) : tickets.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div
@@ -266,7 +263,7 @@ export function Support() {
           </div>
           {crLoading ? (
             <div className="flex-1 flex items-center justify-center py-8">
-              <RefreshCw className="animate-spin text-blue-600 w-5 h-5" />
+              <Spinner size={20} tone="teal" />
             </div>
           ) : changeRequests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center flex-1">
@@ -353,7 +350,7 @@ export function Support() {
                           disabled={actionBusy === cr.id}
                           className="px-1.5 py-0.5 rounded text-[6px] font-black uppercase border disabled:opacity-50 bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
                         >
-                          {actionBusy === cr.id ? <RefreshCw size={8} className="animate-spin" /> : "Implement"}
+                          {actionBusy === cr.id ? <Spinner size={10} tone="white" /> : "Implement"}
                         </button>
                       )}
                       <button
@@ -385,7 +382,7 @@ export function Support() {
           </div>
           {sigLoading ? (
             <div className="flex-1 flex items-center justify-center py-8">
-              <RefreshCw className="animate-spin text-purple-600 w-5 h-5" />
+              <Spinner size={20} tone="sage" />
             </div>
           ) : sigRequests.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center flex-1">
