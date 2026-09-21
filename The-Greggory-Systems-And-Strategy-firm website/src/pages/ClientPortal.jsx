@@ -32,7 +32,8 @@ import {
   Users,
   Camera,
   ClipboardList,
-  FileSignature
+  FileSignature,
+  Smartphone
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -41,6 +42,16 @@ import SearchBlock from "../components/SearchBlock";
 import { useNavigate } from "react-router-dom";
 import { formatKSH } from "../utils/currencyUtils";
 import { Emblem, Spinner, PageLoader } from "../components/Loading";
+
+// Official Android app — distributed through the client-portal GitHub repo
+// (docs/GSSF-client-portal.apk). GitHub raw serves it with an APK content
+// type, so browsers download the file directly when this link is opened.
+const MOBILE_APP = {
+  name: "GSSF Client Portal",
+  url: "https://github.com/mwanzabrian958-svg/client-portal-The-Greggory-Systems-And-Strategy-firm-company-system/raw/main/docs/GSSF-client-portal.apk",
+  size: "36 MB",
+  platform: "Android",
+};
 
 const ClientPortal = () => {
   const { user, logout } = useAuth();
@@ -153,6 +164,7 @@ const ClientPortal = () => {
     { id: "messages", label: "Inbox", icon: Mail, badge: unreadMessages },
     { id: "notifications", label: "Alerts", icon: Bell },
     { id: "feedback", label: "Feedback", icon: HelpCircle },
+    { id: "app", label: "Mobile app", icon: Smartphone },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -1165,6 +1177,87 @@ const ClientPortal = () => {
             </div>
           )}
         </div>
+
+        {activeSection === "app" && (
+          <div className="space-y-6 pb-10 animate-fade-in">
+            {/* ── SECTION HEADER ── */}
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2">
+                <Smartphone size={14} className="text-teal-600" />
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Get the mobile app</h3>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* APP CARD + DOWNLOAD */}
+              <div className="lg:col-span-5 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm h-fit">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-3 rounded-xl bg-gold-500/10 text-gold-600 border border-gold-500/20"><Smartphone size={20} /></div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{MOBILE_APP.name} for {MOBILE_APP.platform}</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-300">APK · {MOBILE_APP.size}</p>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+                  Install the portal on your phone to follow your projects, pay invoices with M-Pesa and open documents wherever you are.
+                </p>
+
+                <ul className="space-y-2 mb-6">
+                  {[
+                    'Live project progress and tasks',
+                    'Invoices, quotes and M-Pesa payments',
+                    'Document vault with a built-in PDF viewer',
+                    'Push notifications when your firm posts an update',
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-[10px] text-slate-600 dark:text-slate-300">
+                      <CheckCircle size={12} className="text-emerald-500 mt-0.5 shrink-0" /> {f}
+                    </li>
+                  ))}
+                </ul>
+
+                <a
+                  href={MOBILE_APP.url}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-gold-500 to-yellow-500 text-slate-950 text-[10px] font-black uppercase tracking-widest transition-colors hover:from-gold-400 hover:to-yellow-400"
+                >
+                  <Download size={14} /> Download APK
+                </a>
+                <p className="text-[8px] text-slate-500 dark:text-slate-400 mt-3 text-center">
+                  Direct download ({MOBILE_APP.size}) — open the file on your phone to install
+                </p>
+              </div>
+
+              {/* INSTALL STEPS */}
+              <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white mb-4">Install it in three steps</h4>
+                <ol className="space-y-4">
+                  {[
+                    ['Download the APK', 'Tap the Download APK button, then open the file from your notifications or Downloads folder.'],
+                    ['Allow the install', 'The first time, Android asks for permission to install apps from your browser or file manager — choose Allow.'],
+                    ['Sign in', 'Open the app and sign in with the same email and password you use here.'],
+                  ].map(([title, body], i) => (
+                    <li key={title} className="flex gap-3">
+                      <span className="w-6 h-6 rounded-full bg-teal-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-900 dark:text-white">{title}</p>
+                        <p className="text-[10px] text-slate-600 dark:text-slate-300 leading-relaxed mt-0.5">{body}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+                <div className="mt-6 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-start gap-2">
+                  <ShieldCheck size={14} className="text-teal-600 mt-0.5 shrink-0" />
+                  <p className="text-[9px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                    The app talks directly to this website's secure API — your login, invoices and documents are protected exactly as they are here.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeSection === "requests" && (
           <div className="space-y-6 animate-fade-in">
