@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS users (
     profile_photo_file_name VARCHAR(255) NULL DEFAULT NULL,
     job_id BIGINT DEFAULT NULL,
     primary_role VARCHAR(50) DEFAULT 'user',
+    role VARCHAR(50) DEFAULT 'user',
     is_active BOOLEAN DEFAULT TRUE,
     last_login_at TIMESTAMP NULL DEFAULT NULL,
     last_login_ip VARCHAR(45) DEFAULT NULL,

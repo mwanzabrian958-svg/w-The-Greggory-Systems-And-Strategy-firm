@@ -63,7 +63,7 @@
     "daisyui": "^4.12.24",
     "dompurify": "^3.4.14",
     "dotenv": "^17.2.3",
-    "express": "^5.2.1",
+    "express": "^4.19.2",
     "express-rate-limit": "^8.2.1",
     "firebase-admin": "^14.4.0",
     "google-auth-library": "^11.0.2",
@@ -83,7 +83,7 @@
     "uuid": "^13.0.0"
   },
   "engines": {
-    "node": ">=20 <23"
+    "node": ">=20 <25"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.1.0",

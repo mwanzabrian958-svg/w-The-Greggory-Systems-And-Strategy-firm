@@ -45,19 +45,23 @@
          Self-contained by design: no external CSS, no fonts dependency. -->
     <style>
       #gssf-boot{position:fixed;inset:0;z-index:9999;overflow:hidden;display:flex;align-items:center;justify-content:center;
-        background:radial-gradient(130% 120% at 50% 4%,#101d34 0%,#0a1120 44%,#04070f 80%,#01030a 100%);
+        background:
+          radial-gradient(120% 90% at 18% 12%, #3b82f6 0%, transparent 55%),
+          radial-gradient(120% 90% at 82% 78%, #9ca3af 0%, transparent 55%),
+          linear-gradient(160deg, #1e3a8a 0%, #1e293b 38%, #334155 72%, #475569 100%);
         font-family:Poppins,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-      /* Backdrop: a slow aurora wash (gold / teal / emerald) rather than a mesh
-         grid — no hard lines, no repeating pattern, just drifting light behind
-         the emblem. The top pair sits staggered (left-centre / right-high):
-         symmetric blobs merged into one fat horizontal bar on 16:9. */
+      /* ── Mist: soft white veil fading toward bottom-left ────────────────────
+         Two translucent white radial wisps sit low-left and drift in a slow 24s
+         loop, so the boot screen reads like light fog settling into the bottom
+         corner instead of a flat gradient wash. Opacity is kept low so the blue /
+         grey palette stays dominant. */
       #gssf-boot .gb-aurora{position:absolute;inset:-14%;pointer-events:none;
         filter:blur(62px) saturate(125%);
         background-image:
           radial-gradient(30% 44% at 30% 36%,rgba(234,179,8,.30),transparent 66%),
           radial-gradient(26% 40% at 76% 22%,rgba(45,212,191,.24),transparent 66%),
           radial-gradient(40% 38% at 54% 76%,rgba(16,185,129,.18),transparent 68%),
-          radial-gradient(56% 50% at 50% 48%,rgba(255,255,255,.06),transparent 70%);
+          radial-gradient(56% 50% at 18% 82%, rgba(255,255,255,0.28), transparent 72%);
         animation:gbDrift 28s ease-in-out infinite}
       /* Vignette so the emblem sits in a pool of light instead of a flat field. */
       #gssf-boot .gb-veil{position:absolute;inset:0;pointer-events:none;
@@ -116,7 +120,7 @@
             <span class="gb-ring gb-r1"></span>
             <span class="gb-ring gb-r2"></span>
             <span class="gb-ring gb-r3"></span>
-            <img src="/brand-header.png/sja.PNG" alt="" width="72" height="72" />
+            <img src="/brand-header.png" alt="" width="72" height="72" />
           </div>
           <div class="gb-copy">
             <p class="gb-title">The Greggory Systems &amp; Strategy Firm</p>
@@ -135,3 +139,6 @@
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+
+
+

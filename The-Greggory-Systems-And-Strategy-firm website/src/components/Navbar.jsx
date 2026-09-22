@@ -68,7 +68,7 @@ const Navbar = () => {
           <div className="flex items-center flex-shrink-0">
             <Link to="/" className="hover:opacity-90 transition-opacity">
               <img
-                src="/brand-header.png/sja.PNG"
+                                src="/brand-header.png"
                 alt="Logo"
                 className="h-14 sm:h-18 w-auto object-contain brightness-110 contrast-110"
               />

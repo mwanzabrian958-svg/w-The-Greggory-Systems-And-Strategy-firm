@@ -10,6 +10,7 @@
 // or
 //   TARGET_ORIGIN=https://your-live-origin.example.com node scripts/verify-features.js
 const http = require("http");
+require("dotenv").config({ path: require('path').resolve(__dirname, '../.env') });
 
 const DEFAULT_TARGET = "http://127.0.0.1:3000";
 const TARGET_ORIGIN = (process.env.TARGET_ORIGIN || "").trim() || DEFAULT_TARGET;
@@ -99,7 +100,7 @@ function check(name, cond, extra) {
   const badTok = await api("/api/users/client-dashboard", "GET", null, undefined);
   check("client portal dashboard 401 without token (redirects to /login)", badTok.status === 401, "status=" + badTok.status);
 
-  console.log("auth OK\n--- FINANCIAL HUB (Financial.jsx) ---");
+  console.log("--- FINANCIAL HUB (Financial.jsx) ---");
 
   let r = await api("/api/admin/ledger", "GET", null, tok);
   check("ledger list 200 + entries[]", r.status === 200 && Array.isArray(J(r.body)?.entries));

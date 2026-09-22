@@ -9,8 +9,6 @@ const path = require("path");
 // surfaced as "Validation engine error" on ALL admin + client logins.
 require("dotenv").config();
 
-const usersRouter = require("./backend/routes/users");
-
 
 const express = require("express");
 const cors = require("cors");
@@ -6115,7 +6113,9 @@ app.delete("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
 });
 
 // Users Routes (modular backend/routes/users.js)
+// Note: also mounted via modularRoutes below (line ~6183) — keep both in sync.
 try {
+  const usersRouter = require("./backend/routes/users");
   app.use("/api/users", usersRouter);
   console.log("[SERVER] Users routes mounted at /api/users");
 } catch (err) {

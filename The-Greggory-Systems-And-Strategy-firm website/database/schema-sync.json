@@ -5333,6 +5333,10 @@
           "def": "varchar(50) DEFAULT 'user'"
         },
         {
+          "name": "role",
+          "def": "varchar(50) DEFAULT 'user'"
+        },
+        {
           "name": "mission_briefing",
           "def": "text"
         },

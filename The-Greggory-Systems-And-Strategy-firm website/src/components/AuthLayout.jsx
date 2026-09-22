@@ -19,7 +19,7 @@ const AuthLayout = ({ children, title, subtitle }) => {
             <div className="relative group">
               <div className="absolute -inset-4 bg-gold-500/20 rounded-full blur-2xl group-hover:bg-gold-500/40 transition-all duration-700" />
               <img
-                src="/brand-header.png/sja.PNG"
+                                src="/brand-header.png"
                 alt="SJA"
                 className="relative h-20 w-auto object-contain brightness-110 contrast-125 transition-transform duration-500 group-hover:scale-105"
               />

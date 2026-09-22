@@ -1,0 +1,217 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   GSSF "SIGNAL CORE" BOOT SCREEN — src/boot-screen.css
+   ───────────────────────────────────────────────────────────────────────────
+   Extracted from index.html <style> block so Vite bundles it into the
+   production CSS. The boot screen HTML in index.html (#gssf-boot) is
+   styled by these classes and removed on React mount (main.jsx).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#gssf-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(120% 90% at 18% 12%, #3b82f6 0%, transparent 55%),
+    radial-gradient(120% 90% at 82% 78%, #9ca3af 0%, transparent 55%),
+    linear-gradient(160deg, #1e3a8a 0%, #1e293b 38%, #334155 72%, #475569 100%);
+  font-family: Poppins, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Mist: soft aurora wash behind the emblem ─────────────────────────────── */
+#gssf-boot .gb-aurora {
+  position: absolute;
+  inset: -14%;
+  pointer-events: none;
+  filter: blur(62px) saturate(125%);
+  background-image:
+    radial-gradient(30% 44% at 30% 36%, rgba(234,179,8,.30), transparent 66%),
+    radial-gradient(26% 40% at 76% 22%, rgba(45,212,191,.24), transparent 66%),
+    radial-gradient(40% 38% at 54% 76%, rgba(16,185,129,.18), transparent 68%),
+    radial-gradient(56% 50% at 18% 82%, rgba(255,255,255,0.28), transparent 72%);
+  animation: gbDrift 28s ease-in-out infinite;
+}
+
+/* ── Vignette: pools light around the emblem ──────────────────────────────── */
+#gssf-boot .gb-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(74% 64% at 50% 46%, transparent 40%, rgba(1,3,8,.62) 100%);
+}
+/* ── Film grain: texture without pattern, kills gradient banding ─────────── */
+#gssf-boot .gb-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .18;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+@keyframes gbDrift {
+  0%   { transform: translate3d(-3%, -2%, 0) scale(1.08); }
+  50%  { transform: translate3d(2%, 3%, 0) scale(1.16); }
+  100% { transform: translate3d(3%, -1%, 0) scale(1.1); }
+}
+
+/* ── Halo: soft gold glow behind the emblem ───────────────────────────────── */
+#gssf-boot .gb-halo {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(234,179,8,.5), transparent 68%);
+  filter: blur(90px);
+  animation: gbGlow 2.4s ease-in-out infinite;
+}
+
+/* ── Stack: centered column for emblem + copy ─────────────────────────────── */
+#gssf-boot .gb-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px;
+}
+
+/* ── Emblem: logo + 3 rings ───────────────────────────────────────────────── */
+#gssf-boot .gb-emblem {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#gssf-boot .gb-emblem img {
+  position: relative;
+  z-index: 2;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 50%;
+  box-shadow: 0 0 34px rgba(234,179,8,.28);
+  animation: gbCore 2.1s cubic-bezier(.45,0,.55,1) infinite;
+}
+
+/* ── Copy: title + rail + status ──────────────────────────────────────────── */
+#gssf-boot .gb-copy {
+  margin-top: 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+#gssf-boot .gb-title {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .42em;
+  text-transform: uppercase;
+  text-align: center;
+  background: linear-gradient(90deg, #eab308 0%, #eab308 36%, #ffffff 50%, #eab308 64%, #eab308 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gbShimmer 2.6s linear infinite;
+}
+
+#gssf-boot .gb-rail {
+  position: relative;
+  width: 224px;
+  height: 2px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: rgba(234,179,8,.18);
+}
+
+#gssf-boot .gb-rail span {
+  position: absolute;
+  inset: 0;
+  border-radius: 99px;
+  transform-origin: left center;
+  background: linear-gradient(90deg, transparent, #eab308 25%, #2dd4bf 75%, transparent);
+  animation: gbRail 1.75s cubic-bezier(.4,0,.2,1) infinite;
+}
+
+#gssf-boot .gb-status {
+  margin: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+/* ── Keyframes ────────────────────────────────────────────────────────────── */
+@keyframes gbSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes gbSpinRev {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes gbCore {
+  0%, 100% { transform: scale(.9); }
+  50%      { transform: scale(1.06); }
+}
+
+@keyframes gbGlow {
+  0%, 100% { opacity: .28; transform: scale(.9); }
+  50%      { opacity: .6;  transform: scale(1.12); }
+}
+
+@keyframes gbRail {
+  0%   { transform: translateX(-110%) scaleX(.55); }
+  55%  { transform: translateX(45%)  scaleX(1.15); }
+  100% { transform: translateX(210%) scaleX(.55); }
+}
+
+@keyframes gbShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── Accessibility: respect reduced motion ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  #gssf-boot *, #gssf-boot *::after {
+    animation: none !important;
+  }
+}
+/* ── Rings: 3 concentric animated circles ─────────────────────────────────── */
+#gssf-boot .gb-ring {
+  position: absolute;
+  border-radius: 50%;
+}
+
+#gssf-boot .gb-r1 {
+  inset: 0;
+  background: conic-gradient(from 0deg, transparent 0 58%, #eab308 86%, transparent 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+  animation: gbSpin 2.6s linear infinite;
+}
+
+#gssf-boot .gb-r2 {
+  inset: 13px;
+  background: conic-gradient(from 180deg, transparent 0 55%, #2dd4bf 82%, transparent 100%);
+  opacity: .85;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 0);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 0);
+  animation: gbSpinRev 1.7s linear infinite;
+}
+
+#gssf-boot .gb-r3 {
+  inset: 26px;
+  border: 1px dashed rgba(234,179,8,.32);
+  animation: gbSpin 14s linear infinite;
+}

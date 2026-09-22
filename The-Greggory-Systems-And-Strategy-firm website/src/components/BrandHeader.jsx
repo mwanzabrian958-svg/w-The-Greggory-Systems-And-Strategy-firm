@@ -3,7 +3,7 @@ import { SITE_NAME, SITE_TAGLINE } from '../constants/siteBrand'
 
 const BrandMark = ({ className = '' }) => (
   <img
-    src="/brand-header.png/b7.PNG"
+        src="/brand-header.png"
     alt="The-Greggory-Systems-And-Strategy-firm Logo"
     className={`${className} object-contain`}
   />

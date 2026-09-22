@@ -166,6 +166,7 @@ async function capture() {
       { name: "last_login_at", def: "timestamp NULL" },
       { name: "last_login_ip", def: "varchar(45)" },
       { name: "primary_role", def: "varchar(50)" },
+      { name: "role", def: "varchar(50)" },
       { name: "phone_number", def: "varchar(20)" },
       { name: "profile_photo_blob", def: "longblob" },
       { name: "profile_photo_mime_type", def: "varchar(100)" },

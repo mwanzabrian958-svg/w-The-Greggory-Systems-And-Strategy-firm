@@ -232,6 +232,7 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
     return res.json({
       id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name,
       display_name: user.display_name || `${user.first_name} ${user.last_name}`,
+      phone_number: user.phone_number,
       primary_role: user.primary_role, role_type: 'user', has_photo: !!user.profile_photo_blob,
       profilePhotoData, token: personalAuthToken
     });
@@ -594,6 +595,30 @@ router.post('/logout', authenticateUser, async (req, res) => {
   } catch (error) {
     console.error('[LOGOUT] Error:', error);
     res.status(500).json({ success: false, message: 'Logout failed' });
+  }
+});
+
+/**
+ * AUTH PROTOCOL: Session Revocation
+ * Clears the auth_token for the user, effectively logging them out of all devices.
+ * If currentToken is provided, it would theoretically clear others, but since
+ * we use a Terminal Lock (single token), this wipes the account's active token.
+ */
+router.delete('/sessions', authenticateUser, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { currentToken } = req.query;
+
+    await db.promise().query(
+      `UPDATE users SET auth_token = NULL, updated_at = NOW()
+       WHERE id = ? AND auth_token IS NOT NULL AND auth_token != ?`,
+      [userId, currentToken || '']
+    );
+
+    res.json({ success: true, message: 'All other sessions revoked' });
+  } catch (error) {
+    console.error('[SESSIONS] Revocation error:', error);
+    res.status(500).json({ success: false, message: 'Revocation failed' });
   }
 });
 

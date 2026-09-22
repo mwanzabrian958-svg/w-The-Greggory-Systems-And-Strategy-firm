@@ -68,10 +68,28 @@ async function validateAuthRequest(platform, tableName, endpoint, email, req) {
 
     // 3. Validate required fields
     const [rules] = await db.promise().query(
-      `SELECT rule_name, rule_value, enforcement_level FROM auth_validation_rules
-       WHERE platform = ? AND rule_type = 'required_field' AND is_active = TRUE`,
+      `SELECT rule_name, rule_type, rule_value, enforcement_level FROM auth_validation_rules
+       WHERE platform = ? AND is_active = TRUE`,
       [platform]
     );
+
+    // 4. Rate Limiting Check (Dynamic from DB)
+    const rateLimitRule = rules.find(r => r.rule_type === 'rate_limit');
+    if (rateLimitRule) {
+        const limit = parseInt(rateLimitRule.rule_value) || 50;
+        const [recentRequests] = await db.promise().query(
+            `SELECT COUNT(*) as n FROM auth_request_log
+             WHERE ip_address = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)`,
+            [req.ip]
+        );
+        if (recentRequests[0].n > limit) {
+            return {
+                valid: false,
+                error: 'Too many requests. Please wait one minute.',
+                errorCode: 'RATE_LIMIT_EXCEEDED'
+            };
+        }
+    }
 
     // Determine the path to inspect for route-type detection. When the request
     // object is available use `req.originalUrl` (the path relative to the router
