@@ -6065,10 +6065,53 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Profile photo not found",
+      // Fallback: the photo may have been uploaded from the client-portal
+      // profile, which stores it on the `users` table. Link by email so the
+      // admin platform pulls the same photo from the DB instead of silently
+      // falling back to initials. (SQL validated against live DB: row #3,
+      // 11230-byte image/webp.)
+      const [altUsers] = await mainDb.query(
+        `SELECT u.profile_photo_blob, u.profile_photo_mime_type, u.profile_photo_file_name
+         FROM ${tableName} a
+         JOIN users u ON LOWER(u.email) = LOWER(a.email)
+         WHERE a.id = ?
+           AND u.profile_photo_blob IS NOT NULL
+         LIMIT 1`,
+        [userId],
+      );
+
+      if (altUsers.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Profile photo not found",
+        });
+      }
+
+      const alt = altUsers[0];
+      const altBlob = alt.profile_photo_blob;
+      let altMime = alt.profile_photo_mime_type || "";
+      // Stored mime can be a wildcard like "image/*" — sniff the real type.
+      if (!/^image\/(jpeg|png|gif|webp|avif|bmp)$/.test(altMime)) {
+        if (
+          altBlob.length > 12 &&
+          altBlob.toString("ascii", 0, 4) === "RIFF" &&
+          altBlob.toString("ascii", 8, 12) === "WEBP"
+        ) {
+          altMime = "image/webp";
+        } else if (altBlob.length > 3 && altBlob[0] === 0xff && altBlob[1] === 0xd8) {
+          altMime = "image/jpeg";
+        } else if (altBlob.length > 4 && altBlob[1] === 0x50 && altBlob[2] === 0x4e && altBlob[3] === 0x47) {
+          altMime = "image/png";
+        } else {
+          altMime = "image/jpeg";
+        }
+      }
+
+      res.set({
+        "Content-Type": altMime,
+        "Content-Disposition": `inline; filename="${alt.profile_photo_file_name || "profile.jpg"}"`,
       });
+      return res.send(altBlob);
     }
 
     const user = users[0];
