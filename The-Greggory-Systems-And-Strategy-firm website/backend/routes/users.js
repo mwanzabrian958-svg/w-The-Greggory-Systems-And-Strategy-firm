@@ -277,10 +277,9 @@ router.get('/client-dashboard', authenticateUser, async (req, res) => {
 });
 
 // Profile Update
-router.put('/profile', async (req, res) => {
+router.put('/profile', authenticateUser, async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'] || req.body.userId;
-    if (!userId) return res.status(401).json({ success: false });
+    const userId = req.userId;
     const { display_name, phone_number } = req.body;
     await db.promise().query(`UPDATE users SET display_name = ?, phone_number = ?, updated_at = NOW() WHERE id = ?`, [display_name, phone_number, userId]);
     res.json({ success: true, message: 'Updated' });
