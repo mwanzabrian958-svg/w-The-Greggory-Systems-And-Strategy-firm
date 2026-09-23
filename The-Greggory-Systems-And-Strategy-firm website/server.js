@@ -829,11 +829,13 @@ app.get("/api/test-db", async (req, res) => {
       data: rows,
     });
   } catch (error) {
-    console.error("Database connection error:", error);
+    // This route is public, so never serialize the driver error: MySQL/Aiven
+    // error messages can disclose internal hostnames and infrastructure details.
+    // Keep the existing { success: false } contract for dashboard.html.
+    console.error("[DATABASE] connection test failed:", error.code || error.name || "UNKNOWN_ERROR");
     res.status(500).json({
       success: false,
       message: "Database connection failed",
-      error: error.message || error.code || error.name || String(error),
     });
   }
 });
