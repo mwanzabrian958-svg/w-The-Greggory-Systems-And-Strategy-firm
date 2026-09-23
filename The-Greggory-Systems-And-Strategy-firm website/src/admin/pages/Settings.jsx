@@ -307,6 +307,18 @@ export function Settings({ user }) {
                  <label className="block text-[6px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Public Contact Phone</label>
                  <input type="text" value={form.contact_phone || ""} onChange={(e) => set("contact_phone", e.target.value)} placeholder="+254 …" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[9px] font-bold outline-none focus:ring-1 focus:ring-teal-500" />
               </div>
+              <div>
+                 <label className="block text-[6px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Strategy WhatsApp Number (digits only, e.g. 254115525854)</label>
+                 <input type="text" value={form.strategy_whatsapp || ""} onChange={(e) => set("strategy_whatsapp", e.target.value)} placeholder="254115525854" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[9px] font-bold outline-none focus:ring-1 focus:ring-teal-500" />
+              </div>
+              <div>
+                 <label className="block text-[6px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Mobile App Version (APK update prompt)</label>
+                 <input type="text" value={form.apk_version || ""} onChange={(e) => set("apk_version", e.target.value)} placeholder="e.g. 1.4.0" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[9px] font-bold outline-none focus:ring-1 focus:ring-teal-500" />
+              </div>
+              <div className="md:col-span-2">
+                 <label className="block text-[6px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Mobile App Download URL (APK)</label>
+                 <input type="url" value={form.apk_url || ""} onChange={(e) => set("apk_url", e.target.value)} placeholder="https://…/client-portal.apk" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[9px] font-bold outline-none focus:ring-1 focus:ring-teal-500" />
+              </div>
 
                {/* Profile Photo Upload */}
                <div className="pt-2">

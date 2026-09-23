@@ -33,7 +33,8 @@ import {
   Camera,
   ClipboardList,
   FileSignature,
-  Smartphone
+  Smartphone,
+  Send
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -134,6 +135,9 @@ const ClientPortal = () => {
   const [photoAvailable, setPhotoAvailable] = useState(null);
   const [photoVersion, setPhotoVersion] = useState(0);
   const pendingRequestsCount = myQuotes.filter(q => ["sent", "viewed"].includes(q.status)).length + signatureDocs.filter(d => d.signature_status === "pending").length;
+  const [unreadAlerts, setUnreadAlerts] = useState(0);
+  const [composerText, setComposerText] = useState('');
+  const [composerBusy, setComposerBusy] = useState(false);
 
   // Settings State
   const [settingsForm, setSettingsForm] = useState({
@@ -162,7 +166,7 @@ const ClientPortal = () => {
     { id: "requests", label: "Requests", icon: ClipboardList, badge: pendingRequestsCount },
     { id: "documents", label: "Docs", icon: Folder, badge: documents.length },
     { id: "messages", label: "Inbox", icon: Mail, badge: unreadMessages },
-    { id: "notifications", label: "Alerts", icon: Bell },
+    { id: "notifications", label: "Alerts", icon: Bell, badge: unreadAlerts },
     { id: "feedback", label: "Feedback", icon: HelpCircle },
     { id: "app", label: "Mobile app", icon: Smartphone },
     { id: "settings", label: "Settings", icon: Settings },
@@ -176,6 +180,68 @@ const ClientPortal = () => {
       if (data.success) setFeedbackList(data.feedback || []);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // Unread alerts badge — feeds the nav count from the notifications table
+  const loadUnreadAlerts = async () => {
+    try {
+      const r = await authFetch(getApiUrl('/api/users/notifications/me'));
+      const d = await r.json();
+      const rows = Array.isArray(d?.notifications) ? d.notifications : [];
+      setUnreadAlerts(rows.filter((n) => (n.status || 'unread') === 'unread').length);
+    } catch (err) {
+      // badge stays as-is on failure
+    }
+  };
+
+  // Re-sync the badge whenever the tab regains focus, so the count never goes
+  // stale after marking alerts read on /client-alerts and coming back.
+  useEffect(() => {
+    const syncBadge = () => {
+      if (document.visibilityState !== 'hidden') loadUnreadAlerts();
+    };
+    window.addEventListener('focus', syncBadge);
+    document.addEventListener('visibilitychange', syncBadge);
+    return () => {
+      window.removeEventListener('focus', syncBadge);
+      document.removeEventListener('visibilitychange', syncBadge);
+    };
+  }, []);
+
+  // Secure message composer — posts to the same thread admin Communication reads
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    const text = composerText.trim();
+    if (!text || composerBusy) return;
+    setComposerBusy(true);
+    try {
+      const r = await authFetch(getApiUrl('/api/users/client-feedback'), {
+        method: 'POST',
+        body: JSON.stringify({ title: 'Portal message', message: text, type: 'service_feedback', priority: 'low' }),
+      });
+      const d = await r.json();
+      if (!d.success) throw new Error(d.message || 'Message failed to send');
+      // Show it in the Inbox immediately. The server attributes it to this
+      // client (author='client'), so admins see the same message in the
+      // Communication Hub + Support queues.
+      setMessages((prev) => [
+        {
+          id: `outbox-${Date.now()}`,
+          sender: 'You',
+          subject: 'Portal message',
+          message: text,
+          time: new Date().toISOString(),
+          unread: false,
+        },
+        ...prev,
+      ]);
+      setComposerText('');
+      loadFeedbackHistory(portalUser?.id);
+    } catch (err) {
+      window.alert(err.message || 'Network error');
+    } finally {
+      setComposerBusy(false);
     }
   };
 
@@ -321,6 +387,7 @@ const ClientPortal = () => {
           loadFeedbackHistory(user.userId || user.id);
         }
         loadClientRequests();
+        loadUnreadAlerts();
       } else {
         throw new Error(data.message || 'Failed to load dashboard');
       }
@@ -992,6 +1059,28 @@ const ClientPortal = () => {
 
           {activeSection === "messages" && (
             <div className="space-y-2 animate-fade-in">
+              {/* COMPOSER: posts to /api/users/client-feedback with author
+                  forced to 'client', so the message lands in the admin
+                  Communication Hub + Support queues and shows in the Inbox. */}
+              <form onSubmit={handleSendMessage} className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
+                <textarea
+                  rows={2}
+                  value={composerText}
+                  onChange={(e) => setComposerText(e.target.value)}
+                  placeholder="Message the Greggory team..."
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[9px] outline-none focus:ring-1 focus:ring-teal-500 resize-none"
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[6px] font-black uppercase tracking-widest text-slate-400">Relayed to your firm's command node</p>
+                  <button
+                    type="submit"
+                    disabled={composerBusy || !composerText.trim()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 text-white text-[7px] font-black uppercase tracking-widest hover:bg-teal-500 transition-all disabled:opacity-40"
+                  >
+                    {composerBusy ? <Spinner size={10} tone="white" /> : <Send size={10} />} Send
+                  </button>
+                </div>
+              </form>
               {messages.length > 0 ? messages.map(m => (
                 <div key={m.id} className={`p-3 rounded-xl border flex items-start gap-3 ${m.unread ? 'bg-teal-500/[0.06] border-teal-500/20' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
                   <div className={`p-1.5 rounded-lg shrink-0 ${m.unread ? 'bg-teal-500/15 text-teal-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}><Mail size={13} /></div>

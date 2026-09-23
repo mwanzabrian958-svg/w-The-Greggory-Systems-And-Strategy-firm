@@ -1,7 +1,26 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { getApiUrl } from '../services/api'
+
+const DEFAULT_PHONE = '254115525854'
 
 const FloatingWhatsApp = () => {
-  const phone = '254115525854'
+  const [phone, setPhone] = useState(DEFAULT_PHONE)
+
+  // Admin-controlled strategy number (GET /api/public/config; admin-editable) — read from node settings, falls back to default
+  useEffect(() => {
+    let alive = true
+    fetch(getApiUrl('/api/public/config'))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const raw = (d && d.settings && d.settings.strategy_whatsapp) || ''
+        const digits = String(raw).replace(/\D/g, '')
+        if (!alive || !digits) return
+        const e164 = digits.startsWith('254') ? digits : digits.startsWith('0') ? `254${digits.slice(1)}` : digits
+        setPhone(e164)
+      })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [])
   const text = encodeURIComponent('Hello! I would like to learn more about your services.')
   const href = `https://wa.me/${phone}?text=${text}`
 

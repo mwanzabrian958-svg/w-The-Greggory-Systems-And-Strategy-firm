@@ -53,6 +53,9 @@ if (!process.env.ADMIN_SESSION_SECRET && !process.env.JWT_SECRET) {
 // ─────────────────────────────────────────────────────────────────────────────
 const bcryptjs = require("bcryptjs");
 const { buildClientPortalPayload } = require("./server/utils/clientPortalData");
+// MULTI-DEVICE SESSION PROTOCOL: one user_sessions row per device token, so a
+// second device login never invalidates the first (see backend/utils/userSessions.js).
+const { findSessionUser } = require("./backend/utils/userSessions");
 const { sendWhatsAppToUser, sendWhatsAppToUserStrict, providerConfigured: whatsappProviderConfigured } = require("./backend/services/whatsappService");
 const { sendMail, sendInvoiceEmail } = require("./backend/services/emailService");
 // Professional document renderers (PDF + email HTML) — see server/lib/invoiceRenderer.js
@@ -103,6 +106,25 @@ const authenticateUser = async (req, res, next) => {
     // by direct lookup so /api/users/login sessions work on JWT-only routes.
     if (token.startsWith("gf_")) {
       try {
+        // MULTI-DEVICE: tokens now live in user_sessions (one row per device).
+        // Checking the session table first is what lets a SECOND device stay
+        // signed in — the legacy column only ever holds the most recent login.
+        const sessionUser = await findSessionUser(token).catch((lookupErr) => {
+          console.error("[AUTH] session lookup failed (legacy fallback):", lookupErr.message);
+          return null;
+        });
+        if (sessionUser) {
+          req.authUser = {
+            userId: sessionUser.id,
+            email: sessionUser.email,
+            role: sessionUser.primary_role || "user",
+          };
+          req.userId = sessionUser.id;
+          req.authToken = token;
+          return next();
+        }
+
+        // Legacy fallback: tokens issued before user_sessions existed.
         const [rows] = await db.query(
           "SELECT id, email FROM users WHERE auth_token = ? AND deleted_at IS NULL LIMIT 1",
           [token],
@@ -110,6 +132,7 @@ const authenticateUser = async (req, res, next) => {
         if (rows.length) {
           req.authUser = { userId: rows[0].id, email: rows[0].email, role: "user" };
           req.userId = rows[0].id;
+          req.authToken = token;
           return next();
         }
       } catch (dbErr) {
@@ -1104,11 +1127,11 @@ app.get("/api/users", authenticateAdmin, async (req, res) => {
     // right photo (client -> users, admin -> admin_users, developer ->
     // developer_users) without guessing.
     const [users] = await mainDb.query(`
-      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, primary_role AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL) as has_photo, 'client' as source_table FROM users WHERE deleted_at IS NULL
+      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, primary_role AS role, is_active, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL) as has_photo, 'client' as source_table FROM users WHERE deleted_at IS NULL
       UNION ALL
-      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, admin_level AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL OR profile_image_id IS NOT NULL) as has_photo, 'admin' as source_table FROM admin_users WHERE deleted_at IS NULL
+      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, admin_level AS role, is_active, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL OR profile_image_id IS NOT NULL) as has_photo, 'admin' as source_table FROM admin_users WHERE deleted_at IS NULL
       UNION ALL
-      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, developer_level AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL OR profile_image_id IS NOT NULL) as has_photo, 'developer' as source_table FROM developer_users WHERE deleted_at IS NULL
+      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, developer_level AS role, is_active, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL OR profile_image_id IS NOT NULL) as has_photo, 'developer' as source_table FROM developer_users WHERE deleted_at IS NULL
       ORDER BY created_at DESC
     `);
     res.json({ success: true, users });
@@ -5000,6 +5023,54 @@ const readBackupStatus = () => {
 // ============================================================================
 const ADMIN_NODE_CATEGORY = "admin_node";
 
+// PUBLIC: client-safe config for the website + portal (WhatsApp number, APK
+// update info). Read-only, no secrets — consumed by FloatingWhatsApp and the
+// client portal's "Mobile app" section.
+app.get("/api/public/config", async (req, res) => {
+  // Only these three keys are ever exposed (never secrets). They are the same
+  // keys the admin Settings page saves through PUT /api/admin/node-settings,
+  // which persists into `admin_website_settings` (category 'admin_node'); the
+  // legacy `admin_settings` table is merged afterwards so either store works.
+  const PUBLIC_CONFIG_KEYS = ["strategy_whatsapp", "apk_version", "apk_url"];
+  const settings = {
+    strategy_whatsapp: "254115525854",
+    apk_version: "",
+    apk_url: "",
+  };
+  try {
+    const savedInNodeStore = new Set();
+    const [nodeRows] = await mainDb.query(
+      "SELECT setting_key, setting_value FROM admin_website_settings WHERE category = ? AND setting_key IN (?, ?, ?)",
+      [ADMIN_NODE_CATEGORY, ...PUBLIC_CONFIG_KEYS],
+    );
+    for (const row of nodeRows || []) {
+      if (row && row.setting_value) {
+        settings[row.setting_key] = row.setting_value;
+        savedInNodeStore.add(row.setting_key);
+      }
+    }
+
+    const [legacyRows] = await mainDb.query(
+      "SELECT setting_key, setting_value FROM admin_settings WHERE setting_key IN (?, ?, ?)",
+      PUBLIC_CONFIG_KEYS,
+    );
+    for (const row of legacyRows || []) {
+      if (row && row.setting_value && !savedInNodeStore.has(row.setting_key)) {
+        settings[row.setting_key] = row.setting_value;
+      }
+    }
+
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({ success: true, settings });
+  } catch (err) {
+    console.error("[PUBLIC CONFIG]", err.message);
+    // Never break the WhatsApp widget / APK panel over a read failure: the
+    // safe defaults above are served instead of a 500.
+    res.set("Cache-Control", "public, max-age=60");
+    res.json({ success: true, settings });
+  }
+});
+
 // Keys the Node Settings page is allowed to write (whitelist)
 const ADMIN_NODE_KEYS = new Set([
   "site_title",
@@ -5010,6 +5081,10 @@ const ADMIN_NODE_KEYS = new Set([
   "allow_registration",
   "deep_space_mode",
   "admin_lockdown",
+  // Channels + APK release control (surfaced by GET /api/public/config)
+  "strategy_whatsapp",
+  "apk_version",
+  "apk_url",
 ]);
 
 async function setAdminNodeSetting(key, value, adminId) {

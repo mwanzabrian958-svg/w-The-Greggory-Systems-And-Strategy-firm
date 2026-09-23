@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const db = require("../config/database");
+const { findSessionUser } = require("../utils/userSessions");
 
 /**
  * CLIENT AUTHENTICATION MIDDLEWARE
@@ -65,19 +66,36 @@ const authenticateUser = async (req, res, next) => {
     if (!req.userId) {
       const dbTokenPrefix = "gf_";
       if (typeof token === "string" && token.startsWith(dbTokenPrefix)) {
-        const [dbUsers] = await db.promise().query(
-          "SELECT id, email, primary_role FROM users WHERE auth_token = ? AND is_active = TRUE AND deleted_at IS NULL",
-          [token],
-        );
+        // MULTI-DEVICE: look up THIS token's row in user_sessions first, so
+        // devices other than the most-recent login still authenticate.
+        const sessionUser = await findSessionUser(token).catch((err) => {
+          console.error("[SESSIONS] lookup failed, legacy fallback:", err.message);
+          return null;
+        });
 
-        if (dbUsers.length > 0) {
-          const user = dbUsers[0];
-          req.userId = user.id;
+        if (sessionUser) {
+          req.userId = sessionUser.id;
           req.authUser = {
-            userId: user.id,
-            email: user.email,
-            role: user.primary_role,
+            userId: sessionUser.id,
+            email: sessionUser.email,
+            role: sessionUser.primary_role,
           };
+        } else {
+          // Legacy single-column fallback (tokens issued pre-user_sessions).
+          const [dbUsers] = await db.promise().query(
+            "SELECT id, email, primary_role FROM users WHERE auth_token = ? AND is_active = TRUE AND deleted_at IS NULL",
+            [token],
+          );
+
+          if (dbUsers.length > 0) {
+            const user = dbUsers[0];
+            req.userId = user.id;
+            req.authUser = {
+              userId: user.id,
+              email: user.email,
+              role: user.primary_role,
+            };
+          }
         }
       }
     }
@@ -88,6 +106,9 @@ const authenticateUser = async (req, res, next) => {
         message: "Invalid authentication token",
       });
     }
+
+    // Expose the raw token so logout can revoke ONLY this device's session row.
+    req.authToken = token;
 
     // 3. "Set in Stone" Routing Integrity Verification
     const providedClientId = req.header("x-greggory-client-id");

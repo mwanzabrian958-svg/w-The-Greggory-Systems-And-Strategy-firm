@@ -3,12 +3,6 @@ import { MessageSquare, Mail, Phone, Send, Plus, Search, Clock, RefreshCw, Chevr
 import { getApiUrl, apiCall } from "../../services/api";
 import { InlineLoader, Spinner } from "../../components/Loading";
 
-const MESSAGES = [
-  { id: 1, sender: "Amaka Wanjiru", message: "Grant applications reviewed and approved.", time: "2 hours ago", channel: "email", unread: false },
-  { id: 2, sender: "David Otieno", message: "Website update completed. Ready for deployment.", time: "4 hours ago", channel: "chat", unread: true },
-  { id: 3, sender: "Susan Njeri", message: "Volunteer onboarding forms updated.", time: "Yesterday", channel: "email", unread: false },
-];
-
 const ANNOUNCEMENTS = [
   { id: 1, title: "Monthly Board Meeting", date: "May 20, 2024", priority: "high" },
   { id: 2, title: "Q2 Financial Results Review", date: "May 25, 2024", priority: "medium" },
@@ -30,6 +24,28 @@ export function Communication() {
   const [feedbackStatus, setFeedbackStatus] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Live relay stream (client-origin feedback). No hardcoded sample rows: an
+  // empty node must look empty, not show placeholder conversations.
+  const [messages, setMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(true);
+  const [messagesError, setMessagesError] = useState(null);
+
+  // Same queue the Support dashboard reads; portal composer messages land here
+  // too because the server forces author='client' for client-submitted entries.
+  const loadMessages = async () => {
+    try {
+      setMessagesLoading(true);
+      setMessagesError(null);
+      const d = await apiCall("/feedback?author=client&limit=25");
+      setMessages(Array.isArray(d?.feedback) ? d.feedback : []);
+    } catch (err) {
+      console.error("Failed to load relay stream:", err);
+      setMessagesError(err.message || "Relay unavailable");
+      setMessages([]);
+    } finally {
+      setMessagesLoading(false);
+    }
+  };
 
   useEffect(() => {
     const loadClients = async () => {
@@ -51,6 +67,7 @@ export function Communication() {
     };
 
     loadClients();
+    loadMessages();
   }, []);
 
   const handleSendFeedback = async (event) => {
@@ -103,14 +120,14 @@ export function Communication() {
       {/* Tighter Channel Overview */}
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          { label: "Unread Messages", value: "12", icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Email Pending", value: "05", icon: Mail, color: "text-amber-600", bg: "bg-amber-50" },
-          { label: "Active Nodes", value: "08", icon: Phone, color: "text-emerald-600", bg: "bg-emerald-50" },
+          { label: "Client Messages", value: messages.length, icon: MessageSquare, color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Awaiting Response", value: messages.filter((m) => (m.status || "new") === "new").length, icon: Mail, color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Active Nodes", value: clients.length, icon: Phone, color: "text-emerald-600", bg: "bg-emerald-50" },
         ].map((chan) => (
           <div key={chan.label} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-md flex items-center justify-between">
             <div>
               <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{chan.label}</p>
-              <p className="text-xl font-black text-slate-900">{chan.value}</p>
+              <p className="text-xl font-black text-slate-900">{String(chan.value).padStart(2, "0")}</p>
             </div>
             <div className={`${chan.bg} p-2.5 rounded-xl ${chan.color}`}><chan.icon size={16} /></div>
           </div>
@@ -136,22 +153,45 @@ export function Communication() {
         <div className="p-5">
           {activeTab === "messages" && (
             <div className="space-y-4">
-              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-[7px] font-black text-slate-400 uppercase tracking-widest text-center">
-                 Secure Relay Stream Active
+              <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between gap-2">
+                 <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">
+                   Secure Relay Stream{messages.length ? ` (${messages.length})` : ""}
+                 </span>
+                 <button
+                   type="button"
+                   onClick={loadMessages}
+                   disabled={messagesLoading}
+                   className="flex items-center gap-1 text-[7px] font-black text-teal-600 uppercase tracking-widest hover:text-teal-700 disabled:opacity-40"
+                 >
+                   <RefreshCw size={9} className={messagesLoading ? "animate-spin" : ""} /> Refresh
+                 </button>
               </div>
+              {messagesLoading && (
+                <div className="bg-white border border-slate-100 rounded-xl p-6 text-center">
+                   <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Opening Secure Relay...</p>
+                </div>
+              )}
+              {!messagesLoading && messages.length === 0 && (
+                <div className="py-10 text-center">
+                   <MessageSquare size={18} className="mx-auto text-slate-300 mb-2" />
+                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Relay queue synchronized</p>
+                   <p className="text-[7px] text-slate-400 uppercase tracking-widest mt-1">{messagesError || "No client messages in the node yet."}</p>
+                </div>
+              )}
               <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                {MESSAGES.map((msg) => (
-                  <div key={msg.id} className={`p-3 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] ${msg.unread ? "bg-blue-50/50 border-blue-100 shadow-sm" : "bg-white border-slate-50"}`}>
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`p-3 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] ${(msg.status || "new") === "new" ? "bg-blue-50/50 border-blue-100 shadow-sm" : "bg-white border-slate-50"}`}>
                     <div className="flex items-start justify-between">
                        <div className="min-w-0">
-                          <p className="text-[9px] font-black text-slate-900 uppercase">{msg.sender}</p>
-                          <p className="text-[8px] text-slate-500 font-medium truncate mt-0.5">{msg.message}</p>
+                          <p className="text-[9px] font-black text-slate-900 uppercase">{msg.user_name || msg.contact_name || "Client"}</p>
+                          <p className="text-[8px] text-slate-500 font-black truncate mt-0.5">{msg.title || msg.message}</p>
+                          <p className="text-[8px] text-slate-400 font-medium line-clamp-2 mt-0.5">{msg.message}</p>
                        </div>
-                       {msg.unread && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />}
+                       {(msg.status || "new") === "new" && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />}
                     </div>
                     <div className="mt-2 flex items-center justify-between text-[6px] font-black uppercase text-slate-400 tracking-widest">
-                       <span className="bg-slate-100 px-2 py-0.5 rounded-md">{msg.channel}</span>
-                       <span className="flex items-center gap-1"><Clock size={8} /> {msg.time}</span>
+                       <span className="bg-slate-100 px-2 py-0.5 rounded-md">{(msg.feedback_type || "portal").replace(/_/g, " ")}</span>
+                       <span className="flex items-center gap-1"><Clock size={8} /> {msg.created_at ? new Date(msg.created_at).toLocaleString() : "No timestamp"}</span>
                     </div>
                   </div>
                 ))}

@@ -15,6 +15,7 @@ const authenticateUser = require('../middleware/clientAuth');
 const authController = require('../controllers/authController');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
 const { createNotification } = require('../utils/notificationHelper');
+const { issueSessionToken, revokeSessionToken, revokeOtherSessions } = require('../utils/userSessions');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
@@ -215,9 +216,15 @@ router.post('/login', authEndpointValidator('user', 'users'), async (req, res) =
     const ok = await bcrypt.compare(password, user.password_hash || '');
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
     
-    // TERMINAL & ACCOUNT LOCK: Generate a fresh persistent token for this specific login session.
-    // This "wires" the account to this specific device terminal and invalidates any previous device's lock.
-    const personalAuthToken = `gf_lock_${crypto.randomBytes(24).toString('hex')}`;
+    // MULTI-DEVICE SESSION PROTOCOL: issue a distinct persistent token for
+    // THIS device via its own user_sessions row — tokens held by the user's
+    // other devices are left untouched, so one credential can carry several
+    // live tokens at once. users.auth_token still tracks the latest login for
+    // legacy readers / the migration fallback in clientAuth.
+    const personalAuthToken = await issueSessionToken(user.id, {
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
     await db.promise().query('UPDATE users SET auth_token = ?, last_login_at = NOW(), last_login_ip = ? WHERE id = ?', [personalAuthToken, req.ip, user.id]);
     
     // Profile photo is stored directly on the users table (set at registration).
@@ -578,19 +585,24 @@ router.get('/my-invoices/:id/pdf', authenticateUser, async (req, res) => {
   }
 });
 
-// Logout — invalidate the current token
+// Logout — PURGE PROTOCOL: revoke ONLY this device's session row so every
+// other device holding a token for the same credential stays signed in.
 router.post('/logout', authenticateUser, async (req, res) => {
   try {
-    // clientAuth already validated the token and set req.userId.
-    // Invalidate by clearing the auth_token on the users table.
-    const [result] = await db.promise().query(
-      `UPDATE users SET auth_token = NULL, updated_at = NOW() WHERE id = ? AND auth_token IS NOT NULL`,
-      [req.userId]
-    );
-
-    // If affectedRows is 0, the token was already cleared (e.g. previous logout).
-    // Still return success — the session is gone either way.
-    res.json({ success: true, message: 'Logged out successfully' });
+    // clientAuth validated the token and exposed it as req.authToken.
+    let revoked = 0;
+    if (req.authToken) {
+      // 1. Purge this device's row in user_sessions.
+      revoked += await revokeSessionToken(req.authToken);
+      // 2. Legacy column cleanup — clear users.auth_token only when it holds
+      //    THIS device's token (never another device's).
+      const [legacy] = await db.promise().query(
+        `UPDATE users SET auth_token = NULL, updated_at = NOW() WHERE id = ? AND auth_token = ?`,
+        [req.userId, req.authToken]
+      );
+      revoked += legacy.affectedRows || 0;
+    }
+    res.json({ success: true, message: 'Logged out successfully', revoked });
   } catch (error) {
     console.error('[LOGOUT] Error:', error);
     res.status(500).json({ success: false, message: 'Logout failed' });
@@ -598,23 +610,25 @@ router.post('/logout', authenticateUser, async (req, res) => {
 });
 
 /**
- * AUTH PROTOCOL: Session Revocation
- * Clears the auth_token for the user, effectively logging them out of all devices.
- * If currentToken is provided, it would theoretically clear others, but since
- * we use a Terminal Lock (single token), this wipes the account's active token.
+ * AUTH PROTOCOL: Session Revocation ("log out everywhere else")
+ * Revokes every live user_sessions row EXCEPT the caller's own token, and
+ * clears the legacy users.auth_token column only when it is not the caller's.
  */
 router.delete('/sessions', authenticateUser, async (req, res) => {
   try {
     const userId = req.userId;
-    const { currentToken } = req.query;
+    const currentToken = req.authToken || req.query.currentToken || '';
 
-    await db.promise().query(
+    const revoked = await revokeOtherSessions(userId, currentToken);
+
+    // Legacy column: clear only when it is NOT the caller's token.
+    const [legacy] = await db.promise().query(
       `UPDATE users SET auth_token = NULL, updated_at = NOW()
        WHERE id = ? AND auth_token IS NOT NULL AND auth_token != ?`,
       [userId, currentToken || '']
     );
 
-    res.json({ success: true, message: 'All other sessions revoked' });
+    res.json({ success: true, message: 'All other sessions revoked', revoked: revoked + (legacy.affectedRows || 0) });
   } catch (error) {
     console.error('[SESSIONS] Revocation error:', error);
     res.status(500).json({ success: false, message: 'Revocation failed' });
