@@ -174,7 +174,7 @@ function buildClientPortalPayload({
   ];
 
   const kpiMetrics = [
-    { id: 1, label: "On-time Delivery", value: `${onTimeDelivery}%`, trend: "up" },
+    { id: 1, label: "Direct Strategy Support", value: "24/7 Active Lead", trend: "up" },
     { id: 2, label: "Client Satisfaction", value: `${averageRating.toFixed(1)}/5`, trend: "up" },
     { id: 3, label: "Budget Variance", value: `${budgetVariance}%`, trend: budgetVariance > 90 ? "up" : "neutral" },
   ];
