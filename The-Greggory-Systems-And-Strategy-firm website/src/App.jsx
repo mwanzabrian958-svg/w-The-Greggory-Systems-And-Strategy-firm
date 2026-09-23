@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
 
 import Navbar from './components/Navbar'
@@ -10,6 +10,7 @@ import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import { PageLoader } from './components/Loading'
+import { lazyWithRetry as lazy } from './utils/lazyWithRetry'
 
 // Landing page stays eager: it's the most common entry point, so we avoid
 // an extra network round-trip before first meaningful paint.

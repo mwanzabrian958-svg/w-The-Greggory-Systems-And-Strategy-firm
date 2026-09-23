@@ -421,7 +421,24 @@ app.use(express.static(path.join(__dirname, "public")));
 // same server, exactly like the Vite dev proxy does on localhost. One origin
 // means no CORS issues, no separate static host, no API URL mismatch.
 const distDir = path.join(__dirname, "dist");
-app.use(express.static(distDir));
+// Cache policy that makes deploys safe for open tabs:
+//  - index.html is NEVER cached: it points at content-hashed chunks that only
+//    exist in the current deploy, so a stale shell would import filenames the
+//    server no longer has ("Failed to fetch dynamically imported module").
+//  - /assets/* filenames embed a content hash, so they are immutable and can
+//    be cached for a year. (The plain public/ static mount above keeps its
+//    defaults — those files are unhashed brand assets.)
+app.use(
+  express.static(distDir, {
+    setHeaders(res, filePath) {
+      if (filePath.endsWith("index.html")) {
+        res.setHeader("Cache-Control", "no-store");
+      } else if (/[\\/]assets[\\/]/.test(filePath)) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      }
+    },
+  }),
+);
 
 // ── LIVE USER TRACKING MIDDLEWARE ────────────────────────────
 app.use(async (req, res, next) => {
@@ -6970,9 +6987,17 @@ app.get(Object.keys(CRAWLER_FILES), (req, res, next) => {
 // (e.g. /login, /admin, /portal) survive refresh/deep links in production —
 // the same behaviour the classic SPA "/* -> /index.html" redirect provided.
 app.get(/^\/(?!api(?:\/|$)).*/, (req, res, next) => {
+  // A path carrying a file extension is a static asset, not an SPA route: if
+  // the static mounts above didn't serve it, it doesn't exist. Masking that
+  // 404 with the shell would hand the browser HTML for a .js chunk (a
+  // confusing MIME-type error), so fall through to the 404 handler instead.
+  if (path.extname(req.path)) return next();
   const indexFile = path.join(distDir, "index.html");
-  if (fs.existsSync(indexFile)) return res.sendFile(indexFile);
-  next(); // no build present (local dev) -> fall through to the 404 handler
+  if (!fs.existsSync(indexFile)) return next(); // no build present (local dev) -> fall through to the 404 handler
+  // Same no-store policy as the express.static mount: the shell must always
+  // be fresh or deep links would serve a stale chunk graph after a deploy.
+  res.set("Cache-Control", "no-store");
+  return res.sendFile(indexFile);
 });
 
 // 404 handler (must stay below ALL routes)
