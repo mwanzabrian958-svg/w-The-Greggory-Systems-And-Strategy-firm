@@ -1081,13 +1081,16 @@ app.get("/api/db/:database/table/:table", authenticateAdmin, async (req, res) =>
 // Users API
 app.get("/api/users", authenticateAdmin, async (req, res) => {
   try {
-    // Union all identity tables to provide a master view for the admin panel
+    // Union all identity tables to provide a master view for the admin panel.
+    // `has_photo` is read from each row's OWN table so the UI can render the
+    // right photo (client -> users, admin -> admin_users, developer ->
+    // developer_users) without guessing.
     const [users] = await mainDb.query(`
-      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, primary_role AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, 'client' as source_table FROM users WHERE deleted_at IS NULL
+      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, primary_role AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL) as has_photo, 'client' as source_table FROM users WHERE deleted_at IS NULL
       UNION ALL
-      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, admin_level AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, 'admin' as source_table FROM admin_users WHERE deleted_at IS NULL
+      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, admin_level AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL OR profile_image_id IS NOT NULL) as has_photo, 'admin' as source_table FROM admin_users WHERE deleted_at IS NULL
       UNION ALL
-      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, developer_level AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, 'developer' as source_table FROM developer_users WHERE deleted_at IS NULL
+      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, developer_level AS role, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL OR profile_image_id IS NOT NULL) as has_photo, 'developer' as source_table FROM developer_users WHERE deleted_at IS NULL
       ORDER BY created_at DESC
     `);
     res.json({ success: true, users });
@@ -5999,8 +6002,15 @@ app.post("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
       });
     }
 
-    // Update appropriate table based on role
-    let tableName = role === "admin" ? "admin_users" : "developer_users";
+    // Write to the identity's OWN table (see PHOTO_ROLE_TABLES) — a client's
+    // photo must land in `users`, never in an admin/developer table.
+    const tableName = photoTableForRole(role);
+    if (!tableName) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid role (admin|developer|user|client) is required",
+      });
+    }
 
     const [result] = await mainDb.query(
       `UPDATE ${tableName} SET profile_photo_blob = ?, profile_photo_mime_type = ?, profile_photo_file_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
@@ -6065,21 +6075,33 @@ function resolveImageMimeType(blob, storedMime) {
   return "image/jpeg";
 }
 
+/**
+ * Single source of truth for photo storage: one identity = one table.
+ *
+ *   client / user  -> users            (client-portal profile photo)
+ *   admin          -> admin_users      (admin platform profile photo)
+ *   developer      -> developer_users
+ *
+ * Every photo route (GET / POST / DELETE) resolves its table through this map,
+ * so a client's photo is never read from - or written to - an admin table.
+ */
+const PHOTO_ROLE_TABLES = {
+  admin: "admin_users",
+  developer: "developer_users",
+  user: "users",
+  client: "users",
+};
+
+const photoTableForRole = (role) =>
+  PHOTO_ROLE_TABLES[String(role || "").trim().toLowerCase()] || null;
+
 // Admin/Developer/Client profile photo retrieval endpoint
 app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
   try {
     const { role, userId } = req.params;
 
-    // Role -> table map. `user`/`client` are accepted so the admin panel can
-    // render a client's portal photo (stored on `users`, never on admin_users)
-    // in Users -> "Personnel Node" detail + print views.
-    const ROLE_TABLES = {
-      admin: "admin_users",
-      developer: "developer_users",
-      user: "users",
-      client: "users",
-    };
-    const tableName = ROLE_TABLES[String(role || "").trim().toLowerCase()];
+    // Route to the identity's OWN table (see PHOTO_ROLE_TABLES).
+    const tableName = photoTableForRole(role);
 
     if (!userId || !tableName) {
       return res.status(400).json({
@@ -6131,35 +6153,10 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
     );
 
     if (users.length === 0) {
-      // Fallback: the photo may have been uploaded from the client-portal
-      // profile, which stores it on the `users` table. Link by email so the
-      // admin platform pulls the same photo from the DB instead of silently
-      // falling back to initials. (SQL validated against live DB: row #3,
-      // 11230-byte image/webp.)
-      const [altUsers] = await mainDb.query(
-        `SELECT u.profile_photo_blob, u.profile_photo_mime_type, u.profile_photo_file_name
-         FROM ${tableName} a
-         JOIN users u ON LOWER(u.email) = LOWER(a.email)
-         WHERE a.id = ?
-           AND u.profile_photo_blob IS NOT NULL
-         LIMIT 1`,
-        [userId],
-      );
-
-      if (altUsers.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "Profile photo not found",
-        });
-      }
-
-      const alt = altUsers[0];
-
-      res.set({
-        "Content-Type": resolveImageMimeType(alt.profile_photo_blob, alt.profile_photo_mime_type),
-        "Content-Disposition": `inline; filename="${alt.profile_photo_file_name || "profile.jpg"}"`,
+      return res.status(404).json({
+        success: false,
+        message: "Profile photo not found",
       });
-      return res.send(alt.profile_photo_blob);
     }
 
     const user = users[0];
@@ -6191,9 +6188,20 @@ app.delete("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
     if (!userId || !role) {
       return res.status(400).json({ success: false, message: "userId and role are required" });
     }
-    const tableName = role === "admin" ? "admin_users" : "developer_users";
+    const tableName = photoTableForRole(role);
+    if (!tableName) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid role (admin|developer|user|client) is required",
+      });
+    }
+    // `users` has no profile_image_id column — clear only the blob trio there.
+    const clearedColumns =
+      tableName === "users"
+        ? "profile_photo_blob = NULL, profile_photo_mime_type = NULL, profile_photo_file_name = NULL, updated_at = CURRENT_TIMESTAMP"
+        : "profile_photo_blob = NULL, profile_photo_mime_type = NULL, profile_photo_file_name = NULL, profile_image_id = NULL, updated_at = CURRENT_TIMESTAMP";
     await mainDb.query(
-      `UPDATE ${tableName} SET profile_photo_blob = NULL, profile_photo_mime_type = NULL, profile_photo_file_name = NULL, profile_image_id = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      `UPDATE ${tableName} SET ${clearedColumns} WHERE id = ?`,
       [userId],
     );
     res.json({ success: true, message: "Profile photo removed" });

@@ -4,6 +4,44 @@ import { useNavigate } from "react-router-dom";
 import { apiCall } from "../../services/api";
 import { Filter, UserPlus, Shield, User, CheckCircle, Download, MoreVertical, ChevronLeft, ChevronRight, RefreshCw, Users as UsersIcon, Trash2, AlertCircle, Activity, KeyRound, Copy, Check } from "lucide-react";
 
+/**
+ * The photo for an identity is served from the table that owns it:
+ *   client -> users | admin -> admin_users | developer -> developer_users
+ * Falls back to the initial letter only when that table has no photo (404).
+ */
+function NodeAvatar({ user }) {
+  const [failed, setFailed] = useState(false);
+  const role =
+    user.source_table === "admin"
+      ? "admin"
+      : user.source_table === "developer"
+        ? "developer"
+        : "user";
+  const initial = (user.display_name || user.name || "U")[0];
+  // `has_photo` comes from the master list; attempt the image when it's absent
+  // (older payloads) and let onError decide.
+  const hasPhoto =
+    user.has_photo === undefined || user.has_photo === null
+      ? true
+      : Boolean(Number(user.has_photo));
+
+  return (
+    <div className="w-10 h-10 rounded-lg bg-[#0f172a] flex items-center justify-center text-white font-black text-sm overflow-hidden">
+      {!hasPhoto || failed ? (
+        initial
+      ) : (
+        <img
+          src={`/api/admin/profile-photo/${role}/${user.id}`}
+          alt={user.display_name || user.name || "Personnel"}
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
+  );
+}
+
 export function Users() {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
@@ -165,7 +203,7 @@ export function Users() {
             <div key={`${u.source_table}-${u.id}`} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-md hover:scale-[1.03] transition-all group flex flex-col cursor-pointer" onClick={() => navigateToDetail(u)}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-lg bg-[#0f172a] flex items-center justify-center text-white font-black text-sm">{(u.display_name || u.name || "U")[0]}</div>
+                  <NodeAvatar user={u} />
                   {isOnline && <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full animate-pulse"></div>}
                 </div>
                 <div className="min-w-0 flex-1">
