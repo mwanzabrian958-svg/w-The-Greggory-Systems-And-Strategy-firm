@@ -138,6 +138,9 @@ const ClientPortal = () => {
   const [unreadAlerts, setUnreadAlerts] = useState(0);
   const [composerText, setComposerText] = useState('');
   const [composerBusy, setComposerBusy] = useState(false);
+  // APK release info is admin-editable (Settings -> apk_version / apk_url) and
+  // served by GET /api/public/config; the bundled constants stay as fallback.
+  const [mobileApp, setMobileApp] = useState(MOBILE_APP);
 
   // Settings State
   const [settingsForm, setSettingsForm] = useState({
@@ -242,6 +245,23 @@ const ClientPortal = () => {
       window.alert(err.message || 'Network error');
     } finally {
       setComposerBusy(false);
+    }
+  };
+
+  // Admin-editable APK release info, with the bundled defaults as fallback so
+  // the download link never disappears if the endpoint is unreachable.
+  const loadMobileAppConfig = async () => {
+    try {
+      const r = await fetch(getApiUrl('/api/public/config'));
+      const d = await r.json();
+      const s = (d && d.settings) || {};
+      setMobileApp((prev) => ({
+        ...prev,
+        url: s.apk_url || prev.url,
+        version: s.apk_version || '',
+      }));
+    } catch (err) {
+      // keep the bundled defaults
     }
   };
 
@@ -403,7 +423,7 @@ const ClientPortal = () => {
     }
   };
 
-  useEffect(() => { loadClientData(); }, []);
+  useEffect(() => { loadClientData(); loadMobileAppConfig(); }, []);
 
   // Fetch crew templates assigned to each project
   useEffect(() => {
@@ -1273,7 +1293,7 @@ const ClientPortal = () => {
             <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-2">
                 <Smartphone size={14} className="text-teal-600" />
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Get the mobile app</h3>
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Get the mobile app{mobileApp.version ? ` v${mobileApp.version}` : ""}</h3>
               </div>
             </div>
 
@@ -1283,8 +1303,8 @@ const ClientPortal = () => {
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-3 rounded-xl bg-gold-500/10 text-gold-600 border border-gold-500/20"><Smartphone size={20} /></div>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{MOBILE_APP.name} for {MOBILE_APP.platform}</h4>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-300">APK · {MOBILE_APP.size}</p>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">{mobileApp.name} for {mobileApp.platform}</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-300">APK · {mobileApp.size}</p>
                   </div>
                 </div>
 
@@ -1306,7 +1326,7 @@ const ClientPortal = () => {
                 </ul>
 
                 <a
-                  href={MOBILE_APP.url}
+                  href={mobileApp.url}
                   download
                   target="_blank"
                   rel="noopener noreferrer"
@@ -1315,7 +1335,7 @@ const ClientPortal = () => {
                   <Download size={14} /> Download APK
                 </a>
                 <p className="text-[8px] text-slate-500 dark:text-slate-400 mt-3 text-center">
-                  Direct download ({MOBILE_APP.size}) — open the file on your phone to install
+                  Direct download ({mobileApp.size}) — open the file on your phone to install
                 </p>
               </div>
 
