@@ -5942,8 +5942,10 @@ app.get("/api/users/profile-photo/:userId", async (req, res) => {
     const user = users[0];
 
     res.set({
-      "Content-Type": user.profile_photo_mime_type,
-      "Content-Disposition": `inline; filename="${user.profile_photo_file_name}"`,
+      // Some rows store a wildcard MIME ("image/*") — resolve the real type so
+      // <img> tags render instead of showing a broken-image icon.
+      "Content-Type": resolveImageMimeType(user.profile_photo_blob, user.profile_photo_mime_type),
+      "Content-Disposition": `inline; filename="${user.profile_photo_file_name || "profile.jpg"}"`,
     });
 
     res.send(user.profile_photo_blob);
@@ -6032,19 +6034,83 @@ app.post("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Admin/Developer profile photo retrieval endpoint
+/**
+ * Resolve the real image MIME type for a stored profile photo.
+ *
+ * Rows written by older uploaders keep whatever the browser sent, which is
+ * sometimes the wildcard "image/*". Serving that verbatim makes <img> tags
+ * fail, so anything that is not a concrete image type is derived from the
+ * file's magic bytes instead.
+ */
+function resolveImageMimeType(blob, storedMime) {
+  const mime = String(storedMime || "").toLowerCase().trim();
+  if (/^image\/(jpeg|jpg|png|gif|webp|avif|bmp)$/.test(mime)) {
+    return mime === "image/jpg" ? "image/jpeg" : mime;
+  }
+  if (!blob || blob.length < 4) return "image/jpeg";
+  if (
+    blob.length > 12 &&
+    blob.toString("ascii", 0, 4) === "RIFF" &&
+    blob.toString("ascii", 8, 12) === "WEBP"
+  ) {
+    return "image/webp";
+  }
+  if (blob[0] === 0xff && blob[1] === 0xd8) return "image/jpeg";
+  if (blob[0] === 0x89 && blob[1] === 0x50 && blob[2] === 0x4e && blob[3] === 0x47) {
+    return "image/png";
+  }
+  if (blob.toString("ascii", 0, 3) === "GIF") return "image/gif";
+  if (blob.length > 12 && blob.toString("ascii", 4, 12) === "ftypavif") return "image/avif";
+  if (blob[0] === 0x42 && blob[1] === 0x4d) return "image/bmp";
+  return "image/jpeg";
+}
+
+// Admin/Developer/Client profile photo retrieval endpoint
 app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
   try {
     const { role, userId } = req.params;
 
-    if (!role || !userId || !["admin", "developer"].includes(role)) {
+    // Role -> table map. `user`/`client` are accepted so the admin panel can
+    // render a client's portal photo (stored on `users`, never on admin_users)
+    // in Users -> "Personnel Node" detail + print views.
+    const ROLE_TABLES = {
+      admin: "admin_users",
+      developer: "developer_users",
+      user: "users",
+      client: "users",
+    };
+    const tableName = ROLE_TABLES[String(role || "").trim().toLowerCase()];
+
+    if (!userId || !tableName) {
       return res.status(400).json({
         success: false,
-        message: "Valid role (admin|developer) and userId are required",
+        message: "Valid role (admin|developer|user|client) and userId are required",
       });
     }
 
-        const tableName = role === "admin" ? "admin_users" : "developer_users";
+    // ── Client photos live on `users` (written by the client-portal upload) ──
+    if (tableName === "users") {
+      const [rows] = await mainDb.query(
+        `SELECT profile_photo_blob, profile_photo_mime_type, profile_photo_file_name
+         FROM users
+         WHERE id = ? AND profile_photo_blob IS NOT NULL`,
+        [userId],
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Profile photo not found",
+        });
+      }
+
+      const client = rows[0];
+      res.set({
+        "Content-Type": resolveImageMimeType(client.profile_photo_blob, client.profile_photo_mime_type),
+        "Content-Disposition": `inline; filename="${client.profile_photo_file_name || "profile.jpg"}"`,
+      });
+      return res.send(client.profile_photo_blob);
+    }
 
     // Check BOTH storage locations:
     // 1. profile_photo_blob directly on the admin/developer table
@@ -6088,30 +6154,12 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
       }
 
       const alt = altUsers[0];
-      const altBlob = alt.profile_photo_blob;
-      let altMime = alt.profile_photo_mime_type || "";
-      // Stored mime can be a wildcard like "image/*" — sniff the real type.
-      if (!/^image\/(jpeg|png|gif|webp|avif|bmp)$/.test(altMime)) {
-        if (
-          altBlob.length > 12 &&
-          altBlob.toString("ascii", 0, 4) === "RIFF" &&
-          altBlob.toString("ascii", 8, 12) === "WEBP"
-        ) {
-          altMime = "image/webp";
-        } else if (altBlob.length > 3 && altBlob[0] === 0xff && altBlob[1] === 0xd8) {
-          altMime = "image/jpeg";
-        } else if (altBlob.length > 4 && altBlob[1] === 0x50 && altBlob[2] === 0x4e && altBlob[3] === 0x47) {
-          altMime = "image/png";
-        } else {
-          altMime = "image/jpeg";
-        }
-      }
 
       res.set({
-        "Content-Type": altMime,
+        "Content-Type": resolveImageMimeType(alt.profile_photo_blob, alt.profile_photo_mime_type),
         "Content-Disposition": `inline; filename="${alt.profile_photo_file_name || "profile.jpg"}"`,
       });
-      return res.send(altBlob);
+      return res.send(alt.profile_photo_blob);
     }
 
     const user = users[0];
@@ -6121,7 +6169,7 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
     const fileName = user.profile_photo_file_name || user.img_name || "profile.jpg";
 
     res.set({
-      "Content-Type": mimeType,
+      "Content-Type": resolveImageMimeType(blob, mimeType),
       "Content-Disposition": `inline; filename="${fileName}"`,
     });
 
@@ -7001,6 +7049,9 @@ app.listen(PORT, "0.0.0.0", async () => {
   );
   console.log(
     `GET  /api/admin/profile-photo/admin/:id            - Retrieve admin photo`,
+  );
+  console.log(
+    `GET  /api/admin/profile-photo/user/:id             - Retrieve client photo (admin panel)`,
   );
 
   console.log(`\n========================================`);
