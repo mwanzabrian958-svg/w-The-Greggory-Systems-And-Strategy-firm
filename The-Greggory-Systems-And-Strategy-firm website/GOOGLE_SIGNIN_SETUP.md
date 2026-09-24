@@ -74,9 +74,12 @@ VITE_GOOGLE_CLIENT_ID=707133684778-olpid71u10eobcsefb43fhbdjjef4fmh.apps.googleu
 ```
 
 > This is the client already used by the live Render deployment — it was read out
-> of the deployed frontend bundle (public asset), and `http://localhost:5173` is
-> authorised on it, so local development works with the same value. If you rotate
-> the client, update **both** vars here *and* on Render.
+> of the deployed frontend bundle (public asset). Both values must still match,
+> and every origin that hosts the button (`http://localhost:5173`,
+> `http://127.0.0.1:5173`, the live site URL) must ALSO be listed under that
+> client's **Authorized JavaScript origins** in Google Cloud Console — otherwise
+> Google logs `The given origin is not allowed for the given client ID.` If you
+> rotate the client, update **both** vars here *and* on Render.
 
 Then on **Render → Environment** set *both*:
 
@@ -114,8 +117,10 @@ npm run test:google
 
 It checks the config, the bundle, the server endpoint (401 = configured,
 503 = missing id) and then drives a real headless Chrome to both `/login` and
-`/signup` to confirm the Google button iframe actually renders (which also proves
-the current origin is authorised by Google). Against production:
+`/signup` to confirm the Google button iframe actually renders. Rendering alone
+does NOT prove the origin is authorised — the verifier additionally treats any
+Google `not allowed for the given client` / `origin_mismatch` console message as
+a hard failure and tells you the exact origin to add. Against production:
 
 ```bash
 # after deploying the server change, this tells you whether Render has GOOGLE_CLIENT_ID
@@ -148,7 +153,7 @@ npm run test:google
 | No Google button anywhere | `VITE_GOOGLE_CLIENT_ID` is empty/placeholder, **or** Vite was not restarted after setting it. Check the browser console — `[GoogleSignIn] hidden …` states it exactly. |
 | `503 Google Sign-In is not configured on this server yet.` | `GOOGLE_CLIENT_ID` is missing **on the server** (the two halves are independent). |
 | `401 That Google account could not be verified` | The server's `GOOGLE_CLIENT_ID` differs from the id the button used, or the token expired. Make both variables identical. |
-| `The given origin is not allowed for this client` / `origin_mismatch` (in the browser console) | The page's origin is not listed under **Authorized JavaScript origins**. Add the exact origin — include `http://localhost:5173` for local dev, and remember `127.0.0.1` ≠ `localhost`. |
+| `The given origin is not allowed for this client` / `origin_mismatch` (in the browser console) | The page's origin is not listed under **Authorized JavaScript origins**. Add the exact origin: `http://localhost:5173` and `http://127.0.0.1:5173` for local dev, plus the live Render URL — our verifier proved Google currently rejects both `localhost:5173` and the Render origin for this client id. `127.0.0.1` ≠ `localhost` in Google's list. |
 | Access blocked: app not verified / “has not completed verification” | The OAuth consent screen is in **Testing** — add that Google account under **Test users**, or publish the app. |
 | Google popup closes with nothing happening | Often a third-party-cookie/embedded-browser block. Use a normal browser window (not an in-app/incognito-with-blockers view) and allow third-party cookies for `accounts.google.com`. |
 | `409 This email belongs to a staff account.` | Deliberate: an admin/developer email must use the staff sign-in — Google never creates a client node for a staff mailbox. |

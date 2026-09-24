@@ -1,4 +1,5 @@
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { usersAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -32,6 +33,24 @@ const GoogleSignIn = ({ buttonText = 'Sign up with Google', isSignUp = true }) =
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+
+  // Google renders the button as an iframe and only accepts a PIXEL width
+  // (200–400); `width="100%"` is rejected with "[GSI_LOGGER]: Provided button
+  // width is invalid: 100%" and silently falls back to the default size. Track
+  // the container width and clamp it into Google's accepted range instead.
+  const wrapRef = useRef(null);
+  const [buttonWidth, setButtonWidth] = useState(320);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => {
+      const measured = Math.round(el.getBoundingClientRect().width);
+      if (measured > 0) setButtonWidth(Math.min(400, Math.max(200, measured)));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
 
   const handleSuccess = async (credentialResponse) => {
     if (!credentialResponse?.credential) {
@@ -95,14 +114,14 @@ const GoogleSignIn = ({ buttonText = 'Sign up with Google', isSignUp = true }) =
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <div className="w-full">
+      <div className="w-full" ref={wrapRef}>
         <GoogleLogin
           onSuccess={handleSuccess}
           onError={handleError}
           useOneTap={isSignUp}
           text={isSignUp ? 'signup_with' : 'signin_with'}
           size="large"
-          width="100%"
+          width={buttonWidth}
           theme="outline"
           shape="rectangular"
           logo_alignment="left"
