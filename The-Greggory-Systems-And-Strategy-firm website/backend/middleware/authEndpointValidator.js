@@ -66,7 +66,11 @@ async function validateAuthRequest(platform, tableName, endpoint, email, req) {
     //    table already enforces the platform-table relationship.
     const lockedMapping = mapping[0];
 
-    // 3. Validate required fields
+    // 3. Validate required fields — ONLY rules whose type is about the
+    //    request body. The table also carries design rules (table_isolation /
+    //    cross_check with rule_values like 'admin_users', and password_policy
+    //    with rule_values like '8') — treating those as required body fields
+    //    made every register request fail with 400 VALIDATION_FAILED.
     const [rules] = await db.promise().query(
       `SELECT rule_name, rule_type, rule_value, enforcement_level FROM auth_validation_rules
        WHERE platform = ? AND is_active = TRUE`,
@@ -110,17 +114,36 @@ async function validateAuthRequest(platform, tableName, endpoint, email, req) {
     const violations = [];
     for (const rule of rules) {
       if (!enforceFields) break; // not a credential write — skip all field rules
-      const fieldName = rule.rule_value;
-      if (isLoginRequest && fieldName !== 'email' && fieldName !== 'password') {
-        continue;
+
+      if (rule.rule_type === 'required_field') {
+        const fieldName = rule.rule_value;
+        if (isLoginRequest && fieldName !== 'email' && fieldName !== 'password') {
+          continue;
+        }
+        if (!body[fieldName]) {
+          violations.push({
+            rule: rule.rule_name,
+            field: fieldName,
+            level: rule.enforcement_level
+          });
+        }
+      } else if (rule.rule_type === 'password_policy' && isRegisterRequest) {
+        // e.g. password_min_length with rule_value '8' — check the actual
+        // password length, not a body field literally named '8'.
+        // Skipped on login so accounts with older, shorter passwords still work.
+        const min = parseInt(rule.rule_value, 10);
+        if (!Number.isNaN(min) && String(body.password || '').length < min) {
+          violations.push({
+            rule: rule.rule_name,
+            field: 'password',
+            level: rule.enforcement_level
+          });
+        }
       }
-      if (!body[fieldName]) {
-        violations.push({
-          rule: rule.rule_name,
-          field: fieldName,
-          level: rule.enforcement_level
-        });
-      }
+      // table_isolation / cross_check rules describe how the ROUTE CODE must
+      // be written (which tables it may reference) — they are enforced by
+      // code review/tests, never by inspecting the request body.
+      // rate_limit is handled separately above.
     }
 
     if (violations.some(v => v.level === 'strict')) {
