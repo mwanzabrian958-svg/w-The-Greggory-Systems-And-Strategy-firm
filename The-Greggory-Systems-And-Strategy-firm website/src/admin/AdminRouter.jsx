@@ -21,6 +21,7 @@ import { ProfitLossReport } from './pages/ProfitLossReport';
 import { InvoicePreview } from './pages/InvoicePreview';
 import { UserForm } from './pages/UserForm';
 import { UserDetail } from './pages/UserDetail';
+import { ClientPortalData } from './pages/ClientPortalData';
 import { CreateBlog } from './pages/CreateBlog';
 import { BlogPreview } from './pages/BlogPreview';
 import { Personnel } from './pages/Personnel';
@@ -89,6 +90,7 @@ export function AdminRouter() {
       <Route path="users/manage" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><UserForm /></AdminRoute>} />
       <Route path="users/manage/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><UserForm /></AdminRoute>} />
       <Route path="users/detail/:id/:roleType" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><UserDetail /></AdminRoute>} />
+      <Route path="users/portal/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><ClientPortalData user={user} /></AdminRoute>} />
       <Route path="content/create" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><CreateBlog /></AdminRoute>} />
       <Route path="content/preview/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><BlogPreview /></AdminRoute>} />
       <Route path="projects/:projectId/tasks" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><ProjectTasks /></AdminRoute>} />

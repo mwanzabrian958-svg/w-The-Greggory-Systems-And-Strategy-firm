@@ -225,6 +225,11 @@ export function UserDetail() {
             <button onClick={() => navigate(`/admin/users/manage/${user.id}?role_type=${roleType}`)} className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all text-slate-600">
                <Edit2 size={12} className="text-teal-600" /> Modify Node
             </button>
+            {!["admin", "developer"].includes(roleType) && (
+              <button onClick={() => navigate(`/admin/users/portal/${user.id}`)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-[8px] font-black uppercase tracking-widest transition-all shadow-lg group">
+                 <ExternalLink size={12} className="group-hover:scale-110 transition-transform" /> Portal Data
+              </button>
+            )}
          </div>
       </div>
 
