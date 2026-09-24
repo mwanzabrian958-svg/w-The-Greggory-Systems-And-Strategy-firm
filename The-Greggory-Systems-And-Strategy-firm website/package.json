@@ -27,6 +27,7 @@
     "test:purge:dry": "node scripts/purge-test-data.js --dry-run",
     "preflight": "node scripts/preflight-db.js",
     "test:docs": "node scripts/verify-client-documents.js",
+    "test:sessions": "node scripts/verify-session-kickout.js",
     "test:loaders": "esbuild scripts/verify-loaders.jsx --bundle --platform=node --format=cjs --jsx=automatic --outfile=node_modules/.cache/verify-loaders.cjs --log-level=error && node node_modules/.cache/verify-loaders.cjs",
     "test:env": "node scripts/validate-env.js",
     "prepush": "node scripts/validate-env.js",

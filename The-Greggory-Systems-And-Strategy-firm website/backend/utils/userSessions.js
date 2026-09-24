@@ -110,10 +110,68 @@ async function revokeOtherSessions(userId, keepToken) {
   return result.affectedRows || 0;
 }
 
+/**
+ * LIVE SESSION INVENTORY (multi-device audit record)
+ * Lists every non-revoked row for this user so the first portal page can show
+ * "where else am I logged in" and let the owner kick each device out.
+ * Raw tokens are NEVER returned to the client — only metadata plus an
+ * `is_current` flag marking the caller's own row.
+ */
+async function listSessions(userId, currentToken) {
+  await ensureSessionTable();
+  const [rows] = await db.promise().query(
+    `SELECT id, ip, user_agent, created_at, token
+       FROM user_sessions
+      WHERE user_id = ? AND revoked_at IS NULL
+      ORDER BY created_at DESC
+      LIMIT 50`,
+    [userId]
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    ip: row.ip,
+    user_agent: row.user_agent,
+    created_at: row.created_at,
+    is_current: !!currentToken && row.token === currentToken,
+  }));
+}
+
+/**
+ * KICK ONE DEVICE: revoke a single row, but ONLY if it belongs to userId
+ * (a caller can never revoke someone else's session by guessing ids).
+ * Returns { revoked, token, isCurrent } so the route can also clear the
+ * legacy users.auth_token column when it holds the kicked token.
+ */
+async function revokeSessionById(userId, sessionId, currentToken) {
+  await ensureSessionTable();
+  const [rows] = await db.promise().query(
+    `SELECT id, token
+       FROM user_sessions
+      WHERE id = ? AND user_id = ? AND revoked_at IS NULL
+      LIMIT 1`,
+    [sessionId, userId]
+  );
+  if (!rows.length) return { revoked: 0, token: null, isCurrent: false };
+
+  const [result] = await db.promise().query(
+    `UPDATE user_sessions SET revoked_at = NOW()
+      WHERE id = ? AND user_id = ? AND revoked_at IS NULL`,
+    [sessionId, userId]
+  );
+  const token = rows[0].token;
+  return {
+    revoked: result.affectedRows || 0,
+    token,
+    isCurrent: !!currentToken && token === currentToken,
+  };
+}
+
 module.exports = {
   ensureSessionTable,
   issueSessionToken,
   findSessionUser,
   revokeSessionToken,
   revokeOtherSessions,
+  listSessions,
+  revokeSessionById,
 };

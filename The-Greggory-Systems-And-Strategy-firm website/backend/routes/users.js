@@ -15,7 +15,7 @@ const authenticateUser = require('../middleware/clientAuth');
 const authController = require('../controllers/authController');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
 const { createNotification } = require('../utils/notificationHelper');
-const { issueSessionToken, revokeSessionToken, revokeOtherSessions } = require('../utils/userSessions');
+const { issueSessionToken, revokeSessionToken, revokeOtherSessions, listSessions, revokeSessionById } = require('../utils/userSessions');
 const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
@@ -121,7 +121,10 @@ router.get('/', requireAdmin, (req, res) => {
 });
 
 // Delete user (admin only)
-router.delete('/:id', requireAdmin, (req, res) => {
+// NUMERIC-ONLY: this single-segment DELETE used to also swallow
+// `DELETE /sessions` (Express matches /:id with id="sessions"), which returned
+// 403 for regular users and made "log out everywhere else" unreachable.
+router.delete('/:id(\\d+)', requireAdmin, (req, res) => {
   const { id } = req.params;
   const query = 'DELETE FROM users WHERE id = ?';
   db.query(query, [id], (err, result) => {
@@ -606,6 +609,70 @@ router.post('/logout', authenticateUser, async (req, res) => {
   } catch (error) {
     console.error('[LOGOUT] Error:', error);
     res.status(500).json({ success: false, message: 'Logout failed' });
+  }
+});
+
+/**
+ * MULTI-DEVICE AUDIT: list every live login for this account.
+ * The first portal page ("Active Sessions") renders this so the owner can
+ * see other devices and kick them out. Raw tokens are NEVER returned —
+ * each row only carries metadata plus an `is_current` flag.
+ */
+router.get('/sessions', authenticateUser, async (req, res) => {
+  try {
+    const sessions = await listSessions(req.userId, req.authToken || '');
+
+    // Legacy devices (tokens issued before user_sessions existed) authenticate
+    // through users.auth_token and have no row — surface the caller anyway so
+    // "this device" always appears in its own list.
+    if (req.authToken && !sessions.some((s) => s.is_current)) {
+      sessions.unshift({
+        id: null,
+        ip: req.ip || null,
+        user_agent: req.header('user-agent') || null,
+        created_at: null,
+        is_current: true,
+        legacy: true,
+      });
+    }
+
+    res.json({ success: true, sessions });
+  } catch (error) {
+    console.error('[SESSIONS] List error:', error);
+    res.status(500).json({ success: false, message: 'Could not list sessions' });
+  }
+});
+
+/**
+ * MULTI-DEVICE AUDIT: kick ONE other device out by session id.
+ * revokeSessionById scopes the UPDATE to the caller's own user_id, so a
+ * guessed id can never revoke someone else's session. The portal only
+ * offers the button for non-current devices.
+ */
+router.delete('/sessions/:id', authenticateUser, async (req, res) => {
+  try {
+    const sessionId = Number(req.params.id);
+    if (!Number.isInteger(sessionId) || sessionId <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid session id' });
+    }
+
+    const { revoked, token } = await revokeSessionById(req.userId, sessionId, req.authToken || '');
+    if (!revoked) {
+      return res.status(404).json({ success: false, message: 'Session not found or already signed out' });
+    }
+
+    // Keep the legacy column in sync when it holds the kicked device's token.
+    if (token) {
+      await db.promise().query(
+        `UPDATE users SET auth_token = NULL, updated_at = NOW() WHERE id = ? AND auth_token = ?`,
+        [req.userId, token]
+      );
+    }
+
+    res.json({ success: true, message: 'Device signed out', revoked });
+  } catch (error) {
+    console.error('[SESSIONS] Kick error:', error);
+    res.status(500).json({ success: false, message: 'Could not sign that device out' });
   }
 });
 

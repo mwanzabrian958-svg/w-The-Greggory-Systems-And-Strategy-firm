@@ -54,6 +54,25 @@ const MOBILE_APP = {
   platform: "Android",
 };
 
+// Human-readable device label from a stored user-agent (best effort — the
+// raw UA string stays in the sessions list subtitle for the audit record).
+const deviceLabel = (ua) => {
+  if (!ua) return 'Unknown device';
+  const browser = /Edg\//.test(ua) ? 'Edge'
+    : /OPR\/|Opera/.test(ua) ? 'Opera'
+    : /Chrome\//.test(ua) ? 'Chrome'
+    : /Firefox\//.test(ua) ? 'Firefox'
+    : /Safari\//.test(ua) ? 'Safari'
+    : 'Browser';
+  const os = /Android/.test(ua) ? 'Android'
+    : /iPhone|iPad|iPod/.test(ua) ? 'iOS'
+    : /Windows/.test(ua) ? 'Windows'
+    : /Mac OS X|Macintosh/.test(ua) ? 'macOS'
+    : /Linux/.test(ua) ? 'Linux'
+    : '';
+  return [browser, os].filter(Boolean).join(' on ');
+};
+
 const ClientPortal = () => {
   const { user, logout } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
@@ -94,6 +113,13 @@ const ClientPortal = () => {
   const [error, setError] = useState(null);
   const [isOffline, setIsOffline] = useState(false);
   const [activeSection, setActiveSection] = useState("overview");
+
+  // Multi-device session records — shown on the FIRST page after login so the
+  // owner can see every other live login and kick it out.
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [kickingId, setKickingId] = useState(null); // session id | 'all' | null
+  const [sessionsMsg, setSessionsMsg] = useState(null);
 
   // Feedback State
   const [feedbackList, setFeedbackList] = useState([]);
@@ -195,6 +221,63 @@ const ClientPortal = () => {
       setUnreadAlerts(rows.filter((n) => (n.status || 'unread') === 'unread').length);
     } catch (err) {
       // badge stays as-is on failure
+    }
+  };
+
+  // ── ACTIVE SESSIONS (multi-device audit record) ──────────────────────────
+  const loadSessions = async () => {
+    try {
+      setSessionsLoading(true);
+      const r = await authFetch(getApiUrl('/api/users/sessions'));
+      const d = await r.json();
+      if (d.success) setSessions(Array.isArray(d.sessions) ? d.sessions : []);
+    } catch (err) {
+      // Non-fatal — the card simply shows the last known list.
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  // Kick ONE other device out: revoke its user_sessions row server-side, so
+  // its next request 401s and that device is bounced back to its login page.
+  const kickSession = async (s) => {
+    if (s.is_current || s.id == null) return;
+    try {
+      setKickingId(s.id);
+      setSessionsMsg(null);
+      const r = await authFetch(getApiUrl(`/api/users/sessions/${s.id}`), { method: 'DELETE' });
+      const d = await r.json();
+      if (d.success) {
+        setSessionsMsg({ type: 'success', text: 'Device signed out' });
+        await loadSessions();
+      } else {
+        setSessionsMsg({ type: 'error', text: d.message || 'Could not sign that device out' });
+      }
+    } catch (err) {
+      setSessionsMsg({ type: 'error', text: err.message || 'Could not sign that device out' });
+    } finally {
+      setKickingId(null);
+    }
+  };
+
+  // Kick EVERY other device at once (this device stays signed in).
+  const kickAllOthers = async () => {
+    if (!window.confirm('Sign out all other devices? This device stays signed in.')) return;
+    try {
+      setKickingId('all');
+      setSessionsMsg(null);
+      const r = await authFetch(getApiUrl('/api/users/sessions'), { method: 'DELETE' });
+      const d = await r.json();
+      if (d.success) {
+        setSessionsMsg({ type: 'success', text: `${d.revoked || 0} other session(s) signed out` });
+        await loadSessions();
+      } else {
+        setSessionsMsg({ type: 'error', text: d.message || 'Could not sign other devices out' });
+      }
+    } catch (err) {
+      setSessionsMsg({ type: 'error', text: err.message || 'Could not sign other devices out' });
+    } finally {
+      setKickingId(null);
     }
   };
 
@@ -423,7 +506,7 @@ const ClientPortal = () => {
     }
   };
 
-  useEffect(() => { loadClientData(); loadMobileAppConfig(); }, []);
+  useEffect(() => { loadClientData(); loadMobileAppConfig(); loadSessions(); }, []);
 
   // Fetch crew templates assigned to each project
   useEffect(() => {
@@ -444,6 +527,7 @@ const ClientPortal = () => {
     const handleVisibility = () => {
       if (document.visibilityState === 'visible' && portalUser) {
         loadClientData();
+        loadSessions(); // refresh the audit record (another device may have logged in)
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
@@ -754,6 +838,59 @@ const ClientPortal = () => {
                   <div className="h-1 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden"><div className="h-full bg-gold-500 transition-all duration-700" style={{ width: pct(profileCompletion) }} /></div>
                   <p className="text-[7px] text-slate-500 dark:text-slate-300 mt-1.5 uppercase font-bold text-right">{profileCompletion}% Complete{!portalUser?.phone_number ? ' Â· Add phone' : ''}</p>
                 </div>
+              </div>
+
+              {/* ── ACTIVE SESSIONS: record of every live login + kick-out ── */}
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between mb-3 pb-1 border-b border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-1.5 text-rose-600">
+                    <ShieldCheck size={12} />
+                    <h3 className="text-[9px] font-bold uppercase">Active Sessions ({sessions.length})</h3>
+                  </div>
+                  <button
+                    onClick={kickAllOthers}
+                    disabled={kickingId !== null || !sessions.some(s => !s.is_current)}
+                    className="text-[8px] font-black uppercase tracking-widest text-rose-600 dark:text-rose-400 hover:text-rose-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  >
+                    {kickingId === 'all' ? 'Signing out…' : 'Log out everywhere else'}
+                  </button>
+                </div>
+                {sessionsMsg && (
+                  <p className={`text-[8px] font-bold uppercase mb-2 ${sessionsMsg.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>{sessionsMsg.text}</p>
+                )}
+                {sessionsLoading && sessions.length === 0 ? (
+                  <p className="text-[8px] text-slate-500 dark:text-slate-400 font-bold uppercase">Loading session records…</p>
+                ) : sessions.length === 0 ? (
+                  <p className="text-[8px] text-slate-500 dark:text-slate-400">No active session records found.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {sessions.map(s => (
+                      <div key={s.id ?? 'current'} className="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <Smartphone size={11} className="text-teal-600 shrink-0" />
+                            <p className="text-[9px] font-bold truncate">{s.user_agent ? deviceLabel(s.user_agent) : 'Unknown device'}</p>
+                            {s.is_current && (
+                              <span className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-600 border border-teal-500/30 shrink-0">This device</span>
+                            )}
+                          </div>
+                          <p className="text-[7px] text-slate-500 dark:text-slate-400 font-bold uppercase truncate">
+                            {s.ip || 'IP unknown'} · {s.created_at ? `Signed in ${new Date(s.created_at).toLocaleString()}` : 'Signed in earlier'}
+                          </p>
+                        </div>
+                        {!s.is_current && s.id != null && (
+                          <button
+                            onClick={() => kickSession(s)}
+                            disabled={kickingId !== null}
+                            className="text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 disabled:opacity-40 transition-all shrink-0"
+                          >
+                            {kickingId === s.id ? '…' : 'Kick out'}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

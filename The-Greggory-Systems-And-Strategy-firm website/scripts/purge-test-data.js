@@ -53,6 +53,16 @@ const STEPS = [
   { table: "user_feedback", where: "title LIKE 'audit %'", label: "audit feedback" },
   { table: "accounting_categories", where: "name LIKE 'VerifyCat %'", label: "verify categories" },
   { table: "user_projects", where: "project_name LIKE 'Audit Project %'", label: "audit projects" },
+  // Session rows for deleted test accounts (also runs after the account
+  // deletes below so it collects rows orphaned by them). user_sessions has no
+  // FK constraint, so these would otherwise pile up forever.
+  {
+    table: "user_sessions",
+    where:
+      "user_id NOT IN (SELECT id FROM (SELECT id FROM users) u) " +
+      "OR user_id IN (SELECT id FROM (SELECT id FROM users WHERE email LIKE '%@test.com' OR email LIKE '%@example.com') t)",
+    label: "test/orphaned session rows",
+  },
   {
     table: "users",
     where: "email LIKE '%@test.com' OR email LIKE '%@example.com'",
