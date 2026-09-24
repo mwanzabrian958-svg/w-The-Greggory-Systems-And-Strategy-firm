@@ -74,7 +74,7 @@ function check(name, cond, extra) {
   }
 
   const em = "verify" + Date.now() + "@test.com";
-  await api("/api/admin-verification/register", "POST", { email: em, password: "Verify123", first_name: "Ver", last_name: "Ify", role: "admin" });
+  await api("/api/admin-verification/register", "POST", { email: em, password: "Verify123", first_name: "Ver", last_name: "Ify", role: "admin", admin_code: process.env.ADMIN_CODE });
   // Login can transiently hit the global 100-req/15-min rate limiter (plain-text
   // 429 body) when runs are back-to-back — retry a few times before giving up.
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

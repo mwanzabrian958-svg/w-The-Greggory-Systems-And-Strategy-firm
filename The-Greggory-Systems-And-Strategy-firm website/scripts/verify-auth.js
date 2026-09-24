@@ -47,7 +47,7 @@ function check(name, cond, extra) {
 
   // --- ADMIN ---
   const adm = "authadm" + stamp + "@test.com";
-  const ar = await api("/api/admin-verification/register", "POST", { email: adm, password: "Test1234", first_name: "Adm", last_name: "In", role: "admin" });
+  const ar = await api("/api/admin-verification/register", "POST", { email: adm, password: "Test1234", first_name: "Adm", last_name: "In", role: "admin", admin_code: process.env.ADMIN_CODE });
   check("admin register 201", ar.status === 201, ar.body.substring(0, 80));
   const al = await api("/api/admin-verification/authenticate-enhanced", "POST", { email: adm, password: "Test1234" });
   const ad = J(al.body);
@@ -55,7 +55,7 @@ function check(name, cond, extra) {
 
   // --- DEVELOPER ---
   const dev = "authdev" + stamp + "@test.com";
-  const dr = await api("/api/admin-verification/register", "POST", { email: dev, password: "Test1234", first_name: "Dev", last_name: "Eloper", role: "developer" });
+  const dr = await api("/api/admin-verification/register", "POST", { email: dev, password: "Test1234", first_name: "Dev", last_name: "Eloper", role: "developer", admin_code: process.env.ADMIN_CODE });
   check("developer register 201", dr.status === 201, dr.body.substring(0, 80));
   const dl = await api("/api/developer-verification/authenticate", "POST", { email: dev, password: "Test1234" });
   const dd = J(dl.body);
