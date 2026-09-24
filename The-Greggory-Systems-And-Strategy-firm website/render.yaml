@@ -89,8 +89,14 @@ services:
       - key: VITE_BING_SITE_VERIFICATION
         sync: false
       # --- Optional integrations (leave unset to disable) ---
-      # Build-time Google Sign-In (baked into the React bundle). If blank,
-      # the Google button simply hides itself — the site still works.
+      # Google Sign-In ("Sign in with Google" on /login + /signup).
+      # BOTH must hold the SAME OAuth 2.0 client id (…apps.googleusercontent.com):
+      #   VITE_GOOGLE_CLIENT_ID — build-time, baked into the React bundle (the button)
+      #   GOOGLE_CLIENT_ID      — runtime, verifies the token on the server
+      # Set the VITE_ one BEFORE the build; changing it needs a redeploy.
+      # Authorized JavaScript origins must include this service's origin.
+      # If both are blank the Google button simply hides itself — the site still works.
+      # Guide: GOOGLE_SIGNIN_SETUP.md
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_ID

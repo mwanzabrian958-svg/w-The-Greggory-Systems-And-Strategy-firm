@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, User, Phone, Camera } from 'lucide-react'
-import GoogleSignIn from '../components/GoogleSignIn'
+import GoogleSignIn, { googleSignInEnabled } from '../components/GoogleSignIn'
 import AuthLayout from '../components/AuthLayout'
 import { usersAPI } from '../services/api'
 import { SITE_NAME } from '../constants/siteBrand'
@@ -36,6 +36,9 @@ const Signup = () => {
   const [showProtocols, setShowProtocols] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const navigate = useNavigate()
+  // Only offer the Google option when the widget can actually render
+  // (VITE_GOOGLE_CLIENT_ID configured) — see GOOGLE_SIGNIN_SETUP.md
+  const GOOGLE_ENABLED = googleSignInEnabled
 
   const handleChange = (e) => {
     setFormData({
@@ -213,18 +216,22 @@ const Signup = () => {
           <p className="text-center text-[8px] font-black text-slate-500 uppercase tracking-widest">Already have an account? <Link to="/login" className="text-gold-500">Sign in</Link></p>
         </form>
 
-        <div className="relative py-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/5"></div>
-          </div>
-          <div className="relative flex justify-center text-[8px] font-black tracking-[0.4em]">
-            <span className="px-4 bg-[#0f172a] text-slate-700">OR</span>
-          </div>
-        </div>
+        {GOOGLE_ENABLED && (
+          <>
+            <div className="relative py-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/5"></div>
+              </div>
+              <div className="relative flex justify-center text-[8px] font-black tracking-[0.4em]">
+                <span className="px-4 bg-[#0f172a] text-slate-700">OR</span>
+              </div>
+            </div>
 
-        <div className="space-y-4">
-          <GoogleSignIn isSignUp={true} buttonText="Sign up with Google" />
-        </div>
+            <div className="space-y-4">
+              <GoogleSignIn isSignUp={true} buttonText="Sign up with Google" />
+            </div>
+          </>
+        )}
       </div>
 
       {(isLoading || showSuccess) && (

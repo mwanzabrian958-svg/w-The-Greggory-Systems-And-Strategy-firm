@@ -55,7 +55,9 @@ const bcryptjs = require("bcryptjs");
 const { buildClientPortalPayload } = require("./server/utils/clientPortalData");
 // MULTI-DEVICE SESSION PROTOCOL: one user_sessions row per device token, so a
 // second device login never invalidates the first (see backend/utils/userSessions.js).
-const { findSessionUser } = require("./backend/utils/userSessions");
+const { findSessionUser, issueSessionToken } = require("./backend/utils/userSessions");
+// In-portal notifications (welcome message on Google self-registration).
+const { createNotification } = require("./backend/utils/notificationHelper");
 const { sendWhatsAppToUser, sendWhatsAppToUserStrict, providerConfigured: whatsappProviderConfigured } = require("./backend/services/whatsappService");
 const { sendMail, sendInvoiceEmail } = require("./backend/services/emailService");
 // Professional document renderers (PDF + email HTML) — see server/lib/invoiceRenderer.js
@@ -69,6 +71,16 @@ const { generateCompletionPdf } = require("./server/services/pdfGenerator");
 const redis = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
 redis.connect().catch(err => console.warn('[REDIS] Not connected, using memory fallback.'));
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+// Google Sign-In needs BOTH halves: GOOGLE_CLIENT_ID here (token verification)
+// and VITE_GOOGLE_CLIENT_ID in the frontend build (the button). Missing either
+// one disables the feature — say so once at boot instead of failing later with
+// a confusing 401 on the sign-in page. Setup: GOOGLE_SIGNIN_SETUP.md
+if (!(process.env.GOOGLE_CLIENT_ID || "").trim()) {
+  console.warn(
+    "[AUTH] Google Sign-In is DISABLED — GOOGLE_CLIENT_ID is not set. " +
+      "Set GOOGLE_CLIENT_ID and VITE_GOOGLE_CLIENT_ID (same OAuth 2.0 client) — see GOOGLE_SIGNIN_SETUP.md",
+  );
+}
 
 // ── AUTH MIDDLEWARE ──────────────────────────────────────────
 
@@ -1529,9 +1541,14 @@ app.post("/api/users/my-quotes/:id/decision", authenticateUser, handleMyQuoteDec
 app.get("/api/users/my-signature-requests", authenticateUser, handleMySignatureRequestsList);
 app.post("/api/users/my-signature-requests/:id/decision", authenticateUser, handleMySignatureDecision);
 
-app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
+// ── SHARED PORTAL PAYLOAD BUILDER ────────────────────────────────────────────
+// Returns the full payload the client portal renders for a user id, or null
+// when that user does not exist. Shared by the client's own
+// GET /api/users/client-dashboard (scoped to the token) and the admin
+// GET /api/admin/client-portal/:id, so the admin editor always works on
+// EXACTLY the data the client sees — no drift between preview and portal.
+const loadClientPortalPayload = async (id) => {
   try {
-    const id = req.userId;
 
     const [users] = await mainDb.query(
       `SELECT id, email, first_name, last_name, display_name, phone_number, primary_role,
@@ -1543,7 +1560,7 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return null;
     }
 
     const user = users[0];
@@ -1741,13 +1758,43 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
       teamMembers,
     });
 
-    res.json({
-      success: true,
-      dashboard: payload,
-    });
+    return payload;
   } catch (error) {
     console.error("[CLIENT DASHBOARD] Error:", error);
+    throw error;
+  }
+};
+
+app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
+  try {
+    const payload = await loadClientPortalPayload(req.userId);
+    if (!payload) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    res.json({ success: true, dashboard: payload });
+  } catch (error) {
     res.status(500).json({ success: false, message: "Could not fetch client dashboard data", error: error.message });
+  }
+});
+
+// ADMIN: the EXACT payload any client's portal renders — powers the admin
+// "Client Portal Data" editor (src/admin/pages/ClientPortalData.jsx) so staff
+// always edit the same data the client actually sees. Metadata-only payload;
+// never exposes session tokens.
+app.get("/api/admin/client-portal/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const clientId = parseInt(req.params.id, 10);
+    if (!Number.isInteger(clientId) || clientId <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid client id" });
+    }
+    const payload = await loadClientPortalPayload(clientId);
+    if (!payload) {
+      return res.status(404).json({ success: false, message: "Client not found" });
+    }
+    res.json({ success: true, dashboard: payload });
+  } catch (error) {
+    console.error("[ADMIN CLIENT PORTAL] Error:", error);
+    res.status(500).json({ success: false, message: "Could not fetch client portal data", error: error.message });
   }
 });
 
@@ -1929,75 +1976,261 @@ app.get("/api/users/projects/:id", authenticateUser, async (req, res) => {
   }
 });
 
+// ── GOOGLE SIGN-IN (client portal) ───────────────────────────────────────────
+// One endpoint covers BOTH registration and sign-in, exactly like the Google
+// button on /login and /signup: the first Google sign-in CREATES the client
+// node, every later one signs that same node in.
+//
+// Session protocol: identical to POST /api/users/login — a per-device token
+// from backend/utils/userSessions.js (issueSessionToken), mirrored into
+// users.auth_token for legacy readers. A Google session is therefore
+// indistinguishable from a password session everywhere else in the app
+// (authenticateUser, logout, session lists, admin tooling).
+//
+// Setup: GOOGLE_SIGNIN_SETUP.md — GOOGLE_CLIENT_ID (server) and
+// VITE_GOOGLE_CLIENT_ID (frontend build) must be the SAME OAuth 2.0 client.
+const isMissingColumn = (error) => error?.code === "ER_BAD_FIELD_ERROR" || error?.errno === 1054;
+
+// users.google_id is an optional column: probe once, then cache. On a legacy
+// database without it, Google sign-in still works — accounts are matched by
+// email instead of by Google id.
+let googleIdColumnState = null;
+const googleIdColumnAvailable = async () => {
+  if (googleIdColumnState !== null) return googleIdColumnState;
+  try {
+    const [rows] = await mainDb.query(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'google_id' LIMIT 1`,
+    );
+    googleIdColumnState = rows.length > 0;
+    if (!googleIdColumnState) {
+      console.warn(
+        "[GOOGLE AUTH] users.google_id is missing — sign-in still works, accounts are matched by email. " +
+          "Run scripts/add-google-id-column.js to enable Google-id matching.",
+      );
+    }
+  } catch (error) {
+    // Schema not inspectable — assume it exists and let the ER_BAD_FIELD_ERROR
+    // fallback in the INSERT below handle a legacy database.
+    googleIdColumnState = true;
+  }
+  return googleIdColumnState;
+};
+
 app.post("/api/users/google-auth", async (req, res) => {
   try {
-    const { credential } = req.body;
+    const { credential } = req.body || {};
 
     if (!credential) {
       return res.status(400).json({ success: false, message: "Google credential token is required" });
     }
 
-    // Secure Verification
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID
-    });
-
-    const payload = ticket.getPayload();
-    const { email, given_name, family_name, sub: google_id, picture } = payload;
-
-    // Check if user already exists
-    const [existingUsers] = await mainDb.query(
-      "SELECT id, email, first_name, last_name FROM users WHERE email = ? AND deleted_at IS NULL",
-      [email],
-    );
-
-    if (existingUsers.length > 0) {
-      const user = existingUsers[0];
-      const token = jwt.sign(
-        { userId: user.id, email: user.email, role: 'user' },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-
-      return res.json({
-        success: true,
-        token,
-        user: {
-          id: user.id,
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          role: "user",
-        },
+    const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID || "").trim();
+    if (!GOOGLE_CLIENT_ID) {
+      // Misconfiguration (not a bad token) — name the fix so the failure is
+      // actionable instead of a misleading 401.
+      console.error("[GOOGLE AUTH] GOOGLE_CLIENT_ID is not set — see GOOGLE_SIGNIN_SETUP.md");
+      return res.status(503).json({
+        success: false,
+        message: "Google Sign-In is not configured on this server yet.",
       });
     }
 
-    // Create new user from verified Google data
-    const [result] = await mainDb.query(
-      "INSERT INTO users (email, first_name, last_name, display_name, google_id, email_verified, is_active) VALUES (?, ?, ?, ?, ?, TRUE, TRUE)",
-      [email, given_name, family_name, `${given_name} ${family_name}`, google_id],
-    );
+    // ── 1. Verify the ID token with Google ──────────────────────────────────
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch (verifyError) {
+      console.error("[GOOGLE AUTH] token verification failed:", verifyError.message);
+      return res.status(401).json({
+        success: false,
+        message: "That Google account could not be verified. Please try again.",
+      });
+    }
 
-    const userId = result.insertId;
-    await mainDb.query("INSERT INTO user_roles (user_id, role_id) VALUES (?, 2)", [userId]);
+    const email = String(payload?.email || "").trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ success: false, message: "That Google account has no email address" });
+    }
+    if (payload.email_verified === false) {
+      return res.status(403).json({ success: false, message: "That Google email address is not verified" });
+    }
 
-    const token = jwt.sign(
-      { userId, email, role: 'user' },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const firstName = payload.given_name || email.split("@")[0];
+    const lastName = payload.family_name || "";
+    const displayName = payload.name || `${firstName} ${lastName}`.trim() || email.split("@")[0];
 
-    res.json({
-      success: true,
-      token,
-      user: { id: userId, email, first_name: given_name, last_name: family_name, role: "user" },
+    // ── 2. Staff emails never become client nodes ───────────────────────────
+    // An admin/developer signing in with Google must use the staff sign-in:
+    // auto-creating a client node for a staff mailbox would drop a staff member
+    // into the client portal and into the client list.
+    for (const staffTable of ["admin_users", "developer_users"]) {
+      try {
+        const [staff] = await mainDb.query(`SELECT id FROM ${staffTable} WHERE email = ? LIMIT 1`, [email]);
+        if (staff.length > 0) {
+          return res.status(409).json({
+            success: false,
+            message: "This email belongs to a staff account. Please use the staff sign-in.",
+          });
+        }
+      } catch (lookupError) {
+        // A missing staff table can never contain this email — keep going.
+        console.warn(`[GOOGLE AUTH] ${staffTable} lookup skipped:`, lookupError.code || lookupError.message);
+      }
+    }
+
+    // ── 3. Resolve the client node: Google id first, then email ─────────────
+    const hasGoogleIdColumn = await googleIdColumnAvailable();
+    const userColumns =
+      "id, email, first_name, last_name, display_name, primary_role, is_active, profile_photo_blob, profile_photo_mime_type";
+    let user = null;
+
+    if (hasGoogleIdColumn) {
+      const [byGoogleId] = await mainDb.query(
+        `SELECT ${userColumns} FROM users WHERE google_id = ? AND deleted_at IS NULL LIMIT 1`,
+        [payload.sub],
+      );
+      user = byGoogleId[0] || null;
+    }
+    if (!user) {
+      const [byEmail] = await mainDb.query(
+        `SELECT ${userColumns} FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1`,
+        [email],
+      );
+      user = byEmail[0] || null;
+    }
+
+    if (user && Number(user.is_active) === 0) {
+      return res.status(403).json({
+        success: false,
+        message: "This account has been deactivated. Please contact the firm.",
+      });
+    }
+
+    let isNewUser = false;
+
+    if (!user) {
+      // ── 4a. REGISTER: the first Google sign-in creates the client node ────
+      // A random bcrypt hash is stored instead of NULL, so password login can
+      // never match it (the account stays Google-only) and the INSERT works
+      // whether or not users.password_hash accepts NULL.
+      const unusablePasswordHash = await bcryptjs.hash(crypto.randomBytes(32).toString("hex"), 10);
+      const baseColumns = [
+        "email", "password_hash", "first_name", "last_name",
+        "display_name", "primary_role", "email_verified", "is_active",
+      ];
+      const baseValues = [email, unusablePasswordHash, firstName, lastName, displayName, "user", true, true];
+
+      let inserted = null;
+      if (hasGoogleIdColumn) {
+        try {
+          [inserted] = await mainDb.query(
+            `INSERT INTO users (${[...baseColumns, "google_id"].join(", ")}) VALUES (${baseColumns.map(() => "?").join(", ")}, ?)`,
+            [...baseValues, payload.sub],
+          );
+        } catch (insertError) {
+          if (!isMissingColumn(insertError)) throw insertError;
+          // The schema probe was wrong (legacy database) — remember that and
+          // register without google_id.
+          googleIdColumnState = false;
+        }
+      }
+      if (!inserted) {
+        [inserted] = await mainDb.query(
+          `INSERT INTO users (${baseColumns.join(", ")}) VALUES (${baseColumns.map(() => "?").join(", ")})`,
+          baseValues,
+        );
+      }
+
+      user = {
+        id: inserted.insertId,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        display_name: displayName,
+        primary_role: "user",
+        is_active: 1,
+        profile_photo_blob: null,
+        profile_photo_mime_type: null,
+      };
+      isNewUser = true;
+      console.log(`[GOOGLE AUTH] registered client node #${user.id} (${email})`);
+
+      // Fire-and-forget welcome notification — createNotification() already
+      // swallows its own errors, so a notification problem can never undo a
+      // successful registration.
+      createNotification(
+        user.id,
+        "system",
+        "Account Initialized",
+        "Welcome to the tactical portal — your Google account is now linked.",
+        "normal",
+      );
+    } else if (hasGoogleIdColumn) {
+      // ── 4b. EXISTING account: link the Google id on its first Google use ──
+      // The common upgrade path: the client registered with a password and is
+      // signing in with Google for the first time.
+      try {
+        await mainDb.query(
+          "UPDATE users SET google_id = COALESCE(google_id, ?), email_verified = TRUE, updated_at = NOW() WHERE id = ?",
+          [payload.sub, user.id],
+        );
+      } catch (linkError) {
+        console.warn("[GOOGLE AUTH] google_id link skipped:", linkError.code || linkError.message);
+      }
+    }
+    // ── 5. Issue the SAME session protocol as password login ────────────────
+    // A distinct per-device token in user_sessions (mirrored into
+    // users.auth_token for legacy readers), so Google sessions behave exactly
+    // like password sessions: multi-device sign-in, precision logout, session
+    // lists and admin tooling all keep working.
+    const token = await issueSessionToken(user.id, {
+      ip: req.ip,
+      userAgent: req.get("user-agent"),
     });
+    try {
+      await mainDb.query(
+        "UPDATE users SET auth_token = ?, last_login_at = NOW(), last_login_ip = ? WHERE id = ?",
+        [token, req.ip, user.id],
+      );
+    } catch (touchError) {
+      // Bookkeeping must never fail a sign-in.
+      console.warn("[GOOGLE AUTH] last-login stamp skipped:", touchError.message);
+    }
+
+    let profilePhotoData = null;
+    if (user.profile_photo_blob) {
+      profilePhotoData = `data:${user.profile_photo_mime_type || "image/jpeg"};base64,${Buffer.from(user.profile_photo_blob).toString("base64")}`;
+    }
+
+    const clientUser = {
+      id: user.id,
+      email: user.email || email,
+      first_name: user.first_name || firstName,
+      last_name: user.last_name || lastName,
+      display_name: user.display_name || displayName,
+      primary_role: user.primary_role || "user",
+      role: user.primary_role || "user",
+      role_type: "user",
+      has_photo: !!user.profile_photo_blob,
+      profilePhotoData,
+      whatsapp_verified: true,
+    };
+
+    // `success` + nested `user` keep the shared Google button working, while the
+    // flat fields mirror POST /api/users/login so every other consumer of this
+    // endpoint sees an identical shape.
+    res.json({ success: true, isNewUser, token, ...clientUser, user: clientUser });
   } catch (error) {
-    console.error("[GOOGLE AUTH] Verification failed:", error.message);
-    res.status(401).json({ success: false, message: "Invalid Google token" });
+    console.error("[GOOGLE AUTH] error:", error.code || "", error.message);
+    res.status(500).json({ success: false, message: "Google Sign-In failed. Please try again." });
   }
 });
+
 
 // Admin create user endpoint
 app.post("/api/users/admin-create", authenticateAdmin, async (req, res) => {
@@ -3390,6 +3623,7 @@ app.get("/api/feedback", async (req, res) => {
       feedback_type,
       status,
       author,
+      user_id,
       limit = 50,
       offset = 0,
     } = req.query;
@@ -3411,6 +3645,13 @@ app.get("/api/feedback", async (req, res) => {
     if (project_id) {
       query += " AND uf.project_id = ?";
       params.push(project_id);
+    }
+
+    // Per-client thread filter — powers the admin Client Portal Data page
+    // (Messages tab) so staff can read one client's feedback in isolation.
+    if (user_id) {
+      query += " AND uf.user_id = ?";
+      params.push(user_id);
     }
 
     if (feedback_type) {
@@ -3503,7 +3744,9 @@ app.post("/api/feedback", authenticateUser, async (req, res) => {
   }
 });
 
-app.put("/api/feedback/:id", async (req, res) => {
+// ADMIN-ONLY: respond to / resolve a feedback thread. Gated because it writes
+// admin_response + responded_by (previously open to any caller; had no callers).
+app.put("/api/feedback/:id", authenticateAdmin, async (req, res) => {
   try {
     const feedbackId = req.params.id;
     const userId = req.user?.id || 1;
@@ -6818,6 +7061,108 @@ app.put("/api/invoices/:id", async (req, res) => {
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: "Failed" });
+  }
+});
+
+// ── PROJECT INVOICES (client-portal Billing tab) ────────────────────────────
+// The portal's Billing section reads project_invoices (NOT the `invoices`
+// table above), so these admin routes are what actually change what a client
+// sees when they open Billing. Column whitelists keep raw SQL interpolation
+// impossible; all routes require a valid admin session.
+const PORTAL_INVOICE_STATUSES = ["draft", "sent", "pending", "paid", "overdue", "cancelled"];
+
+app.get("/api/admin/project-invoices", authenticateAdmin, async (req, res) => {
+  try {
+    const { client_id, project_id } = req.query;
+    let sql = `SELECT pi.*, up.project_name, up.user_id AS client_id
+               FROM project_invoices pi
+               JOIN user_projects up ON up.id = pi.project_id
+               WHERE pi.deleted_at IS NULL`;
+    const params = [];
+    if (client_id) { sql += " AND up.user_id = ?"; params.push(client_id); }
+    if (project_id) { sql += " AND pi.project_id = ?"; params.push(project_id); }
+    sql += " ORDER BY pi.issue_date DESC, pi.id DESC LIMIT 200";
+    const [rows] = await mainDb.query(sql, params);
+    res.json({ success: true, invoices: rows });
+  } catch (error) {
+    console.error("[ADMIN PROJECT INVOICES] List error:", error);
+    res.status(500).json({ success: false, message: "Failed to list portal invoices" });
+  }
+});
+
+app.post("/api/admin/project-invoices", authenticateAdmin, async (req, res) => {
+  try {
+    const { project_id, invoice_number, amount, status = "draft", due_date, issue_date } = req.body;
+    const pid = parseInt(project_id, 10);
+    if (!Number.isInteger(pid) || pid <= 0) {
+      return res.status(400).json({ success: false, message: "project_id is required" });
+    }
+    const amt = Number(amount);
+    if (!Number.isFinite(amt) || amt < 0) {
+      return res.status(400).json({ success: false, message: "amount must be a non-negative number" });
+    }
+    if (!PORTAL_INVOICE_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, message: `status must be one of: ${PORTAL_INVOICE_STATUSES.join(", ")}` });
+    }
+    const [projects] = await mainDb.query(
+      "SELECT id FROM user_projects WHERE id = ? AND deleted_at IS NULL",
+      [pid],
+    );
+    if (projects.length === 0) {
+      return res.status(404).json({ success: false, message: "Project not found" });
+    }
+    const number = invoice_number || `INV-${Date.now().toString(36).toUpperCase()}`;
+    const [result] = await mainDb.query(
+      `INSERT INTO project_invoices (project_id, invoice_number, amount, status, due_date, issue_date)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [pid, number, amt, status, due_date || null, issue_date || null],
+    );
+    res.status(201).json({ success: true, id: result.insertId, invoice_number: number });
+  } catch (error) {
+    console.error("[ADMIN PROJECT INVOICES] Create error:", error);
+    res.status(500).json({ success: false, message: "Failed to create portal invoice" });
+  }
+});
+
+app.put("/api/admin/project-invoices/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid invoice id" });
+    }
+    const allowed = ["invoice_number", "amount", "status", "due_date", "issue_date"];
+    const sets = [];
+    const vals = [];
+    for (const key of allowed) {
+      if (req.body[key] === undefined) continue;
+      if (key === "status" && !PORTAL_INVOICE_STATUSES.includes(req.body.status)) {
+        return res.status(400).json({ success: false, message: `status must be one of: ${PORTAL_INVOICE_STATUSES.join(", ")}` });
+      }
+      if (key === "amount") {
+        const amt = Number(req.body.amount);
+        if (!Number.isFinite(amt) || amt < 0) {
+          return res.status(400).json({ success: false, message: "amount must be a non-negative number" });
+        }
+        sets.push("amount = ?");
+        vals.push(amt);
+        continue;
+      }
+      sets.push(`${key} = ?`);
+      vals.push(req.body[key]);
+    }
+    if (sets.length === 0) return res.status(400).json({ success: false, message: "No updatable fields supplied" });
+    vals.push(id);
+    const [result] = await mainDb.query(
+      `UPDATE project_invoices SET ${sets.join(", ")} WHERE id = ? AND deleted_at IS NULL`,
+      vals,
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "Invoice not found" });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error("[ADMIN PROJECT INVOICES] Update error:", error);
+    res.status(500).json({ success: false, message: "Failed to update portal invoice" });
   }
 });
 

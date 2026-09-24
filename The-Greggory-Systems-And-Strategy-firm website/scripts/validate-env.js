@@ -46,8 +46,8 @@ const recommended = {
   AFRICASTALKING_API_KEY: 'SMS / WhatsApp relay',
   COMPANY_PHONE_NUMBER: 'SMS hub number',
   COMPANY_WHATSAPP_NUMBER: 'WhatsApp hub number',
-  GOOGLE_CLIENT_ID: 'Google Sign-In (empty = button hidden)',
-  VITE_GOOGLE_CLIENT_ID: 'Google Sign-In, baked into the frontend bundle',
+  GOOGLE_CLIENT_ID: 'Google Sign-In — server-side token verification (empty = button hidden)',
+  VITE_GOOGLE_CLIENT_ID: 'Google Sign-In — baked into the frontend bundle; must MATCH GOOGLE_CLIENT_ID',
 };
 
 // ---- Local-only: never copy these to Render --------------------------------
@@ -105,6 +105,47 @@ if (process.env.COMPANY_WHATSAPP_NUMBER && !phoneOk(process.env.COMPANY_WHATSAPP
 }
 if (/(^|[^:\w])\/\//.test(process.env.RATE_LIMIT_WINDOW_MS || '') || /\/\//.test(process.env.RATE_LIMIT_MAX || '')) {
   console.log('--  RATE_LIMIT_* contains an inline "//" comment (not read by code; limits are hardcoded)');
+}
+
+// ── Google Sign-In: the two halves must be present AND identical ────────────
+// GOOGLE_CLIENT_ID verifies the token on the server; VITE_GOOGLE_CLIENT_ID
+// renders the button. A mismatch allows the button to load but every sign-in
+// then fails with a 401 at token verification — a confusing failure worth
+// catching before deploy. See GOOGLE_SIGNIN_SETUP.md
+{
+  const serverId = (process.env.GOOGLE_CLIENT_ID || '').trim();
+  const viteId = (process.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+  const isPlaceholder = (v) => /your_google_client_id/i.test(v);
+  const looksLikeClientId = (v) => /\.apps\.googleusercontent\.com$/i.test(v);
+
+  if (serverId || viteId) {
+    console.log('-- google sign-in --');
+    if (!serverId || !viteId) {
+      problems++;
+      console.log(
+        `!!  Google Sign-In is half-configured — ${!serverId ? 'GOOGLE_CLIENT_ID' : 'VITE_GOOGLE_CLIENT_ID'} is missing. ` +
+          'Set BOTH to the same OAuth 2.0 client id (GOOGLE_SIGNIN_SETUP.md).'
+      );
+    } else if (isPlaceholder(serverId) || isPlaceholder(viteId)) {
+      problems++;
+      console.log('!!  GOOGLE_CLIENT_ID / VITE_GOOGLE_CLIENT_ID still hold the placeholder value — replace both');
+    } else if (serverId !== viteId) {
+      problems++;
+      console.log(
+        '!!  GOOGLE_CLIENT_ID and VITE_GOOGLE_CLIENT_ID DIFFER — they must be the SAME OAuth client id, ' +
+          'otherwise the button loads but every sign-in returns 401 (audience mismatch)'
+      );
+    } else if (!looksLikeClientId(serverId)) {
+      problems++;
+      console.log(
+        '!!  GOOGLE_CLIENT_ID does not look like an OAuth client id (expected to end with ' +
+          '.apps.googleusercontent.com) — copy it from console.cloud.google.com/apis/credentials'
+      );
+    } else {
+      // Client ids are public identifiers, so showing a prefix is safe.
+      console.log(`OK  Google Sign-In configured (${serverId.slice(0, 14)}… , ${serverId.length} chars) — remember: Vite bakes this at BUILD time`);
+    }
+  }
 }
 
 console.log('\n-- secret strength (deploy gate) --');

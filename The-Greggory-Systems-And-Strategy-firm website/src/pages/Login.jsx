@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import AuthLayout from '../components/AuthLayout'
-import GoogleSignIn from '../components/GoogleSignIn'
+import GoogleSignIn, { googleSignInEnabled } from '../components/GoogleSignIn'
 import { LoadingOverlay, Spinner } from '../components/Loading'
 import { useAuth } from '../context/AuthContext'
 import { usersAPI } from '../services/api'
@@ -21,7 +21,9 @@ const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { login } = useAuth()
-  const ENABLE_GOOGLE = true
+  // Mirrors the Google button's own guard (VITE_GOOGLE_CLIENT_ID present), so
+  // the "OR" divider never dangles above a button that cannot render.
+  const ENABLE_GOOGLE = googleSignInEnabled
 
   const handleChange = (e) => {
     setFormData({
@@ -234,19 +236,21 @@ const Login = () => {
           </div>
         </div>
 
-        <div className="relative py-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-white/5"></div>
-          </div>
-          <div className="relative flex justify-center text-[8px] font-black tracking-[0.4em]">
-            <span className="px-4 bg-[#0f172a] text-slate-700">OR</span>
-          </div>
-        </div>
-
         {ENABLE_GOOGLE && (
-          <div className="space-y-4">
-            <GoogleSignIn isSignUp={false} buttonText="Sign in with Google" />
-          </div>
+          <>
+            <div className="relative py-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/5"></div>
+              </div>
+              <div className="relative flex justify-center text-[8px] font-black tracking-[0.4em]">
+                <span className="px-4 bg-[#0f172a] text-slate-700">OR</span>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <GoogleSignIn isSignUp={false} buttonText="Sign in with Google" />
+            </div>
+          </>
         )}
 
         <div className="text-center text-[7px] font-black text-slate-700 uppercase tracking-[0.4em] pt-2">

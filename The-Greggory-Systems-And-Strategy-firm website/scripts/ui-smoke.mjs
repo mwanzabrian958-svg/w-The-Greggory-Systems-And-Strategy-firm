@@ -60,8 +60,11 @@ for (const route of ROUTES) {
       return { hasContent: !!root && root.children.length > 0, textLen: root ? root.innerText.length : 0 };
     });
 
-    // Ignore expected auth-guard API noise; a crash (pageerror) is always fatal.
-    const fatal = errors.filter((e) => !e.startsWith("console:") || /failed to fetch|401|403|404/i.test(e) === false);
+    // Ignore expected auth-guard API noise and Google's own GSI_LOGGER chatter
+    // (third-party-origin / FedCM notices from accounts.google.com are not page
+    // crashes). A pageerror is always fatal.
+    const BENIGN = /failed to fetch|401|403|404|GSI_LOGGER|accounts\.google\.com|Not signed in with the identity provider|FedCM|third-party cookie|blocked by a request client|Permissions policy/i;
+    const fatal = errors.filter((e) => !e.startsWith("console:") || BENIGN.test(e) === false);
 
     if (!rendered.hasContent || fatal.length > 0) {
       failures++;
