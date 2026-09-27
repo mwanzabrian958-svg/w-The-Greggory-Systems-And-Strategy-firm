@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { MessageSquare, Mail, Phone, Send, Plus, Search, Clock, RefreshCw, ChevronRight } from "lucide-react";
-import { getApiUrl, apiCall } from "../../services/api";
+import { getApiUrl, apiCall, getAdminToken } from "../../services/api";
 import { InlineLoader, Spinner } from "../../components/Loading";
 
 const ANNOUNCEMENTS = [
@@ -51,13 +51,12 @@ export function Communication() {
     const loadClients = async () => {
       try {
         setLoading(true);
-        const response = await fetch(getApiUrl("/api/users"));
-        if (response.ok) {
-          const data = await response.json();
-          setClients(data.users || []);
-          if (data.users?.length) {
-            setSelectedClientId(String(data.users[0].id));
-          }
+        // GET /api/users is admin-protected — raw fetch without a token 401s and
+        // leaves the broadcast dropdown empty. apiCall injects the admin token.
+        const data = await apiCall("/api/users");
+        setClients(data.users || []);
+        if (data.users?.length) {
+          setSelectedClientId(String(data.users[0].id));
         }
       } catch (error) {
         console.error("Failed to load clients", error);

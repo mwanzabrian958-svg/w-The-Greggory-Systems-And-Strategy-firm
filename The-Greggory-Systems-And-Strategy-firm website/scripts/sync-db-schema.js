@@ -58,8 +58,15 @@ const MPESA_REQUIRED = {
   updated_by: "BIGINT",
 };
 
-// Pick the first MySQL endpoint that answers (local 3306, then claude) and
-// remember it for the rest of the run. Cached so we don't re-probe each call.
+// Pick the endpoint that will actually receive the manifest, and remember it
+// for the rest of the run. Cached so we don't re-probe each call.
+//
+// The probe must select DB explicitly. Probing the endpoint's OWN database
+// (each endpoint carries its own `database` from dbEndpoints) reports local
+// XAMPP as reachable even when DB_NAME names a database that only exists on
+// the cloud — the run then connected to local and asked for the cloud database
+// name, failing with ER_BAD_DB_ERROR. Selecting DB here makes the probe prove
+// what we actually need: an endpoint that holds the target database.
 let _resolved;
 async function resolveEndpoint() {
   if (_resolved) return _resolved;
@@ -67,14 +74,14 @@ async function resolveEndpoint() {
   for (const cfg of dbEndpoints()) {
     const { label, ...opts } = cfg;
     try {
-      const probe = await mysql.createConnection({ ...opts, connectTimeout: 4000 });
+      const probe = await mysql.createConnection({ ...opts, database: DB, connectTimeout: 4000 });
       await probe.end();
       _resolved = opts;
-      console.log(`[sync] using endpoint ${label || opts.host}:${opts.port}`);
+      console.log(`[sync] using endpoint ${label || opts.host}:${opts.port} (database ${DB})`);
       return _resolved;
     } catch (e) {
       lastErr = e;
-      console.log(`[sync] endpoint ${label || opts.host}:${opts.port} unreachable (${e.code || e.message})`);
+      console.log(`[sync] endpoint ${label || opts.host}:${opts.port} has no "${DB}" (${e.code || e.message})`);
     }
   }
 
@@ -86,13 +93,25 @@ async function baseConfig() {
   return { ...cfg, connectTimeout: 15000 };
 }
 
+// The endpoint resolved by resolveEndpoint() is the authority on TLS. It was
+// built by dbEndpoints.js, which sets `ssl` ONLY for hosts that need it (a
+// managed/remote MySQL such as Aiven) and omits the key entirely for local
+// XAMPP/MariaDB. Overriding that with the global DB_SSL is what broke this
+// script: DB_SSL=true plus a local endpoint made it attempt TLS against
+// MariaDB and die with "Server does not support secure connection".
+// So: presence of the key decides. The global flag is only a fallback for a
+// config object that carries no opinion at all.
+function sslFor(cfg) {
+  if (cfg && Object.prototype.hasOwnProperty.call(cfg, "ssl")) return cfg.ssl;
+  return process.env.DB_SSL === "true"
+    ? { minVersion: "TLSv1.2", rejectUnauthorized: false }
+    : undefined;
+}
+
 async function targetConfig() {
-  const ssl =
-    process.env.DB_SSL === "true"
-      ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false } }
-      : {};
   const cfg = await baseConfig();
-  return { ...cfg, database: DB, ...ssl };
+  const ssl = sslFor(cfg);
+  return { ...cfg, database: DB, ...(ssl ? { ssl } : {}) };
 }
 
 async function ensureDatabase(cfg) {
@@ -101,11 +120,14 @@ async function ensureDatabase(cfg) {
     await c.end();
   } catch (e) {
     if (e.code !== "ER_BAD_DB_ERROR") throw e;
-    const ssl =
-      process.env.DB_SSL === "true"
-        ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false } }
-        : {};
-    const c = await mysql.createConnection({ ...(await baseConfig()), connectTimeout: 15000, ...ssl });
+    // Connect WITHOUT a database to create it, using the same SSL decision.
+    const base = await baseConfig();
+    const ssl = sslFor(base);
+    const c = await mysql.createConnection({
+      ...base,
+      connectTimeout: 15000,
+      ...(ssl ? { ssl } : {}),
+    });
     await c.query(`CREATE DATABASE IF NOT EXISTS \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     await c.end();
   }
@@ -134,7 +156,11 @@ function buildDef(c) {
 }
 
 async function capture() {
-  const conn = await mysql.createConnection({ ...(await baseConfig()), database: DB });
+  // Was `{ ...(await baseConfig()), database: DB }`, which kept whatever TLS the
+  // endpoint had — correct, but it also meant this function silently ignored the
+  // SSL resolution every other path goes through. Use targetConfig() so capture
+  // and apply are guaranteed to talk to the server the same way.
+  const conn = await mysql.createConnection(await targetConfig());
   const [tabs] = await conn.query(
     "SELECT TABLE_NAME name FROM information_schema.tables WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME",
     [DB]

@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Clock, Mail, MapPin, Phone, Send, MessageCircle, Globe } from 'lucide-react'
 import { getApiUrl } from '../services/api'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const Contact = () => {
+  useSeo(SEO.contact)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -42,7 +44,7 @@ const Contact = () => {
         })
       })
 
-      if (!response.ok) throw new Error('Relay failure')
+      if (!response.ok) throw new Error('Contact request failed')
 
       const subject = formData.service ? `${formData.service} Inquiry` : 'New Inquiry'
       const body = `Name: ${formData.name}%0D%0AEmail: ${formData.email}%0D%0APhone: ${formData.phone}%0D%0ACompany: ${formData.company}%0D%0AService: ${formData.service}%0D%0A%0D%0AMessage:%0D%0A${encodeURIComponent(formData.message)}`
@@ -56,8 +58,7 @@ const Contact = () => {
 
       setSubmitStatus('success')
       setFormData({ name: '', email: '', company: '', phone: '', service: '', message: '' })
-    } catch (err) {
-      console.error('Submission error:', err)
+    } catch {
       setSubmitStatus('error')
     } finally {
       setIsSubmitting(false)

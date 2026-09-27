@@ -114,7 +114,7 @@ export function Content({ user }) {
                 >
                   <div className="aspect-[4/3] bg-slate-100 rounded-xl mb-3 overflow-hidden border border-slate-50 relative">
                      {item.image_url ? (
-                       <img src={item.image_url} alt="" className="w-full h-full object-cover transition-all duration-500" />
+                       <img src={item.image_url} alt={item.title || 'Content image'} className="w-full h-full object-cover transition-all duration-500" />
                      ) : (
                        <div className="w-full h-full flex items-center justify-center text-slate-200"><FileText size={20} /></div>
                      )}

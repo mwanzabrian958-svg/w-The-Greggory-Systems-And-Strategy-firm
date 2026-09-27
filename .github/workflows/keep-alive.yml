@@ -3,6 +3,10 @@
 # warm. Public repo = free GitHub Actions minutes. Never hard-fails on purpose.
 # After the first deploy, set the SITE_URL repository variable in GitHub, or the
 # fallback URL below is used.
+# LIVE service (verified 2026-09-25): greggory-firm-rtl3.onrender.com is
+# SUSPENDED (503 on / and /api/*) — the live deployment is the
+# the-greggory-systems-and-strategy-firm-jz7i host below. Do NOT point this
+# back at rtl3 unless that service is resumed in the Render dashboard.
 name: keep-alive
 
 on:

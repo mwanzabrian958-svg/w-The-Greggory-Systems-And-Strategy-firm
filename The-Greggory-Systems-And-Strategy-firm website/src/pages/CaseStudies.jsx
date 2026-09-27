@@ -4,8 +4,10 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 import { formatKSH } from '../utils/currencyUtils'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const CaseStudies = () => {
+  useSeo(SEO.caseStudies)
   const { isAuthenticated, user } = useAuth()
   const canEdit = isAuthenticated && user && (user.role === 'employee' || user.role === 'developer')
   const [editMode, setEditMode] = useState(false)

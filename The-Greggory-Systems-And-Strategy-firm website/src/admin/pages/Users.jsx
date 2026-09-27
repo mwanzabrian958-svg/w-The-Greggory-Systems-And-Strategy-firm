@@ -60,9 +60,9 @@ export function Users() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const sessionStr = sessionStorage.getItem("gf_admin_session") || localStorage.getItem("gf_admin_session");
-      const session = sessionStr ? JSON.parse(sessionStr) : null;
-      const data = await apiCall("/users", { headers: { Authorization: `Bearer ${session?.token}` } });
+      // apiCall already injects the admin session token — passing a manual
+      // `Bearer undefined` header would shadow it and 401 every load.
+      const data = await apiCall("/users");
       if (data.success) setUsers(data.users || []);
     } catch (error) { console.error("User Sync Failure:", error); } finally { setLoading(false); }
   };

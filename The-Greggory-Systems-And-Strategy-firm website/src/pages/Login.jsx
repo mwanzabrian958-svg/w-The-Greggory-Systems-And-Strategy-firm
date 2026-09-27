@@ -7,8 +7,10 @@ import { LoadingOverlay, Spinner } from '../components/Loading'
 import { useAuth } from '../context/AuthContext'
 import { usersAPI } from '../services/api'
 import { SITE_NAME } from '../constants/siteBrand'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const Login = () => {
+  useSeo(SEO.login)
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
     email: '',
@@ -49,9 +51,10 @@ const Login = () => {
 
     if (!formData.password) {
       nextErrors.password = 'Please enter your password.'
-    } else if (formData.password.length < 6) {
-      nextErrors.password = 'Password must be at least 6 characters.'
     }
+    // No minimum length here on purpose. The 8-character policy applies where a
+    // password is SET (signup, change-password, reset) - enforcing it at LOGIN
+    // would lock out any account created back when the minimum was 6.
 
     setErrors(nextErrors)
     if (Object.values(nextErrors).some(error => error)) return

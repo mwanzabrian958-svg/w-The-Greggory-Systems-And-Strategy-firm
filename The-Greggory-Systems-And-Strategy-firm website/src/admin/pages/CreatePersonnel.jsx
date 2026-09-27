@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, X, RefreshCw, Send, Type, Briefcase, ImageIcon, Upload } from "lucide-react";
-import { getApiUrl } from "../../services/api";
+import { getApiUrl, getAdminToken } from "../../services/api";
 import { Spinner } from "../../components/Loading";
 
 const normalizeBio = (rawContent) => {
@@ -47,9 +47,13 @@ export function CreatePersonnel() {
         bio: normalizeBio(form.bio),
         sort_order: form.sort_order === "" || form.sort_order == null ? 0 : Number(form.sort_order),
       };
+      const token = getAdminToken();
       const response = await fetch(getApiUrl("/api/company-personnel"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
       if (response.ok) navigate("/admin/personnel");

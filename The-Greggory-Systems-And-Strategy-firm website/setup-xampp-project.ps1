@@ -101,7 +101,7 @@ if (Test-Path "test-db-connection.js") {
         Write-Host ""
         Write-Host "To create the database, open phpMyAdmin:" -ForegroundColor Cyan
         Write-Host "  http://localhost/phpmyadmin" -ForegroundColor Cyan
-        Write-Host "And import: database/the-greggory-systems-and-strategy-firm-db-main.sql" -ForegroundColor Cyan
+        Write-Host "And import: The-Greggory-Systems-And-Strategy-firm-db-main/the-greggory-systems-and-strategy-firm-db-main.sql" -ForegroundColor Cyan
     } else {
         Write-Host "✅ Database connection successful" -ForegroundColor Green
     }

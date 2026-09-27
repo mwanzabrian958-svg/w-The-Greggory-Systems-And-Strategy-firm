@@ -15,8 +15,10 @@ const authenticateUser = require('../middleware/clientAuth');
 const authController = require('../controllers/authController');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
 const { createNotification } = require('../utils/notificationHelper');
+const { sendMail } = require('../services/emailService');
 const { issueSessionToken, revokeSessionToken, revokeOtherSessions, listSessions, revokeSessionById } = require('../utils/userSessions');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
@@ -27,29 +29,358 @@ router.get('/test', (req, res) => {
   res.json({ success: true, message: 'Users router is working' });
 });
 
+// ---------------------------------------------------------------------------
+// PASSWORD RESET PROTOCOL
+//
+// POST /forgot-password issues a single-use token and mails a link to
+// /reset-password?token=... ; POST /reset-password consumes it.
+//
+// Only the SHA-256 hash of the token is persisted (users.password_reset_token,
+// already defined in database/the-greggory-systems-and-strategy-firm-db-main.sql).
+// The raw value travels solely inside the emailed link, so a leaked database
+// dump cannot be traded for working resets. Writing a new hash also voids every
+// link mailed earlier, so "resend" always beats the old email.
+// ---------------------------------------------------------------------------
+const RESET_TOKEN_TTL_HOURS = 1;
+
+const hashResetToken = (token) =>
+  crypto.createHash("sha256").update(String(token)).digest("hex");
+
+let resetSchemaReady = null;
+
+/**
+ * Self-healing schema check — same shape as ensureSessionTable() in
+ * backend/utils/userSessions.js: confirm the columns exist on first use instead
+ * of assuming the local XAMPP copy and the cloud copy were migrated the same.
+ */
+function ensurePasswordResetColumns() {
+  if (!resetSchemaReady) {
+    resetSchemaReady = (async () => {
+      // Probe information_schema instead of using "ADD COLUMN IF NOT EXISTS":
+      // that syntax is MariaDB-only and is a parse error (1064) on MySQL 8,
+      // which is what the cloud database runs. The probe works on both.
+      const conn = db.promise();
+      const [rows] = await conn.query(
+        `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'`,
+      );
+      const have = new Set(rows.map((r) => r.COLUMN_NAME));
+      const adds = [];
+      if (!have.has("password_reset_token")) {
+        adds.push("ADD COLUMN password_reset_token VARCHAR(255) NULL");
+      }
+      if (!have.has("password_reset_expires")) {
+        adds.push("ADD COLUMN password_reset_expires DATETIME NULL");
+      }
+      if (adds.length) {
+        await conn.query(`ALTER TABLE users ${adds.join(", ")}`);
+        console.log("[PASSWORD RESET] added columns:", adds.join(", "));
+      }
+      return true;
+    })().catch((err) => {
+      console.error("[PASSWORD RESET] could not verify reset columns:", err.message);
+      resetSchemaReady = null; // retry on next call
+      throw err;
+    });
+  }
+  return resetSchemaReady;
+}
+
+/**
+ * Origin the emailed link must point at. FRONTEND_URL is this project's
+ * documented "CORS + email links" variable (see render.yaml); falling back to
+ * the request origin keeps local dev producing links that actually open.
+ */
+function resetBaseUrl(req) {
+  const configured = String(process.env.FRONTEND_URL || "")
+    .trim()
+    .replace(/\/+$/, "");
+  return configured || `${req.protocol}://${req.get("host")}`;
+}
+
+// Abuse control. This endpoint sends real mail, so left open it is a mail-bombing
+// and SMTP-quota vector. Two independent brakes are applied:
+//   1. a per-IP limit (express-rate-limit, already a dependency used by server.js)
+//   2. a per-address cooldown — the brake that still holds when the caller rotates
+//      IPs, which is the only way to hammer one victim's inbox.
+// Neither leaks whether an address exists: the limiter answers 429 identically for
+// every email, and the cooldown answers with the SAME 200 body as success. A 429
+// that only appeared for real accounts would hand over an enumeration oracle,
+// which is why the cooldown stays silent instead of reporting the throttle.
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many reset requests from this device. Please try again in a few minutes.',
+  },
+});
+
+// Shared limit for the two endpoints that consume a token. The token is 64 hex
+// characters, so this is a guard-rail rather than the actual defence.
+const resetConsumerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many attempts. Please try again in a few minutes.' },
+});
+
+const RESET_RESEND_COOLDOWN_MS = 60 * 1000;
+const lastResetSendByAddress = new Map();
+
+/**
+ * Records an attempt for this address and reports whether it was emailed less
+ * than the cooldown ago. Stale entries are pruned on every call, so the map
+ * cannot grow without bound.
+ */
+function recentlyEmailed(emailAddress) {
+  const key = String(emailAddress).toLowerCase();
+  const now = Date.now();
+  for (const [address, sentAt] of lastResetSendByAddress) {
+    if (now - sentAt > RESET_RESEND_COOLDOWN_MS) lastResetSendByAddress.delete(address);
+  }
+  const last = lastResetSendByAddress.get(key);
+  if (last && now - last < RESET_RESEND_COOLDOWN_MS) return true;
+  lastResetSendByAddress.set(key, now);
+  return false;
+}
+
+/** Render the reset message. Kept table-free and link-first so it survives
+ *  plain-text-only clients and does not look like a phishing template. */
+function buildResetEmail({ name, link, ttlHours }) {
+  const subject = "Reset your password — The Greggory Systems & Strategy Firm";
+  const text = [
+    `Hello ${name},`,
+    "",
+    "We received a request to reset the password for your client portal account.",
+    `Open the link below within ${ttlHours} hour${ttlHours === 1 ? "" : "s"} to choose a new password:`,
+    "",
+    link,
+    "",
+    "If you did not request this, you can safely ignore this email — your",
+    "current password stays active and nothing changes on your account.",
+    "",
+    "The Greggory Systems & Strategy Firm",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+      <h1 style="color: #0d9488;">The Greggory Systems And Strategy Firm</h1>
+      <p>Strategic Systems &amp; Business Solutions</p>
+      <hr style="border: 1px solid #eee;" />
+      <p>Hello ${name},</p>
+      <p>We received a request to reset the password for your client portal account.</p>
+      <p style="margin: 28px 0;">
+        <a href="${link}"
+           style="background-color: #0d9488; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+          Reset your password
+        </a>
+      </p>
+      <p style="font-size: 13px; color: #666;">
+        This link expires in ${ttlHours} hour${ttlHours === 1 ? "" : "s"} and can only be used once.
+        If the button above does not work, paste this address into your browser:<br />
+        <a href="${link}" style="word-break: break-all;">${link}</a>
+      </p>
+      <p style="font-size: 13px; color: #666;">
+        Did not ask for this? You can safely ignore this email — your current
+        password stays active and nothing changes on your account.
+      </p>
+    </div>
+  `;
+
+  return { subject, text, html };
+}
+
 // Forgot Password
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
 
   try {
-    const [users] = await db.promise().query('SELECT id, first_name FROM users WHERE email = ? AND deleted_at IS NULL', [email]);
+    const [users] = await db.promise().query(
+      'SELECT id, first_name, email FROM users WHERE email = ? AND deleted_at IS NULL',
+      [email],
+    );
 
-    // For security, we always return success even if email not found
+    // Unknown address and known address get the SAME 200 answer, so this
+    // endpoint cannot be used to enumerate who holds an account.
     if (users.length > 0) {
       const user = users[0];
-      // In a real production setup, here we would:
-      // 1. Generate a temporary reset token
-      // 2. Save it to a password_resets table
-      // 3. Send an email via SMTP_USER
-      console.log(`[PASSWORD RESET] Requested for: ${email}`);
+      await ensurePasswordResetColumns();
 
-      await createNotification(user.id, 'system', 'Security Alert', 'A password reset was requested for your account.', 'high');
+      // Inside the cooldown the request is answered exactly like a fresh one and
+      // nothing is sent: "resend" spam becomes worthless, while a genuine second
+      // attempt a minute later still delivers.
+      if (recentlyEmailed(user.email)) {
+        console.log(`[PASSWORD RESET] cooldown active for user ${user.id}; email suppressed`);
+        return res.json({
+          success: true,
+          message: `If an account exists for ${email}, a reset link is on its way.`,
+        });
+      }
+
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      await db.promise().query(
+        `UPDATE users
+            SET password_reset_token = ?,
+                password_reset_expires = DATE_ADD(NOW(), INTERVAL ? HOUR)
+          WHERE id = ?`,
+        [hashResetToken(rawToken), RESET_TOKEN_TTL_HOURS, user.id],
+      );
+
+      const link = `${resetBaseUrl(req)}/reset-password?token=${rawToken}`;
+      const { subject, text, html } = buildResetEmail({
+        name: user.first_name || 'there',
+        link,
+        ttlHours: RESET_TOKEN_TTL_HOURS,
+      });
+
+      const delivered = await sendMail({ to: user.email, subject, text, html });
+
+      // emailService runs in simulation mode whenever SMTP credentials are
+      // absent, so in a local run the console is the only place the link exists.
+      // Printing it is safe precisely because that mode is unreachable once real
+      // SMTP credentials are configured — a live delivery never reaches this line.
+      if (delivered.simulated) {
+        console.log(`[PASSWORD RESET] simulated delivery — open to continue: ${link}`);
+      }
+
+      if (!delivered.success) {
+        // Deliberate trade-off: a caller who cannot receive the email is told
+        // so and pointed at support, rather than being shown a "check your
+        // inbox" screen for a message that never left the server. The cost is
+        // that this one failure path is distinguishable — acceptable against the
+        // alternative of lying to a locked-out client.
+        console.error(
+          `[PASSWORD RESET] delivery failed for user ${user.id}: ${delivered.error}`,
+        );
+        return res.status(502).json({
+          success: false,
+          message:
+            'We could not deliver the reset email right now. Please try again shortly, or contact us to restore access.',
+        });
+      }
+
+      await createNotification(
+        user.id,
+        'system',
+        'Security Alert',
+        'A password reset was requested for your account. If this was not you, change your password immediately.',
+        'high',
+      );
+      console.log(`[PASSWORD RESET] Reset link issued for user ${user.id}`);
     }
 
-    res.json({ success: true, message: `If an account exists for ${email}, you will receive a reset link shortly.` });
+    res.json({
+      success: true,
+      message: `If an account exists for ${email}, a reset link is on its way.`,
+    });
   } catch (error) {
+    console.error('[PASSWORD RESET] request failed:', error.message);
     res.status(500).json({ success: false, message: 'Error processing request' });
+  }
+});
+
+/**
+ * Pre-flight check so /reset-password can say "that link is no good" the moment
+ * it opens, instead of only after the client has typed a new password. Returns a
+ * bare boolean — no account detail, and the same shape for every input.
+ */
+router.post('/verify-reset-token', resetConsumerLimiter, async (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ success: false, valid: false });
+
+  try {
+    const [rows] = await db.promise().query(
+      `SELECT id FROM users
+        WHERE password_reset_token = ?
+          AND password_reset_expires > NOW()
+          AND deleted_at IS NULL
+        LIMIT 1`,
+      [hashResetToken(token)],
+    );
+    res.json({ success: true, valid: rows.length > 0 });
+  } catch (error) {
+    console.error('[PASSWORD RESET] verify failed:', error.message);
+    res.status(500).json({ success: false, valid: false });
+  }
+});
+
+/**
+ * Consume the token and set the new password. The lookup matches the stored hash
+ * AND its expiry window in one predicate, so an expired, already-used, or forged
+ * token all find no row and all get the identical reply — this stays a
+ * single-shot operation rather than a probe that grades token quality.
+ */
+router.post('/reset-password', resetConsumerLimiter, async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    return res.status(400).json({ success: false, message: 'A reset token and a new password are required' });
+  }
+  // Exactly the platform's declared rule — auth_validation_rules
+  // ('user','password_min_length','8') enforced by authEndpointValidator on
+  // register. Keeping the reset path on the same single floor means no route in
+  // this app quietly invents its own stricter password policy.
+  if (typeof password !== 'string' || password.length < 8) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+  }
+
+  try {
+    const [rows] = await db.promise().query(
+      `SELECT id, first_name FROM users
+        WHERE password_reset_token = ?
+          AND password_reset_expires > NOW()
+          AND deleted_at IS NULL
+        LIMIT 1`,
+      [hashResetToken(token)],
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'This reset link is invalid or has expired. Please request a new one.',
+      });
+    }
+
+    const user = rows[0];
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // One statement sets the hash and burns the token, so a failure between two
+    // writes cannot leave a live link sitting in the database. auth_token is
+    // cleared as well because clientAuth still honours that legacy column.
+    await db.promise().query(
+      `UPDATE users
+          SET password_hash = ?,
+              password_reset_token = NULL,
+              password_reset_expires = NULL,
+              auth_token = NULL
+        WHERE id = ?`,
+      [passwordHash, user.id],
+    );
+
+    // Every signed-in device must re-authenticate with the new password — a
+    // reset that left other sessions alive would not actually lock anyone out.
+    await revokeOtherSessions(user.id, null).catch((err) =>
+      console.error('[PASSWORD RESET] session revocation failed:', err.message),
+    );
+
+    await createNotification(
+      user.id,
+      'system',
+      'Security Alert',
+      'Your password was reset successfully. If you did not do this, contact us immediately.',
+      'high',
+    );
+
+    console.log(`[PASSWORD RESET] password updated for user ${user.id}`);
+    res.json({ success: true, message: 'Your password has been reset. You can now sign in.' });
+  } catch (error) {
+    console.error('[PASSWORD RESET] reset failed:', error.message);
+    res.status(500).json({ success: false, message: 'Error resetting password' });
   }
 });
 

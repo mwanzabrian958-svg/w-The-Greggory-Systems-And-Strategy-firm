@@ -15,8 +15,10 @@ import {
   Calendar
 } from 'lucide-react'
 import { PageLoader } from '../components/Loading'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const Companies = () => {
+  useSeo(SEO.companies)
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({
@@ -117,7 +119,7 @@ const Companies = () => {
 
   if (loading) {
     return (
-      <PageLoader label="Loading Companies" sublabel="Syncing the partner registry" tone="teal" />
+      <PageLoader label="Loading Companies" sublabel="Loading companies" tone="teal" />
     )
   }
 
@@ -130,7 +132,7 @@ const Companies = () => {
             <Building className="w-16 h-16 mx-auto mb-4" />
             <h1 className="text-4xl font-bold mb-4">Subsidiaries</h1>
             <p className="text-xl max-w-3xl mx-auto">
-              Discover our diverse portfolio of subsidiaries delivering excellence across multiple industries
+              Companies and practices operating under The Greggory Systems And Strategy Firm.
             </p>
           </div>
         </div>
@@ -292,14 +294,14 @@ const Companies = () => {
                 <div className="p-6 bg-gray-50 border-t">
                   <div className="flex gap-3">
                     <Link
-                      to={`/companies/${company.slug}`}
+                      to="/contact"
                       className="flex-1 bg-teal-600 text-white py-2 px-4 rounded-lg hover:bg-teal-700 transition-colors text-center text-sm font-medium"
                     >
-                      View Details
+                      Enquire
                     </Link>
-                    <button className="flex-1 border border-teal-600 text-teal-600 py-2 px-4 rounded-lg hover:bg-teal-50 transition-colors text-sm font-medium">
+                    <Link to="/contact" className="flex-1 border border-teal-600 text-teal-600 py-2 px-4 rounded-lg hover:bg-teal-50 transition-colors text-sm font-medium text-center">
                       Contact
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -315,13 +317,13 @@ const Companies = () => {
           <p className="text-xl mb-8 max-w-2xl mx-auto">
             Join our network of successful companies and unlock new opportunities for growth and collaboration
           </p>
-          <div className="flex gap-4 justify-center">
-            <button className="bg-white text-teal-600 py-3 px-6 rounded-lg hover:bg-gray-100 transition-colors font-semibold">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to="/contact" className="bg-white text-teal-600 py-3 px-6 rounded-lg hover:bg-gray-100 transition-colors font-semibold">
               Become a Partner
-            </button>
-            <button className="border border-white text-white py-3 px-6 rounded-lg hover:bg-white hover:text-teal-600 transition-colors font-semibold">
+            </Link>
+            <Link to="/about" className="border border-white text-white py-3 px-6 rounded-lg hover:bg-white hover:text-teal-600 transition-colors font-semibold">
               Learn More
-            </button>
+            </Link>
           </div>
         </div>
       </div>

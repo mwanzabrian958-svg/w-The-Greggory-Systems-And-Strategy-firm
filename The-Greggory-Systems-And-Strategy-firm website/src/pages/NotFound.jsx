@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Compass, Home } from 'lucide-react'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const NotFound = () => {
+  useSeo(SEO.notFound)
   return (
     <div className="page-shell pt-24">
       <section className="mx-auto max-w-3xl px-4 py-16 text-center sm:px-6 lg:px-8">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Briefcase, User, X, Save, RefreshCw, Send } from "lucide-react";
-import { getApiUrl, API_BASE_URL } from "../../services/api";
+import { getApiUrl, API_BASE_URL, getAdminToken } from "../../services/api";
 import { Spinner } from "../../components/Loading";
 import { formatKSH } from "../../utils/currencyUtils";
 import { TAX_PRESETS, taxLabel, roundMoney } from "../../utils/kraTax";
@@ -58,9 +58,13 @@ export function CreateInvoice() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const token = getAdminToken();
       const response = await fetch(`${API_BASE_URL}/invoices`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           ...invoiceForm,
           subtotal: itemsSubtotal,
@@ -74,7 +78,11 @@ export function CreateInvoice() {
         })
       });
       if (response.ok) navigate('/admin/billing');
-    } catch (error) { console.error(error); }
+      else {
+        const d = await response.json().catch(() => ({}));
+        window.alert(d?.message || d?.error || `Invoice failed (${response.status}). Check you are signed in as admin.`);
+      }
+    } catch (error) { console.error(error); window.alert(error.message); }
     setIsSubmitting(false);
   };
 

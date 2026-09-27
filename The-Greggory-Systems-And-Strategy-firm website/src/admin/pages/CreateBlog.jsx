@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, X, RefreshCw, Send, Type, Tag, Clock, User, ImageIcon, Link, Upload } from "lucide-react";
-import { getApiUrl, API_BASE_URL } from "../../services/api";
+import { getApiUrl, API_BASE_URL, getAdminToken } from "../../services/api";
 import { Spinner } from "../../components/Loading";
 import SearchBlock from "../../components/SearchBlock";
 
@@ -63,13 +63,21 @@ export function CreateBlog() {
         content: normalizedContent,
         excerpt: normalizedContent.replace(/<[^>]+>/g, "").substring(0, 150).replace(/[#*`]/g, "") + "..."
       };
+      const token = getAdminToken();
       const response = await fetch(`${API_BASE_URL}/blog-articles`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(payload),
       });
       if (response.ok) navigate("/admin/content");
-    } catch (error) { console.error(error); } finally { setIsSubmitting(false); }
+      else {
+        const d = await response.json().catch(() => ({}));
+        window.alert(d?.message || d?.error || `Publish failed (${response.status}). Check you are signed in as admin.`);
+      }
+    } catch (error) { console.error(error); window.alert(error.message); } finally { setIsSubmitting(false); }
   };
 
   return (

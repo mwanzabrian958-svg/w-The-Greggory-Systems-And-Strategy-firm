@@ -359,7 +359,7 @@ Query optimization: All tables have proper indexes
 |------|---------|
 | [LOCKED_AUTH_ENDPOINTS.md](LOCKED_AUTH_ENDPOINTS.md) | Complete API specification & examples |
 | [AUTH_ENDPOINTS_QUICK_START.md](AUTH_ENDPOINTS_QUICK_START.md) | Setup & testing guide |
-| [AUTH_ENDPOINTS_SCHEMA.sql](AUTH_ENDPOINTS_SCHEMA.sql) | Database schema |
+| [AUTH_ENDPOINTS_SCHEMA.sql](The-Greggory-Systems-And-Strategy-firm-db-main/AUTH_ENDPOINTS_SCHEMA.sql) | Database schema |
 | [AUTH_PROTOCOL.md](AUTH_PROTOCOL.md) | Original protocol (reference) |
 | [backend/middleware/authEndpointValidator.js](backend/middleware/authEndpointValidator.js) | Validation code |
 

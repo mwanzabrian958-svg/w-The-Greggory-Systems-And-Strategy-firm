@@ -77,9 +77,9 @@ export const AuthProvider = ({ children }) => {
         })
         // Backend invalidation is best-effort — don't block local cleanup
         // on network errors or server downtime.
-        if (!res.ok) console.warn('[Auth] Backend logout returned:', res.status)
-      } catch (err) {
-        console.warn('[Auth] Backend logout failed (local cleanup will proceed):', err)
+        if (!res.ok) { /* best-effort only */ }
+      } catch {
+        /* best-effort only — local cleanup proceeds below */
       }
     }
 

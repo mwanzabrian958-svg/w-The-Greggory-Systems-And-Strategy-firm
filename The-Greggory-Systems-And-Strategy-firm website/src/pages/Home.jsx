@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, ChevronRight, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
 import { SITE_NAME } from '../constants/siteBrand'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const Home = () => {
+  useSeo(SEO.home)
   const videoRef = useRef(null)
 
   const handleVideoTimeUpdate = () => {
@@ -57,12 +59,24 @@ const Home = () => {
       {/* ── HERO ── */}
       <section className="relative min-h-screen flex items-end overflow-hidden bg-[#030712]">
         <div className="absolute inset-0">
-          <img src="/hero-phoenix.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img src="/hero-phoenix.jpg" alt="Phoenix rising over a city skyline — The Greggory Systems And Strategy Firm" className="absolute inset-0 w-full h-full object-cover" fetchpriority="high" />
         </div>
 
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 opacity-50">
           <div className="ldr-scroll-cue" />
           <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Scroll</span>
+        </div>
+      </section>
+
+      {/* ── HEADLINE ── */}
+      <section className="relative bg-[#030712] pb-16 pt-6">
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">Strategic systems, delivered <span className="text-gold-400">and stood behind.</span></h1>
+          <p className="mt-4 max-w-2xl mx-auto text-sm sm:text-base text-slate-300 leading-relaxed">We develop, maintain, upgrade, and support the projects, systems, and platforms our clients depend on — for individuals and organizations, for-profit and non-profit, across every industry.</p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link to="/contact" className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-lg shadow-gold-500/10 hover:bg-gold-400 transition-all active:scale-95">Start a project<ArrowRight className="w-4 h-4" /></Link>
+            <Link to="/services" className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-5 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all">Explore services</Link>
+          </div>
         </div>
       </section>
 
@@ -114,7 +128,7 @@ const Home = () => {
               </video>
               <div className="absolute bottom-0 right-0 z-50 pointer-events-none p-3">
                 <div className="bg-white p-2 rounded-lg shadow-lg border-2 border-white">
-                  <img src="/score-1.jpg" alt="" className="h-12 sm:h-16 w-auto rounded object-contain" />
+                  <img src="/score-1.jpg" alt="Client results snapshot featured on the Greggory homepage" loading="lazy" className="h-12 sm:h-16 w-auto rounded object-contain" />
                 </div>
               </div>
             </div>

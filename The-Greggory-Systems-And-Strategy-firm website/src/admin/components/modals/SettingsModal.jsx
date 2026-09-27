@@ -400,8 +400,12 @@ export function SettingsModal({ isOpen, onClose }) {
                         <p className={`font-medium text-center ${darkMode ? 'text-amber-600' : 'text-slate-900'}`}>Deep Space Theme (Dark)</p>
                       </button>
                       <button
-                        onClick={() => console.warn('System Sync protocol offline')}
-                        className="p-4 bg-white rounded-xl border-2 border-slate-300 hover:border-slate-400 transition-colors opacity-50 cursor-not-allowed"
+                        onClick={() => {
+                          if (typeof window !== 'undefined' && window.matchMedia) {
+                            setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches)
+                          }
+                        }}
+                        className="p-4 bg-white rounded-xl border-2 border-slate-300 hover:border-slate-400 transition-colors"
                       >
                         <Monitor className="w-8 h-8 text-slate-700 mx-auto mb-2" />
                         <p className="font-medium text-slate-900 text-center">System</p>

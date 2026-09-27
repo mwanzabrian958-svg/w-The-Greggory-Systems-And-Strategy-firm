@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Cookie, Database, Eye, Mail, Phone, Share2, Shield, User } from 'lucide-react'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const Privacy = () => {
+  useSeo(SEO.privacy)
   const sections = [
     { title: 'Data collection', icon: Database, content: 'We collect the information needed to understand your needs, direct communication to the right team, and keep service delivery organized.' },
     { title: 'Usage', icon: Eye, content: 'We use the information we collect to manage requests, improve our support, and make sure our systems remain useful and secure.' },

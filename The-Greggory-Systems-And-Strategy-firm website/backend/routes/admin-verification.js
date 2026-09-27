@@ -267,6 +267,16 @@ router.post('/register', async (req, res) => {
         message: 'Email, password, first name and last name are required' 
       });
     }
+
+    // auth_validation_rules seeds password_min_length = 8 for the 'admin' and
+    // 'developer' platforms (and 'user', enforced in backend/routes/users.js).
+    // All three platforms therefore share one policy: 8 characters minimum.
+    if (typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 8 characters'
+      });
+    }
     
     // Check if email exists in appropriate table
     const checkQuery = userRole === 'developer' 

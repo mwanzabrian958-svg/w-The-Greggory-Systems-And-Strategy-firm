@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 
 const ThemeContext = createContext({
   darkMode: true,
+  setDarkMode: () => {},
   toggleTheme: () => {}
 })
 
@@ -27,7 +28,7 @@ export const ThemeProvider = ({ children }) => {
   const toggleTheme = () => setDarkMode(prev => !prev)
 
   return (
-    <ThemeContext.Provider value={{ darkMode, toggleTheme }}>
+    <ThemeContext.Provider value={{ darkMode, setDarkMode, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   )

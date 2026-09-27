@@ -587,7 +587,7 @@ function _withTimeout(promise, ms, label) {
 // re-run writes against the OTHER database and split data across endpoints.
 async function _dbRun(fn) {
   const CONNECTIVITY = new Set([
-    "ECONNREFUSED", "ETIMEDOUT", "ECONNRESET", "EPIPE", "ENOTFOUND",
+    "ECONNREFUSED", "ETIMEDOUT", "ETIMEDOUT_ENDPOINT", "ECONNRESET", "EPIPE", "ENOTFOUND",
     "PROTOCOL_CONNECTION_LOST", "POOL_NOOFFLINE",
   ]);
   let lastErr;
@@ -843,7 +843,7 @@ app.get("/api/test-db", async (req, res) => {
   } catch (error) {
     // This route is public, so never serialize the driver error: MySQL/Aiven
     // error messages can disclose internal hostnames and infrastructure details.
-    // Keep the existing { success: false } contract for dashboard.html.
+    // Keep the { success: false } contract — clients only probe it for health.
     console.error("[DATABASE] connection test failed:", error.code || error.name || "UNKNOWN_ERROR");
     res.status(500).json({
       success: false,
@@ -1895,8 +1895,8 @@ app.post('/api/users/change-password', authenticateUser, async (req, res) => {
     if (!current_password || !new_password) {
       return res.status(400).json({ success: false, message: 'Current and new password are required' });
     }
-    if (new_password.length < 6) {
-      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters' });
+    if (new_password.length < 8) {
+      return res.status(400).json({ success: false, message: 'New password must be at least 8 characters' });
     }
     const [users] = await mainDb.query(
       'SELECT id, password_hash FROM users WHERE id = ? AND deleted_at IS NULL',
@@ -5439,6 +5439,18 @@ app.get("/api/users/search", authenticateUser, async (req, res) => {
 // =============================================
 // Team Management API
 // =============================================
+app.get("/api/admin/team", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      "SELECT * FROM team_members ORDER BY created_at DESC LIMIT 200"
+    );
+    res.json({ success: true, team: rows || [] });
+  } catch (error) {
+    console.error("[ADMIN TEAM LIST] Error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch team members" });
+  }
+});
+
 app.post("/api/admin/team", authenticateAdmin, async (req, res) => {
   try {
     const { name, role, department, description } = req.body;
@@ -6586,9 +6598,31 @@ try {
 }
 
 // Health Check API — synchronous 200 for the platform healthcheck (Render).
-// The DB probe below runs fire-and-forget so the response never waits on MySQL.
+// Probes MySQL inline (up to HEALTH_DB_TIMEOUT_MS) so EVERY call reports fresh
+// reachability: `database:"connected"` the moment the DB answers, `unreachable`
+// while it is down, `unknown` only when the probe itself times out mid-flight.
+// Still always HTTP 200 — Render must never see a 500 from a DB blip.
 let lastDbCheck = { ok: null, at: null };
-app.get("/api/health", (req, res) => {
+const HEALTH_DB_TIMEOUT_MS = 8000;
+app.get("/api/health", async (req, res) => {
+  try {
+    await Promise.race([
+      mainDb.query("SELECT 1"),
+      new Promise((_, reject) => {
+        const e = new Error("health probe timeout");
+        e.code = "ETIMEDOUT_ENDPOINT";
+        setTimeout(() => reject(e), HEALTH_DB_TIMEOUT_MS);
+      }),
+    ]);
+    lastDbCheck = { ok: true, at: new Date().toISOString() };
+  } catch (e) {
+    // A timed-out probe leaves the previous reading intact (stays "unknown" on
+    // first boot) instead of falsely reporting "unreachable" on a slow DB.
+    if (e && e.code !== "ETIMEDOUT_ENDPOINT") {
+      lastDbCheck = { ok: false, at: new Date().toISOString() };
+      console.warn("[HEALTH] DB probe failed:", e.code || e.message);
+    }
+  }
   res.json({
     status: "OK",
     message: "Server is running",
@@ -6600,13 +6634,6 @@ app.get("/api/health", (req, res) => {
     database: lastDbCheck.ok === null ? "unknown" : lastDbCheck.ok ? "connected" : "unreachable",
     dbCheckedAt: lastDbCheck.at,
   });
-  mainDb
-    .query("SELECT 1")
-    .then(() => { lastDbCheck = { ok: true, at: new Date().toISOString() }; })
-    .catch((e) => {
-      lastDbCheck = { ok: false, at: new Date().toISOString() };
-      console.warn("[HEALTH] DB probe failed:", e.code || e.message);
-    });
 });
 
 // Modular Routes Integration (Centralized Control)
@@ -6656,11 +6683,6 @@ app.use((err, req, res, next) => {
     message: "Internal server error",
     error: process.env.NODE_ENV === "development" ? err.message : {},
   });
-});
-
-// Serve dashboard
-app.get("/dashboard", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
 });
 
 // NOTE: the 404 handler was moved to the very bottom of this file (just before

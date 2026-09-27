@@ -4,8 +4,10 @@ import { getApiUrl } from '../services/api'
 import { X } from 'lucide-react'
 import DOMPurify from 'dompurify'
 import { PageLoader } from '../components/Loading'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const PersonnelProfile = () => {
+  useSeo(SEO.personnel)
   const { id } = useParams()
   const [person, setPerson] = useState(null)
   const [loading, setLoading] = useState(true)

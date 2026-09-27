@@ -24,7 +24,7 @@ can manage that cloud database** as a second server.
 
 No console setup needed on Aiven: the database
 `the_greggory_systems_and_strategy_firm_db_main` is **auto-created and
-auto-imported** from `database/the-…db-main.sql` on the first deploy
+auto-imported** from `The-Greggory-Systems-And-Strategy-firm-db-main/the-…db-main.sql` on the first deploy
 (`scripts/import-if-empty.js` strips the dump's local-only
 `DROP/CREATE DATABASE`/`USE` lines and creates the DB itself).
 
@@ -122,7 +122,7 @@ local XAMPP DB which stays untouched as your dev copy.
 |---|---|---|
 | Used by | `npm run dev` on your PC | The deployed Render site |
 | Managed via | phpMyAdmin → *localhost* server | phpMyAdmin → *Greggory Cloud (Aiven)* server |
-| Seeded from | `database/…db-main.sql` | same dump, auto-imported on first boot |
+| Seeded from | `The-Greggory-Systems-And-Strategy-firm-db-main/…db-main.sql` | same dump, auto-imported on first boot |
 
 They are **separate databases from now on**. To move data between them use
 phpMyAdmin's **Export / Import** tabs, or `scripts/backup-db.js` /

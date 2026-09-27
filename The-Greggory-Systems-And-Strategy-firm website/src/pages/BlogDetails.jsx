@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, User } from 'lucide-react'
 import { getApiUrl } from '../services/api'
+import { PageLoader } from '../components/Loading'
+import { useSeo } from '../hooks/useSeo'
 import DOMPurify from 'dompurify'
 const BlogDetails = () => {
   const { id } = useParams()
@@ -18,10 +20,10 @@ const BlogDetails = () => {
         if (result.success) {
           setArticle(result.article)
         } else {
-          setError('Data Node Missing')
+          setError('This article could not be found. It may have been moved or deleted.')
         }
-      } catch (err) {
-        setError('Relay Failure')
+      } catch {
+        setError('We could not load this article. Check your connection and try again.')
       } finally {
         setLoading(false)
       }
@@ -29,8 +31,9 @@ const BlogDetails = () => {
     fetchArticle()
   }, [id])
 
-  if (loading) return <div style={{ background: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'black', fontWeight: 'bold' }}>Synchronizing Archive Node...</p></div>
-  if (error || !article) return <div style={{ background: 'white', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: 'black', fontWeight: 'bold' }}>Archive Node Offline</p></div>
+  useSeo(article ? { title: article.title, description: String(article.excerpt || article.content || '').replace(/<[^>]+>/g, '').slice(0, 155), path: `/blog/${id}`, image: article.image_url } : { title: 'Journal Article', description: 'An article from the Greggory strategic journal.', path: '/blog' })
+  if (loading) return <div className="min-h-screen bg-white pt-40 pb-40"><div className="max-w-3xl mx-auto px-6"><PageLoader label="Loading article" tone="brand" /></div></div>
+  if (error || !article) return <div className="min-h-screen bg-white pt-40 pb-40"><div className="max-w-xl mx-auto px-6 text-center"><p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Article unavailable</p><h1 className="mt-3 text-3xl font-black tracking-tight">We could not find that article</h1><p className="mt-3 text-sm text-slate-600">{error || 'It may have been moved or deleted.'}</p><Link to="/blog" className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-xs font-bold text-white hover:bg-slate-800 transition"><ArrowLeft className="h-4 w-4" />Back to journal</Link></div></div>
 
   const articleBody = article.content
     ? /<\/?[a-z][\s\S]*>/i.test(article.content)
@@ -71,7 +74,7 @@ const BlogDetails = () => {
             {article.image_url && (
               <img
                 src={article.image_url}
-                alt="Tactical Asset"
+                alt={article.title || 'Article cover image'}
                 style={{ width: '100%', borderRadius: '24px', border: '5px solid #000000', display: 'block', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}
               />
             )}

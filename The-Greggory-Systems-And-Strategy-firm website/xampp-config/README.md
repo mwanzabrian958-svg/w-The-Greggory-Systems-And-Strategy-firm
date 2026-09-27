@@ -46,7 +46,7 @@ These configuration files are stored in the GitHub repository to ensure that:
 3. Backup your existing XAMPP configuration files
 4. Copy the files from this directory to their respective XAMPP locations
 5. Restart Apache and MySQL services
-6. Import the database schema from `database/the-greggory-systems-and-strategy-firm-db-main.sql`
+6. Import the database schema from `The-Greggory-Systems-And-Strategy-firm-db-main/the-greggory-systems-and-strategy-firm-db-main.sql`
 
 ### After PC Deletion/Corruption
 1. Install XAMPP on the new/repair system

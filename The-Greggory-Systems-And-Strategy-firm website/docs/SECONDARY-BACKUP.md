@@ -40,7 +40,7 @@ node scripts/backup-cloud-to-local.js --force   # even if cloud looks empty
    the secondary.
 2. **Restore the cloud from a snapshot:** import any
    `backups/cloud-snapshot-*.json`, or use `scripts/restore-db-github.js` /
-   `database/the-greggory-systems-and-strategy-firm-db-main.sql` to rebuild.
+   `The-Greggory-Systems-And-Strategy-firm-db-main/the-greggory-systems-and-strategy-firm-db-main.sql` to rebuild.
 3. **After recovery:** run `npm run backup:cloud-to-local` once (or wait for
    the 02:00 scheduled run) to re-sync the secondary from the recovered primary.
 

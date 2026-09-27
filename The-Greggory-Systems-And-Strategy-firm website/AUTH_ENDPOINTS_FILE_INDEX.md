@@ -24,7 +24,7 @@
 
 ### Verification & Testing
 7. **[AUTH_ENDPOINTS_VERIFICATION_CHECKLIST.md](AUTH_ENDPOINTS_VERIFICATION_CHECKLIST.md)** - Test everything
-8. **[AUTH_ENDPOINTS_SCHEMA.sql](AUTH_ENDPOINTS_SCHEMA.sql)** - Database schema
+8. **[AUTH_ENDPOINTS_SCHEMA.sql](The-Greggory-Systems-And-Strategy-firm-db-main/AUTH_ENDPOINTS_SCHEMA.sql)** - Database schema
 
 ---
 

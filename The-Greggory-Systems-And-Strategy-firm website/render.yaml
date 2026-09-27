@@ -6,7 +6,8 @@
 # MySQL connection requires — a manually created service can silently miss it.
 #
 # On first boot:
-#   import-if-empty seeds the cloud MySQL once (from database/*.sql), then
+#   import-if-empty seeds the cloud MySQL once (from the
+#   The-Greggory-Systems-And-Strategy-firm-db-main/ seed dump), then
 #   sync-db-schema adds the tables the seed dump doesn't carry (currencies,
 #   knowledge_base, auth_*, etc. — see database/schema-sync.json).
 # Both are idempotent and exit 0 even on error, so they never block boot.

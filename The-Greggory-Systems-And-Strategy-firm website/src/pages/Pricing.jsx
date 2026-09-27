@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Calculator, Check, CheckCircle2, DollarSign, Headphones, Shield, Star, TrendingUp, Users, X, Zap } from 'lucide-react'
 import { formatKSH } from '../utils/currencyUtils'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const Pricing = () => {
+  useSeo(SEO.pricing)
   const [billingCycle, setBillingCycle] = useState('monthly')
   const [selectedPlan, setSelectedPlan] = useState('')
   const [customProject, setCustomProject] = useState({

@@ -134,6 +134,11 @@ export default function AuthPlatformModal({
       return;
     }
 
+    if (regData.password.length < 8) {
+      setRegError("Password must be at least 8 characters");
+      return;
+    }
+
     if (regData.password !== regData.confirmPassword) {
       setRegError("Passwords do not match");
       return;
@@ -349,7 +354,7 @@ export default function AuthPlatformModal({
                   </div>
                   <input type="email" value={regData.email} onChange={(e) => setRegData({ ...regData, email: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Email address" />
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} value={regData.password} onChange={(e) => setRegData({ ...regData, password: e.target.value })} required minLength={6} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Password" />
+                    <input type={showPassword ? "text" : "password"} value={regData.password} onChange={(e) => setRegData({ ...regData, password: e.target.value })} required minLength={8} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Password" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2 text-gray-400 hover:text-gray-600 transition-colors">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                   </div>
                   <input type="password" value={regData.confirmPassword} onChange={(e) => setRegData({ ...regData, confirmPassword: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Confirm password" />

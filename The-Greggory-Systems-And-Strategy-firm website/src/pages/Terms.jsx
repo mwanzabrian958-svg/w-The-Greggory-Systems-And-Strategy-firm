@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertCircle, ArrowLeft, Globe, Lock, Mail, Scale, ShieldCheck, UserCheck, X } from 'lucide-react'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const Terms = () => {
+  useSeo(SEO.terms)
   const [activeTopic, setActiveTopic] = useState(null)
 
   const topics = [

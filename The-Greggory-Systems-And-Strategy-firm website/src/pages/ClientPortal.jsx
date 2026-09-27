@@ -608,7 +608,7 @@ const ClientPortal = () => {
     e.preventDefault();
     const nextErrors = {};
     if (!passwordForm.current_password) nextErrors.current_password = 'Required';
-    if (!passwordForm.new_password || passwordForm.new_password.length < 6) nextErrors.new_password = 'At least 6 characters';
+    if (!passwordForm.new_password || passwordForm.new_password.length < 8) nextErrors.new_password = 'At least 8 characters';
     if (passwordForm.new_password !== passwordForm.confirm_password) nextErrors.confirm_password = 'Passwords do not match';
     setSettingsErrors({ ...nextErrors, display_name: '', phone_number: '' });
     if (Object.keys(nextErrors).length > 0) return;

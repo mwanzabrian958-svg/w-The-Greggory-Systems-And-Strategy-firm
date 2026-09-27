@@ -13,12 +13,16 @@ export const googleSignInEnabled =
   Boolean(GOOGLE_CLIENT_ID) && !/your_google_client_id/i.test(GOOGLE_CLIENT_ID);
 
 if (!googleSignInEnabled && import.meta.env?.DEV) {
-  console.warn(
-    '[GoogleSignIn] hidden — VITE_GOOGLE_CLIENT_ID is empty or still the placeholder. ' +
-      'Set it in .env to the SAME OAuth 2.0 client id as GOOGLE_CLIENT_ID, then RESTART the ' +
-      'dev server (Vite reads .env only at start-up; production needs it set at build time). ' +
-      'Full walkthrough: GOOGLE_SIGNIN_SETUP.md'
-  );
+  // Dev-only hint (stripped from production builds): explains why the
+  // Google button is hidden instead of rendering broken.
+  if (typeof console !== 'undefined') {
+    console.warn(
+      '[GoogleSignIn] hidden — VITE_GOOGLE_CLIENT_ID is empty or still the placeholder. ' +
+        'Set it in .env to the SAME OAuth 2.0 client id as GOOGLE_CLIENT_ID, then RESTART the ' +
+        'dev server (Vite reads .env only at start-up; production needs it set at build time). ' +
+        'Full walkthrough: GOOGLE_SIGNIN_SETUP.md'
+    );
+  }
 }
 
 /**

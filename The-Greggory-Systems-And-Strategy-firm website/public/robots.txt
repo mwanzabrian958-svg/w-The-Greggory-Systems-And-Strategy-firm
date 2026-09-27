@@ -16,7 +16,7 @@ Disallow: /dashboard
 Disallow: /api/
 
 # Sitemap — lists every public route so crawlers discover content.
-Sitemap: https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/sitemap.xml
+Sitemap: http://localhost:5173/sitemap.xml
 
 # Host directive (Bing respects this; informs crawlers of the preferred host).
-Host: the-greggory-systems-and-strategy-firm-jz7i.onrender.com
+Host: localhost:5173

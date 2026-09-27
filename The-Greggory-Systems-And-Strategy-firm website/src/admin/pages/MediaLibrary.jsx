@@ -22,12 +22,30 @@ export function MediaLibrary() {
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const formData = new FormData();
-    formData.append("image", file);
-    try {
-      await apiCall("/api/images", { method: "POST", body: formData });
-      fetchImages();
-    } catch (e) { console.error("Upload failed:", e); }
+    // Backend POST /api/images expects JSON base64 (dataBase64/contentType/fileName),
+    // not multipart FormData — convert first so uploads actually persist.
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        const dataUrl = String(reader.result || "");
+        const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+        await apiCall("/api/images", {
+          method: "POST",
+          body: JSON.stringify({
+            dataBase64: base64,
+            contentType: file.type || "image/jpeg",
+            fileName: file.name || "upload.jpg",
+          }),
+        });
+        fetchImages();
+      } catch (err) {
+        console.error("Upload failed:", err);
+        window.alert(err.message || "Upload failed");
+      }
+    };
+    reader.onerror = () => window.alert("Could not read file");
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const handleDelete = async (id) => {
@@ -39,7 +57,7 @@ export function MediaLibrary() {
   };
 
   const filtered = images.filter(img =>
-    (img.filename || img.name || "").toLowerCase().includes(search.toLowerCase())
+    (img.filename || img.file_name || img.name || "").toLowerCase().includes(search.toLowerCase())
   );
 
   if (loading) return (
@@ -84,7 +102,7 @@ export function MediaLibrary() {
                 )}
               </div>
               <div className="p-2 flex items-center justify-between">
-                <p className="text-[7px] font-bold text-slate-600 truncate">{img.filename || img.name || `File #${img.id}`}</p>
+                <p className="text-[7px] font-bold text-slate-600 truncate">{img.filename || img.file_name || img.name || `File #${img.id}`}</p>
                 <button onClick={() => handleDelete(img.id)} className="p-1 rounded hover:bg-rose-50 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100">
                   <Trash2 size={10} />
                 </button>

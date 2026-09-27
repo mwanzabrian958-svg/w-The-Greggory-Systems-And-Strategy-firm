@@ -31,6 +31,7 @@ const ClientPortal = lazy(() => import('./pages/ClientPortal'))
 const Login = lazy(() => import('./pages/Login'))
 const Signup = lazy(() => import('./pages/Signup'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Terms = lazy(() => import('./pages/Terms'))
 const Privacy = lazy(() => import('./pages/Privacy'))
 const Pricing = lazy(() => import('./pages/Pricing'))
@@ -55,7 +56,7 @@ function PageFallback() {
 
 function Layout() {
   const location = useLocation()
-  const authPages = ['/login', '/signup', '/forgot-password']
+  const authPages = ['/login', '/signup', '/forgot-password', '/reset-password']
   const isAuthPage = authPages.includes(location.pathname)
   const isAdminPage = location.pathname.startsWith('/admin')
     const isClientPortal = location.pathname === '/client-portal' || location.pathname === '/client-reports' || location.pathname === '/client-alerts' || location.pathname === '/client-search' || location.pathname === '/personnel/profile' || location.pathname.startsWith('/personnel/') || location.pathname.startsWith('/projects')
@@ -104,6 +105,8 @@ function Layout() {
           <Route path="/signup" element={<Signup />} />
 
           <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/terms" element={<Terms />} />
 

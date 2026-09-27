@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, X, Save, RefreshCw } from "lucide-react";
-import { getApiUrl, API_BASE_URL } from "../../services/api";
+import { getApiUrl, API_BASE_URL, getAdminToken } from "../../services/api";
 import { Spinner } from "../../components/Loading";
 import SearchBlock from "../../components/SearchBlock";
 
@@ -33,13 +33,21 @@ export function ManualEntry() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const token = getAdminToken();
       const res = await fetch(`${API_BASE_URL}/accounting/entries`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ ...form, currency: 'KES', exchange_rate: 1, payment_status: 'completed' })
       });
       if (res.ok) navigate('/admin/billing');
-    } catch (e) { console.error(e); }
+      else {
+        const d = await res.json().catch(() => ({}));
+        window.alert(d?.message || d?.error || `Ledger entry failed (${res.status}). Check you are signed in as admin.`);
+      }
+    } catch (e) { console.error(e); window.alert(e.message); }
     setIsSubmitting(false);
   };
 

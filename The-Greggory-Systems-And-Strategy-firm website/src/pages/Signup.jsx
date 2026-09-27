@@ -6,8 +6,10 @@ import AuthLayout from '../components/AuthLayout'
 import { usersAPI } from '../services/api'
 import { SITE_NAME } from '../constants/siteBrand'
 import { LoadingOverlay, Spinner } from '../components/Loading'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const Signup = () => {
+  useSeo(SEO.signup)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
@@ -67,7 +69,10 @@ const Signup = () => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email.trim())) nextErrors.email = 'Invalid format';
     }
-    if (formData.password.length < 6) nextErrors.password = 'Min 6 chars';
+    // Matches the backend registration rule (auth_validation_rules →
+    // password_min_length = 8) so a 6-7 character password is caught here
+    // instead of passing the form and then being rejected by the server.
+    if (formData.password.length < 8) nextErrors.password = 'Min 8 chars';
     if (formData.password !== formData.confirmPassword) nextErrors.confirmPassword = 'Mismatch';
     if (!agreedToTerms) nextErrors.terms = 'Agreement required';
 

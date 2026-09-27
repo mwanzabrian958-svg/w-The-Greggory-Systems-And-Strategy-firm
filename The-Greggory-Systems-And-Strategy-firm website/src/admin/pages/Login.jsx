@@ -64,6 +64,7 @@ export function Login({ onLoginSuccess }) {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (regData.password.length < 8) return setError("Password must be at least 8 characters");
     if (regData.password !== regData.confirmPassword) return setError("Passwords do not match");
 
     setLoading(true);
@@ -214,7 +215,7 @@ export function Login({ onLoginSuccess }) {
                       <input type="text" placeholder="Last Name" value={regData.last_name} onChange={(e) => setRegData({...regData, last_name: e.target.value})} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
                     </div>
                     <input type="email" placeholder="Email address" value={regData.email} onChange={(e) => setRegData({...regData, email: e.target.value})} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
-                    <input type="password" placeholder="Access Key" value={regData.password} onChange={(e) => setRegData({...regData, password: e.target.value})} required minLength={6} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
+                    <input type="password" placeholder="Access Key" value={regData.password} onChange={(e) => setRegData({...regData, password: e.target.value})} required minLength={8} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
                     <input type="password" placeholder="Confirm Key" value={regData.confirmPassword} onChange={(e) => setRegData({...regData, confirmPassword: e.target.value})} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
                     <input type="password" placeholder="Admin registration code" value={regData.admin_code} onChange={(e) => setRegData({...regData, admin_code: e.target.value})} autoComplete="off" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
 

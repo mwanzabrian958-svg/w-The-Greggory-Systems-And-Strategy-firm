@@ -50,7 +50,6 @@ const Footer = () => {
   }
 
   const handleAdminModalSuccess = () => {
-    console.log('[FOOTER] Admin login success! Navigating to /admin...')
     setStartOnAdminStep(false)
     setAdminModalOpen(false)
     navigate('/admin')
@@ -107,7 +106,7 @@ const Footer = () => {
                     <Phone size={14} />
                   </div>
                   <div>
-                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Direct Uplink</p>
+                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Direct line</p>
                     <a
                       href="https://wa.me/254115525854"
                       target="_blank"
@@ -123,7 +122,7 @@ const Footer = () => {
                     <MapPin size={14} />
                   </div>
                   <div>
-                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Node Location</p>
+                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">Location</p>
                     <a
                       href="https://www.google.com/maps/search/?api=1&query=RAFIKI+KABARAK,+KABARAK"
                       target="_blank"

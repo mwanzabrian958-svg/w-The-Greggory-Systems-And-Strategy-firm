@@ -1,8 +1,10 @@
 import React, { useRef } from 'react'
 import { ArrowRight, Workflow, Compass, Rocket, ShieldCheck, Command, Microscope, Radio, Layers3, Orbit, Zap, Heart, Cpu, Globe, BarChart3, Binary, Eye, Target, Activity, Fingerprint, ShieldAlert, Terminal, Search, PenTool, Database, Users, TrendingUp, AlertTriangle } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const Services = () => {
+  useSeo(SEO.services)
   const scrollRefs = {
     diagnostic: useRef(null),
     protocol: useRef(null),

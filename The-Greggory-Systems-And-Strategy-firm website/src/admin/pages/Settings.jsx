@@ -7,7 +7,9 @@ import {
 import { apiCall } from "../../services/api";
 import { InlineLoader, Spinner } from "../../components/Loading";
 
-/* Defaults mirror the server whitelist (GET /api/admin/node-settings) */
+/* Defaults mirror the server whitelist (PUT /api/admin/node-settings).
+   Loaded read-only keys (strategy_whatsapp / apk_version / apk_url) are merged
+   in over these blanks by load() — do NOT add them here as defaults. */
 const DEFAULTS = {
   site_title: "The Greggory Systems And Strategy Firm",
   contact_email: "",
@@ -17,6 +19,9 @@ const DEFAULTS = {
   allow_registration: "true",
   deep_space_mode: "false",
   admin_lockdown: "false",
+  strategy_whatsapp: "",
+  apk_version: "",
+  apk_url: "",
 };
 
 const toBool = (v) => v === true || v === "true" || v === 1 || v === "1";

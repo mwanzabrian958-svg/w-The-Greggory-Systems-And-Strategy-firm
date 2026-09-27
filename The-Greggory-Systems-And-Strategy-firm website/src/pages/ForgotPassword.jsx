@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import { Mail, ArrowLeft } from 'lucide-react'
 import AuthLayout from '../components/AuthLayout'
 import { SITE_NAME } from '../constants/siteBrand'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 const ForgotPassword = () => {
+  useSeo(SEO.forgotPassword)
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -26,12 +28,26 @@ const ForgotPassword = () => {
     }
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Password reset email sent to:', email)
+    try {
+      const res = await fetch('/api/users/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed }),
+      })
+      // Unknown addresses get the same 200 as known ones, so this endpoint
+      // cannot be used to enumerate accounts and success stays optimistic here.
+      // But a 429 means the limit was reached and a 5xx means the mail never
+      // left the server — promising "check your inbox" for either would be a lie.
+      if (!res.ok && (res.status === 429 || res.status >= 500)) {
+        const data = await res.json().catch(() => null)
+        throw new Error((data && data.message) || 'Something went wrong. Please try again.')
+      }
       setIsLoading(false)
       setEmailSent(true)
-    }, 1500)
+    } catch (err) {
+      setIsLoading(false)
+      setError(err.message || 'Something went wrong. Please try again.')
+    }
   }
 
   return (
@@ -88,8 +104,11 @@ const ForgotPassword = () => {
                 <Mail className="w-8 h-8 text-green-600" />
               </div>
               <h2 className="text-2xl font-bold text-navy-900 mb-2">Check Your Email</h2>
-              <p className="text-gray-500 text-sm mb-6">
+              <p className="text-gray-500 text-sm mb-2">
                 We've sent a password reset link to <strong>{email}</strong>
+              </p>
+              <p className="text-gray-400 text-xs mb-6">
+                The link stays valid for one hour and can only be used once.
               </p>
               <p className="text-gray-500 text-xs mb-6">
                 Didn't receive the email? Check your spam folder or{' '}

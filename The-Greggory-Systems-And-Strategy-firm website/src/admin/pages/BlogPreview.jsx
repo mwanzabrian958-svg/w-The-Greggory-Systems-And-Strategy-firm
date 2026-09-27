@@ -122,7 +122,7 @@ export function BlogPreview() {
             <div className="rounded-[40px] overflow-hidden border border-white/10 shadow-2xl bg-white/2">
               <img
                 src={article.image_url}
-                alt=""
+                alt={article.title || 'Blog preview'}
                 className="w-full h-auto max-h-[500px] object-cover"
               />
             </div>

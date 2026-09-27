@@ -67,12 +67,11 @@ export function AdminRouter() {
 
   if (isLoading) return (
     <PageLoader
-      label="Synchronising Secure Relay"
+      label="Verifying session"
       messages={[
-        'Synchronising Secure Relay',
-        'Verifying Admin Token',
-        'Restoring Session State',
-        'Loading Workstation Routing',
+        'Verifying session',
+        'Checking credentials',
+        'Loading workspace',
       ]}
       tone="teal"
     />

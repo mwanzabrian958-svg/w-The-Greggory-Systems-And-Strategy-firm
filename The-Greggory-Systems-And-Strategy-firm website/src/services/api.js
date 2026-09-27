@@ -12,28 +12,62 @@ const RAW_BASE = import.meta.env?.VITE_API_BASE_URL || "";
 export const API_BASE_URL =
   String(RAW_BASE).trim().replace(/\/+$/, "") || "/api";
 
+/** Resolve the admin session token from every known storage location. */
+export const getAdminToken = () => {
+  try {
+    const sessionStr =
+      localStorage.getItem("gf_admin_session") ||
+      sessionStorage.getItem("gf_admin_session");
+    if (sessionStr && sessionStr !== "undefined") {
+      const session = JSON.parse(sessionStr);
+      if (session?.token) return session.token;
+    }
+  } catch {
+    /* corrupted session JSON — fall through to the alternates */
+  }
+  return localStorage.getItem("gf_admin_session_token") || null;
+};
+
+/** Resolve any usable token (admin first, then the client-portal fallback). */
+export const getAuthToken = () => {
+  const adminToken = getAdminToken();
+  if (adminToken) return adminToken;
+  try {
+    const clientSession = JSON.parse(localStorage.getItem("tgf_user") || "null");
+    if (clientSession?.token) return clientSession.token;
+  } catch {
+    /* ignore */
+  }
+  return null;
+};
+
 /**
  * Hardened API Relay
  * Automatically injects authentication tokens and handles malformed JSON.
+ * FormData bodies are passed through untouched (the browser sets the
+ * multipart boundary — forcing application/json would break uploads).
  */
 export const apiCall = async (endpoint, options = {}) => {
   try {
     const { headers = {}, ...restOptions } = options;
 
-    // 1. Resolve Token Telemetry
-    const sessionStr = localStorage.getItem("gf_admin_session") || sessionStorage.getItem("gf_admin_session");
-    const session = sessionStr ? JSON.parse(sessionStr) : null;
-    // Fallback: client-portal sessions may persist under 'tgf_user' (AuthContext)
-    let clientSession = null;
-    try { clientSession = JSON.parse(localStorage.getItem("tgf_user") || "null"); } catch { clientSession = null; }
-    const token = session?.token || localStorage.getItem("gf_admin_session_token") || clientSession?.token;
+    // 1. Resolve Token Telemetry (admin session wins over client session —
+    //    otherwise a stale client token shadows the admin token and every
+    //    admin write 401s).
+    const token = getAuthToken();
 
-    // 2. Construct Protocol Header
+    // 2. Construct Protocol Header (never force JSON onto FormData)
+    const isFormData =
+      typeof FormData !== "undefined" && restOptions.body instanceof FormData;
     const authHeaders = {
-      "Content-Type": "application/json",
-      ...headers
+      ...headers,
     };
-    if (token) authHeaders["Authorization"] = `Bearer ${token}`;
+    if (!isFormData && !authHeaders["Content-Type"]) {
+      authHeaders["Content-Type"] = "application/json";
+    }
+    if (token && !authHeaders["Authorization"]) {
+      authHeaders["Authorization"] = `Bearer ${token}`;
+    }
 
     // 3. Resolve Endpoint URL (normalized; tolerates endpoints that already include '/api')
     const url = /^https?:\/\//i.test(endpoint) ? endpoint : getApiUrl(endpoint);
@@ -68,7 +102,6 @@ export const apiCall = async (endpoint, options = {}) => {
 
     return data;
   } catch (error) {
-    console.error("MISSION CRITICAL: Secure Relay Failure:", error.message);
     throw error;
   }
 };

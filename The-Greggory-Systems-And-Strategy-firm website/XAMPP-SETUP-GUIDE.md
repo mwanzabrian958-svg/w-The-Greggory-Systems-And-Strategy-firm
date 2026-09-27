@@ -26,7 +26,7 @@ This guide explains how to set up XAMPP (Apache, MySQL, PHP) for the The-Greggor
 
 ### 3. Import Database Schema
 1. In phpMyAdmin, click on the **Import** tab
-2. Choose file: `database/the-greggory-systems-and-strategy-firm-db-main.sql`
+2. Choose file: `The-Greggory-Systems-And-Strategy-firm-db-main/the-greggory-systems-and-strategy-firm-db-main.sql`
 3. Click **Go** to import
 4. Database `the_greggory_systems_and_strategy_firm_db_main` will be created with all tables
 

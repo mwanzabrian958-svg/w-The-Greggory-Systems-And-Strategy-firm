@@ -4,7 +4,7 @@ const SiteTagline = ({ text = 'Strategic Project Development for all clients' })
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-center gap-4">
            <div className="h-px w-8 sm:w-16 bg-gradient-to-r from-transparent to-gold-500/50" />
-           <p className="text-center text-gold-200/80 text-xs sm:text-sm font-black uppercase tracking-[0.3em] whitespace-nowrap">
+           <p className="text-center text-gold-200/80 text-xs sm:text-sm font-black uppercase tracking-[0.3em] break-words px-2">
              {text}
            </p>
            <div className="h-px w-8 sm:w-16 bg-gradient-to-l from-transparent to-gold-500/50" />

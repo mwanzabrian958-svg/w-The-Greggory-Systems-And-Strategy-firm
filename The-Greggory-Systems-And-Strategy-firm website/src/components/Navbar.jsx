@@ -40,7 +40,7 @@ const Navbar = () => {
     { name: 'Home', path: '/' },
     {
       name: 'Our Companies',
-      path: '#',
+      path: '/companies',
       dropdown: companies
     },
     { name: 'About Us', path: '/about' },
@@ -53,11 +53,11 @@ const Navbar = () => {
     }] : []),
   ]
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     // Fire the backend invalidation + local cleanup, then navigate.
     // We don't await so the UI transitions immediately; any backend
-    // failure is logged but doesn't block the redirect.
-    logout().catch(err => console.warn('[Navbar] logout error:', err))
+    // failure is ignored and doesn't block the redirect.
+    logout().catch(() => {})
     navigate('/')
   }
 
@@ -83,6 +83,9 @@ const Navbar = () => {
                     <button
                       className="flex items-center text-base font-bold text-slate-600 dark:text-slate-100 hover:text-gold-600 transition-colors py-2"
                       onClick={() => setCompaniesDropdownOpen(!companiesDropdownOpen)}
+                      onMouseEnter={() => setCompaniesDropdownOpen(true)}
+                      aria-expanded={companiesDropdownOpen}
+                      aria-haspopup="true"
                     >
                       {item.name}
                       <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-300 ${companiesDropdownOpen ? 'rotate-180' : ''}`} />
@@ -94,7 +97,7 @@ const Navbar = () => {
                       >
                         {item.dropdown.map((subItem) => (
                           <Link
-                            key={subItem.path}
+                            key={subItem.path + subItem.name}
                             to={subItem.path}
                             onClick={() => setCompaniesDropdownOpen(false)}
                             className="flex items-center px-6 py-3 text-sm font-semibold text-slate-600 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-gold-600 transition-all"
@@ -193,6 +196,16 @@ const Navbar = () => {
         <div className="md:hidden bg-[#0f172a] border-t border-white/5 pb-8 px-4 animate-fade-in">
           <div className="flex flex-col space-y-2 mt-6">
             {navigation.map((item) => (
+              item.dropdown ? (
+                <div key={item.name}>
+                  <p className="px-4 pt-3 pb-1 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">{item.name}</p>
+                  {item.dropdown.map((sub) => (
+                    <Link key={sub.path + sub.name} to={sub.path} onClick={() => setIsOpen(false)} className="block px-4 py-3 rounded-xl text-lg font-bold text-slate-300 hover:bg-white/5">
+                      {sub.name}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
               <Link
                 key={item.name}
                 to={item.path}
@@ -205,6 +218,7 @@ const Navbar = () => {
               >
                 {item.name}
               </Link>
+              )
             ))}
             {isAuthenticated && (
                <button onClick={() => { setIsOpen(false); handleLogout() }} className="w-full bg-white/10 text-white px-4 py-2 rounded-xl text-sm font-bold border border-white/10">Logout</button>

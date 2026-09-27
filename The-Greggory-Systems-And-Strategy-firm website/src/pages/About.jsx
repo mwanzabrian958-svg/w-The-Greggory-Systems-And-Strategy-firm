@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
 
 import { Skeleton } from '../components/Loading'
+import { useSeo, SEO } from '../hooks/useSeo'
 
 // ── PERSONNEL SKELETON GRID (shown while the API responds) ──────────────
 const PersonnelSkeleton = () => (
@@ -16,6 +17,7 @@ const PersonnelSkeleton = () => (
 )
 
 const About = () => {
+  useSeo(SEO.about)
   const [personnel, setPersonnel] = useState([])
   const [personnelLoading, setPersonnelLoading] = useState(true)
 
@@ -32,7 +34,8 @@ const About = () => {
   // DB is the source of truth. If the API is unreachable (backend offline) or
   // returns zero rows, keep the firm's founder profile visible instead of an
   // empty section. The fallback id MUST be the real company_personnel row id
-  // (Brian Mwanza = id 1, seeded by database/fix-missing-brian-mwanza.sql)
+  // (Brian Mwanza = id 1, seeded by
+  //  The-Greggory-Systems-And-Strategy-firm-db-main/fix-missing-brian-mwanza.sql)
   // so the /personnel/:id profile page resolves when the server is reachable.
   const FOUNDER_FALLBACK = [{
     id: 1,

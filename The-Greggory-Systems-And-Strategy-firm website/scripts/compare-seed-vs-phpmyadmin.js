@@ -7,7 +7,7 @@ const phpMyAdminTables = new Set(Object.keys(phpMyAdmin.tables));
 
 // Load seed dump
 const sql = fs.readFileSync(
-  path.join(__dirname, '..', 'database', 'the-greggory-systems-and-strategy-firm-db-main.sql'),
+  path.join(__dirname, '..', 'The-Greggory-Systems-And-Strategy-firm-db-main', 'the-greggory-systems-and-strategy-firm-db-main.sql'),
   'utf8'
 );
 const seedTables = new Set();

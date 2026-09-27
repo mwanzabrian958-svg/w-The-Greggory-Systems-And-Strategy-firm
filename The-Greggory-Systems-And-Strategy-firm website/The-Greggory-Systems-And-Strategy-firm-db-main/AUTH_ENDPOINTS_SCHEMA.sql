@@ -6,7 +6,16 @@
 -- Database: the_greggory_systems_and_strategy_firm_db_main
 -- =====================================================
 
-USE the_greggory_systems_and_strategy_firm_db_main;
+-- =============================================
+-- NOTE ON DATABASE SELECTION
+-- This file deliberately contains NO "USE <db>" statement.
+--   * A managed/cloud MySQL (Aiven) may hold the database under a different
+--     name than the local XAMPP copy, and a hardcoded USE makes the whole file
+--     fail with ER_BAD_DB_ERROR there.
+--   * Every importer already connects to the target database explicitly
+--     (import-if-empty.js, sync-db-schema.js, phpMyAdmin), so the statement is
+--     redundant as well as fragile.
+-- =============================================
 
 -- =============================================
 -- Table: auth_platform_mapping
@@ -33,7 +42,11 @@ CREATE TABLE IF NOT EXISTS auth_platform_mapping (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert locked platform mappings
-DELETE FROM auth_platform_mapping; -- Clear any existing entries
+-- Clear any existing entries (idempotent re-seed).
+-- The note above sits on its OWN line on purpose: a trailing comment placed
+-- after a semicolon truncates the rest of the statement when the whole file
+-- is sent to the server as one multi-statement string.
+DELETE FROM auth_platform_mapping;
 
 INSERT INTO auth_platform_mapping (
     platform_name, 

@@ -12,6 +12,13 @@ USE the_greggory_systems_and_strategy_firm_db_main;
 -- Enable strict mode
 SET SQL_MODE = 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 
+-- Referential integrity is disabled for the whole import and re-enabled in the
+-- last line of this file. Reason: website_content is created before users but
+-- carries a FOREIGN KEY to users(id), so a strict top-to-bottom import fails
+-- with errno 150 (Cannot add foreign key constraint). scripts/import-if-empty.js
+-- and scripts/initialize-db.js do the same thing on the JS side.
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- =====================================================
 -- SECTION 1: BASE TABLES (No Foreign Key Dependencies)
 -- =====================================================
@@ -97,28 +104,6 @@ INSERT INTO team_members (name, role, department) VALUES
 ('Developer', 'developer', 'Technology');
 
 -- =============================================
--- Table: website_content
--- =============================================
-CREATE TABLE IF NOT EXISTS website_content (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    content_key VARCHAR(100) NOT NULL UNIQUE,
-    content_value LONGTEXT,
-    content_type ENUM('text', 'html', 'json', 'image_url') DEFAULT 'text',
-    section VARCHAR(100),
-    description TEXT,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    updated_by BIGINT,
-    FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Insert default website content
-INSERT INTO website_content (content_key, content_value, content_type, section, description) VALUES
-('hero_title', 'THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM', 'text', 'hero', 'Main landing page title'),
-('hero_motto', 'Strategic Project Development for all clients', 'text', 'hero', 'Main landing page motto'),
-('intro_title', 'Empowering Your Success Through Comprehensive Solutions', 'text', 'intro', 'Introduction section title'),
-('intro_description', 'At The-Greggory-Systems-And-Strategy-firm, we believe that every business challenge-from systems design to strategic planning-can be solved with excellence.', 'text', 'intro', 'Introduction section description');
-
--- =============================================
 -- Table: users
 -- Regular user accounts
 -- =============================================
@@ -157,10 +142,36 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_by BIGINT DEFAULT NULL,
     FOREIGN KEY (profile_photo_id) REFERENCES images(id) ON DELETE SET NULL,
     FOREIGN KEY (job_id) REFERENCES team_members(id) ON DELETE SET NULL,
-    INDEX idx_users_email (email),
+    -- No separate index on email: the UNIQUE constraint above already provides
+    -- one, so an extra idx_users_email would only cost write time and space.
     INDEX idx_users_active (is_active, deleted_at),
     INDEX idx_users_name (first_name, last_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: website_content
+-- Placed after `users` on purpose: it carries a FOREIGN KEY to users(id),
+-- so creating it earlier in this file fails with errno 150 unless referential
+-- integrity is switched off. Keep it below users if this file is reordered.
+-- =============================================
+CREATE TABLE IF NOT EXISTS website_content (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    content_key VARCHAR(100) NOT NULL UNIQUE,
+    content_value LONGTEXT,
+    content_type ENUM('text', 'html', 'json', 'image_url') DEFAULT 'text',
+    section VARCHAR(100),
+    description TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    updated_by BIGINT,
+    FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Insert default website content
+INSERT INTO website_content (content_key, content_value, content_type, section, description) VALUES
+('hero_title', 'THE-GREGGORY-SYSTEMS-AND-STRATEGY-FIRM', 'text', 'hero', 'Main landing page title'),
+('hero_motto', 'Strategic Project Development for all clients', 'text', 'hero', 'Main landing page motto'),
+('intro_title', 'Empowering Your Success Through Comprehensive Solutions', 'text', 'intro', 'Introduction section title'),
+('intro_description', 'At The-Greggory-Systems-And-Strategy-firm, we believe that every business challenge-from systems design to strategic planning-can be solved with excellence.', 'text', 'intro', 'Introduction section description');
 
 -- =============================================
 -- Table: admin_users
@@ -273,6 +284,26 @@ CREATE TABLE IF NOT EXISTS developer_users (
     INDEX idx_developer_users_stack (specialization),
     INDEX idx_developer_users_team (team_id),
     INDEX idx_developer_users_login (last_login_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =============================================
+-- Table: user_sessions
+-- One row per issued login token; powers "Active Sessions" and the session
+-- revocation that runs after a password reset. Intentionally matches the DDL
+-- in backend/utils/userSessions.js (ensureSessionTable) column for column, so
+-- a database created from this dump and one created at runtime by the app are
+-- identical. No FK to users on purpose, for the same reason.
+-- =============================================
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    token VARCHAR(128) NOT NULL,
+    ip VARCHAR(45) NULL,
+    user_agent VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    revoked_at TIMESTAMP NULL,
+    UNIQUE KEY uniq_user_sessions_token (token),
+    KEY idx_user_sessions_user (user_id, revoked_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =============================================
@@ -1464,38 +1495,15 @@ CREATE TABLE IF NOT EXISTS project_milestones (
 -- Table: project_tasks
 -- Task management for projects
 -- =============================================
-CREATE TABLE IF NOT EXISTS project_tasks (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT NOT NULL,
-    task_name VARCHAR(255) NOT NULL,
-    description TEXT,
-    assigned_to BIGINT,
-    task_type VARCHAR(100),
-    priority ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
-    status ENUM('to_do', 'in_progress', 'in_review', 'completed', 'cancelled') DEFAULT 'to_do',
-    due_date DATE,
-    start_date DATE,
-    completion_date DATE,
-    estimated_hours DECIMAL(8,2),
-    actual_hours DECIMAL(8,2),
-    parent_task_id BIGINT,
-    progress_percentage DECIMAL(5,2) DEFAULT 0.00,
-    tags VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    created_by BIGINT,
-    updated_by BIGINT,
-    deleted_at TIMESTAMP NULL DEFAULT NULL,
-    deleted_by BIGINT DEFAULT NULL,
-    INDEX idx_tasks_project (project_id),
-    INDEX idx_tasks_assigned (assigned_to),
-    INDEX idx_tasks_status (status),
-    INDEX idx_tasks_priority (priority),
-    INDEX idx_tasks_due_date (due_date),
-    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (assigned_to) REFERENCES team_members(id) ON DELETE SET NULL,
-    FOREIGN KEY (parent_task_id) REFERENCES project_tasks(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- REMOVED (duplicate definition). This block used to declare a second
+-- client_projects-flavoured project_tasks (status 'to_do', due_date DATE,
+-- parent_task_id, progress_percentage, ...). It never reached any database:
+-- "CREATE TABLE IF NOT EXISTS" means the FIRST definition (line ~397, tied to
+-- user_projects, with task_name/task_description/assigned_to) is the one that
+-- gets created, and that is the shape the application queries. Keeping a second,
+-- contradictory definition is a trap, so it was deleted. If the portal ever
+-- needs these columns, add them to the canonical definition as an ALTER --
+-- do not reintroduce a second CREATE TABLE.
 
 -- =============================================
 -- Table: project_resources
@@ -1562,38 +1570,15 @@ CREATE TABLE IF NOT EXISTS project_budgets (
 -- Table: project_expenses
 -- Expense tracking for projects
 -- =============================================
-CREATE TABLE IF NOT EXISTS project_expenses (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    project_id BIGINT NOT NULL,
-    expense_category VARCHAR(100) NOT NULL,
-    description TEXT,
-    amount DECIMAL(15,2) NOT NULL,
-    expense_date DATE NOT NULL,
-    incurred_by BIGINT,
-    approved_by BIGINT,
-    approval_status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-    receipt_image_id BIGINT,
-    invoice_number VARCHAR(100),
-    vendor VARCHAR(255),
-    payment_method VARCHAR(100),
-    is_reimbursable BOOLEAN DEFAULT FALSE,
-    reimbursement_status ENUM('not_applicable', 'pending', 'approved', 'paid') DEFAULT 'not_applicable',
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    created_by BIGINT,
-    updated_by BIGINT,
-    deleted_at TIMESTAMP NULL DEFAULT NULL,
-    deleted_by BIGINT DEFAULT NULL,
-    INDEX idx_expenses_project (project_id),
-    INDEX idx_expenses_category (expense_category),
-    INDEX idx_expenses_date (expense_date),
-    INDEX idx_expenses_status (approval_status),
-    FOREIGN KEY (project_id) REFERENCES client_projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (incurred_by) REFERENCES team_members(id) ON DELETE SET NULL,
-    FOREIGN KEY (approved_by) REFERENCES admin_users(id) ON DELETE SET NULL,
-    FOREIGN KEY (receipt_image_id) REFERENCES images(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- REMOVED (duplicate definition). This block used to declare a second
+-- client_projects-flavoured project_expenses (expense_category, TEXT
+-- description, approval_status, is_reimbursable, ...). It never reached any
+-- database, for the same reason as the project_tasks duplicate above: the
+-- FIRST definition (line ~886, tied to projects) is the one that is created.
+-- Note the two shapes disagree on the parent table (projects vs
+-- client_projects) and on the category/description columns, so the surviving
+-- definition is the one to build on. The application does not currently query
+-- project_expenses at all.
 
 -- =============================================
 -- Table: client_invoices
@@ -2233,3 +2218,6 @@ SELECT 'Brian Mwanza', 'Founder & Managing Director',
 '/images/brian-mwanza-ceo.jpg',
 0, TRUE
 WHERE NOT EXISTS (SELECT 1 FROM company_personnel WHERE name = 'Brian Mwanza');
+
+-- Re-enable referential integrity (see the matching SET near the top).
+SET FOREIGN_KEY_CHECKS = 1;

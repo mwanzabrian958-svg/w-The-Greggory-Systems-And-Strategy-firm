@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS user_projects (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Project Tasks (Execution Board)
 CREATE TABLE IF NOT EXISTS project_tasks (
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS project_tasks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
     FOREIGN KEY (project_id) REFERENCES user_projects(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. Project Activities (Live Data Relay)
 CREATE TABLE IF NOT EXISTS project_activities (
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS project_activities (
     message TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES user_projects(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. Project Invoices (Financial Ledger)
 CREATE TABLE IF NOT EXISTS project_invoices (
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS project_invoices (
     status ENUM('draft', 'pending', 'paid', 'overdue', 'cancelled') DEFAULT 'draft',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES user_projects(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. Project Documents (The Vault)
 CREATE TABLE IF NOT EXISTS project_docs (
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS project_docs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
     FOREIGN KEY (project_id) REFERENCES user_projects(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 6. User Feedback (Satisfaction Relays)
 CREATE TABLE IF NOT EXISTS user_feedback (
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS user_feedback (
     deleted_at TIMESTAMP NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (project_id) REFERENCES user_projects(id) ON DELETE SET NULL
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 7. Notifications (System Relays)
 CREATE TABLE IF NOT EXISTS notifications (
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     status ENUM('unread', 'read', 'archived') DEFAULT 'unread',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 8. Client Project Summary (Aggregated Telemetry)
 CREATE TABLE IF NOT EXISTS client_project_summary (
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS client_project_summary (
     client_rating DECIMAL(3,2) DEFAULT 5.00,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 9. Project Reports (The PDF Tables)
 CREATE TABLE IF NOT EXISTS project_reports (
@@ -144,4 +144,4 @@ CREATE TABLE IF NOT EXISTS project_reports (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
     FOREIGN KEY (project_id) REFERENCES user_projects(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

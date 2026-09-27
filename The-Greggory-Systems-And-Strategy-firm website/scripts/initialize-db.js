@@ -10,7 +10,7 @@ const DB_CONFIG = {
   password: process.env.DB_PASSWORD || '',
 };
 
-const SQL_FILE_PATH = path.join(__dirname, '../database/the-greggory-systems-and-strategy-firm-db-main.sql');
+const SQL_FILE_PATH = path.join(__dirname, '../The-Greggory-Systems-And-Strategy-firm-db-main/the-greggory-systems-and-strategy-firm-db-main.sql');
 
 async function initializeDatabase() {
   console.log('='.repeat(60));
@@ -56,6 +56,11 @@ async function initializeDatabase() {
 
     console.log(`Found ${statements.length} major blocks.`);
 
+    // Foreign key checks off for the import: the dump creates website_content
+    // (which references users) before users exists, so statement order alone
+    // would fail with errno 150. scripts/import-if-empty.js does the same.
+    await connection.query('SET FOREIGN_KEY_CHECKS = 0');
+
     for (let i = 0; i < statements.length; i++) {
       try {
         await connection.query(statements[i]);
@@ -64,6 +69,8 @@ async function initializeDatabase() {
         console.warn(`\n⚠️  Warning on block ${i + 1}:`, err.message);
       }
     }
+
+    await connection.query('SET FOREIGN_KEY_CHECKS = 1');
 
     await connection.end();
 

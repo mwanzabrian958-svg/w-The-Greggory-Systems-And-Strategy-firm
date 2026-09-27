@@ -63,10 +63,10 @@ const ProjectDetails = () => {
       if (data.success) {
         setFeedbackMsg('')
         setShowFeedbackModal(false)
-        alert('Anomaly relay synchronized')
+        setFeedbackMsg('Thanks — your report was received. We will follow up shortly.')
       }
-    } catch (err) {
-      console.error('Relay failure:', err)
+    } catch {
+      setFeedbackMsg('We could not send that report. Please try again.')
     } finally {
       setIsSubmittingFeedback(false)
     }
@@ -95,16 +95,20 @@ const ProjectDetails = () => {
       } else {
         setProject(null)
       }
-    } catch (error) {
-      console.error('Project telemetry failure:', error)
+    } catch {
+      setProject(null)
     } finally {
       setLoading(false)
     }
   }
 
   const handleDownload = (item, section) => {
-    console.log(`Downloading from ${section}:`, item)
-    // Add logic here
+    const url = item?.file_path || item?.url
+    if (!url) {
+      setFeedbackMsg('That file is not available for download yet.')
+      return
+    }
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   const handleViewDocument = (document) => {
@@ -118,11 +122,22 @@ const ProjectDetails = () => {
   }
 
   const getDocumentPreviewUrl = (document) => {
-    return document.file_path || '#'
+    return document.file_path || document.url || ''
   }
 
   const handleShare = (platform) => {
-    console.log(`Sharing project via ${platform}`)
+    const shareUrl = window.location.href
+    const text = project?.name ? `${project.name} — via The Greggory Systems And Strategy Firm` : 'A project via The Greggory Systems And Strategy Firm'
+    const encoded = encodeURIComponent(platform === 'email' ? `${text}\n${shareUrl}` : text)
+    const urlEncoded = encodeURIComponent(shareUrl)
+    const targets = {
+      whatsapp: `https://wa.me/?text=${encoded}%20${urlEncoded}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encoded}&url=${urlEncoded}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${urlEncoded}`,
+      email: `mailto:?subject=${encoded}&body=${urlEncoded}`,
+    }
+    const target = targets[platform]
+    if (target) window.open(target, '_blank', 'noopener,noreferrer')
     setShowShareModal(false)
   }
 
@@ -144,9 +159,9 @@ const ProjectDetails = () => {
           <div className="absolute inset-0 bg-gold-500/10 blur-[80px] rounded-full" />
           <div className="relative z-10 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[32px] p-10 shadow-2xl">
             <Layers className="h-16 w-16 text-slate-700 mx-auto mb-6" />
-            <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-4">Null Entity Detected</h2>
-            <p className="text-slate-400 font-medium leading-relaxed mb-8">The requested project node could not be found or access is restricted.</p>
-            <button onClick={() => navigate('/client-portal')} className="w-full py-4 bg-gold-500 text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-gold-400 transition-all">Return to Command Center</button>
+            <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-4">Project not found</h2>
+            <p className="text-slate-400 font-medium leading-relaxed mb-8">That project could not be found, or you no longer have access to it.</p>
+            <button onClick={() => navigate('/client-portal')} className="w-full py-4 bg-gold-500 text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-gold-400 transition-all">Back to my projects</button>
           </div>
         </div>
       </div>

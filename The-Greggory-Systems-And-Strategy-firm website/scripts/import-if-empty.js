@@ -1,4 +1,5 @@
-// Cloud bootstrap: imports database/the-*.sql once, if the cloud DB is empty.
+// Cloud bootstrap: imports the seed dump in The-Greggory-Systems-And-Strategy-firm-db-main/
+// once, if the cloud DB is empty.
 // Runs before server start in production (Render):
 //   node scripts/import-if-empty.js && node server.js
 //
@@ -96,7 +97,7 @@ async function connectWithRetry() {
       process.stdout.write(`[import] ${tableNames.length} tables exist - skipping import\n`);
       return;
     }
-    const dumpPath = path.join(__dirname, '..', 'database', 'the-greggory-systems-and-strategy-firm-db-main.sql');
+    const dumpPath = path.join(__dirname, '..', 'The-Greggory-Systems-And-Strategy-firm-db-main', 'the-greggory-systems-and-strategy-firm-db-main.sql');
     if (!fs.existsSync(dumpPath)) {
       process.stdout.write(`[import] dump not found at ${dumpPath} - skipping\n`);
       return;
