@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, ChevronRight, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
 import { SITE_NAME } from '../constants/siteBrand'
@@ -7,6 +7,29 @@ import { useSeo, SEO } from '../hooks/useSeo'
 const Home = () => {
   useSeo(SEO.home)
   const videoRef = useRef(null)
+
+  // ── Hero viewport math ──────────────────────────────────────────────
+  // The hero stacks BELOW two bars (sticky Navbar h-24/h-28 + SiteTagline),
+  // and the tagline wraps to 2-3 lines on a phone, so "one screen" for the
+  // hero is 100svh MINUS whatever sits above it. Without this subtraction
+  // the hero's bottom edge (and everything anchored to it: the phone
+  // headline/CTAs and the scroll cue) lands a full header-height below the
+  // fold at every viewport. Measure the real offset (it changes with width
+  // and font wrapping) and hand it to the section as --hero-top.
+  const heroRef = useRef(null)
+  const [heroTop, setHeroTop] = useState(0)
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      if (heroRef.current) {
+        setHeroTop(Math.round(heroRef.current.getBoundingClientRect().top + window.scrollY))
+      }
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    if (document.fonts?.ready) document.fonts.ready.then(measure).catch(() => {})
+    return () => window.removeEventListener('resize', measure)
+  }, [])
 
   const handleVideoTimeUpdate = () => {
     if (videoRef.current && videoRef.current.currentTime >= 43) {
@@ -60,12 +83,15 @@ const Home = () => {
           Phones get a DEDICATED portrait asset; tablet + PC keep the original
           landscape hero untouched.
 
-          Why: hero-phoenix.jpg is 1324x783 (1.69:1 landscape) and the section
-          is min-h-screen + object-cover. On a ~390x844 phone (0.46:1) the
-          browser matches by HEIGHT and discards ~62% of the width, slicing the
+          Why: hero-phoenix.jpg is 1324x783 (1.69:1 landscape) and the hero
+          box is object-cover. On a ~390x844 phone (0.46:1) the browser
+          matches by HEIGHT and discards ~62% of the width, slicing the
           phoenix's wings and the GREGGORY wordmark off the sides. The
           1080x1920 mobile asset is built from the same artwork by
           scripts/generate-mobile-hero.py with nothing cropped away.
+          object-top keeps that artwork (top ~37%) in view once the hero box
+          is shorter than the fold; >=641px switches to the landscape asset
+          and anchors it to the bottom so the wordmark survives the crop.
 
           Why <picture> and not utils/device.js: the browser picks the <source>
           BEFORE downloading. A JS approach would render the landscape image
@@ -79,7 +105,11 @@ const Home = () => {
           screen take the 720 one. Rebuild them with:
               python scripts/generate-mobile-hero.py
       */}
-      <section className="relative min-h-screen flex items-end overflow-hidden bg-[#030712]">
+      <section
+        ref={heroRef}
+        style={{ '--hero-top': `${heroTop}px` }}
+        className="relative min-h-[calc(100svh_-_var(--hero-top,0px))] min-[641px]:min-h-[calc(100svh_-_var(--hero-top,0px)_-_16rem)] flex items-end overflow-hidden bg-[#030712]"
+      >
         <div className="absolute inset-0">
           <picture>
             <source
@@ -88,8 +118,36 @@ const Home = () => {
               sizes="100vw"
               srcSet="/hero-phoenix-mobile-sm.jpg 720w, /hero-phoenix-mobile.jpg 1080w"
             />
-            <img src="/hero-phoenix.jpg" alt="Phoenix rising over a city skyline — The Greggory Systems And Strategy Firm" className="absolute inset-0 w-full h-full object-cover" fetchpriority="high" />
+            <img src="/hero-phoenix.jpg" alt="Phoenix rising over a city skyline — The Greggory Systems And Strategy Firm" className="absolute inset-0 w-full h-full object-cover object-top min-[641px]:object-bottom" fetchpriority="high" />
           </picture>
+        </div>
+
+        {/* Phones only. Guarantees text contrast over the artwork without
+            darkening a single pixel of the tablet/PC hero. */}
+        <div aria-hidden="true" className="sm:hidden absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-[#030712] via-[#030712]/92 to-transparent" />
+
+        {/* Phones only - a picture is not an invitation. The artwork can only
+            ever fill ~37% of a 9:16 frame (see generate-mobile-hero.py), so
+            on a phone the space below it carries the promise and a way to act
+            on it. This block is the mobile twin of the HEADLINE section below,
+            which is hidden under `sm` so the h1 is never rendered twice.
+
+            Deliberately no eyebrow (the header already carries the tagline)
+            and no stat row (the stats section below already renders them) -
+            both pushed this block up into the wordmark. */}
+        <div className="sm:hidden relative z-20 w-full px-5 pb-24">
+          {/* pb-24, not pb-10: FloatingWhatsApp is `fixed bottom-5 right-5`
+              at h-11 (44px), so it reaches 64px up the right edge. At pb-10
+              the body copy's last line sat underneath it on every phone.
+              96px clears the button with room to spare. Tablet/desktop never
+              render this block, and they do not need it - the FAB sits over
+              the image there, not over text. */}
+          <h1 className="text-[28px] font-black leading-[1.12] tracking-tight text-white">Strategic systems, <span className="text-gold-400">delivered and stood behind.</span></h1>
+          <p className="mt-2.5 text-[13px] leading-relaxed text-slate-300">We develop, maintain, upgrade and support the platforms your business depends on.</p>
+          <div className="mt-5 flex flex-col gap-2.5">
+            <Link to="/contact" className="inline-flex items-center justify-center gap-2 rounded-lg bg-gold-500 px-5 py-3.5 text-sm font-bold text-slate-950 shadow-lg shadow-gold-500/20 hover:bg-gold-400 transition-all active:scale-95">Start a project<ArrowRight className="w-4 h-4" /></Link>
+            <Link to="/services" className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 px-5 py-3.5 text-sm font-bold text-white backdrop-blur-sm hover:bg-white/15 transition-all active:scale-95">Explore services</Link>
+          </div>
         </div>
 
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 opacity-50">
@@ -98,12 +156,20 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── HEADLINE ── */}
-      <section className="relative bg-[#030712] pb-16 pt-6">
+      {/* ── HEADLINE ──
+          Desktop/tablet only. Under `sm` this is replaced by the hero copy
+          above, so the h1 is never rendered twice on a phone.
+
+          Spacing is deliberately tight (pt-2/mt-3/mt-5, not pt-6/mt-4/mt-6):
+          the hero above is trimmed by 16rem so that THIS section - h1, copy
+          and both CTAs - lands entirely above the fold at 1440x900 and
+          820x1180. Every extra 8px of padding here is 8px the hero has to
+          give back from the phoenix. */}
+      <section className="relative hidden sm:block bg-[#030712] pb-16 pt-2">
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">Strategic systems, delivered <span className="text-gold-400">and stood behind.</span></h1>
-          <p className="mt-4 max-w-2xl mx-auto text-sm sm:text-base text-slate-300 leading-relaxed">We develop, maintain, upgrade, and support the projects, systems, and platforms our clients depend on — for individuals and organizations, for-profit and non-profit, across every industry.</p>
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <p className="mt-3 max-w-2xl mx-auto text-sm sm:text-base text-slate-300 leading-relaxed">We develop, maintain, upgrade, and support the projects, systems, and platforms our clients depend on — for individuals and organizations, for-profit and non-profit, across every industry.</p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <Link to="/contact" className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-lg shadow-gold-500/10 hover:bg-gold-400 transition-all active:scale-95">Start a project<ArrowRight className="w-4 h-4" /></Link>
             <Link to="/services" className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-5 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all">Explore services</Link>
           </div>
