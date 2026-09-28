@@ -27,7 +27,8 @@ services:
     # devDependencies, so vite would be missing and `npm run build` would fail
     # with "vite: not found".
     buildCommand: npm install --no-audit --no-fund --include=dev && npm run build
-    # import-if-empty seeds the cloud MySQL once (from database/*.sql), then
+    # import-if-empty seeds the cloud MySQL once (from the
+    # The-Greggory-Systems-And-Strategy-firm-db-main/ seed dump), then
     # sync-db-schema adds the tables the seed dump doesn't carry (currencies,
     # properties, knowledge_base, auth_*, etc. — see database/schema-sync.json).
     # Both are idempotent and exit 0 even on error, so they never block boot.
@@ -57,9 +58,12 @@ services:
       - key: DB_PASSWORD
         sync: false
       - key: DB_NAME
-        # Same name as the local XAMPP/phpMyAdmin database so dev == prod.
-        # import-if-empty.js auto-creates it on the cloud MySQL on first boot.
-        value: the_greggory_systems_and_strategy_firm_db_main
+        # `sync: false` on purpose. A hardcoded `value:` here OVERRIDES whatever
+        # is entered in the Render dashboard, and this one was pinned to the old
+        # local XAMPP database name, which does not exist on the cloud host —
+        # every request then failed with ER_BAD_DB_ERROR while the dashboard
+        # showed a perfectly good value. Set the name in the dashboard instead.
+        sync: false
       # ---- Auth / sessions (copy from local .env) ----
       - key: JWT_SECRET
         sync: false
