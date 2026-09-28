@@ -16,11 +16,17 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # App lives in this subdirectory of the repo (keep the source layout intact).
-COPY "The-Greggory-Systems-And-Strategy-firm website/package.json" ./package.json
-COPY "The-Greggory-Systems-And-Strategy-firm website/package-lock.json" ./package-lock.json
+#
+# NOTE on quoting: the folder name contains a SPACE. Docker's COPY parses a
+# double-quoted path as the JSON exec form, so COPY "dir with space/..." fails
+# with: failed to process "\"dir with space": unexpected end of statement while
+# looking for matching double-quote. The correct form is the shell form with the
+# space backslash-escaped, which is what these lines use.
+COPY The-Greggory-Systems-And-Strategy-firm\ website/package.json ./package.json
+COPY The-Greggory-Systems-And-Strategy-firm\ website/package-lock.json ./package-lock.json
 RUN npm install --no-audit --no-fund --include=dev
 
-COPY "The-Greggory-Systems-And-Strategy-firm website/" ./
+COPY The-Greggory-Systems-And-Strategy-firm\ website/ ./
 RUN npm run build && rm -rf node_modules
 
 # -----------------------------------------------------------------------------
@@ -34,6 +40,11 @@ COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/server.js ./server.js
 COPY --from=build /app/server ./server
 COPY --from=build /app/backend ./backend
+# The seed dump moved out of database/ into its own folder. Both bootstrap
+# scripts (import-if-empty.js, sync-db-schema.js) resolve the dump from
+# ../The-Greggory-Systems-And-Strategy-firm-db-main, so the WHOLE folder must be
+# present in the runtime image or the first boot cannot seed the cloud database.
+COPY --from=build /app/The-Greggory-Systems-And-Strategy-firm-db-main ./The-Greggory-Systems-And-Strategy-firm-db-main
 COPY --from=build /app/database ./database
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/dist ./dist
