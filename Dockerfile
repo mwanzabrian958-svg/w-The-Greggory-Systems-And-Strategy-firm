@@ -17,16 +17,21 @@ ENV NODE_ENV=production
 
 # App lives in this subdirectory of the repo (keep the source layout intact).
 #
-# NOTE on quoting: the folder name contains a SPACE. Docker's COPY parses a
-# double-quoted path as the JSON exec form, so COPY "dir with space/..." fails
-# with: failed to process "\"dir with space": unexpected end of statement while
-# looking for matching double-quote. The correct form is the shell form with the
-# space backslash-escaped, which is what these lines use.
-COPY The-Greggory-Systems-And-Strategy-firm\ website/package.json ./package.json
-COPY The-Greggory-Systems-And-Strategy-firm\ website/package-lock.json ./package-lock.json
+# NOTE: the folder name contains a SPACE, which requires the JSON array form.
+# Two other forms were tried and both fail under BuildKit:
+#   COPY "dir with space/x"  -> "unexpected end of statement while looking for
+#                               matching double-quote" (a quoted source is read
+#                               as the JSON exec form, so the space breaks it)
+#   COPY dir\ with\ space/x  -> "not found: /dir-with-space" (COPY is not a
+#                               shell, so the backslash is treated as a path
+#                               separator rather than an escape character)
+# The JSON array form passes each path as ONE string and is the documented way
+# to handle spaces.
+COPY ["The-Greggory-Systems-And-Strategy-firm website/package.json", "./package.json"]
+COPY ["The-Greggory-Systems-And-Strategy-firm website/package-lock.json", "./package-lock.json"]
 RUN npm install --no-audit --no-fund --include=dev
 
-COPY The-Greggory-Systems-And-Strategy-firm\ website/ ./
+COPY ["The-Greggory-Systems-And-Strategy-firm website/", "./"]
 RUN npm run build && rm -rf node_modules
 
 # -----------------------------------------------------------------------------
