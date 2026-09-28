@@ -39,8 +39,14 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
+      # NOT hardcoded on purpose. This previously pinned the old local XAMPP
+      # database name, and because a `value:` in a Render blueprint OVERRIDES
+      # whatever is entered in the dashboard, it silently pointed the service at
+      # a database that does not exist on the cloud host (ER_BAD_DB_ERROR on
+      # every request). Keep it `sync: false` so the dashboard is the one place
+      # the database name is set.
       - key: DB_NAME
-        value: the_greggory_systems_and_strategy_firm_db_main
+        sync: false
       # Required: managed/remote MySQL REQUIRES TLS (see server/config/dbEndpoints.js)
       - key: DB_SSL
         value: "true"
