@@ -39,6 +39,14 @@ dist-ssr
 # AI/editor agent local config
 .kilo/
 
+# Python caches / generated previews
+__pycache__/
+
+# Hero fold-verification scratch & screenshots
+The-Greggory-Systems-And-Strategy-firm website/_dbg.mjs
+The-Greggory-Systems-And-Strategy-firm website/hero-check/
+scripts/_preview/
+
 # NOTE: "The-Greggory-Systems-And-Strategy-firm website/package-lock.json" is
 # intentionally NOT ignored anymore: Render builds via `npm --prefix` from this
 # lockfile (which pins vite + daisyUI). Keeping it in git makes deploys
