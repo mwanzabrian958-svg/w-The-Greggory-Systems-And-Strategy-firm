@@ -58,6 +58,33 @@ const MPESA_REQUIRED = {
   updated_by: "BIGINT",
 };
 
+// Columns the application code requires on `users`, independent of manifest
+// freshness — the same list capture() folds into the manifest.
+//
+// WHY THIS EXISTS: the committed manifest was captured before these columns
+// existed, and a fresh cloud DB is seeded from the SQL dump (which lacks them).
+// register does `INSERT INTO users (... auth_token ...)`, login does
+// `UPDATE users SET auth_token = ? ...`, and authenticateUser/clientAuth read
+// that column as the legacy token fallback — so a users table without it
+// answers EVERY signup and every login with
+//   500 {"success":false,"message":"Unknown column 'auth_token' in 'field list'"}
+// Adding them here means the boot-time sync heals that on any database it is
+// pointed at, instead of only on the dev machine that ran --capture.
+const USERS_CODE_COLUMNS = {
+  name: "users",
+  columns: [
+    { name: "auth_token", def: "varchar(255)" },
+    { name: "last_login_at", def: "timestamp NULL" },
+    { name: "last_login_ip", def: "varchar(45)" },
+    { name: "primary_role", def: "varchar(50)" },
+    { name: "role", def: "varchar(50)" },
+    { name: "phone_number", def: "varchar(20)" },
+    { name: "profile_photo_blob", def: "longblob" },
+    { name: "profile_photo_mime_type", def: "varchar(100)" },
+    { name: "profile_photo_file_name", def: "varchar(255)" },
+  ],
+};
+
 // Pick the endpoint that will actually receive the manifest, and remember it
 // for the rest of the run. Cached so we don't re-probe each call.
 //
@@ -180,25 +207,9 @@ async function capture() {
     tables[name] = { create: ddl, columns };
   }
   await conn.end();
-  // Code-required users columns (auth_token + last_login_at/ip). Mirror the
-  // same list used by backend/config/database.js and sync-db-schema.js's
-  // apply() step below so register/login can store/verify persistent tokens
-  // even when the manifest source is stale or the cloud users table was
-  // created before these columns existed.
-  const USERS_CODE_COLUMNS = {
-    name: "users",
-    columns: [
-      { name: "auth_token", def: "varchar(255)" },
-      { name: "last_login_at", def: "timestamp NULL" },
-      { name: "last_login_ip", def: "varchar(45)" },
-      { name: "primary_role", def: "varchar(50)" },
-      { name: "role", def: "varchar(50)" },
-      { name: "phone_number", def: "varchar(20)" },
-      { name: "profile_photo_blob", def: "longblob" },
-      { name: "profile_photo_mime_type", def: "varchar(100)" },
-      { name: "profile_photo_file_name", def: "varchar(255)" },
-    ],
-  };
+  // Code-required users columns are declared once at module scope
+  // (USERS_CODE_COLUMNS) and used by BOTH this capture step and apply(), so a
+  // manifest can never be written without the columns apply() would add.
   if (USERS_CODE_COLUMNS.columns) {
     const existingCols = new Set((tables["users"] && tables["users"].columns || []).map((c) => c.name));
     for (const col of USERS_CODE_COLUMNS.columns) {
@@ -283,6 +294,22 @@ async function apply() {
     }
   } catch (e) {
     if (!/doesn't exist/i.test(e.message)) errors.push(`mpesa_transactions: ${e.message}`);
+  }
+  // Code-required users columns, independent of manifest freshness — same list
+  // capture() folds into the manifest. Without this, a users table provisioned
+  // from the SQL dump has no auth_token and every register/login answers 500
+  // "Unknown column 'auth_token' in 'field list'" (the exact failure this fixes:
+  // signup and sign-in were both dead on the cloud DB until the column existed).
+  try {
+    const [c] = await conn.query("SHOW COLUMNS FROM `users`");
+    const have = new Set(c.map((r) => r.Field));
+    for (const col of USERS_CODE_COLUMNS.columns) {
+      if (have.has(col.name)) continue;
+      await conn.query(`ALTER TABLE \`users\` ADD COLUMN \`${col.name}\` ${col.def}`);
+      addedCols++;
+    }
+  } catch (e) {
+    errors.push(`users: ${e.message}`);
   }
   await conn.query("SET FOREIGN_KEY_CHECKS = 1");
   await conn.end();
