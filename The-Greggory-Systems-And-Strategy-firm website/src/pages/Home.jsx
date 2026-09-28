@@ -56,10 +56,40 @@ const Home = () => {
 
   return (
     <div className="relative min-h-screen bg-white text-slate-900 overflow-x-hidden antialiased">
-      {/* ── HERO ── */}
+      {/* ── HERO ──
+          Phones get a DEDICATED portrait asset; tablet + PC keep the original
+          landscape hero untouched.
+
+          Why: hero-phoenix.jpg is 1324x783 (1.69:1 landscape) and the section
+          is min-h-screen + object-cover. On a ~390x844 phone (0.46:1) the
+          browser matches by HEIGHT and discards ~62% of the width, slicing the
+          phoenix's wings and the GREGGORY wordmark off the sides. The
+          1080x1920 mobile asset is built from the same artwork by
+          scripts/generate-mobile-hero.py with nothing cropped away.
+
+          Why <picture> and not utils/device.js: the browser picks the <source>
+          BEFORE downloading. A JS approach would render the landscape image
+          first, fetch 111 KB, then swap and fetch again — the exact jank this
+          avoids. The 640px cutoff is the project's own definition of "mobile"
+          (getDeviceCategory in utils/device.js) and Tailwind's `sm`, so the
+          hero, the device classes and the CSS breakpoints all agree.
+
+          The two mobile files are the same composition at different weights;
+          srcSet lets a 2x handset take the 1080 one and a low-DPR/small
+          screen take the 720 one. Rebuild them with:
+              python scripts/generate-mobile-hero.py
+      */}
       <section className="relative min-h-screen flex items-end overflow-hidden bg-[#030712]">
         <div className="absolute inset-0">
-          <img src="/hero-phoenix.jpg" alt="Phoenix rising over a city skyline — The Greggory Systems And Strategy Firm" className="absolute inset-0 w-full h-full object-cover" fetchpriority="high" />
+          <picture>
+            <source
+              media="(max-width: 640px)"
+              type="image/jpeg"
+              sizes="100vw"
+              srcSet="/hero-phoenix-mobile-sm.jpg 720w, /hero-phoenix-mobile.jpg 1080w"
+            />
+            <img src="/hero-phoenix.jpg" alt="Phoenix rising over a city skyline — The Greggory Systems And Strategy Firm" className="absolute inset-0 w-full h-full object-cover" fetchpriority="high" />
+          </picture>
         </div>
 
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 opacity-50">
