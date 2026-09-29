@@ -223,6 +223,53 @@ const authenticateAdmin = (req, res, next) => {
   next();
 };
 
+// ── Either-side auth ─────────────────────────────────────────────────
+// Accepts an admin session first, else a client JWT/session token — for the
+// routes the admin console AND the client portal both legitimately call
+// (invoice reads, project writes). Rejects strangers before any query runs,
+// sets req.authRole = "admin" | "user" so handlers can scope rows.
+const authenticateAny = async (req, res, next) => {
+  const raw = String(
+    req.headers.authorization || req.header("x-auth-token") || req.query.token || req.body?.token || ""
+  ).trim();
+  const m = raw.match(/^Bearer\s+(.+)$/i);
+  const token = (m ? m[1] : raw).trim();
+  const adminPayload = token ? verifyAdminSessionToken(token) : null;
+  if (adminPayload) {
+    req.adminId = adminPayload.uid;
+    req.user = { id: adminPayload.uid };
+    req.authRole = "admin";
+    return next();
+  }
+  await authenticateUser(req, res, () => {
+    req.authRole = "user";
+    next();
+  });
+};
+
+// Client scoping for the invoices table: a row is theirs when they are
+// stamped on it (created_by / client_email) or it sits on one of their
+// projects. Admins bypass this entirely. Never throws — denies on doubt.
+const invoiceBelongsToUser = async (row, userId) => {
+  try {
+    if (!row || !userId) return false;
+    if (Number(row.created_by) === Number(userId)) return true;
+    const [me] = await mainDb.query(
+      "SELECT email FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1",
+      [userId]
+    );
+    const email = me.length ? String(me[0].email || "").toLowerCase() : "";
+    if (email && String(row.client_email || "").toLowerCase() === email) return true;
+    const [links] = await mainDb.query(
+      "SELECT 1 FROM user_projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1",
+      [row.project_id, userId]
+    );
+    return links.length > 0;
+  } catch {
+    return false;
+  }
+};
+
 const logDataAccess = async (req, entityType, entityId, action = 'view') => {
   try {
     const classificationId = req.headers['x-data-classification'] ? parseInt(req.headers['x-data-classification']) : null;
@@ -2382,9 +2429,20 @@ app.get("/api/users/projects", authenticateUser, async (req, res) => {
 });
 
 // Project Photos API
-app.get("/api/projects/:id/photos", async (req, res) => {
+// Project photos carry client imagery — reads are shared (scoped for
+// clients), writes are gated with the same project-ownership check.
+app.get("/api/projects/:id/photos", authenticateAny, async (req, res) => {
   try {
     const projectId = req.params.id;
+    if (req.authRole === "user") {
+      const [own] = await mainDb.query(
+        "SELECT user_id FROM user_projects WHERE id = ? AND deleted_at IS NULL",
+        [projectId]
+      );
+      if (!own.length || Number(own[0].user_id) !== Number(req.userId)) {
+        return res.status(403).json({ success: false, message: "Not your project" });
+      }
+    }
 
     const query = `
       SELECT id, photo_type, title, description, file_name, file_type, file_size,
@@ -2425,12 +2483,22 @@ app.get("/api/projects/:id/photos", async (req, res) => {
 
 app.post(
   "/api/projects/:id/photos",
+  authenticateAny,
   upload.single("photo"),
   async (req, res) => {
     try {
       const projectId = req.params.id;
+      if (req.authRole === "user") {
+        const [own] = await mainDb.query(
+          "SELECT user_id FROM user_projects WHERE id = ? AND deleted_at IS NULL",
+          [projectId]
+        );
+        if (!own.length || Number(own[0].user_id) !== Number(req.userId)) {
+          return res.status(403).json({ success: false, message: "Not your project" });
+        }
+      }
       const { title, description, photo_type = "progress" } = req.body;
-      const userId = req.user?.id || 1; // Default to user 1 for demo
+      const userId = req.authRole === "user" ? req.userId : (req.user?.id || 1); // Default to user 1 for demo
 
       if (!req.file) {
         return res.status(400).json({
@@ -2493,9 +2561,18 @@ app.post(
   },
 );
 
-app.delete("/api/projects/:id/photos/:photoId", async (req, res) => {
+app.delete("/api/projects/:id/photos/:photoId", authenticateAny, async (req, res) => {
   try {
     const { id: projectId, photoId } = req.params;
+    if (req.authRole === "user") {
+      const [own] = await mainDb.query(
+        "SELECT user_id FROM user_projects WHERE id = ? AND deleted_at IS NULL",
+        [projectId]
+      );
+      if (!own.length || Number(own[0].user_id) !== Number(req.userId)) {
+        return res.status(403).json({ success: false, message: "Not your project" });
+      }
+    }
 
     // Check if photo exists and belongs to project
     const photoQuery = `
@@ -2531,7 +2608,7 @@ app.delete("/api/projects/:id/photos/:photoId", async (req, res) => {
 });
 
 // Accounting Management APIs
-app.get("/api/accounting/entries", async (req, res) => {
+app.get("/api/accounting/entries", authenticateAdmin, async (req, res) => {
   try {
     const {
       project_id,
@@ -2571,11 +2648,13 @@ app.get("/api/accounting/entries", async (req, res) => {
       params.push(payment_status);
     }
 
-    query +=
-      " ORDER BY ae.transaction_date DESC, ae.created_at DESC LIMIT ? OFFSET ?";
-    params.push(parseInt(limit), parseInt(offset));
+    // mysql2 prepared statements cannot bind LIMIT/OFFSET on this server
+    // (ER_WRONG_ARGUMENTS 1210) — inline sanitized integers instead.
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 500);
+    const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
+    query += ` ORDER BY ae.transaction_date DESC, ae.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
-    const [entries] = await db.execute(query, params);
+    const [entries] = await mainDb.query(query, params);
 
     res.json({
       success: true,
@@ -2594,7 +2673,7 @@ app.get("/api/accounting/entries", async (req, res) => {
   }
 });
 
-app.post("/api/accounting/entries", async (req, res) => {
+app.post("/api/accounting/entries", authenticateAdmin, async (req, res) => {
   try {
     const {
       entry_type,
@@ -2622,9 +2701,12 @@ app.post("/api/accounting/entries", async (req, res) => {
       receipt_id,
       contract_id,
       client_email
-    } = req.body;
+    } = req.body || {};
 
-    const userId = req.user?.id || (await getFirstUserId()) || 1; // Default to first real user for demo
+    // Admin id can't feed the users(id) FK directly, so attribute to the
+    // first real user when the session has no users row — same as before,
+    // but never to an arbitrary caller-supplied value.
+    const userId = req.user?.id || (await getFirstUserId()) || 1;
     const resolvedProjectId = await resolveAccountingProjectId(project_id);
 
     // Defensive defaults — no bind parameter may ever be `undefined`
@@ -2692,7 +2774,7 @@ app.post("/api/accounting/entries", async (req, res) => {
   }
 });
 
-app.delete("/api/accounting/entries/:id", async (req, res) => {
+app.delete("/api/accounting/entries/:id", authenticateAdmin, async (req, res) => {
   try {
     const entryId = req.params.id;
 
@@ -2700,8 +2782,8 @@ app.delete("/api/accounting/entries/:id", async (req, res) => {
     // canonical schema it is FK-constrained to users(id), so recording an
     // admin_users id here raises ER_NO_REFERENCED_ROW_2 and the delete 500s
     // (matching the modular backend routes, which set deleted_at only).
-    await db.execute(
-      "UPDATE accounting_entries SET deleted_at = NOW() WHERE id = ?",
+    await mainDb.query(
+      "UPDATE accounting_entries SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL",
       [entryId],
     );
 
@@ -3351,7 +3433,11 @@ app.get("/api/financial/reports", async (req, res) => {
 });
 
 // Invoice Management APIs
-app.get("/api/invoices", async (req, res) => {
+// READ is shared by the admin console AND the portal billing tab, so either
+// valid session passes — but a client only ever sees their own rows (rows
+// they created, emailed to them, or sitting on their projects). Admins see
+// everything. Strangers are rejected before the query runs.
+app.get("/api/invoices", authenticateAny, async (req, res) => {
   try {
     const {
       project_id,
@@ -3370,6 +3456,21 @@ app.get("/api/invoices", async (req, res) => {
       WHERE i.deleted_at IS NULL
     `;
     const params = [];
+
+    if (req.authRole === "user") {
+      const [me] = await mainDb.query(
+        "SELECT email FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1",
+        [req.userId]
+      );
+      if (!me.length) {
+        return res.status(401).json({ success: false, message: "Authentication required" });
+      }
+      query += ` AND (i.created_by = ? OR i.client_email = ? OR EXISTS (
+        SELECT 1 FROM user_projects up
+        WHERE up.id = i.project_id AND up.user_id = ? AND up.deleted_at IS NULL
+      ))`;
+      params.push(req.userId, me[0].email, req.userId);
+    }
 
     if (project_id) {
       query += " AND i.project_id = ?";
@@ -3408,7 +3509,7 @@ app.get("/api/invoices", async (req, res) => {
   }
 });
 
-app.delete("/api/invoices/:id", async (req, res) => {
+app.delete("/api/invoices/:id", authenticateAdmin, async (req, res) => {
   try {
     const invoiceId = req.params.id;
 
@@ -3435,7 +3536,11 @@ app.delete("/api/invoices/:id", async (req, res) => {
 });
 
 // M-Pesa Payment APIs
-app.get("/api/mpesa/transactions", async (req, res) => {
+// Admin console only (Financial.jsx / ManualEntry.jsx via apiCall Bearer).
+// The full transaction ledger, PII joins and status writes must never be
+// anonymous. Daraja webhook traffic (/callback) and STK push (/stkpush) stay
+// public on purpose — Safaricom posts callbacks without auth.
+app.get("/api/mpesa/transactions", authenticateAdmin, async (req, res) => {
   try {
     const {
       invoice_id,
@@ -3490,7 +3595,7 @@ app.get("/api/mpesa/transactions", async (req, res) => {
   }
 });
 
-app.post("/api/mpesa/transactions", async (req, res) => {
+app.post("/api/mpesa/transactions", authenticateAdmin, async (req, res) => {
   try {
     const {
       invoice_id,
@@ -3554,7 +3659,7 @@ app.post("/api/mpesa/transactions", async (req, res) => {
   }
 });
 
-app.put("/api/mpesa/transactions/:id", async (req, res) => {
+app.put("/api/mpesa/transactions/:id", authenticateAdmin, async (req, res) => {
   try {
     const transactionId = req.params.id;
     const userId = req.user?.id || 1;
@@ -4219,28 +4324,59 @@ app.get("/api/quotes/:quoteId/activities", async (req, res) => {
 });
 
 // Document Management APIs
-app.get("/api/documents/:type/:id/pdf", async (req, res) => {
+// Invoice/quote/receipt PDFs carry PII + money — require a session, and a
+// client may only render their own rows (invoices via invoiceBelongsToUser,
+// quotes via client_email/client_id, receipts via user_id/client_id).
+// `?token=` is honored so authenticated <a> downloads work (anchor tags
+// can't set headers) — authenticateAny already reads it; getPdfUrl()
+// appends it automatically.
+app.get("/api/documents/:type/:id/pdf", authenticateAny, async (req, res) => {
   try {
     const { type, id } = req.params;
+    const allowedTypes = new Set(["invoices", "quotes", "receipt", "transactions"]);
+    if (!allowedTypes.has(type)) {
+      return res.status(400).json({ success: false, message: "Unsupported document type" });
+    }
     let document = null;
 
     // Get document based on type
     if (type === "invoices") {
-      const [docs] = await db.execute("SELECT * FROM invoices WHERE id = ?", [
+      const [docs] = await mainDb.query("SELECT * FROM invoices WHERE id = ? AND deleted_at IS NULL", [
         id,
       ]);
       document = docs[0];
+      if (document && req.authRole === "user") {
+        const ok = await invoiceBelongsToUser(document, req.userId);
+        if (!ok) return res.status(403).json({ success: false, message: "Not your invoice" });
+      }
     } else if (type === "quotes") {
-      const [docs] = await db.execute("SELECT * FROM quotes WHERE id = ?", [
+      const [docs] = await mainDb.query("SELECT * FROM quotes WHERE id = ?", [
         id,
       ]);
       document = docs[0];
+      if (document && req.authRole === "user") {
+        const [me] = await mainDb.query(
+          "SELECT email FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1",
+          [req.userId]
+        );
+        const email = me.length ? String(me[0].email || "").toLowerCase() : "";
+        const mine =
+          Number(document.client_id) === Number(req.userId) ||
+          (email && String(document.client_email || "").toLowerCase() === email);
+        if (!mine) return res.status(403).json({ success: false, message: "Not your quote" });
+      }
     } else if (type === "receipt" || type === "transactions") {
-      const [docs] = await db.execute(
+      const [docs] = await mainDb.query(
         "SELECT * FROM mpesa_transactions WHERE id = ?",
         [id],
       );
       document = docs[0];
+      if (document && req.authRole === "user") {
+        const mine =
+          Number(document.user_id) === Number(req.userId) ||
+          Number(document.client_id) === Number(req.userId);
+        if (!mine) return res.status(403).json({ success: false, message: "Not your receipt" });
+      }
     }
 
     if (!document) {
@@ -4313,28 +4449,53 @@ app.get("/api/users/my-invoices/:id/pdf", authenticateUser, async (req, res) => 
   }
 });
 
-app.post("/api/documents/generate/:type/:id", async (req, res) => {
+app.post("/api/documents/generate/:type/:id", authenticateAny, async (req, res) => {
   try {
     const { type, id } = req.params;
+    const allowedTypes = new Set(["invoices", "quotes", "receipt", "transactions"]);
+    if (!allowedTypes.has(type)) {
+      return res.status(400).json({ success: false, message: "Unsupported document type" });
+    }
     let document = null;
 
     // Get document based on type
     if (type === "invoices") {
-      const [docs] = await db.execute("SELECT * FROM invoices WHERE id = ?", [
+      const [docs] = await mainDb.query("SELECT * FROM invoices WHERE id = ? AND deleted_at IS NULL", [
         id,
       ]);
       document = docs[0];
+      if (document && req.authRole === "user") {
+        const ok = await invoiceBelongsToUser(document, req.userId);
+        if (!ok) return res.status(403).json({ success: false, message: "Not your invoice" });
+      }
     } else if (type === "quotes") {
-      const [docs] = await db.execute("SELECT * FROM quotes WHERE id = ?", [
+      const [docs] = await mainDb.query("SELECT * FROM quotes WHERE id = ?", [
         id,
       ]);
       document = docs[0];
+      if (document && req.authRole === "user") {
+        const [me] = await mainDb.query(
+          "SELECT email FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1",
+          [req.userId]
+        );
+        const email = me.length ? String(me[0].email || "").toLowerCase() : "";
+        const mine =
+          Number(document.client_id) === Number(req.userId) ||
+          (email && String(document.client_email || "").toLowerCase() === email);
+        if (!mine) return res.status(403).json({ success: false, message: "Not your quote" });
+      }
     } else if (type === "receipt" || type === "transactions") {
-      const [docs] = await db.execute(
+      const [docs] = await mainDb.query(
         "SELECT * FROM mpesa_transactions WHERE id = ?",
         [id],
       );
       document = docs[0];
+      if (document && req.authRole === "user") {
+        const mine =
+          Number(document.user_id) === Number(req.userId) ||
+          Number(document.client_id) === Number(req.userId);
+        if (!mine) return res.status(403).json({ success: false, message: "Not your receipt" });
+      }
     }
 
     if (!document) {
@@ -4346,12 +4507,12 @@ app.post("/api/documents/generate/:type/:id", async (req, res) => {
 
     // Update PDF generation status
     if (type === "invoices") {
-      await db.execute(
+      await mainDb.query(
         "UPDATE invoices SET pdf_generated = TRUE, pdf_generated_at = NOW() WHERE id = ?",
         [id],
       );
     } else if (type === "quotes") {
-      await db.execute(
+      await mainDb.query(
         "UPDATE quotes SET pdf_generated = TRUE, pdf_generated_at = NOW() WHERE id = ?",
         [id],
       );
@@ -4552,22 +4713,26 @@ app.post("/api/documents/send", authenticateAdmin, async (req, res) => {
   }
 });
 
-app.get("/api/documents/client/:clientId", async (req, res) => {
+app.get("/api/documents/client/:clientId", authenticateAny, async (req, res) => {
   try {
     const { clientId } = req.params;
+    // A client may only pull their OWN vault; admins may pull anyone's.
+    if (req.authRole === "user" && Number(clientId) !== Number(req.userId)) {
+      return res.status(403).json({ success: false, message: "Not your documents" });
+    }
 
     // Get all documents for a client
-    const [invoices] = await db.execute(
+    const [invoices] = await mainDb.query(
       'SELECT *, "invoice" as type FROM invoices WHERE client_id = ? OR client_name IN (SELECT CONCAT(first_name, " ", last_name) FROM users WHERE id = ?)',
       [clientId, clientId],
     );
 
-    const [quotes] = await db.execute(
+    const [quotes] = await mainDb.query(
       'SELECT *, "quote" as type FROM quotes WHERE client_id = ? OR client_name IN (SELECT CONCAT(first_name, " ", last_name) FROM users WHERE id = ?)',
       [clientId, clientId],
     );
 
-    const [transactions] = await db.execute(
+    const [transactions] = await mainDb.query(
       'SELECT *, "receipt" as type FROM mpesa_transactions WHERE client_id = ? OR client_name IN (SELECT CONCAT(first_name, " ", last_name) FROM users WHERE id = ?)',
       [clientId, clientId],
     );
@@ -4589,22 +4754,33 @@ app.get("/api/documents/client/:clientId", async (req, res) => {
 });
 
 // Project Documents API
-app.get("/api/projects/:projectId/documents", async (req, res) => {
+// A client may only open documents for their OWN project; admins may open
+// any project's vault. Ownership is checked before any row is read.
+app.get("/api/projects/:projectId/documents", authenticateAny, async (req, res) => {
   try {
     const { projectId } = req.params;
+    if (req.authRole === "user") {
+      const [own] = await mainDb.query(
+        "SELECT user_id FROM user_projects WHERE id = ? AND deleted_at IS NULL",
+        [projectId]
+      );
+      if (!own.length || Number(own[0].user_id) !== Number(req.userId)) {
+        return res.status(403).json({ success: false, message: "Not your project" });
+      }
+    }
 
     // Get all documents related to this project
-    const [invoices] = await db.execute(
+    const [invoices] = await mainDb.query(
       'SELECT *, "invoice" as type FROM invoices WHERE project_id = ? AND deleted_at IS NULL',
       [projectId],
     );
 
-    const [quotes] = await db.execute(
+    const [quotes] = await mainDb.query(
       'SELECT *, "quote" as type FROM quotes WHERE project_id = ? AND deleted_at IS NULL',
       [projectId],
     );
 
-    const [transactions] = await db.execute(
+    const [transactions] = await mainDb.query(
       'SELECT *, "receipt" as type FROM mpesa_transactions WHERE project_id = ?',
       [projectId],
     );
@@ -4667,12 +4843,48 @@ async function fetchRecord(recordType, recordId) {
   }
 }
 
+// Ownership for completion-PDF record types: money/PII rows (invoices,
+// project_invoices, quotes, receipts) are scoped to the owning client;
+// project_docs/projects/tasks resolve through user_projects.user_id.
+// project_invoices rows ALSO expose user_id via the JOIN target in
+// invoiceBelongsToUser — here the row carries it directly. Admins bypass
+// (callers check authRole first). Never throws — denies on doubt.
+const completionRecordBelongsToUser = async (recordType, row, userId) => {
+  try {
+    if (!row || !userId) return false;
+    if (recordType === "invoices") return invoiceBelongsToUser(row, userId);
+    if (recordType === "project_invoices" || recordType === "project_docs") {
+      if (Number(row.client_id) === Number(userId)) return true;
+    }
+    if (recordType === "quotes") {
+      if (Number(row.client_id) === Number(userId)) return true;
+      const [me] = await mainDb.query(
+        "SELECT email FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1",
+        [userId]
+      );
+      const email = me.length ? String(me[0].email || "").toLowerCase() : "";
+      if (email && String(row.client_email || "").toLowerCase() === email) return true;
+    }
+    if (recordType === "accounting_entries") return false;
+    const pid = row.project_id ?? row.projectId;
+    if (pid == null) return false;
+    const [links] = await mainDb.query(
+      "SELECT 1 FROM user_projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1",
+      [pid, userId]
+    );
+    return links.length > 0;
+  } catch {
+    return false;
+  }
+};
+
 /** POST /api/pdf/generate-completion
  *  Body: { recordType: "invoices", recordId: 123, title?: "...", subtitle?: "..." }
  *  Returns: PDF buffer (Content-Type: application/pdf)
- *  Auth: admin required — anyone can download a completion PDF but admin logs the action
+ *  Auth: admin first, else the owning client — same ownership rules as the
+ *  GET shortcut below. Strangers are rejected before the record is read.
  */
-app.post("/api/pdf/generate-completion", async (req, res) => {
+app.post("/api/pdf/generate-completion", authenticateAny, async (req, res) => {
   try {
     const { recordType, recordId, title, subtitle } = req.body || {};
 
@@ -4695,6 +4907,10 @@ app.post("/api/pdf/generate-completion", async (req, res) => {
         success: false,
         message: `${recordType} record #${recordId} not found`,
       });
+    }
+    if (req.authRole === "user") {
+      const ok = await completionRecordBelongsToUser(recordType, record, req.userId);
+      if (!ok) return res.status(403).json({ success: false, message: "Not your record" });
     }
 
     // Generate the completion PDF
@@ -4734,7 +4950,11 @@ app.post("/api/pdf/generate-completion", async (req, res) => {
 });
 
 // GET shortcut for browser downloads (admin or user with own invoice)
-app.get("/api/pdf/completion/:recordType/:recordId", async (req, res) => {
+// Anchor tags can't send headers, so `?token=` carries the session —
+// authenticateAny already honors it, and the admin PDF helpers below
+// (getPdfUrl) append it automatically. A client id-guessing another
+// client's record gets 403, never bytes.
+app.get("/api/pdf/completion/:recordType/:recordId", authenticateAny, async (req, res) => {
   try {
     const { recordType, recordId } = req.params;
 
@@ -4752,6 +4972,10 @@ app.get("/api/pdf/completion/:recordType/:recordId", async (req, res) => {
         success: false,
         message: `${recordType} record #${recordId} not found`,
       });
+    }
+    if (req.authRole === "user") {
+      const ok = await completionRecordBelongsToUser(recordType, record, req.userId);
+      if (!ok) return res.status(403).json({ success: false, message: "Not your record" });
     }
 
     const pdfBuffer = await generateCompletionPdf(recordType, record, {});
@@ -5991,7 +6215,25 @@ app.get("/api/contact-forms", async (req, res) => {
 
 app.post("/api/contact-forms", async (req, res) => {
   try {
-    const form = req.body;
+    const form = req.body || {};
+    // Validate BEFORE touching the database: the table's NOT NULL columns
+    // must reject with 400 (what the Contact page renders inline), never 500,
+    // and the error must never include raw DB text.
+    const name = String(form.name || "").trim();
+    const email = String(form.email || "").trim();
+    const message = String(form.message || "").trim();
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide your name, email and message.",
+      });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "That email address doesn't look valid.",
+      });
+    }
     const [result] = await mainDb.query(
     // NOTE: keep column list in sync with the contact_forms schema —
     // the table has no preferred_contact column and the UI doesn't send one.
@@ -6009,10 +6251,11 @@ app.post("/api/contact-forms", async (req, res) => {
     res.json({ success: true, formId: result.insertId });
   } catch (error) {
     console.error("Error creating contact form:", error);
+    // Never leak DB internals: with the validation above, this path is
+    // genuinely unexpected, so 500 + a generic message is correct here.
     res.status(500).json({
       success: false,
-      message: "Error creating contact form",
-      error: error.message,
+      message: "Something went wrong sending your message. Please try again.",
     });
   }
 });
@@ -6691,8 +6934,21 @@ app.use((err, req, res, next) => {
 
 // Start server
 // User Projects API
-app.get("/api/user-projects", async (req, res) => {
+// READ is shared (admin console lists everything; the portal projects tab
+// lists only the caller's rows), so either valid session passes — clients
+// are scoped to user_id, strangers are rejected before the query runs.
+app.get("/api/user-projects", authenticateAny, async (req, res) => {
   try {
+    if (req.authRole === "user") {
+      const [rows] = await mainDb.query(`
+      SELECT up.*, u.display_name as client_name
+      FROM user_projects up
+      LEFT JOIN users u ON up.user_id = u.id
+      WHERE up.deleted_at IS NULL AND up.user_id = ?
+      ORDER BY up.created_at DESC
+    `, [req.userId]);
+      return res.json(rows);
+    }
     const [rows] = await mainDb.query(`
       SELECT up.*, u.display_name as client_name
       FROM user_projects up
@@ -6707,11 +6963,14 @@ app.get("/api/user-projects", async (req, res) => {
   }
 });
 
-app.get("/api/user-projects/:id", async (req, res) => {
+app.get("/api/user-projects/:id", authenticateAny, async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await mainDb.query('SELECT * FROM user_projects WHERE id = ? AND deleted_at IS NULL', [id]);
     if (rows.length === 0) return res.status(404).json({ error: 'Project not found' });
+    if (req.authRole === "user" && Number(rows[0].user_id) !== Number(req.userId)) {
+      return res.status(403).json({ error: "Not your project" });
+    }
     res.json(rows[0]);
   } catch (error) {
     console.error('Error fetching user project:', error);
@@ -6719,8 +6978,11 @@ app.get("/api/user-projects/:id", async (req, res) => {
   }
 });
 
-app.post("/api/user-projects", async (req, res) => {
+app.post("/api/user-projects", authenticateAny, async (req, res) => {
   try {
+    // A client session can only create under its own account — a spoofed
+    // user_id in the body is overwritten. Admins pass through untouched.
+    if (req.authRole === "user") req.body = { ...(req.body || {}), user_id: req.userId };
     const {
       user_id, project_name, project_description, project_type, status,
       priority, start_date, end_date, estimated_budget, actual_budget,
@@ -6760,9 +7022,22 @@ app.post("/api/user-projects", async (req, res) => {
   }
 });
 
-app.put("/api/user-projects/:id", async (req, res) => {
+app.put("/api/user-projects/:id", authenticateAny, async (req, res) => {
   try {
     const { id } = req.params;
+    if (req.authRole === "user") {
+      // Clients may touch only their own projects, and may never reassign
+      // ownership via the body.
+      const [own] = await mainDb.query(
+        "SELECT user_id FROM user_projects WHERE id = ? AND deleted_at IS NULL",
+        [id]
+      );
+      if (!own.length || Number(own[0].user_id) !== Number(req.userId)) {
+        return res.status(403).json({ error: "Not your project" });
+      }
+      req.body = { ...(req.body || {}) };
+      delete req.body.user_id;
+    }
     const {
       user_id, project_name, project_description, project_type, status,
       priority, start_date, end_date, estimated_budget, actual_budget,
@@ -6818,9 +7093,18 @@ app.put("/api/user-projects/:id", async (req, res) => {
   }
 });
 
-app.delete("/api/user-projects/:id", async (req, res) => {
+app.delete("/api/user-projects/:id", authenticateAny, async (req, res) => {
   try {
     const { id } = req.params;
+    if (req.authRole === "user") {
+      const [own] = await mainDb.query(
+        "SELECT user_id FROM user_projects WHERE id = ? AND deleted_at IS NULL",
+        [id]
+      );
+      if (!own.length || Number(own[0].user_id) !== Number(req.userId)) {
+        return res.status(403).json({ error: "Not your project" });
+      }
+    }
     const { deleted_by } = req.body;
     const [result] = await mainDb.query(
       'UPDATE user_projects SET deleted_at = NOW(), deleted_by = ?, updated_at = NOW() WHERE id = ? AND deleted_at IS NULL',
@@ -6959,21 +7243,42 @@ app.post("/api/admin/project-team/:projectId", async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
-// Project Tasks Create
-app.post("/api/projects/:projectId/tasks", async (req, res) => {
+// Project Tasks Create — admin console + portal share this route, so either
+// valid session passes; clients may only add tasks to their OWN projects.
+app.post("/api/projects/:projectId/tasks", authenticateAny, async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { task_name, assigned_to, status, priority } = req.body;
+    if (req.authRole === "user") {
+      const [own] = await mainDb.query(
+        "SELECT user_id FROM user_projects WHERE id = ? AND deleted_at IS NULL",
+        [projectId]
+      );
+      if (!own.length || Number(own[0].user_id) !== Number(req.userId)) {
+        return res.status(403).json({ error: "Not your project" });
+      }
+    }
+    const { task_name, assigned_to, status, priority } = req.body || {};
     if (!task_name) return res.status(400).json({ error: 'Task name required' });
     const [result] = await mainDb.query('INSERT INTO project_tasks (project_id, task_name, assigned_to, status, priority, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [projectId, task_name, assigned_to || null, status || 'not_started', priority || 'medium']);
     res.status(201).json({ success: true, id: result.insertId });
   } catch (error) { console.error('[POST /api/projects/:id/tasks]', error.code || '', error.message); res.status(500).json({ error: 'Failed', detail: error.message }); }
 });
 
-// Task Management APIs
-app.get("/api/projects/:projectId/tasks", async (req, res) => {
+// Task Management APIs — reads are shared (clients scoped to their own
+// projects); status/delete moves are admin-only so a client can never flip
+// or wipe another engagement's tasks by guessing ids.
+app.get("/api/projects/:projectId/tasks", authenticateAny, async (req, res) => {
   try {
     const { projectId } = req.params;
+    if (req.authRole === "user") {
+      const [own] = await mainDb.query(
+        "SELECT user_id FROM user_projects WHERE id = ? AND deleted_at IS NULL",
+        [projectId]
+      );
+      if (!own.length || Number(own[0].user_id) !== Number(req.userId)) {
+        return res.status(403).json({ success: false, message: "Not your project" });
+      }
+    }
     const [tasks] = await mainDb.query(
       `SELECT t.*, u.display_name as assigned_to_name
        FROM project_tasks t
@@ -6989,11 +7294,15 @@ app.get("/api/projects/:projectId/tasks", async (req, res) => {
   }
 });
 
-app.put("/api/tasks/:taskId/status", async (req, res) => {
+app.put("/api/tasks/:taskId/status", authenticateAdmin, async (req, res) => {
   try {
     const { taskId } = req.params;
-    const { status } = req.body;
-    await mainDb.query("UPDATE project_tasks SET status = ?, updated_at = NOW() WHERE id = ?", [status, taskId]);
+    const { status } = req.body || {};
+    const allowedStatuses = new Set(["not_started", "in_progress", "completed", "on_hold", "cancelled", "pending", "active"]);
+    if (!allowedStatuses.has(String(status))) {
+      return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+    await mainDb.query("UPDATE project_tasks SET status = ?, updated_at = NOW() WHERE id = ? AND deleted_at IS NULL", [status, taskId]);
     res.json({ success: true });
   } catch (error) {
     console.error("Error updating task status:", error);
@@ -7001,10 +7310,10 @@ app.put("/api/tasks/:taskId/status", async (req, res) => {
   }
 });
 
-app.delete("/api/tasks/:taskId", async (req, res) => {
+app.delete("/api/tasks/:taskId", authenticateAdmin, async (req, res) => {
   try {
     const { taskId } = req.params;
-    await mainDb.query("UPDATE project_tasks SET deleted_at = NOW() WHERE id = ?", [taskId]);
+    await mainDb.query("UPDATE project_tasks SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL", [taskId]);
     res.json({ success: true });
   } catch (error) {
     console.error("Error deleting task:", error);
@@ -7059,27 +7368,38 @@ app.delete("/api/company-personnel/:id", async (req, res) => {
 });
 
 // ── Invoice CRUD ────────────────────────────────────────────────────────────
-app.get("/api/invoices/:id", async (req, res) => {
+app.get("/api/invoices/:id", authenticateAny, async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await mainDb.query("SELECT * FROM invoices WHERE id=?", [id]);
+    const [rows] = await mainDb.query("SELECT * FROM invoices WHERE id=? AND deleted_at IS NULL", [id]);
     if (rows.length === 0) return res.status(404).json({ error: "Invoice not found" });
+    if (req.authRole === "user") {
+      const ok = await invoiceBelongsToUser(rows[0], req.userId);
+      if (!ok) return res.status(403).json({ success: false, message: "Not your invoice" });
+    }
     res.json({ success: true, ...rows[0] });
   } catch (e) {
     res.status(500).json({ error: "Failed" });
   }
 });
 
-app.put("/api/invoices/:id", async (req, res) => {
+app.put("/api/invoices/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const fields = req.body;
+    const [rows] = await mainDb.query("SELECT * FROM invoices WHERE id=? AND deleted_at IS NULL", [id]);
+    if (rows.length === 0) return res.status(404).json({ error: "Invoice not found" });
+    // Column whitelist: SQL identifiers cannot be bound as parameters, so
+    // only known descriptive columns may be updated — never ids, money,
+    // statuses or generated columns (those move via /:id/send and M-Pesa).
+    const ALLOWED = new Set(["title", "description", "due_date", "client_name", "client_email", "client_phone", "notes", "payment_terms"]);
     const sets = [];
     const vals = [];
-    for (const [k, v] of Object.entries(fields)) { sets.push(`${k}=?`); vals.push(v); }
+    for (const [k, v] of Object.entries(req.body || {})) {
+      if (ALLOWED.has(k)) { sets.push("`" + k + "`=?"); vals.push(v); }
+    }
     if (sets.length === 0) return res.status(400).json({ error: "No fields to update" });
     vals.push(id);
-    await mainDb.query(`UPDATE invoices SET ${sets.join(",")} WHERE id=?`, vals);
+    await mainDb.query(`UPDATE invoices SET ${sets.join(",")} WHERE id=? AND deleted_at IS NULL`, vals);
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: "Failed" });
@@ -7189,25 +7509,37 @@ app.put("/api/admin/project-invoices/:id", authenticateAdmin, async (req, res) =
 });
 
 // ── Accounting Entries CRUD ──────────────────────────────────────────────────
-app.get("/api/accounting/entries/:id", async (req, res) => {
+// Admin-only ledger: every read/write requires a valid admin session so the
+// money trail is never world-readable or world-writable. Column whitelist
+// keeps raw SQL interpolation impossible (identifiers can't be bound).
+const ACCOUNTING_ENTRY_ALLOWED = new Set([
+  "entry_type", "category", "subcategory", "amount", "tax_amount",
+  "currency", "exchange_rate", "transaction_date", "transaction_reference",
+  "payment_method", "payment_status", "description", "notes",
+  "budget_category", "budget_period", "is_billable", "billable_percentage",
+  "tax_rate", "tax_exempt", "tax_region", "project_id", "invoice_id",
+  "receipt_id", "contract_id", "client_email",
+]);
+app.get("/api/accounting/entries/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await mainDb.query("SELECT * FROM accounting_entries WHERE id=?", [id]);
+    const [rows] = await mainDb.query("SELECT * FROM accounting_entries WHERE id=? AND deleted_at IS NULL", [id]);
     if (rows.length === 0) return res.status(404).json({ error: "Entry not found" });
     res.json({ success: true, ...rows[0] });
   } catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
-app.put("/api/accounting/entries/:id", async (req, res) => {
+app.put("/api/accounting/entries/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const fields = req.body;
     const sets = [];
     const vals = [];
-    for (const [k, v] of Object.entries(fields)) { sets.push(`${k}=?`); vals.push(v); }
+    for (const [k, v] of Object.entries(req.body || {})) {
+      if (ACCOUNTING_ENTRY_ALLOWED.has(k)) { sets.push("`" + k + "`=?"); vals.push(v); }
+    }
     if (sets.length === 0) return res.status(400).json({ error: "No fields" });
     vals.push(id);
-    await mainDb.query(`UPDATE accounting_entries SET ${sets.join(",")} WHERE id=?`, vals);
+    await mainDb.query(`UPDATE accounting_entries SET ${sets.join(",")} WHERE id=? AND deleted_at IS NULL`, vals);
     res.json({ success: true });
     } catch (e) { res.status(500).json({ error: "Failed" }); }
 });
@@ -7221,7 +7553,8 @@ app.get("/api/admin/team", async (req, res) => {
 });
 
 // ── Admin Dashboard / Stats ──────────────────────────────────────────────────
-app.get("/api/admin/dashboard", async (req, res) => {
+// Aggregate user/project counts — admin eyes only.
+app.get("/api/admin/dashboard", authenticateAdmin, async (req, res) => {
   try {
     const [u] = await mainDb.query("SELECT COUNT(*) as total, SUM(CASE WHEN is_verified=1 THEN 1 ELSE 0 END) as verified, SUM(CASE WHEN is_active=1 THEN 1 ELSE 0 END) as live FROM users");
     const [p] = await mainDb.query("SELECT COUNT(*) as total, SUM(CASE WHEN status IN ('in-progress','active') THEN 1 ELSE 0 END) as active FROM user_projects WHERE deleted_at IS NULL");
@@ -7240,7 +7573,8 @@ app.get("/api/admin/dashboard", async (req, res) => {
 });
 
 // ── Pending Approvals ────────────────────────────────────────────────────────
-app.get("/api/admin/pending-approvals", async (req, res) => {
+// Change-request review queue — admin eyes only.
+app.get("/api/admin/pending-approvals", authenticateAdmin, async (req, res) => {
   try {
     // NOTE: rental `applications` table was purged — approvals now come from
     // admin change requests (invoices/project changes routed for review).
@@ -7250,7 +7584,9 @@ app.get("/api/admin/pending-approvals", async (req, res) => {
 });
 
 // ── Admin Projects All ────────────────────────────────────────────────────────
-app.get("/api/admin/projects/all", async (req, res) => {
+// Full project table dump for the admin console — admin eyes only (the
+// portal uses the scoped GET /api/user-projects instead).
+app.get("/api/admin/projects/all", authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await mainDb.query("SELECT * FROM user_projects WHERE deleted_at IS NULL ORDER BY created_at DESC");
     res.json({ success: true, projects: rows });
@@ -7258,7 +7594,8 @@ app.get("/api/admin/projects/all", async (req, res) => {
 });
 
 // ── Admin Activity Logs ──────────────────────────────────────────────────────
-app.get("/api/admin/activity-logs", async (req, res) => {
+// Internal audit trails — admin eyes only, never client-visible.
+app.get("/api/admin/activity-logs", authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await mainDb.query("SELECT * FROM admin_activity_logs ORDER BY created_at DESC LIMIT 100");
     res.json({ success: true, logs: rows });
@@ -7266,7 +7603,7 @@ app.get("/api/admin/activity-logs", async (req, res) => {
 });
 
 // ── Admin Audit Logs ────────────────────────────────────────────────────────
-app.get("/api/admin/audit-logs", async (req, res) => {
+app.get("/api/admin/audit-logs", authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await mainDb.query("SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 50");
     res.json({ success: true, logs: rows });
@@ -7274,7 +7611,7 @@ app.get("/api/admin/audit-logs", async (req, res) => {
 });
 
 // ── Admin Data Access Logs ───────────────────────────────────────────────────
-app.get("/api/admin/data-access-logs", async (req, res) => {
+app.get("/api/admin/data-access-logs", authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await mainDb.query("SELECT * FROM data_access_logs ORDER BY created_at DESC LIMIT 50");
     res.json({ success: true, logs: rows });
@@ -7282,7 +7619,8 @@ app.get("/api/admin/data-access-logs", async (req, res) => {
 });
 
 // ── Admin Settings ──────────────────────────────────────────────────────────
-app.get("/api/admin/settings", async (req, res) => {
+// Secrets-bearing config — admin session only for both read and write.
+app.get("/api/admin/settings", authenticateAdmin, async (req, res) => {
   try {
     const [rows] = await mainDb.query("SELECT * FROM admin_settings");
     const settings = {}; rows.forEach((r) => { settings[r.setting_key] = r.setting_value; });
@@ -7290,18 +7628,29 @@ app.get("/api/admin/settings", async (req, res) => {
   } catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
-app.put("/api/admin/settings", async (req, res) => {
+app.put("/api/admin/settings", authenticateAdmin, async (req, res) => {
   try {
-    const updates = req.body;
+    const updates = req.body || {};
+    // Key allowlist: identifiers can't be bound, so only known setting keys
+    // may be written — never arbitrary keys that could shadow auth config.
+    const ALLOWED_SETTINGS = new Set([
+      "site_name", "contact_email", "contact_phone", "strategy_whatsapp",
+      "apk_version", "apk_url", "apk_size", "maintenance_mode",
+      "notification_email", "currency", "timezone",
+    ]);
+    let wrote = 0;
     for (const [key, value] of Object.entries(updates)) {
+      if (!ALLOWED_SETTINGS.has(key)) continue;
       await mainDb.query("INSERT INTO admin_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [key, String(value)]);
+      wrote += 1;
     }
+    if (wrote === 0) return res.status(400).json({ success: false, message: "No valid settings supplied" });
     res.json({ success: true });
   } catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
 // ── Admin Node Settings ──────────────────────────────────────────────────────
-app.get("/api/admin/node-settings", async (req, res) => {
+app.get("/api/admin/node-settings", authenticateAdmin, async (req, res) => {
   try {
     const [s] = await mainDb.query("SELECT * FROM admin_settings");
     const settings = {}; s.forEach((r) => { settings[r.setting_key] = r.setting_value; });
@@ -7310,7 +7659,7 @@ app.get("/api/admin/node-settings", async (req, res) => {
 });
 
 // ── System Calibration ───────────────────────────────────────────────────────
-app.post("/api/admin/system-calibration", async (req, res) => {
+app.post("/api/admin/system-calibration", authenticateAdmin, async (req, res) => {
   try {
     const [tbl] = await mainDb.query("SHOW TABLES");
     res.json({ success:true, calibration:{status:"healthy",ran_at:new Date().toISOString(),tables:tbl.length,node:process.version} });
@@ -7318,54 +7667,67 @@ app.post("/api/admin/system-calibration", async (req, res) => {
 });
 
 // ── Admin Search ────────────────────────────────────────────────────────────
-app.get("/api/admin/search", async (req, res) => {
+// Searches users/projects/ledger — PII-bearing, so admin session only.
+// NOTE: mysql2 cannot bind LIMIT on this server (ER_WRONG_ARGUMENTS 1210),
+// so the depth cap is inlined as a sanitized integer, never raw input.
+app.get("/api/admin/search", authenticateAdmin, async (req, res) => {
   try {
     const { q, deep } = req.query;
     if (!q || q.length < 2) return res.json({ success: true, results: [] });
     const t = `%${q}%`; const l = deep === "true" ? 20 : 5;
     const [u] = await mainDb.query(
-      "(SELECT 'user' as type, id, COALESCE(display_name,CONCAT_WS(' ',first_name,last_name)) as title, email as subtitle, CONCAT('/admin/users/detail/',id,'/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL) UNION ALL (SELECT 'user' as type, id, COALESCE(display_name,CONCAT_WS(' ',first_name,last_name)) as title, email as subtitle, CONCAT('/admin/users/detail/',id,'/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL) LIMIT ?",
-      [t, t, t, t, l]);
-    const [p] = await mainDb.query("SELECT 'project' as type, id, project_name as title, client_name as subtitle, '/admin/projects' as link FROM user_projects WHERE (project_name LIKE ? OR client_name LIKE ?) AND deleted_at IS NULL LIMIT ?", [t, t, l]);
-    const [lg] = await mainDb.query("SELECT 'ledger' as type, id, description as title, CONCAT('KSH ',FORMAT(amount,2)) as subtitle, '/admin/billing' as link FROM accounting_entries WHERE (description LIKE ? OR transaction_reference LIKE ?) AND deleted_at IS NULL LIMIT ?", [t, t, l]);
-    const [tk] = await mainDb.query("SELECT 'task' as type, id, task_name as title, status, priority, CONCAT('/admin/projects/',project_id,'/tasks') as link FROM project_tasks WHERE (task_name LIKE ? OR task_description LIKE ?) AND deleted_at IS NULL LIMIT ?", [t, t, l]);
+      `(SELECT 'user' as type, id, COALESCE(display_name,CONCAT_WS(' ',first_name,last_name)) as title, email as subtitle, CONCAT('/admin/users/detail/',id,'/client') as link FROM users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL) UNION ALL (SELECT 'user' as type, id, COALESCE(display_name,CONCAT_WS(' ',first_name,last_name)) as title, email as subtitle, CONCAT('/admin/users/detail/',id,'/admin') as link FROM admin_users WHERE (display_name LIKE ? OR email LIKE ?) AND deleted_at IS NULL) LIMIT ${l}`,
+      [t, t, t, t]);
+    const [p] = await mainDb.query(`SELECT 'project' as type, id, project_name as title, client_name as subtitle, '/admin/projects' as link FROM user_projects WHERE (project_name LIKE ? OR client_name LIKE ?) AND deleted_at IS NULL LIMIT ${l}`, [t, t]);
+    const [lg] = await mainDb.query(`SELECT 'ledger' as type, id, description as title, CONCAT('KSH ',FORMAT(amount,2)) as subtitle, '/admin/billing' as link FROM accounting_entries WHERE (description LIKE ? OR transaction_reference LIKE ?) AND deleted_at IS NULL LIMIT ${l}`, [t, t]);
+    const [tk] = await mainDb.query(`SELECT 'task' as type, id, task_name as title, status, priority, CONCAT('/admin/projects/',project_id,'/tasks') as link FROM project_tasks WHERE (task_name LIKE ? OR task_description LIKE ?) AND deleted_at IS NULL LIMIT ${l}`, [t, t]);
     res.json({ success: true, results: [...u, ...p, ...lg, ...tk] });
   } catch (e) { res.status(500).json({ success: false, message: "Search failed" }); }
 });
 
 // ── Admin CRM Contacts ──────────────────────────────────────────────────────
-app.get("/api/admin/crm/contacts", async (req, res) => {
+// Client PII list — admin session only for read and create.
+app.get("/api/admin/crm/contacts", authenticateAdmin, async (req, res) => {
   try { const [rows] = await mainDb.query("SELECT * FROM crm_contacts WHERE deleted_at IS NULL ORDER BY created_at DESC"); res.json({ success: true, clients: rows, opportunities: [], pipeline: [] }); }
   catch (e) { res.status(500).json({ success:false, message:"CRM failed" }); }
 });
 
-app.post("/api/admin/crm/contacts", async (req, res) => {
+app.post("/api/admin/crm/contacts", authenticateAdmin, async (req, res) => {
   try {
-    const { name, email, phone, company, status } = req.body;
+    const { name, email, phone, company, status } = req.body || {};
     if (!name) return res.status(400).json({ error: "Name required" });
-    const [r] = await mainDb.query("INSERT INTO crm_contacts (name,email,phone,company,status,is_active,created_at) VALUES (?,?,?,?,?,1,NOW())", [name, email||null, phone||null, company||null, status||'lead']);
+    const allowedStatuses = new Set(["lead", "active", "inactive", "archived"]);
+    const safeStatus = allowedStatuses.has(String(status)) ? status : "lead";
+    const [r] = await mainDb.query("INSERT INTO crm_contacts (name,email,phone,company,status,is_active,created_at) VALUES (?,?,?,?,?,1,NOW())", [name, email||null, phone||null, company||null, safeStatus]);
     res.status(201).json({ success: true, id: r.insertId });
   } catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
 // ── Support / Change Requests / Signatures ────────────────────────────────
-app.get("/api/admin/change-requests", async (req, res) => {
+// Review queues with client PII — admin session only; status moves are
+// allowlisted so arbitrary enum values can't 500 the write.
+app.get("/api/admin/change-requests", authenticateAdmin, async (req, res) => {
   try { const [rows] = await mainDb.query("SELECT * FROM change_requests ORDER BY created_at DESC LIMIT 50"); res.json({ success: true, changeRequests: rows }); }
   catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
-app.put("/api/admin/change-requests/:id", async (req, res) => {
-  try { const { id } = req.params; const { status } = req.body; await mainDb.query("UPDATE change_requests SET status=? WHERE id=?", [status, id]); res.json({ success: true }); }
+app.put("/api/admin/change-requests/:id", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params; const { status } = req.body || {};
+    const allowed = new Set(["pending", "approved", "rejected", "in_review", "completed", "cancelled"]);
+    if (!allowed.has(String(status))) return res.status(400).json({ error: "Invalid status" });
+    await mainDb.query("UPDATE change_requests SET status=? WHERE id=?", [status, id]); res.json({ success: true });
+  }
   catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
-app.get("/api/admin/signature-requests", async (req, res) => {
+app.get("/api/admin/signature-requests", authenticateAdmin, async (req, res) => {
   try { const [rows] = await mainDb.query("SELECT * FROM document_signatures ORDER BY created_at DESC LIMIT 50"); res.json({ success: true, signatureRequests: rows }); }
   catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
 // ── Data Safety Summary ──────────────────────────────────────────────────────
-app.get("/api/admin/data-safety-summary", async (req, res) => {
+app.get("/api/admin/data-safety-summary", authenticateAdmin, async (req, res) => {
   try {
     const [tbl] = await mainDb.query("SHOW TABLES");
     res.json({ success: true, table_count: tbl.length, backup_status: "current", encrypted: true });
@@ -7373,14 +7735,14 @@ app.get("/api/admin/data-safety-summary", async (req, res) => {
 });
 
 // ── Admin Reports ────────────────────────────────────────────────────────────
-app.get("/api/admin/reports", async (req, res) => {
+app.get("/api/admin/reports", authenticateAdmin, async (req, res) => {
   try { const [rows] = await mainDb.query("SELECT * FROM project_reports ORDER BY created_at DESC LIMIT 50"); res.json({ success: true, reports: rows }); }
   catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
-app.post("/api/admin/reports", async (req, res) => {
+app.post("/api/admin/reports", authenticateAdmin, async (req, res) => {
   try {
-    const { project_id, title, summary, file_data, file_type, file_size, admin_id } = req.body;
+    const { project_id, title, summary, file_data, file_type, file_size, admin_id } = req.body || {};
     if (!project_id || !title) return res.status(400).json({ error: "Project ID and title required" });
     const [r] = await mainDb.query("INSERT INTO project_reports (project_id,title,summary,file_data,file_type,file_size,admin_id,created_at) VALUES (?,?,?,?,?,?,?,NOW())", [project_id, title, summary||null, file_data||null, file_type||null, file_size||0, admin_id||null]);
     res.status(201).json({ success: true, id: r.insertId });
@@ -7388,8 +7750,8 @@ app.post("/api/admin/reports", async (req, res) => {
 });
 
 // ── Backup endpoints ─────────────────────────────────────────────────────────
-app.get("/api/admin/backup/status", (req, res) => { res.json({ success: true, running: false, lastRun: null, latestSnapshot: null }); });
-app.post("/api/admin/backup/run", (req, res) => { res.json({ success: true, message: "Backup started" }); });
+app.get("/api/admin/backup/status", authenticateAdmin, (req, res) => { res.json({ success: true, running: false, lastRun: null, latestSnapshot: null }); });
+app.post("/api/admin/backup/run", authenticateAdmin, (req, res) => { res.json({ success: true, message: "Backup started" }); });
 
 // ── Blog Article single ──────────────────────────────────────────────────────
 app.get("/api/blog-articles/:id", async (req, res) => {

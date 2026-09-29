@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useNavigate, useLocation } from "react-router-dom";
 import { PieChart, X, ArrowUpRight, ArrowDownRight, FileText, Download, RefreshCw } from "lucide-react";
-import { getApiUrl } from "../../services/api";
+import { apiCall } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import SearchBlock from "../../components/SearchBlock";
 
@@ -67,14 +67,18 @@ export function ProfitLossReport() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const res = await fetch(getApiUrl(`/api/admin/ledger${location.search}`));
-      if (res.ok) {
-        const result = await res.json();
+      try {
+        // apiCall attaches the admin Bearer — /api/admin/ledger is
+        // session-gated (see backend/routes/admin.js).
+        const result = await apiCall(`/admin/ledger${location.search}`);
         const rev = result.entries.filter(e => e.entry_type === 'invoice_payment' || e.entry_type === 'income').reduce((s, e) => s + parseFloat(e.amount), 0);
         const exp = result.entries.filter(e => e.entry_type === 'expense').reduce((s, e) => s + parseFloat(e.amount), 0);
         setData({ revenue: rev, expenses: exp, net: rev - exp, entries: result.entries });
+      } catch (err) {
+        console.error('P&L fetch failed:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchData();
   }, [location.search]);

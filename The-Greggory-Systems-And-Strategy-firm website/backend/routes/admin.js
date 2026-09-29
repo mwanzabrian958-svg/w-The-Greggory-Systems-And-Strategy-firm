@@ -27,6 +27,19 @@ function requireAdminSession(req, res, next) {
   next();
 }
 
+// Hard gate for the WHOLE router: every /api/admin route serves admin-console
+// data (PII, ledger, settings, deletes). The console's apiCall always attaches
+// the admin Bearer, and <a>/window.open downloads never hit this router — so a
+// blanket guard is safe. It also closes the shadow-mount hole: this router is
+// mounted BEFORE several same-path monolith routes in server.js, so an open
+// copy here used to answer instead of the hardened monolith route behind it.
+// CORS preflight (OPTIONS) passes through — the app-level cors() middleware
+// answers preflight before this router is ever reached; the bypass is a guard
+// against future mount-order surprises, not an auth exception.
+router.use((req, res, next) =>
+  req.method === "OPTIONS" ? next() : requireAdminSession(req, res, next)
+);
+
 // =============================================
 // GET LIVE USERS (Who's Online)
 // =============================================

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, X, Save, RefreshCw } from "lucide-react";
-import { getApiUrl, API_BASE_URL, getAdminToken } from "../../services/api";
+import { getApiUrl, API_BASE_URL, getAdminToken, apiCall } from "../../services/api";
 import { Spinner } from "../../components/Loading";
 import SearchBlock from "../../components/SearchBlock";
 
@@ -19,11 +19,9 @@ export function ManualEntry() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const res = await fetch(getApiUrl("/api/user-projects"));
-        if (res.ok) {
-          const data = await res.json();
-          setProjects(Array.isArray(data) ? data : []);
-        }
+        // Gated (valid session only); returns [] until signed in.
+        const data = await apiCall("/user-projects").catch(() => []);
+        setProjects(Array.isArray(data) ? data : []);
       } catch (e) { console.error(e); }
     };
     fetchProjects();

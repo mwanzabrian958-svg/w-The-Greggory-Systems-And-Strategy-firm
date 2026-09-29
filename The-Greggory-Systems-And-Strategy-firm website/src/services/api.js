@@ -122,6 +122,21 @@ export const getApiUrl = (path) => {
   return `${API_BASE_URL}${clean}`;
 };
 
+/**
+ * Authenticated PDF URL for <a href> / window.open downloads.
+ * Anchor tags and new tabs can't send Authorization headers, so the session
+ * travels as `?token=` — every PDF GET route (documents/:type/:id/pdf,
+ * pdf/completion/...) accepts it via authenticateAny. Admin tokens win over
+ * client tokens so a dual session never shadows the admin.
+ */
+export const getPdfUrl = (path) => {
+  const url = getApiUrl(path);
+  const token = getAuthToken();
+  if (!token) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}token=${encodeURIComponent(token)}`;
+};
+
 // M-Pesa API
 export const mpesaAPI = {
   stkPush: (data) => apiCall('/mpesa/stkpush', { method: 'POST', body: JSON.stringify(data) }),

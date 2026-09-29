@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { InlineLoader, Spinner, PageLoader } from "../../components/Loading";
 import { useParams, useNavigate } from "react-router-dom";
 import { Download, Printer, X, RefreshCw, Send, MailCheck, BadgeCheck } from "lucide-react";
-import { getApiUrl, apiCall } from "../../services/api";
+import { apiCall, getPdfUrl } from "../../services/api";
 import { taxLabel } from "../../utils/kraTax";
 import SearchBlock from "../../components/SearchBlock";
 
@@ -16,12 +16,11 @@ export function InvoicePreview() {
 
   useEffect(() => {
     const fetchInvoice = async () => {
-      const allRes = await fetch(getApiUrl("/api/invoices"));
-      if (allRes.ok) {
-        const data = await allRes.json();
-        const found = data.invoices.find(inv => inv.id == id);
-        setInvoice(found);
-      }
+      try {
+        // Single-row read (scoped by authenticateAny) — no full-ledger pull.
+        const data = await apiCall(`/invoices/${id}`);
+        setInvoice(data && (data.id || data.invoice_number) ? data : null);
+      } catch (e) { console.error(e); }
       setLoading(false);
     };
     fetchInvoice();
@@ -110,8 +109,8 @@ export function InvoicePreview() {
                {sending ? <Spinner size={16} tone="white" /> : invoice.email_sent ? <MailCheck size={16} /> : <Send size={16} />}
                {invoice.email_sent ? "Sent" : "Send to Client"}
             </button>
-            <a href={getApiUrl(`/api/documents/invoices/${id}/pdf`)} className="flex items-center gap-3 bg-teal-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-500 transition-all border border-teal-500"><Download size={16} /> Download PDF</a>
-            <a href={getApiUrl(`/api/pdf/completion/invoices/${id}`)} className="flex items-center gap-3 bg-white/5 text-teal-300 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-600 hover:text-white transition-all border border-teal-500/40"><BadgeCheck size={16} /> Completion PDF</a>
+            <a href={getPdfUrl(`/api/documents/invoices/${id}/pdf`)} className="flex items-center gap-3 bg-teal-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-500 transition-all border border-teal-500"><Download size={16} /> Download PDF</a>
+            <a href={getPdfUrl(`/api/pdf/completion/invoices/${id}`)} className="flex items-center gap-3 bg-white/5 text-teal-300 px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-600 hover:text-white transition-all border border-teal-500/40"><BadgeCheck size={16} /> Completion PDF</a>
             <button onClick={() => window.print()} className="flex items-center gap-3 bg-white/5 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/10"><Printer size={16} /> Print</button>
             <button onClick={() => navigate('/admin/billing')} className="p-3 bg-rose-600 text-white rounded-2xl shadow-xl hover:bg-rose-700 transition-all"><X size={20} /></button>
          </div>

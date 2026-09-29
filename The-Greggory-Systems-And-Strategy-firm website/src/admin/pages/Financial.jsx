@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { InlineLoader, Spinner } from "../../components/Loading";
 import { useNavigate } from "react-router-dom";
-import { apiCall, getApiUrl } from "../../services/api";
+import { apiCall, getPdfUrl } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import {
   TrendingUp, Banknote, RefreshCw, FilePlus2,
@@ -77,10 +77,11 @@ export function Billing() {
   };
 
   // Download a professional "Completion" PDF for any record type
+  // (?token= carries the admin session — new tabs can't send headers.)
   const handleDownloadCompletion = (recordType, id) => {
     if (!id) return;
     setNotice({ ok: true, text: `Generating completion PDF for ${recordType.replace(/_/g, " ")} #${id}…` });
-    window.open(getApiUrl(`/api/pdf/completion/${recordType}/${id}`), "_blank");
+    window.open(getPdfUrl(`/api/pdf/completion/${recordType}/${id}`), "_blank");
     setTimeout(() => setNotice(null), 4000);
   };
 
