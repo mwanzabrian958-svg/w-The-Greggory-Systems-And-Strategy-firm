@@ -100,7 +100,19 @@ const Home = () => {
           regenerate or keep in sync with the desktop art.
 
           Tablet/PC: unchanged - the same file filling a min-h-screen hero
-          with object-cover, the default centre anchoring.
+          with object-cover, the default centre anchoring, plus a clarity
+          lift so the artwork reads clean instead of hazy.
+
+          Why the lift: the haze in this hero is real pixels, not an overlay.
+          Measured band by band, the section paints the JPEG faithfully (top
+          band = 50.2 mean luminance in the file, 53.1 as painted), and 22.0%
+          of the >=641px hero is dim, low-saturation haze - the grey-brown
+          smoke. brightness(1.12) contrast(1.22) saturate(1.22) takes that to
+          0.3% while holding overall luminance flat (87.3 -> 87.2), so it
+          de-smokes without dimming or flattening the art. It is also the one
+          place the artwork needs help: below 641px it is DOWNscaled 3.4x
+          (1324 -> 390) and reads crisply on its own, at >=641px the same
+          1324px file is stretched back up to 1440-1920.
 
           Every phone/desktop switch in this hero is `min-[641px]:`, the
           project's own definition of "mobile" (getDeviceCategory in
@@ -118,7 +130,7 @@ const Home = () => {
           <img
             src="/hero-phoenix.jpg"
             alt="Phoenix rising over a city skyline — The Greggory Systems And Strategy Firm"
-            className="block w-full h-auto min-[641px]:absolute min-[641px]:inset-0 min-[641px]:h-full min-[641px]:object-cover"
+            className="block w-full h-auto min-[641px]:absolute min-[641px]:inset-0 min-[641px]:h-full min-[641px]:object-cover min-[641px]:brightness-[1.12] min-[641px]:contrast-[1.22] min-[641px]:saturate-[1.22]"
             fetchpriority="high"
           />
         </div>
