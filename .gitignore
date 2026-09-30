@@ -52,3 +52,14 @@ scripts/_preview/
 # lockfile (which pins vite + daisyUI). Keeping it in git makes deploys
 # reproducible. Do NOT re-add it to .gitignore.
 The-Greggory-Systems-And-Strategy-firm website/scripts/_reseed-data.sql
+
+# One-off history bundle kept LOCALLY as the pre-rename-scrub backup. It is a
+# 6.4 MB git bundle: never re-add it to git — a clone already carries the blob
+# in history, and tracking it makes every future pack worse. Restore with
+# `git bundle unbundle history-backup-before-scrub.bundle` if ever needed.
+/history-backup-before-scrub.bundle
+
+# Console redirection scratch (Tee-Object / > output of one-off checks)
+/audit-out.txt
+/_tmp_*.txt
+
