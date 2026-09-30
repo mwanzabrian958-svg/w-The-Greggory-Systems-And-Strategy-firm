@@ -1,5 +1,5 @@
 # Endpoint link report
-Backend endpoints: 269 (187 paths) | Website call paths: 117
+Backend endpoints: 269 (187 paths) | Website call paths: 115
 
 ## 1. Backend endpoints NOT called by the website (59)
 - `DELETE /api/admin-complete/accounting/entries/*` — backend\routes\admin-complete.js:30
@@ -65,6 +65,3 @@ Backend endpoints: 269 (187 paths) | Website call paths: 117
 ## 2. Website calls with NO backend route (404 risk) (0)
 
 ## 3. Method gaps (path linked, some verbs never called) (0)
-
-## Warnings
-- unresolved router var: authenticateAdmin

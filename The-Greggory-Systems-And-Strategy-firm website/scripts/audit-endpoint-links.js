@@ -90,14 +90,58 @@ let m;
 const vRe = /(?:const|let|var)\s+(\w+)\s*=\s*require\(\s*["'](\.\/[^"']+?)["']\s*\)/g;
 while ((m = vRe.exec(sv))) varMap[m[1]] = m[2];
 
-// direct app.use mounts + the modularRoutes table
-const useRe = /app\.use\(\s*["'](\/[^"']+)["']\s*,\s*(?:require\(\s*["'](\.\/[^"']+?)["']\s*\)|(\w+))/g;
+/**
+ * Split a call's argument list on TOP-LEVEL commas. `openIdx` must point at the
+ * call's "(". Returns null if the parens never balance (abandon, don't guess).
+ */
+function splitArgs(src, openIdx) {
+  const args = [];
+  let depth = 0, cur = "", q = null;
+  for (let i = openIdx; i < src.length; i++) {
+    const c = src[i];
+    if (q) {
+      cur += c;
+      if (c === "\\") { cur += src[++i] || ""; continue; }
+      if (c === q) q = null;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") { q = c; cur += c; continue; }
+    if (c === "(" || c === "[" || c === "{") { depth++; if (depth === 1) continue; }
+    if (c === ")" || c === "]" || c === "}") {
+      depth--;
+      if (depth === 0) { args.push(cur.trim()); return args; }
+      continue;
+    }
+    if (c === "," && depth === 1) { args.push(cur.trim()); cur = ""; continue; }
+    cur += c;
+  }
+  return null;
+}
+
+// app.use mounts. The router is NOT necessarily the 2nd argument — guard
+// middleware can sit in front of it, and an app.use may carry no router at all:
+//   app.use("/api/users", usersRouter)                          → router
+//   app.use("/api/x", authenticateAdmin, routerVar)             → router (2nd var)
+//   app.use("/api/db/:database", authenticateAdmin, async (req, res, next) => …)
+//                                                              → middleware only
+// So parse the real argument list and decide from its LAST argument.
 const mounted = [];
-while ((m = useRe.exec(sv))) {
-  let mod = m[2];
-  if (!mod) mod = varMap[m[3]];
-  if (!mod) { warnings.push(`unresolved router var: ${m[3]}`); continue; }
-  mounted.push([m[1], mod]);
+const appUseRe = /app\.use\(/g;
+while ((m = appUseRe.exec(sv))) {
+  const openIdx = m.index + "app.use".length;
+  const args = splitArgs(sv, openIdx);
+  if (!args || args.length < 2) continue;
+  const pathArg = args[0].match(/^["'`](\/[^"'`]+)["'`]$/);
+  if (!pathArg) continue; // app.use(express.json()) etc. — not a path mount
+  const last = args[args.length - 1];
+  const inlineReq = last.match(/^require\(\s*["'`](\.\/[^"'`]+)["'`]\s*\)$/);
+  if (inlineReq) { mounted.push([pathArg[1], inlineReq[1]]); continue; }
+  if (/^\w+$/.test(last)) {
+    if (varMap[last]) { mounted.push([pathArg[1], varMap[last]]); continue; }
+    warnings.push(`unresolved router var: ${last}`);
+    continue;
+  }
+  // inline middleware/handler (arrow or function) — mounts no router file.
 }
 const tblRe = /\{\s*path:\s*["']([^"']+)["']\s*,\s*route:\s*["'](\.\/[^"']+)["']\s*\}/g;
 while ((m = tblRe.exec(sv))) mounted.push([m[1].startsWith("/api") ? m[1] : "/api" + m[1], m[2]]);
