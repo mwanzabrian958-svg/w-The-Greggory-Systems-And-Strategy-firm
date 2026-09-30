@@ -3,10 +3,16 @@
 # warm. Public repo = free GitHub Actions minutes. Never hard-fails on purpose.
 # After the first deploy, set the SITE_URL repository variable in GitHub, or the
 # fallback URL below is used.
-# LIVE service (verified 2026-09-25): greggory-firm-rtl3.onrender.com is
-# SUSPENDED (503 on / and /api/*) — the live deployment is the
-# the-greggory-systems-and-strategy-firm-jz7i host below. Do NOT point this
-# back at rtl3 unless that service is resumed in the Render dashboard.
+# LIVE service (verified 2026-09-30, /api/health 200 + database "connected"):
+#   https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com
+# Older hosts are gone and must NOT come back here — each was left as a silent
+# no-op ping:
+#   greggory-firm-rtl3.onrender.com  -> SUSPENDED (503)
+#   the-greggory-systems-and-strategy-firm-jz7i.onrender.com -> 404, deleted
+# Because the step below never hard-fails, a stale URL keeps the workflow green
+# while warming nothing, so re-verify the host here whenever the service moves.
+# Setting the SITE_URL repository variable in GitHub overrides this fallback and
+# survives a rename without a code change.
 name: keep-alive
 
 on:
@@ -22,7 +28,12 @@ jobs:
         shell: bash
         run: |
           URL="${{ vars.SITE_URL }}"
-          if [ -z "$URL" ]; then URL="https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com"; fi
-          curl -fsS --max-time 30 "$URL/api/health" \
-            && echo "pinged $URL" \
-            || echo "site not reachable yet - ignoring"
+          if [ -z "$URL" ]; then URL="https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com"; fi
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$URL/api/health" || echo "000")
+          echo "pinged $URL/api/health -> HTTP $CODE"
+          # Still never hard-fails (a cold, waking service must not redden the
+          # log), but the status code is now printed: the old `curl -fsS || echo
+          # ignoring` hid the fact that this had been pinging a deleted host.
+          if [ "$CODE" = "404" ]; then
+            echo "::warning::HTTP 404 from $URL - that service no longer exists. Update the fallback URL or the SITE_URL repository variable."
+          fi
