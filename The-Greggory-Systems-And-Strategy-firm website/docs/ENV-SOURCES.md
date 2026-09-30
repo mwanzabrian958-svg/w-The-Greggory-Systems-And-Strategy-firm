@@ -27,7 +27,8 @@ exact page to grab the value from and the page to paste it into.
 | `ADMIN_CODE` | **You invent it** (the code typed in the auth modal's Admin button) | Must match what your admins type; same value used by `admin-verification` register. |
 | `ADMIN_KEY` | **You invent it**; sent as `x-admin-key` header (`backend/middleware/auth.js`) | Used by `images.js` / `management.js` protected routes. |
 | `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_TO` | [Gmail App Password](https://myaccount.google.com/apppasswords) (2FA must be on) | `SMTP_PASS` is the 16-char app password, NOT the account password. `SMTP_HOST/PORT/SECURE` are already set in render.yaml. |
-| `FRONTEND_URL`, `SITE_URL` | Your Render service URL (Environment page) | Single-origin deploy → both = the same `https://<your-service>.onrender.com`. `SITE_URL` is build-time baked into sitemap/robots/SEO tags — change needs a redeploy. |
+| `FRONTEND_URL` | Your Render service URL (Environment page) | Single-origin deploy → same `https://<your-service>.onrender.com`. Live host (2026-09-30): `w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com`. CORS + email links break silently if it names a deleted host. |
+| `SITE_URL` | **Optional on Render** — leave blank and the build uses Render's own `RENDER_EXTERNAL_URL`; set it only for a custom domain | Build-time: baked into `sitemap.xml`, `robots.txt`, canonical/og:url/JSON-LD by `scripts/generate-sitemap.js` + `vite-plugin-seo.js`, so a change needs a redeploy. It used to fall back to `http://localhost:5173` when blank, which is how the live sitemap shipped localhost URLs. |
 
 ## 2. OPTIONAL integrations — declared in render.yaml, degrade gracefully if unset
 

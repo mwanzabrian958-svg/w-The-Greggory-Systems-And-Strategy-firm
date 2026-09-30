@@ -7,9 +7,9 @@ import seoConfig from './seo.config.json';
  *
  * Always emitted (the SPA serves one HTML shell, so these describe the site
  * root): <link rel="canonical">, <meta property="og:url"> and the schema.org
- * JSON-LD block. The origin comes from SITE_URL, else the shared
- * `seo.config.json` `siteUrl` — so a build never ships a relative or
- * placeholder URL.
+ * JSON-LD block. The origin resolves as SITE_URL -> VITE_SITE_URL ->
+ * RENDER_EXTERNAL_URL -> `seo.config.json` `siteUrl`, so a build never ships a
+ * relative URL, a placeholder, or a host that is not this deployment.
  *
  * Emitted only when the matching env var is present and non-empty, so an unset
  * variable never leaves a literal %VITE_…% token in the served HTML:
@@ -44,10 +44,43 @@ const SAME_AS = [
   'https://vm.tiktok.com/ZS9hSNrJ1jrSP-RtR7u/',
 ];
 
-// Fallback origin when SITE_URL is unset, so canonical / og:url / JSON-LD are
-// always absolute. Change `siteUrl` in seo.config.json (or set SITE_URL) when
-// the deployed host changes — scripts/generate-sitemap.js reads the same value.
+// Last-resort origin when no env var is set, so canonical / og:url / JSON-LD are
+// always absolute. This is NOT a dev value any more: `vite build` on Render
+// reaches this line whenever SITE_URL is blank, and it used to be
+// http://localhost:5173 — every deployed page then carried a canonical pointing
+// at a dev box. Read it from seo.config.json (scripts/generate-sitemap.js reads
+// the same value, so the sitemap and the head tags cannot drift).
 const DEFAULT_SITE_URL = String(seoConfig.siteUrl || '').replace(/\/+$/, '');
+
+// Precedence — identical to scripts/generate-sitemap.js:
+//   SITE_URL -> VITE_SITE_URL -> RENDER_EXTERNAL_URL -> seo.config.json
+// RENDER_EXTERNAL_URL / RENDER_EXTERNAL_HOSTNAME are supplied by Render with no
+// dashboard entry, so a Blueprint deployed with SITE_URL left blank (it is
+// `sync: false`, i.e. optional) still publishes the service's real origin.
+function resolveSiteUrl(env) {
+  const external =
+    envOf(env, 'RENDER_EXTERNAL_URL') ||
+    (envOf(env, 'RENDER_EXTERNAL_HOSTNAME')
+      ? 'https://' + envOf(env, 'RENDER_EXTERNAL_HOSTNAME')
+      : '');
+  return normalizeOrigin(
+    envOf(env, 'SITE_URL') || envOf(env, 'VITE_SITE_URL') || external || DEFAULT_SITE_URL
+  );
+}
+
+// A value pasted into the dashboard without a scheme must still yield absolute
+// crawler URLs.
+function normalizeOrigin(raw) {
+  let value = String(raw || '').trim();
+  if (!value) return '';
+  if (!/^https?:\/\//i.test(value)) value = 'https://' + value.replace(/^\/+/, '');
+  return value.replace(/\/+$/, '');
+}
+
+// Localhost/127.0.0.1 is never a crawlable origin — warn instead of shipping it.
+function isDevOrigin(origin) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?($|\/)/i.test(origin);
+}
 
 function escapeHtml(str) {
   return String(str)
@@ -137,10 +170,16 @@ export default function vitePluginSeo(env = {}) {
     transformIndexHtml(html) {
       const tags = [];
 
-      // SITE_URL wins; otherwise the shared seo.config.json default keeps
-      // canonical / og:url / JSON-LD absolute in every build.
-      const configured = envOf(env, 'SITE_URL') || envOf(env, 'VITE_SITE_URL');
-      const cleanUrl = (configured || DEFAULT_SITE_URL).replace(/\/+$/, '');
+      // SITE_URL wins; otherwise Render's own external URL, then the shared
+      // seo.config.json default — canonical / og:url / JSON-LD stay absolute and
+      // point at THIS deployment in every build.
+      const cleanUrl = resolveSiteUrl(env);
+
+      if (cleanUrl && isDevOrigin(cleanUrl)) {
+        // console.warn, not this.warn: this hook also runs in the dev middleware
+        // without a rollup plugin context, where `this` is empty.
+        console.warn('[seo] vite-plugin-seo: publishing dev origin ' + cleanUrl + ' in canonical/og:url — set SITE_URL or fix seo.config.json "siteUrl".');
+      }
 
       // Canonical + og:url. The SPA renders one HTML shell for every route, so
       // both point at the site root: crawlers still learn the canonical origin

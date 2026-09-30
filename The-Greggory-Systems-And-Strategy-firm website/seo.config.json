@@ -1,8 +1,8 @@
 {
-  "_comment": "Single source of truth for crawler-facing SEO. Consumed by scripts/generate-sitemap.js (writes public/sitemap.xml + public/robots.txt at build time) and by vite-plugin-seo.js (canonical + og:url + JSON-LD in index.html). Set the SITE_URL env var to override `siteUrl` without editing this file — this is REQUIRED on any host, because the domain differs per service.",
-  "_siteUrlWarning": "`siteUrl` below is a DEVELOPMENT FALLBACK ONLY. On every deploy the SITE_URL env var overrides it, so this value should never be your live domain. If you see it in a production sitemap, SITE_URL was not set on the platform.",
+  "_comment": "Single source of truth for crawler-facing SEO. Consumed by scripts/generate-sitemap.js (writes public/sitemap.xml + public/robots.txt at build time) and by vite-plugin-seo.js (canonical + og:url + JSON-LD in index.html). Override `siteUrl` per environment with SITE_URL, or leave it unset — the resolvers in both consumers then fall back to the platform-provided RENDER_EXTERNAL_URL (Render) before this file.",
+  "_siteUrlWarning": "Resolve order (both consumers, identical): SITE_URL -> VITE_SITE_URL -> RENDER_EXTERNAL_URL / RENDER_EXTERNAL_HOSTNAME -> `siteUrl` below. `siteUrl` is the LAST resort, so it must be the REAL deployed origin, never localhost: a forgotten SITE_URL used to publish a sitemap full of http://localhost:5173 URLs and a canonical pointing off-site. When the service is renamed/moved, update `siteUrl` here AND the fallback in .github/workflows/keep-alive.yml AND the URLs in docs/.",
   "_routesComment": "Public, crawlable routes ONLY. Authenticated areas (/admin/*, /portal, /login, /dashboard) must never be listed — see the Disallow rules generated into robots.txt.",
-  "siteUrl": "http://localhost:5173",
+  "siteUrl": "https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com",
   "routes": [
     { "path": "/", "changefreq": "weekly", "priority": "1.0" },
     { "path": "/about", "changefreq": "monthly", "priority": "0.8" },

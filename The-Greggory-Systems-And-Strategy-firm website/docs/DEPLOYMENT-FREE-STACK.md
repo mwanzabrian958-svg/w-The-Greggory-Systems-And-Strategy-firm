@@ -10,7 +10,7 @@ no API-URL env var to get wrong.
 
 | Piece | Provider | Free allowance |
 |---|---|---|
-| Backend + built frontend (one service) | **Render** (`the-greggory-systems-and-strategy-firm-jz7i.onrender.com`) | 750 instance-hours/month |
+| Backend + built frontend (one service) | **Render** (`w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com`) | 750 instance-hours/month |
 | MySQL database | **Aiven for MySQL** (`free-1-5gb`) | 5 GB storage, always on |
 | Keep-alive ping (no cold starts) | **cron-job.org** or **UptimeRobot** | Free |
 | MongoDB / Redis | *Skipped* — server skips Mongo when `MONGODB_URI` is unset and falls back to memory without Redis | — |
@@ -43,12 +43,17 @@ no API-URL env var to get wrong.
    → connect GitHub → select **`w-The-Greggory-Systems-And-Strategy-firm`**.
 3. Render reads `render.yaml` and asks for the `sync: false` values:
    - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` → paste from **Step 1.4**
-   - `DB_NAME` is preset to `the_greggory_systems_and_strategy_firm_db_main`
-     (auto-created on the cloud MySQL on first boot)
+   - `DB_NAME` → `the_greggory_systems_and_strategy_firm_db_main`. `render.yaml`
+     deliberately leaves this `sync: false` (a hardcoded value once overrode the
+     dashboard and pointed Render at a nonexistent DB), so you type it here.
    - `JWT_SECRET`, `ADMIN_SESSION_SECRET`, `ADMIN_CODE`, `SESSION_SECRET` → copy from your local `.env`
-   - `FRONTEND_URL` → put `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com`
-     (if that name is taken, Render shows your real URL after deploy — update it then)
-   - `MPESA_CALLBACK_URL` → `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/api/mpesa/callback`
+   - `FRONTEND_URL` → put `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com`
+     (the live origin as of 2026-09-30 — if you redeployed as a NEW service,
+     Render shows your real URL after deploy: update it then. `…-jz7i`, `…-vik4`
+     and `greggory-firm-rtl3` are deleted/suspended — do not paste them.)
+   - `MPESA_CALLBACK_URL` → `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com/api/mpesa/callback`
+   - `SITE_URL` → can be LEFT BLANK: the SEO build step falls back to Render's
+     own `RENDER_EXTERNAL_URL`. Set it only for a custom domain (see Step 5).
    - The rest (`SMTP_*`, `GOOGLE_CLIENT_ID`, `AFRICASTALKING_*`, `MPESA_*`,
      `COMPANY_*`) → copy from your local `.env`, or skip what you don't use.
 4. **Apply.** Render runs `npm install && npm run build`, then
@@ -64,10 +69,11 @@ Open these (replace with your real URL):
 
 | URL | Expected |
 |---|---|
-| `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/` | The full React website |
-| `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/login` | SPA route loads (no 404) |
-| `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/api/health` | `{"status":"OK",...,"database":"connected"}` |
-| `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/api/test-db` | `{"success":true,...}` |
+| `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com/` | The full React website |
+| `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com/login` | SPA route loads (no 404) |
+| `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com/api/health` | `{"status":"OK",...,"database":"connected"}` |
+| `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com/api/test-db` | `{"success":true,...}` |
+| `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com/sitemap.xml` | Every `<loc>` on the live host — **never** `localhost` (that meant `SITE_URL`/`RENDER_EXTERNAL_URL` resolution failed) |
 
 If `database` says `unreachable`, re-check the four DB values from Step 1 —
 `/api/health` re-probes on every call, so it turns `connected` the moment the
@@ -80,21 +86,28 @@ Free Render services sleep after 15 min idle (next visit then takes ~30–60 s t
 wake). 750 free hours/month is enough to run **one** service 24/7 (744 h) if it
 never sleeps:
 
-1. Go to **https://cron-job.org** (or UptimeRobot) → free sign-up.
-2. Create a job: URL = `https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com/api/health`,
+1. Already in the repo: **`.github/workflows/keep-alive.yml`** pings `/api/health`
+   every 14 min on free Actions minutes — nothing to sign up for. After a future
+   rename, update its fallback URL (or set the `SITE_URL` repository variable):
+   a stale URL stays GREEN while warming nothing.
+2. Or go to **https://cron-job.org** (or UptimeRobot) → free sign-up.
+3. Create a job: URL = `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com/api/health`,
    interval = **every 14 minutes**.
-3. Done — the site now answers instantly at any hour.
+4. Done — the site now answers instantly at any hour.
 
 ## Step 5 — (Optional) a "real" free domain
 
-`the-greggory-systems-and-strategy-firm-jz7i.onrender.com` is free forever and works out of the box. If you
+`w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com` is free forever and works out of the box. If you
 want a custom-looking free domain:
 
 - **pp.ua** (free, quick registration) or **eu.org** (free, manual approval can
   take days) — register one, then in Render → your service → *Settings → Custom
   Domains* → add it → create the **CNAME** record it shows you at the domain's
   DNS page. HTTPS is issued automatically.
-- Update `FRONTEND_URL` (and `MPESA_CALLBACK_URL`) to the new domain afterwards.
+- Update `FRONTEND_URL`, `MPESA_CALLBACK_URL` **and `SITE_URL`** to the new domain
+  afterwards — `SITE_URL` is what makes the sitemap, robots.txt and the canonical
+  name your domain instead of the `onrender.com` host, and it is build-time, so it
+  needs a redeploy.
 
 ---
 

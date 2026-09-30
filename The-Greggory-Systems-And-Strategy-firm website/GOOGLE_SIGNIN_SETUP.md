@@ -56,7 +56,11 @@ tool keep working unchanged.
      trailing slash**:
      - `http://localhost:5173`
      - `http://127.0.0.1:5173`
-     - `https://w-the-greggory-systems-and-strategy-firm-vik4.onrender.com`
+     - `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com`
+      ⚠️ This origin list is the whole ballgame: Google rejects the button with
+      `origin_mismatch` for any host not listed, so after EVERY Render rename the
+      new host must be added here (the old `…-vik4` / `…-jz7i` entries buy nothing
+      — those services are deleted) and `VITE_GOOGLE_CLIENT_ID` rebuilt.
      - (add any custom domain you serve the site from, e.g. `https://thegreggory.co.ke`)
    - **Authorized redirect URIs**: *not required* for the JavaScript button —
      leave empty.
@@ -124,8 +128,8 @@ a hard failure and tells you the exact origin to add. Against production:
 
 ```bash
 # after deploying the server change, this tells you whether Render has GOOGLE_CLIENT_ID
-BASE_URL=https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com \
-API_BASE_URL=https://the-greggory-systems-and-strategy-firm-jz7i.onrender.com \
+BASE_URL=https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com \
+API_BASE_URL=https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com \
 npm run test:google
 ```
 

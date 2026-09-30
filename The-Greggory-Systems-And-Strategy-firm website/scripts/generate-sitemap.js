@@ -2,8 +2,10 @@
  * generate-sitemap.js
  * -------------------
  * Builds the crawler files at BUILD time from one source of truth —
- * `seo.config.json` (the same file vite-plugin-seo.js reads) plus the optional
- * `SITE_URL` env var:
+ * `seo.config.json` (the same file vite-plugin-seo.js reads) plus the origin
+ * resolved from, in order, SITE_URL -> VITE_SITE_URL -> RENDER_EXTERNAL_URL
+ * (set automatically by Render, so a blank SITE_URL still publishes the real
+ * host) -> seo.config.json `siteUrl`:
  *     public/sitemap.xml — every public route, so Google/Bing/Ahrefs/
  *                          Screaming Frog/Moz discover the content
  *     public/robots.txt  — Allow: / for public pages, Disallow: for the
@@ -14,9 +16,12 @@
  * blueprint and the Dockerfile run `npm run build`):
  *     "build": "node scripts/generate-sitemap.js && vite build"
  *
- * In local `vite dev` the committed `public/sitemap.xml` (production URLs) is
- * served directly — dev is not indexed, so that is fine. If you change domains,
- * set SITE_URL and run `npm run generate-sitemap`.
+ * That build step OVERWRITES the committed public/ files — which is why the
+ * fallback chain has to end at a real origin. It used to end at
+ * http://localhost:5173, so a deploy with SITE_URL unset shipped a sitemap full
+ * of localhost <loc> entries and a localhost canonical: valid-looking files
+ * describing a host no crawler can reach. `npm run generate-sitemap` prints the
+ * origin it chose and warns on a dev origin or a Render-host mismatch.
  *
  * Customisation: add/remove routes in seo.config.json (or extend this script to
  * fetch dynamic routes, e.g. published blog slugs via the API).
@@ -35,10 +40,42 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 // disallowed in robots.txt — crawling a login screen only wastes crawl budget.
 const DISALLOWED_PREFIXES = ['/admin', '/portal', '/dashboard', '/api/'];
 
-function getSiteUrl() {
-  const raw = process.env.SITE_URL || process.env.VITE_SITE_URL || '';
-  const fallback = String(SEO_CONFIG.siteUrl || '').trim();
-  return (String(raw).trim() || fallback).replace(/\/+$/, '');
+// The origin Render gives every service for free (no dashboard entry needed).
+// Absent on local dev, where seo.config.json's `siteUrl` takes over.
+function renderExternalUrl() {
+  const direct = String(process.env.RENDER_EXTERNAL_URL || '').trim();
+  if (direct) return direct;
+  const host = String(process.env.RENDER_EXTERNAL_HOSTNAME || '').trim();
+  return host ? 'https://' + host : '';
+}
+
+// Precedence — identical in vite-plugin-seo.js so the sitemap and the
+// canonical/og:url tags can never disagree:
+//   SITE_URL -> VITE_SITE_URL -> RENDER_EXTERNAL_URL -> seo.config.json
+// SITE_URL first: an explicit value always wins over a platform default.
+function resolveSiteUrl() {
+  const candidates = [
+    ['SITE_URL', String(process.env.SITE_URL || '').trim()],
+    ['VITE_SITE_URL', String(process.env.VITE_SITE_URL || '').trim()],
+    ['RENDER_EXTERNAL_URL/HOSTNAME', renderExternalUrl()],
+    ['seo.config.json', String(SEO_CONFIG.siteUrl || '').trim()],
+  ];
+  const chosen = candidates.find(([, value]) => value) || ['', ''];
+  return { url: normalizeOrigin(chosen[1]), source: chosen[0] };
+}
+
+// A bare hostname (RENDER_EXTERNAL_HOSTNAME, or a SITE_URL pasted without a
+// scheme) still has to produce absolute crawler URLs.
+function normalizeOrigin(raw) {
+  let value = String(raw || '').trim();
+  if (!value) return '';
+  if (!/^https?:\/\//i.test(value)) value = 'https://' + value.replace(/^\/+/, '');
+  return value.replace(/\/+$/, '');
+}
+
+// Localhost/127.0.0.1 can never be a crawlable origin.
+function isDevOrigin(origin) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?($|\/)/i.test(origin);
 }
 
 function publicRoutes() {
@@ -117,13 +154,21 @@ function write(fileName, content) {
 }
 
 function main() {
-  const siteUrl = getSiteUrl();
+  const { url: siteUrl, source } = resolveSiteUrl();
   if (!siteUrl) {
     console.error('[seo] no site URL — set SITE_URL or seo.config.json "siteUrl"');
     process.exit(1);
   }
-  if (!process.env.SITE_URL && !process.env.VITE_SITE_URL) {
-    console.log('[seo] SITE_URL not set — falling back to seo.config.json:', siteUrl);
+  console.log('[seo] siteUrl = ' + siteUrl + '  (from ' + source + ')');
+  if (isDevOrigin(siteUrl)) {
+    // Loud, because it is silent to Google: a localhost <loc> list and a
+    // localhost canonical are both valid-looking files that just describe
+    // nobody. This is exactly how the live sitemap shipped localhost URLs.
+    console.warn('[seo] WARNING: "' + siteUrl + '" is a dev origin — the published sitemap/robots will not be crawlable. Set SITE_URL (or fix seo.config.json "siteUrl").');
+  }
+  const renderUrl = normalizeOrigin(renderExternalUrl());
+  if (renderUrl && renderUrl !== siteUrl) {
+    console.warn('[seo] WARNING: this build is running on Render at ' + renderUrl + ' but publishing ' + siteUrl + ' — an explicit SITE_URL is overriding the real host. Fix it or delete it.');
   }
   write('sitemap.xml', buildSitemap(siteUrl));
   write('robots.txt', buildRobots(siteUrl));

@@ -1,21 +1,42 @@
 import { useEffect } from 'react'
 
-// Single source of truth for the public origin. VITE_SITE_URL is injected at
-// build time from the platform's SITE_URL / VITE_SITE_URL env var, so a domain
-// change needs no code edit — set it and rebuild.
-// The literal below is a LAST-RESORT development fallback only. It is the old
-// Render host and is intentionally NOT the production domain: if you ever see
-// that URL in a live sitemap/canonical, SITE_URL was not set on the platform.
-const DEV_FALLBACK_ORIGIN = 'http://localhost:5173'
-const RAW_SITE_URL = import.meta.env?.VITE_SITE_URL || DEV_FALLBACK_ORIGIN
-const SITE_URL = RAW_SITE_URL.replace(/\/+$/, '')
+// The public origin, resolved where it is actually knowable. Order:
+//   1. VITE_SITE_URL — explicit override (set it to name a custom domain as the
+//      canonical while the SPA is still served from onrender.com).
+//   2. window.location.origin — this app serves the API and the built SPA from
+//      ONE origin, so the browser always knows the answer: correct on Render, on
+//      a custom domain, and on localhost, with zero build-time config.
+//   3. LAST_RESORT_ORIGIN — only reached without a browser and without the env
+//      var; keeps the constants below absolute.
+// It used to be `import.meta.env.VITE_SITE_URL || 'http://localhost:5173'`, and
+// VITE_SITE_URL is not declared in render.yaml — so every deployed page ran
+// useSeo() and OVERWROTE the correct index.html canonical/og:url with a
+// localhost one. Runtime resolution also survives future Render renames without
+// a rebuild.
+const LAST_RESORT_ORIGIN = 'https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com'
 
-if (import.meta.env?.PROD && !import.meta.env?.VITE_SITE_URL) {
+function normalizeOrigin(origin) {
+  return String(origin || '')
+    .trim()
+    .replace(/\/+$/, '')
+}
+
+function resolveSiteUrl() {
+  const configured = normalizeOrigin(import.meta.env?.VITE_SITE_URL)
+  if (configured) return configured
+  if (typeof window !== 'undefined' && /^https?:/i.test(window.location?.origin || '')) {
+    return normalizeOrigin(window.location.origin)
+  }
+  return LAST_RESORT_ORIGIN
+}
+
+const SITE_URL = resolveSiteUrl()
+
+if (import.meta.env?.PROD && SITE_URL === LAST_RESORT_ORIGIN && !import.meta.env?.VITE_SITE_URL) {
   console.warn(
-    '[seo] VITE_SITE_URL is not set in this production build — falling back to ' +
+    '[seo] neither VITE_SITE_URL nor a browser origin was available — falling back to ' +
       SITE_URL +
-      '. Set SITE_URL (or VITE_SITE_URL) on the host so canonical/og:url and ' +
-      'the sitemap point at the real domain.'
+      '. Normally window.location.origin covers this; set VITE_SITE_URL to canonicalise a custom domain.'
   )
 }
 const DEFAULT_IMAGE = `${SITE_URL}/hero-phoenix.jpg`
