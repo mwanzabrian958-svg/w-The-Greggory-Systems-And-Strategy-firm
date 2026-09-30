@@ -1,5 +1,11 @@
 # Auth Platforms - Visual Summary
 
+> ⚠️ **Legacy paths in this diagram** — `/api/login` and `/api/developer/authenticate`
+> are stale doc names. Live routes (verified 2026-09-29 by `scripts/check-auth-route-map.js`):
+> `POST /api/users/login` (users), `POST /api/admin-verification/authenticate-enhanced`
+> (admin_users), `POST /api/developer-verification/authenticate` (developer_users).
+> Table mappings shown are correct.
+
 ## Complete Authentication Architecture
 
 ```

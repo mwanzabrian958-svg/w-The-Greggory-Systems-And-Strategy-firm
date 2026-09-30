@@ -1,5 +1,18 @@
 # Auth Platforms Complete Linking Guide
 
+> ⚠️ **LEGACY ROUTE NAMES (verified live 2026-09-29, `node scripts/check-auth-route-map.js`).**
+> The `POST /api/admin/authenticate`, `POST /api/developer/authenticate`, `POST /api/login`
+> and `POST /api/signup` endpoints described below **no longer exist** on `server.js`.
+> The live routes are:
+>
+> | Platform | Table | LIVE login route | LIVE register route |
+> |---|---|---|---|
+> | User | `users` | `POST /api/users/login` | `POST /api/users/register` |
+> | Admin | `admin_users` | `POST /api/admin-verification/authenticate-enhanced` | `POST /api/admin-verification/register` |
+> | Developer | `developer_users` | `POST /api/developer-verification/authenticate` | `POST /api/admin-verification/register` (`role: "developer"`) |
+>
+> Table mappings below are still accurate; only the endpoint paths are stale.
+
 ## Overview
 This document links all authentication platforms with their respective database tables, API endpoints, and implementation details for the The-Greggory-Systems-And-Strategy-firm project.
 

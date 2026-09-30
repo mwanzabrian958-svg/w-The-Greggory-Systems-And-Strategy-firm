@@ -74,29 +74,11 @@ export async function verifyAdminSession() {
   }
 }
 
-export async function adminAuthenticate(credentials) {
-  try {
-    const data = await apiCall('/admin/authenticate', {
-      method: 'POST',
-      body: JSON.stringify(credentials)
-    })
-    return { ok: data.success === true, data }
-  } catch (err) {
-    console.error(`[ADMIN AUTH] error:`, err)
-    return { ok: false, data: { message: err.message || 'Authentication system failure.' } }
-  }
-}
+// NOTE: the former adminAuthenticate()/developerAuthenticate() helpers called
+// POST /api/admin/authenticate and /api/developer/authenticate. Neither route
+// exists on the server (verified live 2026-09-29 by scripts/check-auth-route-map.js:
+// /api/admin/authenticate fails closed 401 via admin.js's blanket session gate,
+// /api/developer/authenticate is 404). The real login flows use
+// /admin-verification/authenticate-enhanced (AuthPlatformModal, admin/hooks/useAuth)
+// and /developer-verification/authenticate. See AUTH-PLATFORMS-LINKING.md.
 
-// Developer authentication
-export async function developerAuthenticate(credentials) {
-  try {
-    const data = await apiCall('/developer/authenticate', {
-      method: 'POST',
-      body: JSON.stringify(credentials)
-    })
-    return { ok: data.success === true, data }
-  } catch (err) {
-    console.error(`[DEV AUTH] error:`, err)
-    return { ok: false, data: { message: err.message || 'Authentication system failure.' } }
-  }
-}
