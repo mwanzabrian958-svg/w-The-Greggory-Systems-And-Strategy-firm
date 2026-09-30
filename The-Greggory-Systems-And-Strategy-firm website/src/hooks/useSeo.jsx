@@ -21,18 +21,21 @@ function normalizeOrigin(origin) {
     .replace(/\/+$/, '')
 }
 
+// The resolver also reports WHICH branch produced the origin, so the warning
+// below fires only when the last-resort literal is genuinely in use. Comparing
+// the value against LAST_RESORT_ORIGIN instead would warn on every deployed
+// page, because the live browser origin legitimately equals that host.
 function resolveSiteUrl() {
   const configured = normalizeOrigin(import.meta.env?.VITE_SITE_URL)
-  if (configured) return configured
-  if (typeof window !== 'undefined' && /^https?:/i.test(window.location?.origin || '')) {
-    return normalizeOrigin(window.location.origin)
-  }
-  return LAST_RESORT_ORIGIN
+  if (configured) return { origin: configured, source: 'VITE_SITE_URL' }
+  const browser = typeof window !== 'undefined' ? normalizeOrigin(window.location?.origin) : ''
+  if (/^https?:/i.test(browser)) return { origin: browser, source: 'window.location.origin' }
+  return { origin: LAST_RESORT_ORIGIN, source: 'last-resort' }
 }
 
-const SITE_URL = resolveSiteUrl()
+const { origin: SITE_URL, source: SITE_URL_SOURCE } = resolveSiteUrl()
 
-if (import.meta.env?.PROD && SITE_URL === LAST_RESORT_ORIGIN && !import.meta.env?.VITE_SITE_URL) {
+if (import.meta.env?.PROD && SITE_URL_SOURCE === 'last-resort') {
   console.warn(
     '[seo] neither VITE_SITE_URL nor a browser origin was available — falling back to ' +
       SITE_URL +
