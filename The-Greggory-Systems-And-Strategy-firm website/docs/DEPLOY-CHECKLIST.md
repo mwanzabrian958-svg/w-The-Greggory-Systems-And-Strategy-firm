@@ -5,6 +5,35 @@ Working checklist for the current deployment:
 **domain (not yet connected)** `thegreggorysystemsandstrategyfirm.com`
 **database** Aiven managed MySQL, over TLS
 
+## Which `render.yaml` is the real one
+
+There are **two** tracked files named `render.yaml`, and only one of them is the
+blueprint Render reads:
+
+| | repo root `render.yaml` | `The-Greggory-...-firm website/render.yaml` |
+|---|---|---|
+| read by Render | **yes** | no |
+| `name` | `greggory-firm` | `greggory-systems-strategy` |
+| `rootDir` | `The-Greggory-Systems-And-Strategy-firm website` | none |
+
+Render reads `render.yaml` **from the repository root**; a subdirectory copy is
+only used if the Blueprint Path was explicitly changed during setup, and there is
+no evidence it was (the deployment doc, `docs/DEPLOYMENT-FREE-STACK.md:42-44`,
+says to connect the repo and let Render read the file, and the root file is the
+one carrying `rootDir` to find the app). So: **edit the root file.**
+
+The website-folder copy is a stale duplicate that still declares `SMTP_TO` and
+still named the service differently. Nothing reads it, but it will drift further
+and mislead the next reader. Treat it as a candidate for deletion — not done here
+because deleting a blueprint is a judgement call about future deploys, not a
+cleanup.
+
+Note that neither `name` matches the live host
+(`w-the-greggory-systems-and-strategy-firm-1vf9`): the service was renamed or
+created by hand, not created fresh from either blueprint as written. That is fine
+— `sync: false` means the dashboard is authoritative either way — but it does mean
+the `name` fields in both files are decorative history, not the live service.
+
 Values in your local `.env` are complete — `npm run test:env` reports
 `RESULT: .env has everything required — ready to deploy`. So every step below is
 about getting those local values into the two places that don't have them yet:
