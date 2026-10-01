@@ -10,6 +10,16 @@ Values in your local `.env` are complete — `npm run test:env` reports
 about getting those local values into the two places that don't have them yet:
 the **Render dashboard** and the **Google Cloud Console**.
 
+### Status right now (after `543bf9e`)
+
+- **Done:** the code purge is committed, pushed and **verified live**.
+  `npm run test:live` reports six green probes — `database:"connected"`, admin
+  routes answering `401` from the session guard, no junk-token data leak, CORS
+  allowing `DELETE`.
+- **Open — all of it outside this repo:** §3 the Render dashboard, §4 the Google
+  origin allowlist, then one redeploy so `VITE_GOOGLE_CLIENT_ID` gets baked into
+  the bundle (the only probe still red), and §7 rotating exposed secrets.
+
 `render.yaml` declares every secret as `sync: false`, which means the blueprint
 will never overwrite what you type in the dashboard, and never wipes it either.
 You can edit `render.yaml` freely; `ADMIN_KEY` was already removed from it with
@@ -25,7 +35,7 @@ node scripts/test-session-routes.js   # 4 passed — route guards incl. DELETE /
 npm run build             # Vite build must stay green
 ```
 
-## 2. Push
+## 2. Push — DONE (`543bf9e`, verified live)
 
 ```bash
 git add -A
@@ -33,9 +43,13 @@ git commit -m "refactor(auth): delete the dead x-admin-key guard; admin routes v
 git push origin main
 ```
 
-Render auto-deploys `main`. The admin routes on the modular `/api/users` router
-now verify the Bearer session token instead of an `x-admin-key` header, so
-nothing new needs to be set in the dashboard for this to work.
+Committed as `543bf9e` (16 files) and pushed; Render rebuilt and the new build was
+confirmed live about two minutes later — `npm run test:live` now reports
+`DELETE /api/users/1 -> 401 session guard`, where the previous build returned
+`500 "Admin key not configured on server"`. Nothing new had to be set in the
+dashboard for this to work: the modular `/api/users` router verifies the Bearer
+session token, which needs no variable that was not already required by
+`server.js`.
 
 ## 3. Render dashboard — Environment tab
 
@@ -126,6 +140,25 @@ curl.exe -s -X OPTIONS "$u/api/users" -H "Origin: $u" -H "Access-Control-Request
 
 Redo step 3 (`FRONTEND_URL`, `SITE_URL`, `MPESA_CALLBACK_URL`) and step 4 with
 the real domain, then redeploy so the sitemap and canonical URLs are rebuilt.
+
+## 7. Rotate the secrets that were exposed in a chat window
+
+Anything pasted into this conversation, or printed into a terminal transcript,
+has to be treated as disclosed — the transcript outlives the deployment. Rotate
+at the provider first, then paste the new value into the Render dashboard.
+
+| Secret | Where to rotate |
+|---|---|
+| Aiven DB password | Aiven console → your service → Security → reset password, then restart the Render service so the pool reconnects |
+| `ADMIN_SESSION_SECRET`, `JWT_SECRET`, `SESSION_SECRET` | fresh 64-hex: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. This logs every admin and user out, which is exactly the point |
+| `SMTP_PASS` | Google account → Security → App passwords → revoke, reissue |
+| `MPESA_CONSUMER_KEY` / `_CONSUMER_SECRET` / `_PASSKEY` | Daraja developer portal → regenerate the app credentials |
+| `AFRICASTALKING_API_KEY` | Africa's Talking → User settings → API key → regenerate |
+| `ADMIN_CODE` | set a new code in the dashboard — it gates admin account creation |
+
+Do **not** rotate `GOOGLE_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID` on the grounds of
+exposure: a client id is not a secret, it ships inside the public bundle to every
+visitor. Only the origin allowlist in §4 restricts what can be done with it.
 
 ---
 
