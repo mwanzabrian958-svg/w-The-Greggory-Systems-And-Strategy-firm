@@ -9,6 +9,23 @@ export default defineConfig(({ mode }) => {
   // On Render there is no .env — the plugin then falls back to process.env.
   const env = loadEnv(mode, process.cwd(), '')
 
+  // Build-time variables are BAKED INTO THE BUNDLE here, so a missing value ships
+  // a silently broken production build: with no client id the Google Sign-In
+  // button hides itself (measured: absent from all 30 deployed assets) and no
+  // dashboard restart can fix it — only a rebuild can. Warn loudly and early.
+  const buildTimeGaps = [
+    ['VITE_GOOGLE_CLIENT_ID', 'Google Sign-In button stays hidden'],
+    ['SITE_URL', 'sitemap / robots / canonical tags fall back to a placeholder'],
+  ].filter(([key]) => !env[key]);
+  if (buildTimeGaps.length) {
+    console.warn('\n[build] Missing build-time variables — this bundle ships without them:');
+    for (const [key, effect] of buildTimeGaps) {
+      console.warn(`[build]   ${key} — ${effect}`);
+    }
+    console.warn('[build] Set them in the deploy platform environment, then REDEPLOY');
+    console.warn('[build] (restarting the service will NOT pick them up).\n');
+  }
+
   return {
     plugins: [vitePluginSeo(env), react()],
     build: {
