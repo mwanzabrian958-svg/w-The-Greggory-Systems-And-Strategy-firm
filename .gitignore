@@ -63,3 +63,11 @@ The-Greggory-Systems-And-Strategy-firm website/scripts/_reseed-data.sql
 /audit-out.txt
 /_tmp_*.txt
 
+# One-off scratch scripts at the website root: probes, throwaway verifiers,
+# ad-hoc .env parsers. They keep being written during debugging sessions and
+# then accidentally committed. One of them (_env-parsed2.js) printed .env
+# VALUES to the terminal, which is how live secrets end up in chat transcripts.
+# The durable checks live in scripts/ and are tracked on purpose.
+The-Greggory-Systems-And-Strategy-firm website/_*.mjs
+The-Greggory-Systems-And-Strategy-firm website/_*.js
+
