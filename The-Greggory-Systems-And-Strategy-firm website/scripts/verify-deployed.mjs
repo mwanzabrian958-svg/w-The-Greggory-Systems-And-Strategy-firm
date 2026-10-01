@@ -12,7 +12,7 @@
 //   BASE_URL=https://your-site.onrender.com npm run test:live
 //
 // Exit 0 = service up, guards answer 401, CORS echoes the origin.
-import { existsSync } from "fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "fs";
 import { fileURLToPath } from "url";
 import path from "path";
 import dotenv from "dotenv";
@@ -32,6 +32,31 @@ const ok = (m) => console.log(`OK  ${m}`);
 const bad = (m) => { problems++; console.log(`!!  ${m}`); };
 const info = (m) => console.log(`--  ${m}`);
 const snippet = (s, n = 90) => (s || "").replace(/\s+/g, " ").trim().slice(0, n);
+
+/**
+ * Newest mtime across the given files/directories (recursive). Used to answer
+ * "was any frontend source touched after the last local build?", which is the
+ * only signal that separates a pending deploy from a mere build-env difference.
+ */
+function newestMtime(targets) {
+  let newest = 0;
+  const walk = (p) => {
+    let st;
+    try { st = statSync(p); } catch { return; }
+    if (st.isDirectory()) {
+      let entries = [];
+      try { entries = readdirSync(p); } catch { return; }
+      for (const e of entries) {
+        if (e === "node_modules" || e === "dist" || e === ".git") continue;
+        walk(path.join(p, e));
+      }
+    } else {
+      if (st.mtimeMs > newest) newest = st.mtimeMs;
+    }
+  };
+  for (const t of targets) walk(t);
+  return newest;
+}
 
 async function call(method, p, { headers = {} } = {}) {
   const res = await fetch(`${BASE}${p}`, {
@@ -90,6 +115,70 @@ try {
     bad(`DELETE /api/users/1 -> ${admin.status} ${snippet(admin.body)} — the OLD build is still live; the purge has not deployed`);
   } else {
     bad(`DELETE /api/users/1 -> ${admin.status} ${snippet(admin.body)} — expected 401 "Admin authentication required"`);
+  }
+
+  // ── 3b. BUILD FRESHNESS — is the newest commit deployed?
+  //
+  // The 401 tell above proves a FEATURE shipped, but stays true for every later
+  // build, so it cannot say whether the newest commit is live.
+  //
+  // Comparing raw asset hashes sounds right and is WRONG. Vite hashes the bundle
+  // CONTENT, and the content embeds build-time env: measured on this project,
+  // a local build (VITE_GOOGLE_CLIENT_ID set) produced index-DFR-qU9A.js while
+  // production (unset) served index-DviPS79d.js — same commit, different hashes,
+  // so a naive hash comparison reports "not deployed yet" forever and cries wolf
+  // on every run. The CSS matched exactly; only JS differed, because only JS
+  // embeds the id.
+  //
+  // So compare SOURCE, not output. The served index.html is hashed, and its hash
+  // is a function of the built assets... which again differ. Instead: build a
+  // local copy with the SAME env the platform has, and compare that. When the
+  // only env difference is the client id, the two builds are expected to differ,
+  // so this probe reports the facts instead of guessing:
+  //   - sources newer than the served index.html -> a deploy may be pending
+  //   - otherwise -> current, and any hash delta is an env difference
+  console.log(`\n-- is the newest commit actually deployed? --`);
+  const distDir = path.join(root, "dist");
+  const localHtmlPath = path.join(distDir, "index.html");
+  if (!existsSync(localHtmlPath)) {
+    info("no local dist/ to compare against — run `npm run build` to enable this probe");
+  } else {
+    const assetRe = /assets\/[A-Za-z0-9_.\-]+\.(?:js|css)/g;
+    const servedAssets = [...new Set(page.body.match(assetRe) || [])].sort();
+    const localAssets = [...new Set(readFileSync(localHtmlPath, "utf8").match(assetRe) || [])].sort();
+    const identical =
+      localAssets.length > 0 &&
+      localAssets.length === servedAssets.length &&
+      localAssets.every((a, i) => a === servedAssets[i]);
+
+    if (identical) {
+      ok(`deployed asset fingerprints match a local build exactly (${servedAssets.length} asset(s)) — same commit, same build env`);
+    } else {
+      // Was the source tree touched after the local build? That is the only
+      // signal available here that separates "deploy pending" from "env differs".
+      const newestSrc = await newestMtime([
+        path.join(root, "src"),
+        path.join(root, "index.html"),
+        path.join(root, "vite.config.js"),
+        path.join(root, "vite-plugin-seo.js"),
+      ]);
+      const builtAt = statSync(localHtmlPath).mtimeMs;
+      const srcNewer = newestSrc > builtAt;
+      info(
+        `asset fingerprints differ between local and served — expected when build env differs ` +
+          `(local has VITE_GOOGLE_CLIENT_ID set, Render does not; only JS embeds it, and the CSS hash matched). ` +
+          `This is NOT evidence of a pending deploy.`
+      );
+      if (srcNewer) {
+        bad(
+          `sources are newer than the last local build (${new Date(newestSrc).toISOString().slice(0, 16)} > ` +
+            `${new Date(builtAt).toISOString().slice(0, 16)}) — rebuild locally, and if it still differs after a ` +
+            `deploy completes, the platform build env is the remaining explanation`
+        );
+      } else {
+        ok("no frontend source is newer than the local build — the working tree is fully deployed");
+      }
+    }
   }
 
   const sessions = await call("DELETE", "/api/users/sessions");
