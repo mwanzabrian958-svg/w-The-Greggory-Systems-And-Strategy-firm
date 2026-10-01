@@ -46,6 +46,12 @@ A complete **Content Management System (CMS)** for the The-Greggory-Systems-And-
    - Generate a secret with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
    - There is no `ADMIN_KEY` any more — the static-key guard was deleted; admin
      routes verify the Bearer session token instead (`backend/middleware/adminSession.js`)
+   - `ADMIN_CODE` is a **mandatory second factor** for creating privileged
+     accounts: `POST /api/admin/create-admin` (admin session + code) and
+     `POST /api/admin-verification/register` both reject a missing or wrong code
+     with `403`, and both return `503` if the server has no `ADMIN_CODE` set, so a
+     missing dashboard secret disables admin creation instead of opening it. The
+     comparison is timing-safe.
 
 3. **Access the admin dashboard:**
    - Go to: `http://localhost:5173/admin`

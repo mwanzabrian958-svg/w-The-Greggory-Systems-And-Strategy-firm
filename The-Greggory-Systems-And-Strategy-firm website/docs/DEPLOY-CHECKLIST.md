@@ -31,7 +31,7 @@ no effect on the dashboard copy.
 
 ```bash
 npm run test:env          # deploy gate: every required var present + secret strength
-node scripts/test-session-routes.js   # 4 passed — route guards incl. DELETE /api/users/:id
+npm run test:routes       # 9 passed — route guards, no DB needed: session guards + ADMIN_CODE
 npm run build             # Vite build must stay green
 ```
 
