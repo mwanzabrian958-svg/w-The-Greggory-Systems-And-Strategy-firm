@@ -453,7 +453,6 @@ const corsOptions = {
     "Content-Type",
     "Authorization",
     "X-Requested-With",
-    "x-admin-key",
   ],
 };
 // Same-origin allowance: browsers attach an Origin header to same-origin

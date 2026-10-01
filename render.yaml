@@ -75,9 +75,11 @@ services:
         sync: false
       - key: SESSION_SECRET
         sync: false
-      # Admin API key — sent as the x-admin-key header by protected admin routes
-      - key: ADMIN_KEY
-        sync: false
+      # NOTE: there is deliberately no ADMIN_KEY here any more. The x-admin-key
+      # guard (backend/middleware/auth.js) was deleted; admin routes verify the
+      # Bearer session token instead (backend/middleware/adminSession.js).
+      # Declaring it with sync:false would keep the dashboard row alive and
+      # advertise a second, weaker admin door that nothing reads.
       # ---- Public URLs (set after first deploy) ----
       # LIVE origin as of 2026-09-30:
       #   https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com

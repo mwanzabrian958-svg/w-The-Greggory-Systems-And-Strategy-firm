@@ -77,14 +77,15 @@ The admin dashboard uses the existing backend API:
 - `/api/content/case-studies` - Case study operations
 - `/api/content/contact-forms` - Contact form operations
 
-All protected routes require the `x-admin-key` header, which is automatically handled by the frontend.
+All protected routes require the admin **session Bearer token**, which the admin console attaches automatically. There is no `x-admin-key` header any more — that static-key guard was deleted; see `backend/middleware/adminSession.js`.
 
 ## Security
 
-- Admin authentication via secure key
-- Key stored in localStorage (persists across sessions)
-- All admin operations require valid admin key
-- Backend validates key on every request
+- Admin authentication via an expiring, revocable session token (8h), not a static key
+- The session token is stored in `localStorage` under `gf_admin_session_token` (survives a page reload)
+- All admin operations require a valid session token; the backend re-verifies the token's HMAC signature and expiry on every request
+- Sessions can be revoked server-side (`DELETE /api/users/sessions`), which a static key never could
+- A token that fails verification is cleared automatically, so a revoked session cannot linger in the browser
 
 ## Next Steps
 
