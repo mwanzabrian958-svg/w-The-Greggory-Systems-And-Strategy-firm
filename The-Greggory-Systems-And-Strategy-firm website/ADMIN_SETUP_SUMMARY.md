@@ -39,10 +39,13 @@ A complete **Content Management System (CMS)** for the The-Greggory-Systems-And-
    npm start
    ```
 
-2. **Set up the admin key:**
+2. **Set up admin access:**
    - Create/edit `backend/.env` file
-   - Add: `ADMIN_KEY=your-secure-key-here`
-   - Use a strong, random key
+   - Add: `ADMIN_SESSION_SECRET=<32+ random chars>` (signs admin session tokens)
+   - Add: `ADMIN_CODE=<strong code your admins type>`
+   - Generate a secret with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+   - There is no `ADMIN_KEY` any more — the static-key guard was deleted; admin
+     routes verify the Bearer session token instead (`backend/middleware/adminSession.js`)
 
 3. **Access the admin dashboard:**
    - Go to: `http://localhost:5173/admin`

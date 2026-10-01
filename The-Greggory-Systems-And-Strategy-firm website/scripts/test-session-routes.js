@@ -2,9 +2,9 @@
  * ROUTE-ORDER REGRESSION TEST (no DB required — all paths short-circuit at auth)
  * Proves:
  *   1. GET  /sessions        -> 401 (reachable; not shadowed)
- *   2. DELETE /sessions      -> 401 (THE FIX: used to be 403/500 via DELETE /:id + requireAdmin)
+ *   2. DELETE /sessions      -> 401 (THE FIX: used to be 403/500 via DELETE /:id + the admin key guard)
  *   3. DELETE /sessions/999  -> 401 (reachable)
- *   4. DELETE /1             -> still the admin route (403/500, NOT 401)
+ *   4. DELETE /1             -> still the admin route (admin guard's 401 message, NOT the user guard's)
  * Run: node scripts/test-session-routes.js
  */
 "use strict";
@@ -12,7 +12,8 @@ const express = require("express");
 const http = require("http");
 
 // env guards so middleware behaves like production-ish paths
-process.env.ADMIN_KEY = process.env.ADMIN_KEY || "test-admin-key";
+// (no ADMIN_KEY: the x-admin-key guard was deleted; admin routes now verify the
+// Bearer session token — see backend/middleware/adminSession.js)
 
 const usersRouter = require("../backend/routes/users");
 const app = express();
@@ -54,7 +55,14 @@ function req(method, path) {
   check("DELETE /sessions/:id unauth -> 401", c.status === 401, `got ${c.status}`);
 
   const d = await req("DELETE", "/api/users/1");
-  check("DELETE /:id still admin-gated (not 401)", d.status !== 401, `got ${d.status}`);
+  // Since the x-admin-key purge this route also answers 401 — but with the ADMIN
+  // guard's own message, which proves it is still the admin-gated route and not
+  // the user-session path (/sessions returns "Authentication required").
+  check(
+    "DELETE /:id stays admin-gated (admin guard 401, not the user guard's)",
+    d.status === 401 && d.body.includes('"Admin authentication required"'),
+    `got ${d.status} ${d.body.slice(0, 90)}`
+  );
 
   let failed = 0;
   for (const r of results) {

@@ -61,9 +61,6 @@ services:
         sync: false
       - key: SESSION_SECRET
         sync: false
-      # Admin API key — sent as the x-admin-key header by protected admin routes
-      - key: ADMIN_KEY
-        sync: false
       # --- Email relay (Gmail App Password) ---
       - key: SMTP_HOST
         value: smtp.gmail.com

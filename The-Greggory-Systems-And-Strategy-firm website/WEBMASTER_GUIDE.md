@@ -5,18 +5,22 @@ This guide explains how to manage and update the The-Greggory-Systems-And-Strate
 ## Accessing the Admin Dashboard
 
 1. Navigate to: **http://localhost:5173/admin** (or your deployed URL + `/admin`)
-2. You'll be prompted to enter your **Admin Key**
-3. Enter the admin key that's configured in your backend `.env` file
+2. Sign in with your **admin credentials**
+3. The console keeps the session token the backend returns and sends it on every admin request
 
-### Setting Up the Admin Key
+### Setting Up Admin Access
 
-The admin key is set in your backend environment variables:
+There is no shared admin key. Sign in with admin credentials: the backend issues
+a signed session token (`backend/utils/sessionToken.js`) and the console sends it
+as `Authorization: Bearer <token>` on every admin request. Protected modular
+routes verify that same token (`backend/middleware/adminSession.js`).
 
-1. In the `backend` folder, create or edit `.env` file
-2. Add: `ADMIN_KEY=your-secure-admin-key-here`
+1. Set `ADMIN_SESSION_SECRET` in your environment — it signs the session tokens
+2. Set `ADMIN_CODE` if your admin/developer logins require the second-factor code
 3. Restart your backend server
 
-**Important:** Keep this key secure and never commit it to version control!
+**Important:** Keep these secrets out of version control. Sessions expire and can
+be revoked individually — unlike the old static key, a leaked token is not permanent.
 
 ## Features
 
@@ -112,7 +116,7 @@ The admin dashboard connects to your MySQL database. Make sure:
 
 1. Your database is set up (run the SQL schema files in `database/` folder)
 2. Database connection is configured in `backend/config/database.js`
-3. The `ADMIN_KEY` environment variable is set
+3. `ADMIN_SESSION_SECRET` is set — admin requests are verified against the signed session token
 
 ### Direct Database Access (Alternative)
 
@@ -139,11 +143,12 @@ companies tables) was removed from the system — those tables no longer exist.
 
 ## Troubleshooting
 
-### "Failed to load data. Check your admin key"
+### "Failed to load data"
 
-- Verify your admin key is correct
+- Your admin session has probably expired — sign in again
 - Check that backend server is running
-- Verify `ADMIN_KEY` in backend `.env` file matches what you entered
+- Verify `ADMIN_SESSION_SECRET` is set and unchanged since you signed in (changing
+  it invalidates every token already issued, so every admin gets bounced to 401)
 
 ### "Failed to save" errors
 

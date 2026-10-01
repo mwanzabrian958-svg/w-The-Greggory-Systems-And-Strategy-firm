@@ -27,7 +27,7 @@ if (dups.length) console.log(`!! duplicate keys in .env: ${dups.join(', ')}`);
 // ---- Required for the app to boot & auth to work --------------------------
 const required = [
   'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER',
-  'JWT_SECRET', 'JWT_EXPIRES_IN', 'ADMIN_SESSION_SECRET', 'ADMIN_KEY', 'ADMIN_CODE', 'SESSION_SECRET',
+  'JWT_SECRET', 'JWT_EXPIRES_IN', 'ADMIN_SESSION_SECRET', 'ADMIN_CODE', 'SESSION_SECRET',
   'FRONTEND_URL',
 ];
 
@@ -159,7 +159,19 @@ const looksPlaceholder = (v) => PLACEHOLDER_PATTERNS.some((re) => re.test(v.trim
 const MIN_SECRET_LEN = 32;
 const genHint =
   'generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"';
-for (const k of ['JWT_SECRET', 'ADMIN_SESSION_SECRET', 'SESSION_SECRET', 'ADMIN_KEY']) {
+// Retired keys: nothing in the app reads these any more, and leaving them set is
+// actively misleading — a past audit listed one of them as a "missing critical
+// secret" purely because a stale manifest still asked for it. See
+// backend/middleware/adminSession.js for why the x-admin-key guard was deleted.
+for (const [k, why] of Object.entries({
+  ADMIN_KEY: 'the x-admin-key guard no longer exists; admin routes verify the Bearer session token',
+})) {
+  if ((process.env[k] || '').trim()) {
+    console.log(`--  ${k} is set but NOTHING reads it — ${why}. Delete it from Render and .env.`);
+  }
+}
+
+for (const k of ['JWT_SECRET', 'ADMIN_SESSION_SECRET', 'SESSION_SECRET']) {
   const v = (process.env[k] || '').trim();
   if (!v) continue; // missing values are already reported in the required section
   if (looksPlaceholder(v)) {

@@ -49,8 +49,7 @@ auto-imported** from `The-Greggory-Systems-And-Strategy-firm-db-main/the-…db-m
 | `JWT_SECRET` | *copy from local `.env`* | |
 | `JWT_EXPIRES_IN` | `7d` | |
 | `ADMIN_SESSION_SECRET` | *copy from local `.env`* | |
-| `SESSION_SECRET` | *copy from local `.env`* | |
-| `ADMIN_KEY` | *copy from local `.env`* | x-admin-key header for legacy admin routes |
+| `SESSION_SECRET` | *copy from local `.env`* | legacy — no code reads it; `ADMIN_SESSION_SECRET`/`JWT_SECRET` sign sessions |
 | `ADMIN_CODE` | *generate a strong random code* | ⚠️ local `.env` ships it EMPTY — admin/developer logins need this second factor |
 | `FRONTEND_URL` | `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com` | CORS + email links. Live origin as of 2026-09-30 — `…-jz7i`/`…-vik4`/`greggory-firm-rtl3` are gone, so don't paste them |
 | `MPESA_CALLBACK_URL` | `https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com/api/mpesa/callback` | |

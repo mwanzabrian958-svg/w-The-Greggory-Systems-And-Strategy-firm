@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const requireAdmin = require('../middleware/auth');
+const requireAdminSession = require('../middleware/adminSession');
 
 // Helper: insert image from base64 string into images.data
 const insertImageFromBase64 = (
@@ -64,7 +64,7 @@ router.post('/profile', (req, res) => {
 });
 
 // Delete image (admin only)
-router.delete('/:id', requireAdmin, (req, res) => {
+router.delete('/:id', requireAdminSession, (req, res) => {
   const { id } = req.params;
 
   db.query('DELETE FROM images WHERE id = ?', [id], (err, result) => {

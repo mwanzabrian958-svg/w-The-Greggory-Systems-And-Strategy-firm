@@ -10,7 +10,7 @@ const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const requireAdmin = require('../middleware/auth');
+const requireAdminSession = require('../middleware/adminSession');
 const authenticateUser = require('../middleware/clientAuth');
 const authController = require('../controllers/authController');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
@@ -436,7 +436,7 @@ router.post('/admin-create', (req, res) => {
 router.post('/google-auth', authController.googleAuth);
 
 // Get all users (admin only)
-router.get('/', requireAdmin, (req, res) => {
+router.get('/', requireAdminSession, (req, res) => {
   const query = `
     SELECT u.id, u.email, u.display_name, u.primary_role, u.is_active, u.created_at, u.last_login_at,
            tm.name as job_title, tm.role as job_role
@@ -455,7 +455,7 @@ router.get('/', requireAdmin, (req, res) => {
 // NUMERIC-ONLY: this single-segment DELETE used to also swallow
 // `DELETE /sessions` (Express matches /:id with id="sessions"), which returned
 // 403 for regular users and made "log out everywhere else" unreachable.
-router.delete('/:id(\\d+)', requireAdmin, (req, res) => {
+router.delete('/:id(\\d+)', requireAdminSession, (req, res) => {
   const { id } = req.params;
   const query = 'DELETE FROM users WHERE id = ?';
   db.query(query, [id], (err, result) => {
