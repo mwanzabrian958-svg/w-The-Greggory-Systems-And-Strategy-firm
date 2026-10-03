@@ -131,6 +131,12 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+      # Recipient for contact-form / notification mail (the mailer and
+      # scripts/test-email.js both read SMTP_TO). Declared so production has a
+      # destination; without it those sends have no recipient.
+      - key: SMTP_TO
+        sync: false
+
       - key: AFRICASTALKING_USERNAME
         sync: false
       - key: AFRICASTALKING_API_KEY
@@ -147,6 +153,25 @@ services:
         sync: false
       - key: MPESA_SHORTCODE
         sync: false
+      # ---- WhatsApp Cloud API (Meta) ----
+      # backend/services/whatsappService.js prefers Meta Cloud when BOTH of these
+      # are set (otherwise it falls back to Africa's Talking, then to a simulated
+      # relay). They were present in the local .env but never declared here, so
+      # production had no way to receive them and every WhatsApp send simulated.
+      - key: WHATSAPP_CLOUD_TOKEN
+        sync: false
+      - key: WHATSAPP_CLOUD_PHONE_ID
+        sync: false
+      # Optional; the code defaults to v20.0 when unset.
+      - key: WHATSAPP_CLOUD_API_VERSION
+        value: v20.0
+      # ---- Firebase Cloud Messaging (push) ----
+      # Path to the service-account JSON INSIDE the deployed container. Defaults
+      # to backend/config/firebase-service-account.json; set only to override.
+      # Without it every FCM call returns a simulated success.
+      - key: FIREBASE_SERVICE_ACCOUNT_PATH
+        sync: false
+
       # NOTE: MONGODB_URI and REDIS_URL are intentionally omitted — the server
       # skips MongoDB when unset and falls back to in-memory rate-limit/session
       # storage without Redis. Add them later only if you actually need them.

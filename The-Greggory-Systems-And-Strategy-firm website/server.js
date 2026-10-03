@@ -82,6 +82,43 @@ if (!(process.env.GOOGLE_CLIENT_ID || "").trim()) {
   );
 }
 
+// ── Boot-time feature warnings ────────────────────────────────
+// WhatsApp, M-Pesa and FCM all DEGRADE SILENTLY when their credentials are
+// absent: the senders fall back to a "simulated success" so the UI looks fine
+// while nothing is ever delivered. Emit one line per missing integration at
+// boot, so a forgotten Render env var shows up in the logs instead of shipping
+// as an invisible non-feature.
+if (!whatsappProviderConfigured()) {
+  console.warn(
+    "[WHATSAPP] No WhatsApp provider configured — sends are SIMULATED. Set " +
+      "WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID (Meta Cloud API) or " +
+      "AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY.",
+  );
+}
+if (
+  !(process.env.MPESA_CONSUMER_KEY || "").trim() ||
+  !(process.env.MPESA_CONSUMER_SECRET || "").trim()
+) {
+  console.warn(
+    "[MPESA] MPESA_CONSUMER_KEY / MPESA_CONSUMER_SECRET not set — M-Pesa STK " +
+      "Push runs in SIMULATION mode (no real payment requests are made).",
+  );
+}
+{
+  const firebaseAccountPath =
+    process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
+    path.join(__dirname, "backend", "config", "firebase-service-account.json");
+  if (!fs.existsSync(firebaseAccountPath)) {
+    console.warn(
+      "[FCM] Firebase service account not found at " +
+        firebaseAccountPath +
+        " — push notifications are SIMULATED. Place the file there (or set " +
+        "FIREBASE_SERVICE_ACCOUNT_PATH) to enable real FCM pushes.",
+    );
+  }
+}
+
+
 // ── AUTH MIDDLEWARE ──────────────────────────────────────────
 
 const authenticateUser = async (req, res, next) => {
@@ -2508,7 +2545,7 @@ app.post(
 
       // Read file data
       const fs = require("fs");
-      const photoData = fs.readFileSync(req.file.path);
+      const photoData = req.file.buffer; // memoryStorage: bytes are in RAM — req.file.path is undefined
 
       // Insert project photo record with BLOB data
       const photoQuery = `
@@ -2531,7 +2568,7 @@ app.post(
       const photoId = photoResult.insertId;
 
       // Clean up temporary file
-      fs.unlinkSync(req.file.path);
+      // memoryStorage never wrote a temp file, so there is nothing to unlink here.
 
       // Create data URL for immediate response
       const dataUrl = `data:${req.file.mimetype};base64,${Buffer.from(photoData).toString("base64")}`;

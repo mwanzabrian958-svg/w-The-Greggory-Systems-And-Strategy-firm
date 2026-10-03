@@ -71,3 +71,6 @@ The-Greggory-Systems-And-Strategy-firm website/scripts/_reseed-data.sql
 The-Greggory-Systems-And-Strategy-firm website/_*.mjs
 The-Greggory-Systems-And-Strategy-firm website/_*.js
 
+
+# Backup copy of the monolith that was committed by mistake (server.js supersedes it)
+The-Greggory-Systems-And-Strategy-firm website/server.js.bak
