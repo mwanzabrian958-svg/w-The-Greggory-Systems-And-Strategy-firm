@@ -32,11 +32,7 @@ const CaseStudies = () => {
         { icon: <Users />, metric: '45%', label: 'Improved Team Satisfaction' },
         { icon: <DollarSign />, metric: formatKSH(25000), label: 'Revenue Recovered in Year One' }
       ],
-      testimonial: {
-        quote: 'The-Greggory-Systems-And-Strategy-firm transformed our approach to systems design and strategic planning. We now deliver consistently, and our team is happier than ever.',
-        author: 'Sarah Johnson',
-        role: 'CEO, TechInnovate Solutions'
-      }
+      
     },
     {
       company: 'Global Manufacturing Corp',
@@ -57,11 +53,7 @@ const CaseStudies = () => {
         { icon: <CheckCircle />, metric: '62%', label: 'Decrease in Quality Defects' },
         { icon: <TrendingUp />, metric: '22%', label: 'Increase in Profit Margin' }
       ],
-      testimonial: {
-        quote: 'The structured approach to process improvement delivered results beyond our expectations. The ROI was evident within the first six months.',
-        author: 'Michael Chen',
-        role: 'COO, Global Manufacturing Corp'
-      }
+      
     },
     {
       company: 'HealthCare Systems Inc.',
@@ -82,11 +74,7 @@ const CaseStudies = () => {
         { icon: <Users />, metric: '500+', label: 'Staff Successfully Trained' },
         { icon: <TrendingUp />, metric: '95%', label: 'User Adoption Rate in 30 Days' }
       ],
-      testimonial: {
-        quote: 'This was the most complex project in our organization\'s history. The The-Greggory-Systems-And-Strategy-firm\'s expertise was instrumental in our success.',
-        author: 'Dr. Patricia Martinez',
-        role: 'Chief Medical Officer, HealthCare Systems Inc.'
-      }
+      
     },
     {
       company: 'FinTech Innovations Ltd.',
@@ -107,11 +95,7 @@ const CaseStudies = () => {
         { icon: <CheckCircle />, metric: '100%', label: 'Regulatory Compliance' },
         { icon: <DollarSign />, metric: '40%', label: 'Revenue Growth Year-Over-Year' }
       ],
-      testimonial: {
-        quote: 'The structured approach to innovation gave us the competitive edge we needed. We can now innovate at scale without sacrificing quality or compliance.',
-        author: 'David Kim',
-        role: 'Founder & CEO, FinTech Innovations Ltd.'
-      }
+      
     },
     {
       company: 'Retail Excellence Group',
@@ -132,11 +116,7 @@ const CaseStudies = () => {
         { icon: <Clock />, metric: '30%', label: 'Reduction in Operational Costs' },
         { icon: <Users />, metric: '85%', label: 'Employee Engagement Score' }
       ],
-      testimonial: {
-        quote: 'The transformation in our operations has been remarkable. We now have consistency across all locations and the data to make smarter business decisions.',
-        author: 'Jennifer Williams',
-        role: 'VP of Operations, Retail Excellence Group'
-      }
+      
     },
     {
       company: 'Methen',
@@ -156,11 +136,7 @@ const CaseStudies = () => {
         { icon: <DollarSign />, metric: formatKSH(24500), label: 'Budget Savings' },
         { icon: <Users />, metric: '92%', label: 'Stakeholder Visibility Score' }
       ],
-      testimonial: {
-        quote: 'We finally have consistent visibility and control across our sites. Decisions are faster and execution is smoother.',
-        author: 'Peter Mwangi',
-        role: 'Projects Director, Methen'
-      }
+      
     }
   ]
 
@@ -442,7 +418,7 @@ const CaseStudies = () => {
                   </div>
                 </div>
 
-                {/* Results & Testimonial Protocol */}
+                {/* Results Protocol */}
                 <div className="space-y-12">
                   {/* Results */}
                   <div>
@@ -490,61 +466,7 @@ const CaseStudies = () => {
                     </div>
                   </div>
 
-                  {/* Testimonial Protocol */}
-                  <div className="bg-gradient-to-br from-[#1e293b] to-[#0f172a] rounded-[40px] p-10 border border-white/10 shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-8 opacity-[0.05]">
-                       <Rocket className="w-32 h-32 text-gold-500" />
-                    </div>
-                    <svg className="w-12 h-12 text-gold-500/20 mb-8" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                    </svg>
-                    {!editMode ? (
-                      <div className="relative z-10">
-                        <blockquote className="text-xl font-bold text-slate-200 mb-8 leading-relaxed italic">"{study.testimonial.quote}"</blockquote>
-                        <div className="flex items-center gap-4">
-                           <div className="h-px w-8 bg-gold-500"></div>
-                           <div>
-                              <div className="font-black text-white uppercase tracking-widest text-sm">{study.testimonial.author}</div>
-                              <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">{study.testimonial.role}</div>
-                           </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-6 relative z-10">
-                        <textarea
-                          className="w-full bg-white/5 border border-white/10 rounded-2xl p-6 text-sm text-white italic"
-                          value={study.testimonial.quote}
-                          onChange={(e) => {
-                            const next = [...studies]
-                            next[index].testimonial.quote = e.target.value
-                            setStudies(next)
-                          }}
-                        />
-                        <div className="grid grid-cols-2 gap-4">
-                          <input
-                            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs font-black text-white"
-                            value={study.testimonial.author}
-                            onChange={(e) => {
-                              const next = [...studies]
-                              next[index].testimonial.author = e.target.value
-                              setStudies(next)
-                            }}
-                            placeholder="Author"
-                          />
-                          <input
-                            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs font-black text-white"
-                            value={study.testimonial.role}
-                            onChange={(e) => {
-                              const next = [...studies]
-                              next[index].testimonial.role = e.target.value
-                              setStudies(next)
-                            }}
-                            placeholder="Role"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  
                 </div>
               </div>
             </div>

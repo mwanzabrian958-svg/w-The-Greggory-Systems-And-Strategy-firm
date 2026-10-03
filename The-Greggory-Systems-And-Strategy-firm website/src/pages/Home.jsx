@@ -68,20 +68,7 @@ const Home = () => {
     { icon: <Clock className="w-4 h-4" />, value: '10+', label: 'Years Active' }
   ]
 
-  const testimonials = [
-    {
-      quote: "Their expertise in systems design helped us streamline processes we had struggled with for years. Exceptional professionalism.",
-      author: "Sarah Wanjiku",
-      role: "CEO",
-      company: "TechStart Africa"
-    },
-    {
-      quote: "A truly strategic partner. They walk with you through implementation, ensuring every solution is practical and sustainable.",
-      author: "David Omondi",
-      role: "Managing Director",
-      company: "Horizon Ventures"
-    }
-  ]
+  
 
   return (
     <div className="relative min-h-screen bg-white text-slate-900 overflow-x-hidden antialiased">
@@ -725,32 +712,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ── */}
-      <section className="py-14 bg-slate-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Client Perspectives</h2>
-            <div className="h-px w-8 bg-gold-500 mx-auto" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="p-5 rounded-xl bg-white border border-slate-200 hover:border-gold-500/10 transition-all duration-300">
-                <div className="flex items-center gap-0.5 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="w-1 h-1 rounded-full bg-gold-500" />
-                  ))}
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed mb-4">"{testimonial.quote}"</p>
-                <div className="h-px w-6 bg-gold-500/20 mb-3" />
-                <div className="font-bold text-slate-900 text-[11px] uppercase tracking-wider">{testimonial.author}</div>
-                <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{testimonial.role}</div>
-                <div className="text-[9px] text-gold-600 font-bold mt-0.5">{testimonial.company}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      
 
       {/* ── CTA ── */}
       <section className="py-12 bg-slate-50 border-y border-slate-200">
