@@ -16,7 +16,18 @@
 // only thing that ever needs editing.
 // ============================================================================
 
-/** The year the firm was founded. Drives every tenure figure on the site. */
+/**
+ * The year the firm was founded. Drives every tenure figure on the site.
+ *
+ * CONFIRMED 2023 by the firm — this is the real founding year, not an estimate
+ * and not derived from the git history (the repo's first commit is 2025, which
+ * only records when the code was written, not when the business started).
+ *
+ * Do NOT "fix" this to 2024 to match the `© 2024` in README.md: that copyright
+ * line predates this value and is not the founding date. Changing this constant
+ * silently shifts the advertised tenure by a year forever, because every figure
+ * on the site is computed from it.
+ */
 export const FOUNDED_YEAR = 2023;
 
 /**
@@ -24,8 +35,12 @@ export const FOUNDED_YEAR = 2023;
  *
  * Acts as a floor: if a visitor's device has a badly wrong year (or the site is
  * viewed just before a timezone rolls over on 31 Dec), we never advertise a
- * LOWER number than we are entitled to. Change this only if the firm's real
- * founding date changes.
+ * LOWER number than we are entitled to.
+ *
+ * At the confirmed 2023 founding year this equals `2026 - 2023 = 3` exactly, so
+ * the floor is currently a no-op safety net rather than a fudge factor. It only
+ * ever engages if the site's clock is wrong. Keep it in step with FOUNDED_YEAR
+ * if the founding year is ever revised.
  */
 export const MIN_YEARS_ACTIVE = 3;
 

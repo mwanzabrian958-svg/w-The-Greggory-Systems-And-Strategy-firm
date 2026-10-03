@@ -75,3 +75,21 @@ test('defaults to the current date when no argument is supplied', () => {
   assert.strictEqual(typeof getYearsActive(), 'number');
   assert.ok(getYearsActive() >= MIN_YEARS_ACTIVE);
 });
+
+test('the founding year is the confirmed 2023, not the stale 2024 copyright', () => {
+  // Guard against a well-meaning future edit "correcting" 2023 -> 2024 to match
+  // the old README footer. 2024 was a stale copyright year, not the founding
+  // date; shifting this constant would overstate the firm's tenure by a year,
+  // every year, silently.
+  assert.strictEqual(FOUNDED_YEAR, 2023);
+  assert.strictEqual(MIN_YEARS_ACTIVE, 3);
+});
+
+test('the baseline equals the real elapsed tenure, so the floor never fudges', () => {
+  // At the confirmed founding year the arithmetic and the floor agree exactly.
+  // If FOUNDED_YEAR is ever revised without MIN_YEARS_ACTIVE, this fails and
+  // the marketing figure would silently overstate the firm's history.
+  const firstFullYear = FOUNDED_YEAR + MIN_YEARS_ACTIVE;
+  assert.strictEqual(getYearsActive(new Date(firstFullYear, 0, 1)), MIN_YEARS_ACTIVE);
+  assert.strictEqual(getYearsActive(new Date(firstFullYear + 1, 0, 1)), MIN_YEARS_ACTIVE + 1);
+});

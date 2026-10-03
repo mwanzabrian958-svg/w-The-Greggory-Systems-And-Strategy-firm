@@ -69,5 +69,12 @@ To initialize a local instance of the firm's digital node, please refer to the *
 
 ---
 
-© 2024 The Greggory Systems And Strategy Firm. All rights reserved.  
+© 2023 The Greggory Systems And Strategy Firm. All rights reserved.  
 **"Strategic Project Development for all clients. Excellence in all areas of industry."**
+
+> **Note on dates:** the firm was founded in **2023**, which is the single source
+> of truth for the "Years Active" figure on the site
+> (`src/utils/companyStats.js` → `FOUNDED_YEAR`). This footer previously read
+> "© 2024", which was a stale copyright year, not the founding date. The first
+> commit in this repository dates from 2025, but that records only when the
+> software was written — not when the business began.
