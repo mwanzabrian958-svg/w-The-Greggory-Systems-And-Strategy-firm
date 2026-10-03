@@ -2,9 +2,14 @@ import { useEffect, useState } from 'react'
 import { TrendingUp, Clock, DollarSign, Users, CheckCircle, Rocket, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { apiCall } from '../services/api'
 
 import { formatKSH } from '../utils/currencyUtils'
 import { useSeo, SEO } from '../hooks/useSeo'
+
+// Used when a portfolio entry is published without an image, so a card never
+// renders a broken <img>.
+const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=500&fit=crop'
 
 const CaseStudies = () => {
   useSeo(SEO.caseStudies)
@@ -152,6 +157,46 @@ const CaseStudies = () => {
         if (Array.isArray(parsed) && parsed.length) setStudies(parsed)
       }
     } catch {}
+  }, [])
+
+  // Work portfolio published from the admin Posts area (backend/routes/posts.js).
+  // As soon as at least one row is live it replaces the bundled examples; while
+  // the database is empty the built-in studies stay on the page, so the route is
+  // never blank. The DB is the source of truth — this fetch resolves after the
+  // localStorage read above and therefore wins.
+  useEffect(() => {
+    let cancelled = false
+    apiCall('/posts/portfolio')
+      .then((d) => {
+        if (cancelled) return
+        const rows = d?.portfolio || []
+        if (!rows.length) return
+        setStudies(
+          rows.map((r) => {
+            const blocks = r.body ? String(r.body).split(/\n\s*\n/).map((s) => s.trim()).filter(Boolean) : []
+            return {
+              id: `db-${r.id}`,
+              company: r.client_name || r.title,
+              industry: r.sector || 'Engagement',
+              image: r.image_url || PLACEHOLDER_IMAGE,
+              situation: r.summary || '',
+              task: blocks[0] ? blocks[0].slice(0, 320) : '',
+              action: blocks.slice(1),
+              results: (r.outcomes || []).map((o) => ({
+                icon: <TrendingUp />,
+                metric: o.metric,
+                label: o.label,
+              })),
+            }
+          })
+        )
+      })
+      .catch(() => {
+        /* keep the bundled examples — a failed fetch must not blank the page */
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const saveAll = () => {

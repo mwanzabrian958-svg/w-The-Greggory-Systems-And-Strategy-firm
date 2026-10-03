@@ -311,6 +311,71 @@ async function apply() {
   } catch (e) {
     errors.push(`users: ${e.message}`);
   }
+  // Code-required TABLES for the admin "Posts" area (testimonials + work
+  // portfolio). Declared here for the same reason as MPESA_REQUIRED and
+  // USERS_CODE_COLUMNS above: the committed manifest is captured by hand on the
+  // dev machine and a fresh cloud DB is seeded from the SQL dump, and neither
+  // carries these tables. Without this block every /api/posts query answers
+  // ER_NO_SUCH_TABLE and the whole Posts area is dead on a fresh deploy.
+  // CREATE TABLE IF NOT EXISTS is idempotent and never touches existing data,
+  // so this is safe to run on every boot.
+  const POSTS_REQUIRED_TABLES = [
+    {
+      name: 'testimonials',
+      create: `CREATE TABLE IF NOT EXISTS testimonials (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  quote TEXT NOT NULL,
+  author_name VARCHAR(255) NOT NULL,
+  author_role VARCHAR(255) NULL,
+  author_company VARCHAR(255) NULL,
+  rating INT NOT NULL DEFAULT 5,
+  status ENUM('draft','published') NOT NULL DEFAULT 'draft',
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_by BIGINT NULL,
+  deleted_at TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_posts_public (status, is_active, deleted_at),
+  KEY idx_posts_sort (sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    },
+    {
+      name: 'portfolio_items',
+      create: `CREATE TABLE IF NOT EXISTS portfolio_items (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  client_name VARCHAR(255) NULL,
+  sector VARCHAR(160) NULL,
+  summary VARCHAR(500) NULL,
+  body MEDIUMTEXT NULL,
+  image_url VARCHAR(512) NULL,
+  outcomes TEXT NULL,
+  status ENUM('draft','published') NOT NULL DEFAULT 'draft',
+  sort_order INT NOT NULL DEFAULT 0,
+  is_featured BOOLEAN NOT NULL DEFAULT FALSE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT NULL,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  updated_by BIGINT NULL,
+  deleted_at TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (id),
+  KEY idx_posts_public (status, is_active, deleted_at),
+  KEY idx_posts_sort (sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    },
+  ];
+  for (const t of POSTS_REQUIRED_TABLES) {
+    try {
+      await conn.query(t.create);
+    } catch (e) {
+      errors.push(`create ${t.name}: ${e.message}`);
+    }
+  }
+
   await conn.query("SET FOREIGN_KEY_CHECKS = 1");
   await conn.end();
   console.log(

@@ -3,10 +3,32 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, ChevronRight, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
 import { SITE_NAME } from '../constants/siteBrand'
 import { useSeo, SEO } from '../hooks/useSeo'
+import { apiCall } from '../services/api'
+import { getYearsActiveLabel } from '../utils/companyStats'
 
 const Home = () => {
   useSeo(SEO.home)
   const videoRef = useRef(null)
+
+  // Testimonials are published from the admin Posts area (backend/routes/posts.js);
+  // only rows with status='published' AND is_active=1 are returned. The section
+  // below renders only when the list is non-empty, so an empty database leaves
+  // no orphaned heading behind.
+  const [testimonials, setTestimonials] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    apiCall('/posts/testimonials')
+      .then((d) => {
+        if (!cancelled) setTestimonials(d?.testimonials || [])
+      })
+      .catch(() => {
+        if (!cancelled) setTestimonials([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // ── Phone hero viewport math (phones only) ──────────────────────────
   // PHONES ONLY (the section below opts in with min-h-[calc(100svh_-_...)]
@@ -65,7 +87,7 @@ const Home = () => {
     { icon: <TrendingUp className="w-4 h-4" />, value: '150+', label: 'Projects Delivered' },
     { icon: <Users className="w-4 h-4" />, value: '50+', label: 'Happy Clients' },
     { icon: <Award className="w-4 h-4" />, value: '98%', label: 'Success Rate' },
-    { icon: <Clock className="w-4 h-4" />, value: '10+', label: 'Years Active' }
+    { icon: <Clock className="w-4 h-4" />, value: getYearsActiveLabel(), label: 'Years Active' }
   ]
 
   
@@ -713,6 +735,49 @@ const Home = () => {
       </section>
 
       
+
+      {testimonials.length > 0 && (
+        /* Rendered only when at least one testimonial is published. */
+        <section className="py-14 bg-slate-50">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Client Perspectives</h2>
+              <div className="h-px w-8 bg-gold-500 mx-auto" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {testimonials.map((t) => (
+                <div
+                  key={t.id}
+                  className="p-5 rounded-xl bg-white border border-slate-200 hover:border-gold-500/10 transition-all duration-300"
+                >
+                  <div className="flex items-center gap-0.5 mb-3">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div
+                        key={i}
+                        className={`w-1 h-1 rounded-full ${i <= (t.rating || 0) ? 'bg-gold-500' : 'bg-slate-200'}`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-relaxed mb-4">&quot;{t.quote}&quot;</p>
+                  <div className="h-px w-6 bg-gold-500/20 mb-3" />
+                  <div className="font-bold text-slate-900 text-[11px] uppercase tracking-wider">
+                    {t.author_name}
+                  </div>
+                  {t.author_role ? (
+                    <div className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                      {t.author_role}
+                    </div>
+                  ) : null}
+                  {t.author_company ? (
+                    <div className="text-[9px] text-gold-600 font-bold mt-0.5">{t.author_company}</div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── CTA ── */}
       <section className="py-12 bg-slate-50 border-y border-slate-200">

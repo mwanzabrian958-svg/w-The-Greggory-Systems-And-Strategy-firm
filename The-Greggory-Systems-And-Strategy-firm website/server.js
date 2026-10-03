@@ -6926,6 +6926,11 @@ const modularRoutes = [
   { path: "/api/developer-verification", route: "./backend/routes/developer-verification" },
   { path: "/api/mpesa", route: "./backend/routes/mpesa" },
   { path: "/api/users", route: "./backend/routes/users" },
+  // Content posts (testimonials + work portfolio). The public half
+  // (/testimonials, /portfolio) is intentionally unauthenticated so the
+  // marketing pages can read it; every /api/posts/admin/* route carries its
+  // own requireAdminSession guard.
+  { path: "/api/posts", route: "./backend/routes/posts" },
 ];
 
 modularRoutes.forEach((item) => {
