@@ -6,7 +6,11 @@ const mysql = require('mysql2/promise');
   try {
     conn = await mysql.createConnection({
       host: env.DB_HOST,
-      port: 28067,
+      // Read the port from .env like every other DB_* consumer. This used to be
+      // hardcoded to 28067 — a third Aiven service port that no longer matches
+      // DB_PORT, so the script silently connected to the wrong (or a dead)
+      // endpoint. Aiven reassigns ports per service, so this must not be pinned.
+      port: Number(env.DB_PORT),
       user: env.DB_USER,
       password: env.DB_PASSWORD,
       database: env.DB_NAME,
