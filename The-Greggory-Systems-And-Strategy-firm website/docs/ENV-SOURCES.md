@@ -19,8 +19,8 @@ exact page to grab the value from and the page to paste it into.
 
 | Key | Get it from | Notes |
 |---|---|---|
-| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` | [Aiven console](https://console.aivencloud.com/) → Project → your MySQL service → **Overview → Connection info** | Port is NOT 3306 on Aiven (yours is a 5-digit one, e.g. 27146). TLS required — `DB_SSL=true` is already fixed in render.yaml, no cert download needed (`rejectUnauthorized:false` in `server/config/dbEndpoints.js`). |
-| `DB_NAME` | Same Aiven page — "Database name" (defaults to the service name) | render.yaml deliberately keeps this `sync:false`; a stale hardcoded value once pointed Render at a nonexistent DB. Dashboard is the ONLY place it's set. |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` | [Aiven console](https://console.aivencloud.com/) → Project → your MySQL service → **Overview → Connection info** | Port is NOT 3306 on Aiven. TLS required — `DB_SSL=true` is already fixed in render.yaml, no cert download needed (`rejectUnauthorized:false` in `server/config/dbEndpoints.js`). **Current values after the 2026-10-04 migration:** `mysql-2277f171-brianmwanza651-0b75.g.aivencloud.com` / `27059` / `avnadmin` / (password from the Aiven page). The previous service (`mysql-3df795bb-…`, port 27146) is GONE — its hostname no longer resolves, which is what made `/api/health` report `"database":"unreachable"`. |
+| `DB_NAME` | Same Aiven page — "Database name" (defaults to the service name) | render.yaml deliberately keeps this `sync:false`; a stale hardcoded value once pointed Render at a nonexistent DB. Dashboard is the ONLY place it's set. **Current value: `defaultdb`** — the new service only owns that schema. |
 | `JWT_SECRET` | Generate: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` | Must be IDENTICAL on local + Render or tokens won't verify across environments. |
 | `ADMIN_SESSION_SECRET` | Same generate command | Signs the admin session token (`backend/utils/sessionToken.js`). |
 | `SESSION_SECRET` | Same generate command | |
