@@ -19,6 +19,7 @@ const { verifySessionToken } = require('../utils/sessionToken');
 // clientAuth.js exports the middleware directly (module.exports = authenticateUser)
 const authenticateUser = require('../middleware/clientAuth');
 const {
+  getFirebaseApp,
   sendToDevice,
   sendToDevices,
   sendToTopic,
@@ -245,6 +246,11 @@ router.get('/devices', requireAdminSession, async (req, res) => {
 //
 router.get('/status', async (req, res) => {
   try {
+    // Idempotent init. Nothing else runs at boot, so without this the SDK is
+    // never initialized and isConfigured() would report false even when valid
+    // credentials are present — hiding a working deployment behind "not
+    // configured". Returns null (and logs) when no credentials exist.
+    getFirebaseApp();
     const configured = isConfigured();
     res.json({
       success: true,
@@ -252,7 +258,7 @@ router.get('/status', async (req, res) => {
       timestamp: new Date().toISOString(),
       note: configured
         ? 'FCM ready — push notifications available'
-        : 'FCM not configured — place serviceAccountKey.json in backend/config/',
+        : 'FCM not configured — set FIREBASE_SERVICE_ACCOUNT (service-account JSON) in the environment, or place firebase-service-account.json in backend/config/',
     });
   } catch (error) {
     console.error('[FCM /status] Status check failed:', error);

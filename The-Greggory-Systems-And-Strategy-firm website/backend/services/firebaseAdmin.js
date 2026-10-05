@@ -18,8 +18,17 @@
  */
 
 const admin = require('firebase-admin');
+const { getMessaging } = require('firebase-admin/messaging');
 const fs = require('fs');
 const path = require('path');
+
+// firebase-admin v14 removed the namespace API this file was written against:
+//   admin.credential  -> admin.cert
+//   admin.apps        -> admin.getApps()
+//   admin.messaging() -> getMessaging(app)
+// Keeping the v13 form does not fail loudly — `admin.credential` is just
+// `undefined`, so credential.cert() throws inside the try/catch below and the
+// SDK silently never initializes. Verified against firebase-admin 14.4.0.
 
 const SERVICE_ACCOUNT_PATH =
   process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
@@ -33,7 +42,7 @@ let appInitialized = false;
  * Accepts either the raw JSON (Render env var) or a file path (local dev).
  * Returns null when neither is present, which callers treat as "simulated".
  *
- * @returns {Object|null} credential object for admin.credential.cert()
+ * @returns {Object|null} credential object for admin.cert()
  * @throws {Error} when an env var is set but is not a service account —
  *                 e.g. someone pastes google-services.json by mistake.
  */
@@ -65,7 +74,8 @@ function loadCredentials() {
 }
 
 function getFirebaseApp() {
-  if (admin.apps.length > 0) return admin.apps[0];
+  const existing = admin.getApps();
+  if (existing.length > 0) return existing[0];
 
   try {
     const credentials = loadCredentials();
@@ -80,12 +90,12 @@ function getFirebaseApp() {
       return null;
     }
 
-    admin.initializeApp({
-      credential: admin.credential.cert(credentials),
+    const app = admin.initializeApp({
+      credential: admin.cert(credentials),
     });
     appInitialized = true;
     console.log('[FIREBASE ADMIN] Firebase Admin SDK initialized');
-    return admin.apps[0];
+    return app;
   } catch (err) {
     console.error('[FIREBASE ADMIN] Initialization failed:', err.message);
     return null;
@@ -132,7 +142,7 @@ async function sendToDevice(fcmToken, payload) {
   }
 
   try {
-    const response = await admin.messaging().send(
+    const response = await getMessaging(app).send(
       Object.assign({ token: fcmToken }, buildMessage(payload))
     );
     console.log('[FIREBASE ADMIN] Push sent. Message ID:', response);
@@ -185,7 +195,7 @@ async function sendToDevices(fcmTokens, payload) {
 
   for (const batch of batches) {
     try {
-      const response = await admin.messaging().sendEachForMulticast(
+      const response = await getMessaging(app).sendEachForMulticast(
         Object.assign({ tokens: batch }, buildMessage(payload))
       );
       totalSuccess += response.successCount;
@@ -242,7 +252,7 @@ async function sendToTopic(topic, payload) {
   }
 
   try {
-    const response = await admin.messaging().send(
+    const response = await getMessaging(app).send(
       Object.assign({ topic }, buildMessage(payload))
     );
     console.log(
@@ -264,7 +274,7 @@ async function subscribeToTopic(tokens, topic) {
   const app = getFirebaseApp();
   if (!app || !tokens || tokens.length === 0) return;
   try {
-    const response = await admin.messaging().subscribeToTopic(tokens, topic);
+    const response = await getMessaging(app).subscribeToTopic(tokens, topic);
     console.log(
       `[FIREBASE ADMIN] Subscribed ${tokens.length} token(s) to /${topic}. Success:`,
       response.successCount
@@ -281,7 +291,7 @@ async function unsubscribeFromTopic(tokens, topic) {
   const app = getFirebaseApp();
   if (!app || !tokens || tokens.length === 0) return;
   try {
-    const response = await admin.messaging().unsubscribeFromTopic(tokens, topic);
+    const response = await getMessaging(app).unsubscribeFromTopic(tokens, topic);
     console.log(
       `[FIREBASE ADMIN] Unsubscribed ${tokens.length} token(s) from /${topic}. Success:`,
       response.successCount
@@ -298,6 +308,6 @@ module.exports = {
   sendToTopic,
   subscribeToTopic,
   unsubscribeFromTopic,
-  isConfigured: () => appInitialized && admin.apps.length > 0,
+  isConfigured: () => appInitialized && admin.getApps().length > 0,
 };
 
