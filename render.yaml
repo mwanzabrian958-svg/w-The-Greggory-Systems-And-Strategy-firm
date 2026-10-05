@@ -171,6 +171,13 @@ services:
       # Without it every FCM call returns a simulated success.
       - key: FIREBASE_SERVICE_ACCOUNT_PATH
         sync: false
+      # The whole service-account JSON pasted as one value. This is the one
+      # that actually works on Render — the container image ships no key file,
+      # so FIREBASE_SERVICE_ACCOUNT_PATH alone always resolves to nothing.
+      # Never set sync:true (it would be committed to this repo). Unset = FCM
+      # stays simulated, which is the safe default until you paste the key.
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
 
       # NOTE: MONGODB_URI and REDIS_URL are intentionally omitted — the server
       # skips MongoDB when unset and falls back to in-memory rate-limit/session

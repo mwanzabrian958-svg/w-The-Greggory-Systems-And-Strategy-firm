@@ -4,8 +4,13 @@
  * Used by the admin dashboard and all server routes to send FCM push
  * notifications to the Android client portal app (MyFirebaseMessagingService).
  *
- * Required:
- *   backend/config/firebase-service-account.json  (downloaded from Firebase Console)
+ * Credentials are resolved in this order:
+ *   1. FIREBASE_SERVICE_ACCOUNT       — raw service-account JSON (Render env var)
+ *   2. FIREBASE_SERVICE_ACCOUNT_PATH  — path to that JSON file
+ *   3. backend/config/firebase-service-account.json — local dev default
+ *
+ * Option 1 is the ONLY one that works on Render: no key file ships inside the
+ * container image, so any path on its own resolves to nothing.
  *
  * If credentials are missing the service logs a warning and all callers
  * receive a simulated success response — same fail-safe pattern used by
@@ -22,20 +27,59 @@ const SERVICE_ACCOUNT_PATH =
 
 let appInitialized = false;
 
+/**
+ * Resolve service-account credentials without requiring a file on disk.
+ *
+ * Accepts either the raw JSON (Render env var) or a file path (local dev).
+ * Returns null when neither is present, which callers treat as "simulated".
+ *
+ * @returns {Object|null} credential object for admin.credential.cert()
+ * @throws {Error} when an env var is set but is not a service account —
+ *                 e.g. someone pastes google-services.json by mistake.
+ */
+function loadCredentials() {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (raw && raw.trim()) {
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      throw new Error(
+        `FIREBASE_SERVICE_ACCOUNT is not valid JSON: ${err.message}`
+      );
+    }
+    if (parsed.type !== 'service_account' || !parsed.private_key || !parsed.client_email) {
+      throw new Error(
+        'FIREBASE_SERVICE_ACCOUNT must be a service-account key ' +
+          '(needs type/private_key/client_email) — not google-services.json.'
+      );
+    }
+    return parsed;
+  }
+
+  if (fs.existsSync(SERVICE_ACCOUNT_PATH)) {
+    return require(SERVICE_ACCOUNT_PATH);
+  }
+
+  return null;
+}
+
 function getFirebaseApp() {
   if (admin.apps.length > 0) return admin.apps[0];
 
   try {
-    if (!fs.existsSync(SERVICE_ACCOUNT_PATH)) {
+    const credentials = loadCredentials();
+
+    if (!credentials) {
       console.warn(
-        '[FIREBASE ADMIN] serviceAccountKey.json not found at:',
-        SERVICE_ACCOUNT_PATH,
-        '\n[FIREBASE ADMIN] Place it in backend/config/ — FCM push will be simulated.'
+        '[FIREBASE ADMIN] No service-account credentials found.' +
+          '\n  Set FIREBASE_SERVICE_ACCOUNT (raw JSON) — required on Render,' +
+          `\n  or place a key file at: ${SERVICE_ACCOUNT_PATH}` +
+          '\n[FIREBASE ADMIN] FCM push will be simulated.'
       );
       return null;
     }
 
-    const credentials = require(SERVICE_ACCOUNT_PATH);
     admin.initializeApp({
       credential: admin.credential.cert(credentials),
     });
