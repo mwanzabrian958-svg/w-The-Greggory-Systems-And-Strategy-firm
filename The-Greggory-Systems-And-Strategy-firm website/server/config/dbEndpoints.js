@@ -23,8 +23,19 @@
  */
 "use strict";
 
-const DB_NAME =
-  process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main";
+// DB_NAME has no local XAMPP fallback on purpose. The old default was
+// "the_greggory_systems_and_strategy_firm_db_main", which is a LOCAL database
+// name; a managed host (Aiven) owns only `defaultdb`, so an unset DB_NAME would
+// silently connect every consumer to a database that does not exist there —
+// ER_BAD_DB_ERROR on every request, with the real cause hidden behind a
+// plausible-looking name. Failing at require() time is far easier to diagnose.
+const DB_NAME = process.env.DB_NAME;
+if (!DB_NAME) {
+  throw new Error(
+    "DB_NAME is not set. Set it in the environment: `defaultdb` on the Aiven " +
+      "service, or the local XAMPP database name for local dev."
+  );
+}
 
 const IS_LOCAL_HOST = (h) =>
   ["localhost", "127.0.0.1", "::1"].includes((h || "").toLowerCase());

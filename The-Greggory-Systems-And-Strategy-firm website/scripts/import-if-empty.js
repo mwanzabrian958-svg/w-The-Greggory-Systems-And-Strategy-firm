@@ -17,13 +17,27 @@ const MAX_ATTEMPTS = Number(process.env.DB_BOOTSTRAP_RETRIES || 18);
 const RETRY_DELAY_MS = 5000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const DB_NAME = process.env.DB_NAME || 'the_greggory_systems_and_strategy_firm_db_main';
+// The Aiven service only ever owns `defaultdb`, and DB_NAME is set on Render.
+// The old fallback ("the_greggory_systems_and_strategy_firm_db_main") was a
+// LOCAL XAMPP database name: if DB_NAME were ever missing here, this would try
+// to CREATE a database that Aiven refuses (ER_DBACCESS_DENIED_ERROR) and the
+// container would never finish booting. Fail loudly instead of guessing a name.
+const DB_NAME = process.env.DB_NAME;
+if (!DB_NAME) {
+  console.error(
+    '[import] DB_NAME is not set — refusing to guess a database name. ' +
+      'Set it in the environment (Aiven service: `defaultdb`).'
+  );
+  process.exit(1);
+}
 const ENDPOINTS = require('../server/config/dbEndpoints').endpoints();
 
-// The app always connects TO a specific database, so on a fresh managed MySQL
-// (Aiven) the target DB does not exist yet. Create it first — the managed
-// admin user (e.g. avnadmin) has the rights to. Idempotent, so retry-safe.
+// On a managed MySQL (Aiven) the service ships with its schema already present
+// (`defaultdb`) and avnadmin owns ONLY that one, so CREATE DATABASE is a
+// guaranteed permission error. Only attempt it for a local/self-hosted server
+// where the target may genuinely not exist yet.
 async function ensureDatabaseExists(cfg) {
+  if (!/^(localhost|127\.0\.0\.1|::1)$/i.test(cfg.host || '')) return;
   const serverCfg = { ...cfg };
   delete serverCfg.database;
   const conn = await mysql.createConnection(serverCfg);
