@@ -118,16 +118,28 @@ router.post('/register-token', authenticateUser, async (req, res) => {
       return res.status(400).json({ success: false, message: 'fcmToken is required (string)' });
     }
 
-    // Store in users table
-    await db.promise().query(
-      `INSERT INTO users (fcm_token, device_info, updated_at)
-       VALUES (?, ?, NOW())
-       ON DUPLICATE KEY UPDATE
-         fcm_token = VALUES(fcm_token),
-         device_info = VALUES(device_info),
-         updated_at = NOW()`,
-      [fcmToken, deviceInfo ? JSON.stringify(deviceInfo) : null]
+    // Update the CALLING user's row, scoped by id.
+    //
+    // This used to be `INSERT INTO users (fcm_token, device_info, updated_at)
+    // ... ON DUPLICATE KEY UPDATE`, which never referenced req.userId. With no
+    // unique key on users.fcm_token the ON DUPLICATE branch could never fire,
+    // so it inserted a brand-new row on every call — and because email,
+    // first_name and last_name are NOT NULL with no default, the statement
+    // failed outright. Net effect: every registration returned 500 and no
+    // token was ever stored against the real user, so GET by userId could
+    // never find one. unregister-token below already used the correct
+    // UPDATE-by-id shape; this mirrors it.
+    const [upd] = await db.promise().query(
+      `UPDATE users
+          SET fcm_token = ?, device_info = ?, updated_at = NOW()
+        WHERE id = ? AND deleted_at IS NULL`,
+      [fcmToken, deviceInfo ? JSON.stringify(deviceInfo) : null, req.userId]
     );
+    if (!upd.affectedRows) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'No active user row found for this session' });
+    }
     console.log(`[FCM /register-token] FCM token registered for user ${req.userId}`);
 
     // Subscribe to topic based on role (clients→client_devices, admins→admin_devices)
@@ -141,16 +153,18 @@ router.post('/register-token', authenticateUser, async (req, res) => {
       console.warn('[FCM /register-token] Topic subscription failed (non-fatal):', subErr.message);
     }
 
-    // Also try admin_users table (best-effort, in case client is also admin)
+    // Also try admin_users table (best-effort, in case client is also admin).
+    // Same UPDATE-by-id shape as unregister-token below; still scoped so it
+    // can never create a stray row.
     try {
       await db.promise().query(
-        `INSERT INTO admin_users (fcm_token, device_info, updated_at)
-         VALUES (?, ?, NOW())
-         ON DUPLICATE KEY UPDATE fcm_token = VALUES(fcm_token), device_info = VALUES(device_info), updated_at = NOW()`,
-        [fcmToken, deviceInfo ? JSON.stringify(deviceInfo) : null]
+        `UPDATE admin_users
+            SET fcm_token = ?, device_info = ?, updated_at = NOW()
+          WHERE id = ? AND deleted_at IS NULL`,
+        [fcmToken, deviceInfo ? JSON.stringify(deviceInfo) : null, req.userId]
       );
     } catch (adminErr) {
-      console.debug('[FCM /register-token] admin_users upsert skipped:', adminErr.message);
+      console.debug('[FCM /register-token] admin_users update skipped:', adminErr.message);
     }
 
     res.json({ success: true, message: 'FCM token registered and topic subscribed' });
