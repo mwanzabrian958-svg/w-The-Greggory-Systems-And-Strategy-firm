@@ -73,6 +73,37 @@ function loadCredentials() {
   return null;
 }
 
+/**
+ * Credential resolution status for boot-time warnings and diagnostics.
+ *
+ * Wraps loadCredentials() so callers (server.js boot log) can report the SAME
+ * resolution order the SDK uses — env var first, then path — instead of the
+ * old file-exists check that always warned on Render (where no key file ships)
+ * and never surfaced a malformed FIREBASE_SERVICE_ACCOUNT.
+ *
+ * Never throws; a bad env var comes back as { ok:false, error }.
+ *
+ * @returns {{ok: boolean, source: string|null, error: string|null}}
+ *   source: 'env:FIREBASE_SERVICE_ACCOUNT' | 'file:<path>' | null
+ */
+function getCredentialStatus() {
+  try {
+    const creds = loadCredentials();
+    if (!creds) return { ok: false, source: null, error: null };
+    const raw = (process.env.FIREBASE_SERVICE_ACCOUNT || '').trim();
+    const source = raw
+      ? 'env:FIREBASE_SERVICE_ACCOUNT'
+      : `file:${SERVICE_ACCOUNT_PATH}`;
+    return { ok: true, source, error: null };
+  } catch (err) {
+    return {
+      ok: false,
+      source: null,
+      error: err.message,
+    };
+  }
+}
+
 function getFirebaseApp() {
   const existing = admin.getApps();
   if (existing.length > 0) return existing[0];
@@ -303,6 +334,7 @@ async function unsubscribeFromTopic(tokens, topic) {
 
 module.exports = {
   getFirebaseApp,
+  getCredentialStatus,
   sendToDevice,
   sendToDevices,
   sendToTopic,

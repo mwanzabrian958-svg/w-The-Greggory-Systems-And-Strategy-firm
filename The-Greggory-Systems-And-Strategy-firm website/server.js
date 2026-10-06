@@ -105,15 +105,31 @@ if (
   );
 }
 {
-  const firebaseAccountPath =
-    process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
-    path.join(__dirname, "backend", "config", "firebase-service-account.json");
-  if (!fs.existsSync(firebaseAccountPath)) {
+  // Resolution order must match backend/services/firebaseAdmin.js:
+  // FIREBASE_SERVICE_ACCOUNT (env var — the only thing that works on Render)
+  // first, then a key file on disk. The old check only looked at the file,
+  // so every Render deploy logged "push notifications are SIMULATED" even
+  // with a valid key in the env var — and a malformed env var (e.g.
+  // google-services.json pasted by mistake) was never surfaced at boot.
+  try {
+    const { getCredentialStatus } = require("./backend/services/firebaseAdmin");
+    const fcmCreds = getCredentialStatus();
+    if (!fcmCreds.ok) {
+      console.warn(
+        fcmCreds.error
+          ? "[FCM] Firebase credentials are INVALID — push notifications " +
+              `are SIMULATED. ${fcmCreds.error}`
+          : "[FCM] No Firebase service-account credentials found — push " +
+              "notifications are SIMULATED. Set FIREBASE_SERVICE_ACCOUNT " +
+              "(raw service-account JSON; required on Render) or " +
+              "FIREBASE_SERVICE_ACCOUNT_PATH / place the file at " +
+              "backend/config/firebase-service-account.json.",
+      );
+    }
+  } catch (fcmBootErr) {
     console.warn(
-      "[FCM] Firebase service account not found at " +
-        firebaseAccountPath +
-        " — push notifications are SIMULATED. Place the file there (or set " +
-        "FIREBASE_SERVICE_ACCOUNT_PATH) to enable real FCM pushes.",
+      "[FCM] Could not verify Firebase credentials — push notifications " +
+        `may be SIMULATED. ${fcmBootErr.message}`,
     );
   }
 }

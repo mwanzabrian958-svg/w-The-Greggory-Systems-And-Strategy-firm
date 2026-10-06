@@ -96,6 +96,23 @@ const goodAccount = JSON.stringify({
 });
 results.push(run('D: valid synthetic service account', goodAccount));
 
+// E — getCredentialStatus() must mirror the same resolution order the boot
+// warning in server.js relies on. E1 (no creds) is checked against the last
+// state left by run() only after re-running with the env cleared.
+process.env.FIREBASE_SERVICE_ACCOUNT = goodAccount;
+delete require.cache[svcPath];
+const svcWithCreds = require(svcPath);
+const statusWith = svcWithCreds.getCredentialStatus();
+delete process.env.FIREBASE_SERVICE_ACCOUNT;
+delete require.cache[svcPath];
+const svcNoCreds = require(svcPath);
+const statusWithout = svcNoCreds.getCredentialStatus();
+process.env.FIREBASE_SERVICE_ACCOUNT = '{"type":"service_account",';
+delete require.cache[svcPath];
+const svcBadCreds = require(svcPath);
+const statusBad = svcBadCreds.getCredentialStatus();
+delete process.env.FIREBASE_SERVICE_ACCOUNT;
+
 results.forEach((r) => {
   console.log(`\n[${r.label}]`);
   console.log(`  app        = ${r.app}`);
@@ -135,6 +152,25 @@ assert.strictEqual(
   results[3].configured,
   true,
   `D: isConfigured() must become true, log: ${results[3].text || '(silent)'}`
+);
+
+// E assertions — getCredentialStatus() drives the server.js boot warning.
+assert.strictEqual(statusWith.ok, true, 'E1: valid env var must report ok');
+assert.strictEqual(
+  statusWith.source,
+  'env:FIREBASE_SERVICE_ACCOUNT',
+  'E1: source must name the env var when it is the one providing the key'
+);
+assert.strictEqual(statusWith.error, null, 'E1: no error expected');
+
+assert.strictEqual(statusWithout.ok, false, 'E2: no creds must report not ok');
+assert.strictEqual(statusWithout.source, null, 'E2: source must be null');
+assert.strictEqual(statusWithout.error, null, 'E2: missing is not an error');
+
+assert.strictEqual(statusBad.ok, false, 'E3: malformed env var must not be ok');
+assert.ok(
+  statusBad.error && statusBad.error.includes('not valid JSON'),
+  `E3: error must explain the JSON problem, got: ${statusBad.error}`
 );
 
 console.log('\nALL ASSERTIONS PASSED');
