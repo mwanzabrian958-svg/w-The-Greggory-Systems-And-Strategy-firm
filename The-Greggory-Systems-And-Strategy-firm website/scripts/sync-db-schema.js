@@ -20,14 +20,18 @@ const fs = require("fs");
 const path = require("path");
 const mysql = require("mysql2/promise");
 
-const { endpoints: dbEndpoints } = require("../server/config/dbEndpoints");
-
+// dotenv must load BEFORE server/config/dbEndpoints — that module throws at
+// require() time when DB_NAME is unset, which made the --env-file mode below
+// (documented at the top of this file) unusable from a cold shell: the argv
+// handling sat AFTER the require that already blew up.
 const envIdx = process.argv.indexOf("--env-file");
 if (envIdx > -1 && process.argv[envIdx + 1]) {
   require("dotenv").config({ path: process.argv[envIdx + 1] });
 } else {
   require("dotenv").config();
 }
+
+const { endpoints: dbEndpoints } = require("../server/config/dbEndpoints");
 
 const DB = process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main";
 const MANIFEST = path.join(__dirname, "..", "database", "schema-sync.json");

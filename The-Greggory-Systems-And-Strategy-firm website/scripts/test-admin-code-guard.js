@@ -24,6 +24,11 @@
  * Run: node scripts/test-admin-code-guard.js
  */
 "use strict";
+// Load .env before anything in the require chain reaches server/config/
+// dbEndpoints.js, which throws at require() time when DB_NAME is unset.
+// No SQL runs in this test — the env just has to exist for the modules to
+// load (commit 0e207e4 made DB_NAME mandatory).
+require("dotenv").config({ path: require("path").resolve(__dirname, "../.env") });
 const express = require("express");
 const http = require("http");
 
