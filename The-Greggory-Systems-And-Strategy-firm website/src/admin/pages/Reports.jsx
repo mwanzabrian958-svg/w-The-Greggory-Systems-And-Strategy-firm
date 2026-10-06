@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { InlineLoader, Spinner } from "../../components/Loading";
 import { apiCall } from "../../services/api";
+import { ReportsModal } from "../components/modals/ReportsModal";
 import { formatKSH } from "../../utils/currencyUtils";
 import {
   RefreshCw, Download, TrendingUp, Wallet, Banknote, Receipt,
@@ -9,6 +10,7 @@ import {
 
 export function Reports() {
   const [loading, setLoading] = useState(true);
+  const [showBuilder, setShowBuilder] = useState(false);
   const [data, setData] = useState({
     revenue: 0, expenses: 0, net: 0, outstanding: 0,
     projects: [], invoices: [], entries: []
@@ -126,10 +128,17 @@ export function Reports() {
           <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Reports & Analytics</h2>
           <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.3em] mt-1">Live Business Performance — {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
-        <button onClick={downloadReport} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl px-5 py-3 text-[9px] font-black uppercase tracking-widest shadow-lg shadow-teal-600/20 transition-all w-fit">
-          <Download size={14} /> Download Report
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowBuilder(true)} className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl px-5 py-3 text-[9px] font-black uppercase tracking-widest shadow-lg border border-slate-200 transition-all w-fit">
+            <FileText size={14} /> Report Builder
+          </button>
+          <button onClick={downloadReport} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl px-5 py-3 text-[9px] font-black uppercase tracking-widest shadow-lg shadow-teal-600/20 transition-all w-fit">
+            <Download size={14} /> Download Report
+          </button>
+        </div>
       </div>
+
+      <ReportsModal isOpen={showBuilder} onClose={() => setShowBuilder(false)} />
 
       {/* FINANCIAL SUMMARY */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

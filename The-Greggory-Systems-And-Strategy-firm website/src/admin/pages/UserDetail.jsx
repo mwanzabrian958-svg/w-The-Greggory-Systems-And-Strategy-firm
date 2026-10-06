@@ -7,7 +7,7 @@ import {
   Trash2, CheckCircle, XCircle, ExternalLink, Camera, Activity, FolderKanban, ArrowRight,
   Download
 } from "lucide-react";
-import { apiCall } from "../../services/api";
+import { apiCall, downloadFile } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import SearchBlock from "../../components/SearchBlock";
 
@@ -54,6 +54,33 @@ export function UserDetail() {
        <button onClick={() => navigate('/admin/users')} className="mt-6 px-6 py-2 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest">Return to Hub</button>
     </div>
   );
+
+  const handleExportPdf = async () => {
+    if (!user?.id) return;
+    // Real server-rendered PDF (GET /api/admin/users/:id/export-pdf).
+    // The whole /api/admin router is header-auth only — a ?token= anchor
+    // would be rejected — so fetch the file as a blob with the admin
+    // Bearer session, then hand it to a temporary <a download>.
+    const roleParam = roleType ? `?role_type=${encodeURIComponent(roleType)}` : "";
+    try {
+      const blob = await downloadFile(`/admin/users/${user.id}/export-pdf${roleParam}`);
+      const label =
+        user.display_name ||
+        `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+        user.email ||
+        `User_${user.id}`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `PROFILE_${String(label).replace(/\s+/g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Profile PDF export failed", e);
+    }
+  };
 
   const handlePrint = () => {
     window.print();
@@ -217,10 +244,16 @@ export function UserDetail() {
          </div>
          <div className="flex items-center gap-3">
             <button
-              onClick={handlePrint}
+              onClick={handleExportPdf}
               className="flex items-center gap-2 px-4 py-2 bg-teal-600/10 hover:bg-teal-600 text-teal-600 hover:text-white border border-teal-600/20 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all shadow-lg group"
             >
                <Download size={12} className="group-hover:scale-110 transition-transform" /> Export Profile
+            </button>
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all text-slate-600"
+            >
+               <Download size={12} className="text-teal-600" /> Print
             </button>
             <button onClick={() => navigate(`/admin/users/manage/${user.id}?role_type=${roleType}`)} className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all text-slate-600">
                <Edit2 size={12} className="text-teal-600" /> Modify Node

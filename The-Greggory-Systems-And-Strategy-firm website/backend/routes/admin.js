@@ -6,6 +6,8 @@ const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const PDFDocument = require('pdfkit');
+const { stampLogo, stampWatermark } = require('../../server/lib/documentBrand');
 const { formatActivityLog } = require('../utils/activityLogFormatter');
 const { verifySessionToken } = require('../utils/sessionToken');
 
@@ -349,7 +351,8 @@ router.post('/create-admin', requireAdminSession, async (req, res) => {
 });
 
 // =============================================
-// EXPORT USER PROFILE AS PDF
+// EXPORT USER PROFILE AS PDF (pdfkit — real A4 PDF, mirrors the
+// invoiceRenderer header: brand banner → identity meta → sections).
 // =============================================
 router.get('/users/:id/export-pdf', requireAdminSession, async (req, res) => {
   try {
@@ -369,60 +372,96 @@ router.get('/users/:id/export-pdf', requireAdminSession, async (req, res) => {
     if (users.length === 0) return res.status(404).send('User not found');
 
     const user = users[0];
-    const name = user.display_name || `${user.first_name} ${user.last_name}`;
+    const name = user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || `User ${user.id}`;
 
-    // Simple Text-based PDF Relay (In production, use a library like PDFKit)
-    const profileText = `
-==================================================
-GREGGORY SYSTEMS & STRATEGY FIRM
-OFFICIAL PERSONNEL IDENTITY REPORT
-==================================================
-Generated: ${new Date().toLocaleString()}
-Node ID: ${user.id}
-Status: ${user.is_active ? 'ACTIVE' : 'INACTIVE'}
-Role: ${user.admin_level || user.primary_role || 'Personnel'}
+    // Real PDFKit identity report (A4) — streams a genuine %PDF document the
+    // same way server/lib/invoiceRenderer.js does for invoices.
+    const esc = (v) => (v === null || v === undefined || v === '' ? 'NOT RECORDED' : String(v));
+    const joined = user.created_at ? new Date(user.created_at).toLocaleDateString() : 'NOT RECORDED';
+    const doc = new PDFDocument({
+      margin: 42,
+      size: 'A4',
+      info: {
+        Title: `Personnel Identity Report — ${name}`,
+        Author: 'THE GREGGORY SYSTEMS AND STRATEGY FIRM',
+        Subject: 'Official Personnel Identity Report',
+        CreationDate: new Date(),
+      },
+    });
+    const chunks = [];
+    doc.on('data', (d) => chunks.push(d));
+    const done = new Promise((resolve, reject) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+    });
 
-[ IDENTITY PHOTO ATTACHED IN DIGITAL PORTAL ]
---------------------------------------------------
+    // Watermark UNDER everything, repeated if content flows to more pages.
+    stampWatermark(doc);
+    doc.on('pageAdded', () => stampWatermark(doc));
 
-PRIMARY IDENTIFICATION:
-Full Name: ${name}
-Primary Email: ${user.email}
-Secure Line: ${user.phone_number || 'NOT RECORDED'}
-Backup Phone: ${user.alt_phone || 'NOT RECORDED'}
-ID/Passport: ${user.id_number || 'NOT RECORDED'}
+    const label = (t, x, y, w) => doc.font('Helvetica-Bold').fontSize(8).fillColor('#64748b').text(t.toUpperCase(), x, y, { width: w });
+    const value = (t, x, y, w) => doc.font('Helvetica').fontSize(10).fillColor('#0f172a').text(esc(t), x, y, { width: w });
+    const row = (lbl, val) => {
+      const y = doc.y + 4;
+      label(lbl, 42, y, 170);
+      value(val, 220, y, doc.page.width - 262);
+      doc.moveDown(0.6);
+    };
 
-PROFESSIONAL MATRIX:
-Department: ${user.department || 'Operations'}
-Expertise: ${user.expertise || 'General'}
-Joined: ${new Date(user.created_at).toLocaleDateString()}
+    // Banner — emblem left of the wordmark (86pt tall, 50pt logo at y=18).
+    doc.rect(0, 0, doc.page.width, 86).fill('#0f172a');
+    stampLogo(doc, 42, 18, 50);
+    doc.font('Helvetica-Bold').fontSize(13).fillColor('#ffffff').text('THE GREGGORY SYSTEMS AND STRATEGY FIRM', 106, 22);
+    doc.font('Helvetica').fontSize(9).fillColor('#5eead4').text('OFFICIAL PERSONNEL IDENTITY REPORT', 106, 42);
+    doc.font('Helvetica').fontSize(8).fillColor('#94a3b8').text(`Generated ${new Date().toLocaleString()}  •  Node ID ${user.id}  •  Status ${user.is_active ? 'ACTIVE' : 'INACTIVE'}`, 106, 58, { width: doc.page.width - 148 });
+    doc.y = 104;
 
-PHYSICAL ADDRESS:
-${user.physical_address || 'NOT RECORDED'}
+    doc.font('Helvetica-Bold').fontSize(11).fillColor('#0f172a').text('IDENTITY', 42, doc.y);
+    doc.moveDown(0.4);
+    row('Full name', name);
+    row('Primary email', user.email);
+    row('Role', user.admin_level || user.developer_level || user.primary_role || 'Personnel');
+    row('Secure line', user.phone_number);
+    row('Backup phone', user.alt_phone);
+    row('ID / Passport', user.id_number);
 
-EMERGENCY CONTACT:
-Name: ${user.emergency_contact_name || 'NOT RECORDED'}
-Phone: ${user.emergency_contact_phone || 'NOT RECORDED'}
+    doc.moveDown(0.8);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor('#0f172a').text('PROFESSIONAL MATRIX', 42, doc.y);
+    doc.moveDown(0.4);
+    row('Department', user.department || 'Operations');
+    row('Expertise', user.expertise || user.tech_stack || 'General');
+    row('Joined', joined);
+    row('Physical address', user.physical_address);
 
-MISSION BRIEFING & DIRECTIVES:
-${user.mission_briefing || 'No specific directive assigned.'}
+    doc.moveDown(0.8);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor('#0f172a').text('EMERGENCY CONTACT', 42, doc.y);
+    doc.moveDown(0.4);
+    row('Name', user.emergency_contact_name);
+    row('Phone', user.emergency_contact_phone);
 
-INTERNAL COMPANY NOTES (RESTRICTED ACCESS):
-${user.private_notes || 'None recorded.'}
+    doc.moveDown(0.8);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor('#0f172a').text('MISSION BRIEFING & DIRECTIVES', 42, doc.y);
+    doc.moveDown(0.4);
+    doc.font('Helvetica').fontSize(10).fillColor('#0f172a').text(esc(user.mission_briefing && user.mission_briefing !== 'No specific directive assigned.' ? user.mission_briefing : 'No specific directive assigned.'), 42, doc.y, { width: doc.page.width - 84 });
 
---------------------------------------------------
-END OF IDENTITY REPORT
-© 2024 Greggory Systems & Strategy Firm
-CONFIDENTIAL - INTERNAL USE ONLY
-==================================================
-    `;
+    doc.moveDown(0.8);
+    doc.font('Helvetica-Bold').fontSize(11).fillColor('#b91c1c').text('INTERNAL COMPANY NOTES (RESTRICTED ACCESS)', 42, doc.y);
+    doc.moveDown(0.4);
+    doc.font('Helvetica').fontSize(10).fillColor('#0f172a').text(esc(user.private_notes && user.private_notes !== 'None recorded.' ? user.private_notes : 'None recorded.'), 42, doc.y, { width: doc.page.width - 84 });
+
+    // Footer — explicit box ENDING at the right margin (x = page.width - 42
+    // gave the right-aligned text no room and clipped it to "CONFIDEN").
+    const footY = doc.page.height - 52;
+    doc.font('Helvetica').fontSize(8).fillColor('#64748b').text(`© ${new Date().getFullYear()} The Greggory Systems & Strategy Firm`, 42, footY, { width: 300 });
+    doc.font('Helvetica-Bold').fontSize(8).fillColor('#b91c1c').text('CONFIDENTIAL — INTERNAL USE ONLY', doc.page.width - 342, footY, { width: 300, align: 'right' });
+    doc.end();
+
+    const pdfBuffer = await done;
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="PROFILE_${name.replace(/\s+/g, '_')}.pdf"`);
-
-    // For now, sending as a plain text buffer that opens in PDF viewers
-    // In a real environment, we'd pipe through a PDF generator
-    res.send(Buffer.from(profileText, 'utf-8'));
+    res.setHeader('Content-Disposition', `attachment; filename="PROFILE_${String(name).replace(/\s+/g, '_')}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
 
   } catch (error) {
     console.error('Export Error:', error);

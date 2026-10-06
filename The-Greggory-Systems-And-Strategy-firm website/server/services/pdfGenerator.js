@@ -28,6 +28,7 @@ const {
   FIRM_ADDRESS,
   fmtMoney,
 } = require("../lib/invoiceRenderer");
+const { stampLogo, stampWatermark } = require("../lib/documentBrand");
 
 /**
  * Co-generate a professional completion PDF for any record.
@@ -55,6 +56,10 @@ async function generateCompletionPdf(recordType, record, options = {}) {
     doc.on("data", (d) => buffers.push(d));
     doc.on("end", () => resolve(Buffer.concat(buffers)));
     doc.on("error", reject);
+
+    // Watermark UNDER everything, repeated if content flows to more pages.
+    stampWatermark(doc);
+    doc.on("pageAdded", () => stampWatermark(doc));
 
     try {
       buildCompletionDoc(doc, recordType, record, {
@@ -183,12 +188,19 @@ function parseItems(r) {
     const raw = typeof r.items === "string" ? JSON.parse(r.items) : r.items;
     if (Array.isArray(raw)) items = raw;
   } catch (_) { /* ignore */ }
-  return items.map((it) => ({
-    description: String(it.item_description || it.description || it.name || "Service item"),
-    quantity: it.quantity != null ? Number(it.quantity) : 1,
-    unit_price: it.unit_price || it.rate || it.price || 0,
-    line_total: it.line_total || it.amount || 0,
-  }));
+  return items.map((it) => {
+    const quantity = it.quantity != null ? Number(it.quantity) : 1;
+    const unit_price = it.unit_price || it.rate || it.price || 0;
+    // Derive the line total from qty × rate when the row carries none —
+    // `it.line_total || it.amount || 0` rendered every Amount cell as KES 0.00.
+    const line_total = it.line_total || it.amount || quantity * unit_price;
+    return {
+      description: String(it.item_description || it.description || it.name || "Service item"),
+      quantity,
+      unit_price,
+      line_total,
+    };
+  });
 }
 
 /** Build the actual PDF document into a PDFKit doc instance. */
@@ -199,17 +211,28 @@ function buildCompletionDoc(doc, recordType, r, { includeLineItems, title, subti
 
   // ===== HEADER BANNER =====
   doc.rect(0, 0, doc.page.width, 110).fill(primary).stroke(primary);
-  doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(18).text(FIRM_LEGAL_NAME, 50, 30);
-  doc.font("Helvetica").fontSize(9).fillColor("#cbd5e1").text(FIRM_TAGLINE, 50, 52);
-  doc.fillColor(gold).font("Helvetica-Bold").fontSize(11).text("COMPLETION CERTIFICATE", doc.page.width - 50, 30, { align: "right" });
-  doc.moveDown(4.2);
+  // Emblem left of the wordmark (banner is 110pt tall — 60pt logo at y=25).
+  stampLogo(doc, 50, 25, 60);
+  doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(18).text(FIRM_LEGAL_NAME, 124, 30);
+  doc.font("Helvetica").fontSize(9).fillColor("#cbd5e1").text(FIRM_TAGLINE, 124, 52);
+  // Badge must END at the right margin — starting at page.width - 50 gave it
+  // a zero-width box, so the text drew straight off the page edge.
+  // Badge sits BELOW the firm-name line — at y=30 the 18pt name runs to ~478pt
+  // and collided with the badge box (345–545pt).
+  doc.fillColor(gold).font("Helvetica-Bold").fontSize(11).text("COMPLETION CERTIFICATE", doc.page.width - 250, 64, { width: 200, align: "right" });
+  // Drop below the 110pt banner and reset x — the badge left doc.x parked at
+  // the right edge, which made every following flow text start off-page.
+  doc.y = 120;
+  doc.x = doc.page.margins.left;
 
   // ===== DOCUMENT TITLE =====
   doc.fillColor("#1e293b").font("Helvetica-Bold").fontSize(24).text(title, { align: "center" });
+  doc.x = doc.page.margins.left;
   doc.font("Helvetica").fontSize(12).fillColor("#64748b").text(subtitle, { align: "center" });
-  doc.moveDown(2);
+  doc.moveDown(1.6);
 
   // ===== CERTIFICATE BODY =====
+  doc.x = doc.page.margins.left;
   doc.fillColor("#334151").font("Helvetica").fontSize(11).text(
     `This is to certify that the following ${recordType.replace(/_/g, " ")} record has been marked as completed within the ${FIRM_LEGAL_NAME} system.`,
     { align: "center" }
@@ -244,13 +267,16 @@ function buildCompletionDoc(doc, recordType, r, { includeLineItems, title, subti
     const boxY = doc.y + 15;
     const boxW = 180;
     const boxH = totals.length * 18 + 20;
-    doc.save().rect(doc.page.width - 50 - boxW, boxY, boxW, boxH).fill("#f0fdfa").stroke("#99f6e4").restore();
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0d9488").text("Amounts", doc.page.width - 50 - boxW + 12, boxY + 8);
+    const boxX = doc.page.width - 50 - boxW;
+    doc.save().rect(boxX, boxY, boxW, boxH).fill("#f0fdfa").stroke("#99f6e4").restore();
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#0d9488").text("Amounts", boxX + 12, boxY + 8);
 
     let ty = boxY + 26;
     for (const [label, value] of totals) {
-      doc.font("Helvetica").fontSize(9).fillColor("#0f172a").text(label, doc.page.width - 50 - boxW + 12, ty);
-      doc.font("Helvetica-Bold").fontSize(9).fillColor("#0d9488").text(value, doc.page.width - 50 - 8, ty, { align: "right" });
+      // Value gets an explicit box INSIDE the panel — x at page.width - 58 left
+      // an 8pt column, so "KES 232,000.00" wrapped one character per line.
+      doc.font("Helvetica").fontSize(9).fillColor("#0f172a").text(label, boxX + 12, ty);
+      doc.font("Helvetica-Bold").fontSize(9).fillColor("#0d9488").text(value, boxX + 12, ty, { width: boxW - 24, align: "right" });
       ty += 18;
     }
   }
@@ -258,7 +284,10 @@ function buildCompletionDoc(doc, recordType, r, { includeLineItems, title, subti
   doc.moveDown(4);
 
   // ===== SIGNATURE BLOCK =====
-  const sigY = Math.max(doc.y + 20, doc.page.height - 140);
+  // Base high enough that date + footer stay above maxY (height - 50): pdfkit
+  // calls nextSection() whenever y or y + lineHeight crosses it, which was
+  // silently pushing the whole footer onto a blank page 2.
+  const sigY = Math.max(doc.y + 20, doc.page.height - 165);
   doc.font("Helvetica").fontSize(10).fillColor("#475569").text("Completed & Recorded by,", 50, sigY);
   doc.font("Helvetica-Bold").fontSize(12).fillColor("#0f172a").text(FIRM_LEGAL_NAME, 50, sigY + 20);
   doc.font("Helvetica").fontSize(9).fillColor("#64748b").text(FIRM_EMAIL, 50, sigY + 36);
@@ -267,14 +296,19 @@ function buildCompletionDoc(doc, recordType, r, { includeLineItems, title, subti
   doc.font("Helvetica-Bold").fontSize(8).fillColor(accent).text("VERIFIED", 50, sigY + 70);
   doc.rect(50, sigY + 76, 40, 14).stroke(accent);
   doc.font("Helvetica").fontSize(7).fillColor("#94a3b8").text(`Date: ${fmtDate(new Date())}`, 95, sigY + 80);
+  // Explicit full-width box — at page.width - 50 with align:right the box was
+  // 0pt wide, so the long ID wrapped one character per line off-page.
+  doc.font("Helvetica").fontSize(7).fillColor("#94a3b8")
+    .text(`Completion ID: ${recordType}-${r.id}-${Date.now()}`, 50, sigY + 80, { width: doc.page.width - 100, align: "right" });
 
-  doc.font("Helvetica").fontSize(8).fillColor("#94a3b8").text("Page 1", doc.page.width - 50, doc.page.height - 25, { align: "right" });
-
-  // ===== FOOTER =====
-  const footY = doc.page.height - 45;
+  // ===== FOOTER ===== — kept a few points above maxY: the old one-liner was
+  // ~435pt wide and its last word wrapped onto a blank page 2.
+  const footY = doc.page.height - 62;
   doc.rect(0, footY - 10, doc.page.width, 1).fill("#e2e8f0");
-  doc.font("Helvetica").fontSize(8).fillColor("#64748b").text(`${FIRM_LEGAL_NAME} | ${FIRM_ADDRESS} | ${FIRM_EMAIL} | ${FIRM_PHONE}`, 50, footY);
-  doc.font("Helvetica").fontSize(7).fillColor("#94a3b8").text(`Completion ID: ${recordType}-${r.id}-${Date.now()}`, doc.page.width - 50, footY, { align: "right" });
+  doc.font("Helvetica").fontSize(6.5).fillColor("#64748b")
+    .text(`${FIRM_LEGAL_NAME} | ${FIRM_ADDRESS} | ${FIRM_EMAIL} | ${FIRM_PHONE}`, 50, footY, { width: doc.page.width - 130 });
+  doc.font("Helvetica-Bold").fontSize(7).fillColor("#94a3b8")
+    .text("Page 1", doc.page.width - 105, footY, { width: 55, align: "right" });
 }
 
 function drawLineItemsTable(doc, items, r) {
@@ -284,20 +318,27 @@ function drawLineItemsTable(doc, items, r) {
   const rowH = 20;
   let y = doc.y + 8;
 
-  doc.font("Helvetica-Bold").fontSize(8).fillColor("#f1f5f9");
-  headers.forEach((h, i) => {
-    doc.text(h, colX[i], y + 4, { width: i === 0 ? 40 : i === 1 ? 230 : 60, align: i === 0 ? "center" : "right" });
-  });
+  // Background FIRST, then text: the old order drew the fill over the header,
+  // and the header text was #f1f5f9 — the exact colour of the fill — so the
+  // whole header row rendered blank.
   doc.rect(50, y, doc.page.width - 100, rowH).fill("#f1f5f9").stroke("#e2e8f0");
+  doc.font("Helvetica-Bold").fontSize(8).fillColor("#475569");
+  // # centers, Description left-aligns, money columns right-align.
+  const alignFor = (i) => (i === 0 ? "center" : i === 1 ? "left" : "right");
+  headers.forEach((h, i) => {
+    doc.text(h, colX[i], y + 4, { width: i === 0 ? 40 : i === 1 ? 230 : 60, align: alignFor(i) });
+  });
 
   y += rowH;
-  doc.font("Helvetica").fontSize(8).fillColor("#334151");
   items.forEach((it, i) => {
     const rowFill = i % 2 ? "#f8fafc" : "#ffffff";
     doc.rect(50, y, doc.page.width - 100, rowH).fill(rowFill).stroke("#e2e8f0");
+    // fill(rowFill) above leaves the CURRENT fill colour set to the row
+    // background — re-assert the text colour or every cell draws white-on-white.
+    doc.font("Helvetica").fontSize(8).fillColor("#334151");
     const vals = [i + 1, it.description, it.quantity, fmtMoney(it.unit_price), fmtMoney(it.line_total)];
     vals.forEach((v, i) => {
-      doc.text(String(v), colX[i], y + 4, { width: i === 0 ? 40 : i === 1 ? 230 : 60, align: i === 0 ? "center" : "right" });
+      doc.text(String(v), colX[i], y + 4, { width: i === 0 ? 40 : i === 1 ? 230 : 60, align: alignFor(i) });
     });
     y += rowH;
   });

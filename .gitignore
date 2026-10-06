@@ -74,3 +74,8 @@ The-Greggory-Systems-And-Strategy-firm website/_*.js
 
 # Backup copy of the monolith that was committed by mistake (server.js supersedes it)
 The-Greggory-Systems-And-Strategy-firm website/server.js.bak
+
+# Generated document samples (PNG/PDF/HTML previews + vendored pdf.js).
+# Reproducible any time with `node scripts/generate-doc-samples.js` — never commit.
+The-Greggory-Systems-And-Strategy-firm website/samples/
+document-samples.zip

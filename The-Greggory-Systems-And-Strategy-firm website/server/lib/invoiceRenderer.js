@@ -8,6 +8,7 @@
 "use strict";
 const PDFDocument = require("pdfkit");
 const { rateToPct, taxLabel, roundMoney } = require("./kraTax");
+const { stampLogo, stampWatermark } = require("./documentBrand");
 
 const FIRM_LEGAL_NAME = "THE GREGGORY SYSTEMS AND STRATEGY FIRM";
 const FIRM_TAGLINE = "Strategic Projects, Systems & Business Solutions";
@@ -143,6 +144,11 @@ function generatePDFContent(type, document) {
     const SLATE = "#64748b";
     const LIGHT = "#e2e8f0";
 
+    // Watermark UNDER everything, repeated automatically if content flows to
+    // a second page.
+    stampWatermark(doc);
+    doc.on("pageAdded", () => stampWatermark(doc));
+
     const isQuote = String(type).toLowerCase().indexOf("quote") === 0;
     const isReceipt =
       String(type).toLowerCase().indexOf("receipt") === 0 || type === "transactions";
@@ -178,17 +184,22 @@ function generatePDFContent(type, document) {
     let y = 44;
 
     // ---- Brand banner + document title ----
-    doc.rect(M, y, 250, 66).fill(INK);
+    // Banner widened 250 → 290 so the emblem fits left of the wordmark
+    // (still clear of the INVOICE title box at PAGE_W - M - 180).
+    doc.rect(M, y, 290, 66).fill(INK);
+    stampLogo(doc, M + 12, y + 11, 44);
     doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(15);
-    doc.text("THE GREGGORY SYSTEMS", M + 16, y + 14, { width: 220 });
-    doc.fontSize(10).text("AND STRATEGY FIRM", M + 16, y + 32, { width: 220 });
+    doc.text("THE GREGGORY SYSTEMS", M + 68, y + 14, { width: 200 });
+    doc.fontSize(10).text("AND STRATEGY FIRM", M + 68, y + 32, { width: 200 });
     doc.font("Helvetica").fontSize(7).fillColor("#5eead4");
-    doc.text(FIRM_TAGLINE.toUpperCase(), M + 16, y + 49, { width: 220 });
+    doc.text(FIRM_TAGLINE.toUpperCase(), M + 68, y + 49, { width: 200 });
 
     doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(36);
-    doc.text(docTitle, PAGE_W - M, y + 8, { width: 180, align: "right" });
+    // Box must END at the right margin — starting it at PAGE_W - M pushes
+    // the right-aligned text 180pt off the page (it clipped the title away).
+    doc.text(docTitle, PAGE_W - M - 180, y + 8, { width: 180, align: "right" });
     doc.fillColor(SLATE).font("Helvetica").fontSize(8);
-    doc.text(`No. ${ref}`, PAGE_W - M, y + 52, { width: 180, align: "right" });
+    doc.text(`No. ${ref}`, PAGE_W - M - 180, y + 52, { width: 180, align: "right" });
     y += 80;
 
     doc.rect(M, y, CW, 3).fill(TEAL);
@@ -224,7 +235,7 @@ function generatePDFContent(type, document) {
     const xDesc = M + 24;
     const xQty = PAGE_W - M - 195;
     const xRate = PAGE_W - M - 118;
-    const xAmt = PAGE_W - M - 8;
+    const xAmt = PAGE_W - M - 70; // right edge must land ON the margin (was -8, spilling 62pt off-page)
     const colH = 18;
 
     doc.rect(M, y, CW, colH).fill(INK);
@@ -333,11 +344,13 @@ let rowIdx = 1;
       .lineWidth(0.5)
       .strokeColor(LIGHT)
       .stroke();
+    // Footer lines sit high enough that y + lineHeight stays inside the
+    // bottom margin — at PAGE_H - 48 pdfkit spilled the © line to page 2.
     doc.font("Helvetica-Bold").fontSize(8).fillColor(INK);
-    doc.text(FIRM_LEGAL_NAME, M, PAGE_H - 70, { width: CW });
+    doc.text(FIRM_LEGAL_NAME, M, PAGE_H - 76, { width: CW });
     doc.font("Helvetica").fontSize(6.5).fillColor(SLATE);
-    doc.text(`${FIRM_EMAIL}  ·  ${FIRM_PHONE}  ·  ${FIRM_ADDRESS}`, M, PAGE_H - 60, { width: CW });
-    doc.text(`© ${new Date().getFullYear()} ${FIRM_LEGAL_NAME}. All rights reserved.`, M, PAGE_H - 48, { width: CW });
+    doc.text(`${FIRM_EMAIL}  ·  ${FIRM_PHONE}  ·  ${FIRM_ADDRESS}`, M, PAGE_H - 66, { width: CW });
+    doc.text(`© ${new Date().getFullYear()} ${FIRM_LEGAL_NAME}. All rights reserved.`, M, PAGE_H - 56, { width: CW });
 
     doc.end();
   });

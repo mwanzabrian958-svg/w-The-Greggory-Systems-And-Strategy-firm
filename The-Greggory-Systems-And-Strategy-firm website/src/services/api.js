@@ -122,8 +122,37 @@ export const getApiUrl = (path) => {
   return `${API_BASE_URL}${clean}`;
 };
 
-/**
- * Authenticated PDF URL for <a href> / window.open downloads.
+/** Blob download helper for binary files (PDF/CSV exports).
+ * apiCall() reads responses as text and would corrupt binary data,
+ * so file downloads bypass it and call fetch directly with the same
+ * admin-Bearer scheme. Returns the blob on 200, throws the server's
+ * message otherwise.
+ */
+export const downloadFile = async (endpoint) => {
+  const token = getAuthToken();
+  const headers = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const url = /^https?:\/\//i.test(endpoint) ? endpoint : getApiUrl(endpoint);
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    let msg = `Download failed: ${response.status}`;
+    try {
+      const t = await response.text();
+      try {
+        const j = JSON.parse(t);
+        msg = j?.message || j?.error || msg;
+      } catch {
+        if (t.trim()) msg = t.substring(0, 120);
+      }
+    } catch {
+      /* ignore — fall back to status */
+    }
+    throw new Error(msg);
+  }
+  return response.blob();
+};
+
+/** Authenticated PDF URL for <a href> / window.open downloads.
  * Anchor tags and new tabs can't send Authorization headers, so the session
  * travels as `?token=` — every PDF GET route (documents/:type/:id/pdf,
  * pdf/completion/...) accepts it via authenticateAny. Admin tokens win over
