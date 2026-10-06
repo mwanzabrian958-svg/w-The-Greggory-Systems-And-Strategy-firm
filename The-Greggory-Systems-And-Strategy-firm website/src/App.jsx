@@ -59,19 +59,28 @@ function Layout() {
   const authPages = ['/login', '/signup', '/forgot-password', '/reset-password']
   const isAuthPage = authPages.includes(location.pathname)
   const isAdminPage = location.pathname.startsWith('/admin')
-    const isClientPortal = location.pathname === '/client-portal' || location.pathname === '/client-reports' || location.pathname === '/client-alerts' || location.pathname === '/client-search' || location.pathname === '/personnel/profile' || location.pathname.startsWith('/personnel/') || location.pathname.startsWith('/projects')
+  const isClientPortalPage =
+    location.pathname === '/client-portal' ||
+    location.pathname === '/client-reports' ||
+    location.pathname === '/client-alerts' ||
+    location.pathname === '/client-search' ||
+    location.pathname === '/personnel/profile' ||
+    location.pathname.startsWith('/personnel/') ||
+    location.pathname.startsWith('/projects')
 
   return (
 
     <div className="flex flex-col min-h-screen">
 
-      {!isAuthPage && !isAdminPage && !isClientPortal && (
-        <>
+      {/* ── Sticky site header (visual nav only) ─────────────────────────── */}
+      {!isAuthPage && !isAdminPage && !isClientPortalPage && (
+        <header className="site-header">
           <Navbar />
           <SiteTagline />
-        </>
+        </header>
       )}
 
+      {/* ── Page content ─────────────────────────────────────────────────── */}
       <main className="flex-grow">
 
         <Suspense fallback={<PageFallback />}>
@@ -79,7 +88,7 @@ function Layout() {
 
           <Route path="/" element={<Home />} />
 
-                              <Route path="/about" element={<About />} />
+          <Route path="/about" element={<About />} />
 
           <Route path="/personnel/:id" element={<PersonnelProfile />} />
 
@@ -173,7 +182,11 @@ function Layout() {
 
       </main>
 
-      {!isAuthPage && !isAdminPage && !isClientPortal && <Footer />}
+      {/* ── Footer (the Footer component renders its own site-footer element
+           after main in the DOM, so keyboard/screen-reader navigation follows
+           the correct top→bottom reading order) ──────────────────────────── */}
+      {!isAuthPage && !isAdminPage && !isClientPortalPage && <Footer />}
+
       <FloatingWhatsApp />
     </div>
 
