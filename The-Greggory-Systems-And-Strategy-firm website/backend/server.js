@@ -95,6 +95,7 @@ const adminRoutes = require('./routes/admin');
 const adminVerificationRoutes = require('./routes/admin-verification');
 const developerVerificationRoutes = require('./routes/developer-verification');
 const easyAdminRoutes = require('./routes/easy-admin');
+const whatsappAuthRoutes = require('./routes/whatsappAuth');
 
 // Use routes
 app.use('/api/users', userRoutes);
@@ -108,6 +109,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin-verification', adminVerificationRoutes);
 app.use('/api/developer-verification', developerVerificationRoutes);
 app.use('/api/easy-admin', easyAdminRoutes);
+
+// WhatsApp auth-code endpoints (client portal / APK verification codes) —
+// parity with the monolith server.js, which mounts the same router.
+app.use('/api/auth/whatsapp', whatsappAuthRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
