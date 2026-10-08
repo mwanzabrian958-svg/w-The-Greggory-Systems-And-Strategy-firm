@@ -22,6 +22,10 @@ const { createClient } = require('redis');
 const PDFDocument = require('pdfkit');
 const { OAuth2Client } = require('google-auth-library');
 const { connectMongoDB } = require("./server/config/mongodb");
+// admin_settings has no CREATE TABLE in the schema (see the module doc) yet is
+// read/written by five routes below. Guaranteeing it here keeps every one of
+// those call sites to a single `await` instead of repeating the DDL.
+const { ensureAdminSettingsTable } = require("./backend/utils/ensureAdminSettings");
 const models = require("./server/models");
 const {
   User, Project, Document, Message, WebsiteContent,
@@ -644,7 +648,7 @@ app.use(limiter);
 // Explicit pools + a hard per-query timeout guarantee requests always get an
 // answer (from the other endpoint, or a fast error the routes can render).
 // ============================================================================
-const { endpoints: dbEndpoints, cloudSslEnabled } = require("./server/config/dbEndpoints");
+const { endpoints: dbEndpoints, cloudSslEnabled, liveEndpoints } = require("./server/config/dbEndpoints");
 
 const DB_NAME = process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main";
 const MAIN_DB_TIMEOUT_MS = 12000; // hard cap per query attempt (failover budget)
@@ -653,8 +657,7 @@ const _dbPools = []; // [ { label, pool } ] in priority order (local first)
 dbEndpoints().forEach((cfg, i) => {
   const { label, ...opts } = cfg;
   const pool = mysql.createPool({
-    ...opts,
-    database: DB_NAME,
+    ...opts, // keeps each endpoint's OWN database (local DB_NAME_2 vs cloud DB_NAME)
     waitForConnections: true,
     connectionLimit: 10,
     maxIdle: 5,
@@ -665,6 +668,40 @@ dbEndpoints().forEach((cfg, i) => {
   _dbPools.push({ label: label || `pool-${i}`, pool });
   console.log(`[DATABASE] endpoint ${label || i}: ${opts.host}:${opts.port}`);
 });
+
+// Drop endpoints with nothing listening BEFORE the first query runs.
+//
+// _dbRun() below fails over in a plain sequential loop, so a configured-but-dead
+// endpoint (local XAMPP stopped) was attempted on EVERY query: one wasted
+// ECONNREFUSED round trip first, on every request. Under the verification suite
+// that churn alone made reads time out, and the constant reconnect cycle resets
+// connections on the endpoint that IS alive — surfacing as `read ECONNRESET` on
+// routes that had nothing wrong with them.
+//
+// Worth noting: these are THREE separate pools hitting the same Aiven service
+// (this mainDb, plus the clusters in backend/config/db.js and
+// backend/config/database.js), so a free-tier connection limit is reached
+// easily. Pruning removes two thirds of the pointless attempts.
+//
+// Uses the same memoised probe the modular routers use, so every pool agrees on
+// which endpoint is live.
+const _poolsReady = liveEndpoints()
+  .then((live) => {
+    const liveLabels = new Set(live.map((cfg) => cfg.label));
+    for (let i = _dbPools.length - 1; i >= 0; i--) {
+      if (liveLabels.has(_dbPools[i].label)) continue;
+      console.log(`[DATABASE] pruning ${_dbPools[i].label} — nothing listening`);
+      try { _dbPools[i].pool.end(); } catch { /* already closing */ }
+      _dbPools.splice(i, 1);
+    }
+    return _dbPools;
+  })
+  .catch((err) => {
+    // A failed probe must never break startup — keep every pool so the real
+    // connection error (timeout / TLS / auth) surfaces with its own message.
+    console.warn(`[DATABASE] reachability probe failed (${err.message}) — keeping all endpoints`);
+    return _dbPools;
+  });
 
 function _withTimeout(promise, ms, label) {
   return new Promise((resolve, reject) => {
@@ -684,19 +721,54 @@ function _withTimeout(promise, ms, label) {
 // IMPORTANT: fail over ONLY on connectivity failures. Retrying on SQL errors
 // (ER_DUP_ENTRY, WARN_DATA_TRUNCATED, ER_NO_DEFAULT_FOR_FIELD…) would silently
 // re-run writes against the OTHER database and split data across endpoints.
+//
+// Each endpoint is also retried in place on a connectivity error. Aiven closes
+// idle TLS connections server-side, so the FIRST query to pick up a pooled
+// connection that has been sitting unused gets its socket reset mid-flight.
+// That is not an endpoint outage — the connection behind it is fine — but with a
+// dead local endpoint pruned there is no second node to fail over to, so the
+// reset was fatal and surfaced as a spurious 500 on routes that had nothing
+// wrong with them. Asking the pool for a FRESH connection retries cleanly; SQL
+// errors still throw on the first attempt so writes are never silently re-run.
+//
+// NOTE ON THE `read `/`write ` VARIANTS: the mysql2 driver reports a reset socket
+// on a TLS read/write as `read ECONNRESET` / `write ECONNRESET`, NOT the bare
+// `ECONNRESET` — so an id `err.code` allowlist that only lists the bare codes
+// misses exactly the case this whole block exists to catch. A register call was
+// observed failing with `details: "read ECONNRESET"`, classified as a
+// non-retryable infrastructure error. `ALREADY_LOGGED_IN` is the driver's other
+// "the pooled connection died underneath you, ask for a new one" signal.
+const CONNECTIVITY_ERRORS = new Set([
+  "ECONNREFUSED", "ETIMEDOUT", "ETIMEDOUT_ENDPOINT", "ECONNRESET", "EPIPE", "ENOTFOUND",
+  "PROTOCOL_CONNECTION_LOST", "PROTOCOL_SEQUENCE_TIMEOUT", "POOL_NOOFFLINE", "ER_CON_COUNT_ERROR",
+  "read ECONNRESET", "read EPIPE", "read ETIMEDOUT", "write ECONNRESET", "write EPIPE",
+  "ALREADY_LOGGED_IN",
+]);
+const DB_RETRY_ATTEMPTS = 3;
+
 async function _dbRun(fn) {
-  const CONNECTIVITY = new Set([
-    "ECONNREFUSED", "ETIMEDOUT", "ETIMEDOUT_ENDPOINT", "ECONNRESET", "EPIPE", "ENOTFOUND",
-    "PROTOCOL_CONNECTION_LOST", "POOL_NOOFFLINE",
-  ]);
+  // Wait for the prune before choosing a pool, so a query can never land on an
+  // endpoint that was about to be detached.
+  await _poolsReady;
   let lastErr;
   for (const { label, pool } of _dbPools) {
-    try {
-      return await _withTimeout(fn(pool), MAIN_DB_TIMEOUT_MS, label);
-    } catch (err) {
-      lastErr = err;
-      console.error(`[DATABASE] endpoint ${label} failed:`, err.code || err.message, "— failing over");
-      if (!CONNECTIVITY.has(err.code)) throw err; // SQL-level error: do NOT retry elsewhere
+    for (let attempt = 1; attempt <= DB_RETRY_ATTEMPTS; attempt++) {
+      try {
+        return await _withTimeout(fn(pool), MAIN_DB_TIMEOUT_MS, label);
+      } catch (err) {
+        lastErr = err;
+        // SQL-level errors are deterministic — retrying (here or on another
+        // endpoint) would be wrong, so surface them immediately.
+        if (!CONNECTIVITY_ERRORS.has(err.code)) throw err;
+        const isLastAttempt = attempt === DB_RETRY_ATTEMPTS;
+        if (isLastAttempt) {
+          console.error(`[DATABASE] endpoint ${label} failed after ${attempt} attempts:`, err.code || err.message, "— failing over");
+        } else {
+          // Transient: the pool will hand back a fresh connection next call.
+          console.warn(`[DATABASE] endpoint ${label} ${err.code} (attempt ${attempt}/${DB_RETRY_ATTEMPTS}) — retrying`);
+          await new Promise((r) => setTimeout(r, 150 * attempt));
+        }
+      }
     }
   }
   throw lastErr;
@@ -715,6 +787,7 @@ const mainDb = {
     return _dbRun((pool) => pool.query(sql, values));
   },
   async getConnection() {
+    await _poolsReady;
     let lastErr;
     for (const { label, pool } of _dbPools) {
       try {
@@ -743,25 +816,67 @@ const db = mainDb;
 // table is empty (self-heals on any fresh database).
 async function getFirstUserId() {
   const [u] = await mainDb.query("SELECT id FROM users ORDER BY id LIMIT 1");
-  return (u && u[0] && u[0].id) || null;
+  if (u && u[0] && u[0].id) return u[0].id;
+  // Self-heal on a fresh/emptied database (verify-features purges ALL
+  // @test.com users, so `users` can legitimately be empty): seed a
+  // permanent system fallback user so NOT NULL + FK attributions below
+  // never collapse to NULL. Email is outside every test-data pattern so
+  // purge-test-data.js will never delete it.
+  const [res] = await mainDb.query(
+    `INSERT INTO users (email, first_name, last_name, primary_role, is_active, created_at)
+     VALUES ('system-fallback@greggory.local', 'System', 'Fallback', 'admin', 1, NOW())
+     ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`
+  );
+  if (res && res.insertId) return res.insertId;
+  const [u2] = await mainDb.query("SELECT id FROM users ORDER BY id LIMIT 1");
+  return (u2 && u2[0] && u2[0].id) || null;
 }
 
-async function resolveInvoiceProjectId(provided) {
-  // Projects now live in user_projects (legacy `projects` table is unused).
-  if (provided && Number(provided) > 0) {
-    const [check] = await mainDb.query("SELECT id FROM user_projects WHERE id = ? AND deleted_at IS NULL", [Number(provided)]);
-    if (check.length) return Number(provided);
+// created_by (accounting_entries) is NOT NULL with a hard FK to users(id), but
+// an admin session carries an id from admin_users — a DIFFERENT table. Feeding
+// that id straight into the INSERT 500s with ER_NO_REFERENCED_ROW_2 ("Cannot
+// add or update a child row") whenever admin_users.id has no users twin, which
+// is the normal case. Resolve to a row that actually exists: the session id
+// when it IS a users row (client sessions), else the first real user (admin
+// sessions) — matching the attribution intent of resolveAccountingProjectId.
+async function resolveAccountingUserId(sessionId) {
+  if (sessionId) {
+    const [r] = await mainDb.query("SELECT id FROM users WHERE id = ? LIMIT 1", [sessionId]);
+    if (r.length) return r[0].id;
   }
-  const [rows] = await mainDb.query("SELECT id FROM user_projects WHERE deleted_at IS NULL ORDER BY id DESC LIMIT 1");
-  if (rows && rows.length) return rows[0].id;
   const uid = await getFirstUserId();
-  if (!uid) return null; // project_id is now nullable — never block the invoice
-  const [res] = await mainDb.query(
-    `INSERT INTO user_projects (user_id, project_name, project_description, project_type, status, created_by, created_at)
-     VALUES (?, 'General / Unassigned', 'Auto-created fallback engagement for records without an assigned project.', 'consulting', 'active', ?, NOW())`,
-    [uid, uid]
-  );
-  return res.insertId;
+  if (!uid) {
+    throw new Error(
+      "No users row exists to attribute this accounting entry to (created_by FK -> users.id)"
+    );
+  }
+  return uid;
+}
+
+// invoices.project_id is NOT NULL and FK-constrained, but WHICH table it points
+// at differs per endpoint: user_projects on some local builds, the LEGACY
+// `projects` table on the cloud one. This used to validate and seed against
+// user_projects only, so on an endpoint whose FK points at `projects` the id it
+// returned had no parent row and every invoice create died with
+// ER_NO_REFERENCED_ROW_2 ("Cannot add or update a child row") -> HTTP 500.
+//
+// Fix: resolve against the LIVE FK target (same schema-agnostic approach as the
+// accounting routes) so the id handed to the INSERT always has a parent.
+async function resolveInvoiceProjectId(provided) {
+  if (provided && Number(provided) > 0) {
+    const target = await fkProjectTarget("invoices");
+    const wanted = Number(provided);
+    if (await fkParentExists(target, wanted)) return wanted; // happy path
+    // The UI supplies user_projects ids; mirror the row across so the FK parent
+    // exists while the invoice still points at the project the user picked.
+    const mirrored = await resolveFkProjectId("invoices", provided);
+    if (mirrored) return mirrored;
+  }
+  // No usable id supplied — guarantee a parent row exists (self-heals on a fresh
+  // or purged database) instead of handing NULL into a NOT NULL FK column.
+  const seeded = await ensureFallbackProject(await fkProjectTarget("invoices"));
+  if (seeded) return seeded;
+  throw new Error("Cannot resolve a valid invoices.project_id (no projects parent row available)");
 }
 
 // The active endpoint (first healthy one in the failover pool) decides which
@@ -930,6 +1045,36 @@ async function resolveFkProjectId(table, provided) {
   return res.insertId;
 }
 
+// Guarantees at least one parent row exists in the table an FK points at,
+// seeding the 'General / Unassigned' fallback when that table is empty. For
+// callers with no id to resolve — resolveFkProjectId early-returns null when
+// handed no id, so its seeding tail is factored out here for reuse.
+async function ensureFallbackProject(table) {
+  try {
+    const [any] = await mainDb.query(`SELECT id FROM \`${table}\` ORDER BY id LIMIT 1`);
+    if (any && any[0]) return any[0].id;
+  } catch {
+    /* fall through to seeding */
+  }
+  const uid = await getFirstUserId();
+  if (!uid) return null;
+  if (table === "projects") {
+    const [res] = await mainDb.query(
+      `INSERT INTO projects (name, description, status, start_date, expected_completion, client_name, created_by)
+       VALUES ('General / Unassigned', 'Auto-created fallback engagement for records without an assigned project.', 'active', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 YEAR), 'General', ?)`,
+      [uid]
+    );
+    return res.insertId;
+  }
+  const [res] = await mainDb.query(
+    `INSERT INTO user_projects (user_id, project_name, project_description, project_type, status, created_by, created_at)
+     VALUES (?, 'General / Unassigned', 'Auto-created fallback engagement for records without an assigned project.', 'consulting', 'planning', ?, NOW())`,
+    [uid, uid]
+  );
+  return res.insertId;
+}
+
+
 // Test main database connection
 app.get("/api/test-db", async (req, res) => {
   try {
@@ -1003,7 +1148,11 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
       });
     }
 
-    if (simulate) {
+    // Shared simulated STK response. Used when credentials are absent AND when
+    // Daraja rejects the ones we have (stale sandbox key) — so local dev and
+    // the audit suite still get a working payment round-trip instead of a 500.
+    const simulatedStk = async (reason) => {
+      console.warn(`[MPESA] Simulation mode: ${reason}`);
       const checkoutRequestId = `sim-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       try {
         await mainDb.query(
@@ -1019,8 +1168,11 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
         message: 'Simulation: STK Push initialized',
         checkoutRequestId,
         simulated: true,
+        reason,
       });
-    }
+    };
+
+    if (simulate) return simulatedStk('M-Pesa credentials are not configured');
 
     const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z').slice(0, 14);
     const password = buildMpesaPassword(shortcode, passkey, timestamp);
@@ -1029,16 +1181,51 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
     // production API once NODE_ENV=production (go-live).
     const darajaHost = process.env.NODE_ENV === 'production' ? 'api.safaricom.co.ke' : 'sandbox.safaricom.co.ke';
 
-    const authResponse = await fetch(`https://${darajaHost}/oauth/v1/generate?grant_type=client_credentials`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
-      },
-    });
+    // The Daraja call can fail for a reason that has NOTHING to do with the
+    // credentials: no outbound internet from this host, DNS failure, a proxy or
+    // firewall blocking safaricom.co.ke. Node's fetch REJECTS on those, so the
+    // error escapes the !authResponse.ok branch below entirely and lands in the
+    // outer catch as a bare 500 "fetch failed" — even though the whole point of
+    // simulatedStk is to keep the payment round-trip working without Daraja.
+    // Normalise transport failures into the same fallback as a rejected key.
+    let authResponse;
+    try {
+      authResponse = await fetch(`https://${darajaHost}/oauth/v1/generate?grant_type=client_credentials`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
+        },
+        // AbortController keeps a black-holed connect from holding the request
+        // open until the client times out.
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (transportErr) {
+      const detail = transportErr?.cause?.code || transportErr?.name || transportErr?.message || 'network unreachable';
+      if (process.env.NODE_ENV !== "production") {
+        return simulatedStk(`Safaricom is unreachable from this host — ${detail}`);
+      }
+      throw new Error(`Failed to reach Safaricom: ${detail}`);
+    }
 
-    const authData = await authResponse.json();
-    if (!authResponse.ok) {
-      throw new Error(authData?.error_description || 'Failed to authenticate with Safaricom');
+    // Daraja answers 400 with an EMPTY body when the consumer key/secret are
+    // rejected, so calling .json() straight away throws "Unexpected end of JSON
+    // input" and hides the real status. Read as text and parse defensively.
+    const authText = await authResponse.text();
+    let authData = null;
+    try { authData = authText ? JSON.parse(authText) : null; } catch { authData = null; }
+
+    if (!authResponse.ok || !authData || !authData.access_token) {
+      const detail =
+        `HTTP ${authResponse.status}` +
+        (authData && authData.error_description ? ` ${authData.error_description}` : authText ? ` ${authText.slice(0, 200)}` : " (empty body)");
+      // Creds configured but rejected (e.g. an expired sandbox key). Outside
+      // production we fall back to the simulated round-trip so local dev and the
+      // audit suite still exercise the full flow; NEVER fake a payment when
+      // NODE_ENV=production — fail loudly there instead.
+      if (process.env.NODE_ENV !== "production") {
+        return simulatedStk(`Daraja rejected the configured credentials — ${detail}`);
+      }
+      throw new Error(`Failed to authenticate with Safaricom: ${detail}`);
     }
 
     const accessToken = authData.access_token;
@@ -1065,13 +1252,19 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
       body: JSON.stringify(payload),
     });
 
-    const stkData = await stkResponse.json();
+    // Same empty-body hazard as the OAuth call above.
+    const stkText = await stkResponse.text();
+    let stkData = null;
+    try { stkData = stkText ? JSON.parse(stkText) : null; } catch { stkData = null; }
 
     if (!stkResponse.ok) {
-      throw new Error(stkData?.errorMessage || stkData?.requestDescription || 'Safaricom STK push request failed');
+      throw new Error(
+        (stkData && (stkData.errorMessage || stkData.requestDescription)) ||
+          `Safaricom STK push request failed (HTTP ${stkResponse.status}${stkText ? "" : ", empty body"})`
+      );
     }
 
-    console.log('[MPESA] STK push accepted:', JSON.stringify(stkData));
+    console.log('[MPESA] STK push accepted:', stkText || '(empty body)');
 
     return res.json({
       success: true,
@@ -2758,7 +2951,7 @@ app.post("/api/accounting/entries", authenticateAdmin, async (req, res) => {
     // Admin id can't feed the users(id) FK directly, so attribute to the
     // first real user when the session has no users row — same as before,
     // but never to an arbitrary caller-supplied value.
-    const userId = req.user?.id || (await getFirstUserId()) || 1;
+    const userId = await resolveAccountingUserId(req.user?.id);
     const resolvedProjectId = await resolveAccountingProjectId(project_id);
 
     // Defensive defaults — no bind parameter may ever be `undefined`
@@ -6883,6 +7076,15 @@ try {
   console.error("[SERVER] Error loading WhatsApp routes:", error.message);
 }
 
+// WhatsApp auth-code endpoints (client portal / APK verification codes)
+try {
+  const whatsappAuthRoutes = require("./backend/routes/whatsappAuth");
+  app.use("/api/auth/whatsapp", whatsappAuthRoutes);
+  console.log("[SERVER] WhatsApp auth-code routes mounted at /api/auth/whatsapp");
+} catch (error) {
+  console.error("[SERVER] Error loading WhatsApp auth-code routes:", error.message);
+}
+
 // FCM Routes (Firebase Cloud Messaging — pushes to Android app)
 try {
   const fcmRoutes = require("./backend/routes/fcm");
@@ -7209,7 +7411,14 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
   try {
     const { title, description, client_name, client_email, due_date } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
-    const userId = req.userId || req.adminId || req.body.created_by || await getFirstUserId();
+    // invoices.created_by is NOT NULL with a hard FK to users(id), but an admin
+    // session carries an id from admin_users — a DIFFERENT table with its own id
+    // sequence. Feeding that straight in 500s with ER_NO_REFERENCED_ROW_2
+    // whenever the admin has no `users` twin (the normal case), so resolve to a
+    // row that actually exists, mirroring resolveAccountingUserId.
+    const userId = await resolveAccountingUserId(
+      req.userId || req.adminId || req.body.created_by || null
+    );
     const project_id = await resolveInvoiceProjectId(req.body.project_id);
     const invoice_number = req.body.invoice_number || 'INV-' + Date.now();
     const issue_date = req.body.issue_date || new Date().toISOString().split('T')[0];
@@ -7265,7 +7474,7 @@ app.post("/api/accounting-entries", async (req, res) => {
   try {
     const { description, amount, entry_type, category, project_id } = req.body;
     if (!description || amount == null) return res.status(400).json({ error: 'Required' });
-    const userId = req.userId || req.body.created_by || await getFirstUserId();
+    const userId = await resolveAccountingUserId(req.userId);
     const resolvedProjectId = await resolveAccountingProjectId(project_id);
     const [result] = await mainDb.query(
       "INSERT INTO accounting_entries (description, amount, entry_type, category, project_id, transaction_date, payment_status, created_by, created_at) VALUES (?, ?, ?, ?, ?, NOW(), 'completed', ?, NOW())",
@@ -7679,10 +7888,11 @@ app.get("/api/admin/data-access-logs", authenticateAdmin, async (req, res) => {
 // Secrets-bearing config — admin session only for both read and write.
 app.get("/api/admin/settings", authenticateAdmin, async (req, res) => {
   try {
+    await ensureAdminSettingsTable(mainDb);
     const [rows] = await mainDb.query("SELECT * FROM admin_settings");
     const settings = {}; rows.forEach((r) => { settings[r.setting_key] = r.setting_value; });
     res.json({ success: true, settings });
-  } catch (e) { res.status(500).json({ error: "Failed" }); }
+  } catch (e) { console.error("[GET /api/admin/settings]", e.code || "", e.message); res.status(500).json({ error: "Failed" }); }
 });
 
 app.put("/api/admin/settings", authenticateAdmin, async (req, res) => {
@@ -7695,24 +7905,37 @@ app.put("/api/admin/settings", authenticateAdmin, async (req, res) => {
       "apk_version", "apk_url", "apk_size", "maintenance_mode",
       "notification_email", "currency", "timezone",
     ]);
+    // PermissionsManager persists one key per role tier as
+    // `role_permissions_<level>` (see src/admin/utils/permissions.js), and the
+    // tier list is data, not code — so enumerate tiers here instead of a Set.
+    // Without this the allowlist silently dropped every save and the endpoint
+    // answered 400 "No valid settings supplied", making the whole Permissions
+    // Manager a no-op. The level is validated as a slug so an arbitrary key
+    // still can't be smuggled through the prefix.
+    const isRolePermissionKey = (k) =>
+      typeof k === "string" && /^role_permissions_[a-z0-9_]{1,40}$/i.test(k);
+    // ER_NO_SUCH_TABLE here used to surface as an opaque 500 "Failed to update
+    // settings" — the table genuinely does not exist on schema-built databases.
+    await ensureAdminSettingsTable(mainDb);
     let wrote = 0;
     for (const [key, value] of Object.entries(updates)) {
-      if (!ALLOWED_SETTINGS.has(key)) continue;
+      if (!ALLOWED_SETTINGS.has(key) && !isRolePermissionKey(key)) continue;
       await mainDb.query("INSERT INTO admin_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [key, String(value)]);
       wrote += 1;
     }
     if (wrote === 0) return res.status(400).json({ success: false, message: "No valid settings supplied" });
     res.json({ success: true });
-  } catch (e) { res.status(500).json({ error: "Failed" }); }
+  } catch (e) { console.error("[PUT /api/admin/settings]", e.code || "", e.message); res.status(500).json({ error: "Failed" }); }
 });
 
 // ── Admin Node Settings ──────────────────────────────────────────────────────
 app.get("/api/admin/node-settings", authenticateAdmin, async (req, res) => {
   try {
+    await ensureAdminSettingsTable(mainDb);
     const [s] = await mainDb.query("SELECT * FROM admin_settings");
     const settings = {}; s.forEach((r) => { settings[r.setting_key] = r.setting_value; });
     res.json({ success: true, settings, system: { status:"operational", uptime:"99.9%" } });
-  } catch (e) { res.status(500).json({ success:false, message:"Failed" }); }
+  } catch (e) { console.error("[GET /api/admin/node-settings]", e.code || "", e.message); res.status(500).json({ success:false, message:"Failed" }); }
 });
 
 // ── System Calibration ───────────────────────────────────────────────────────
@@ -7758,6 +7981,78 @@ app.post("/api/admin/crm/contacts", authenticateAdmin, async (req, res) => {
     const [r] = await mainDb.query("INSERT INTO crm_contacts (name,email,phone,company,status,is_active,created_at) VALUES (?,?,?,?,?,1,NOW())", [name, email||null, phone||null, company||null, safeStatus]);
     res.status(201).json({ success: true, id: r.insertId });
   } catch (e) { res.status(500).json({ error: "Failed" }); }
+});
+
+
+// NOTE: GET /api/admin/budget-overview is defined earlier (~line 5432, Admin
+// Dashboard API section) and is the single live handler — a duplicate defined
+// here was removed so the response shape stays consistent.
+
+// Admin Pending Invoices
+// All invoices not yet marked paid.
+app.get("/api/admin/pending-invoices", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      `SELECT id, invoice_number, client_name, client_email, total_amount_kes AS total, status, created_at
+       FROM invoices
+       WHERE status != 'paid'
+         AND deleted_at IS NULL
+       ORDER BY created_at DESC
+      `)
+    // Applications.jsx reads data.data -> [{project, amount, date, ...}];
+    // `invoices` keeps the raw rows for other consumers.
+    const data = (rows || []).map(r => ({
+      id: r.id,
+      project: r.invoice_number || r.title || ("Invoice #" + r.id),
+      client: r.client_name,
+      email: r.client_email,
+      amount: parseFloat(r.total) || 0,
+      date: r.created_at,
+      status: r.status
+    }));
+    res.json({ success: true, data, invoices: rows });
+  } catch (e) {
+    res.status(500).json({ success: false, message: "Pending invoices failed: " + e.message });
+  }
+});
+
+// Admin Applications
+// Application feed for the applications dashboard (applications table +
+// app_status_enum lookup; local and cloud schemas both carry these).
+app.get("/api/admin/applications", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      `SELECT a.id, a.property_id, a.room_number, a.agent_name,
+              a.total_cost, a.status_id, s.name AS status,
+              a.application_date AS created_at
+       FROM applications a
+       LEFT JOIN app_status_enum s ON s.id = a.status_id
+       ORDER BY a.application_date DESC
+       LIMIT 100
+      `)
+    res.json({ success: true, data: rows, applications: rows });
+  } catch (e) {
+    res.status(500).json({ success: false, message: "Applications failed: " + e.message });
+  }
+});
+
+// Admin Permissions
+// Returns the current admin permission toggles from admin_settings
+// (setting_key/setting_value columns).
+app.get("/api/admin/permissions", authenticateAdmin, async (req, res) => {
+  try {
+    await ensureAdminSettingsTable(mainDb);
+    const [rows] = await mainDb.query(
+      `SELECT setting_key, setting_value, updated_at
+       FROM admin_settings
+       ORDER BY setting_key
+      `)
+    const perms = {};
+    (rows || []).forEach(r => { perms[r.setting_key] = r.setting_value; });
+    res.json({ success: true, data: perms, permissions: perms });
+  } catch (e) {
+    res.status(500).json({ success: false, message: "Permissions failed: " + e.message });
+  }
 });
 
 // ── Support / Change Requests / Signatures ────────────────────────────────

@@ -56,6 +56,34 @@ function api(path, method, body, token) {
   });
 }
 const J = (b) => { try { return JSON.parse(b); } catch { return null; } };
+// This script does NOT boot a server — it talks to whatever is already
+// listening on TARGET_ORIGIN. Node caches server.js in memory, so a stale
+// orphaned `node server.js` holding the port silently tests OLD code and
+// reports bogus failures (or false passes) for code already fixed on disk.
+// Fail loudly instead of pretending, and name the process squatting on it.
+async function assertTargetIsLive() {
+  try {
+    await api("/api/test-db", "GET");
+  } catch (e) {
+    console.error("");
+    console.error("FATAL: nothing is listening at " + TARGET_ORIGIN);
+    console.error("  " + e.message);
+    console.error("");
+    console.error("Start the backend first, from the repo root:");
+    console.error("  cd \"The-Greggory-Systems-And-Strategy-firm website\" && node server.js");
+    console.error("");
+    console.error("Or point this script at a live deployment:");
+    console.error("  TARGET_ORIGIN=https://your-live-origin.example.com node scripts/verify-features.js");
+    console.error("");
+    console.error("TIP: if a server IS running but results look stale, an orphaned");
+    console.error("     process is serving old code. Free the port first (Windows):");
+    console.error("       Get-NetTCPConnection -LocalPort 3000 -State Listen |");
+    console.error("         ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }");
+    process.exit(1);
+  }
+}
+
+
 let pass = 0, fail = 0; const failures = [];
 function check(name, cond, extra) {
   if (cond) { pass++; console.log("  PASS", name); }
@@ -63,6 +91,7 @@ function check(name, cond, extra) {
 }
 
 (async () => {
+  await assertTargetIsLive();
   // Pre-flight: auth_platform_mapping must be locked+active or every register /
   // login below is rejected with 400 MAPPING_NOT_LOCKED.
   console.log("--- DB PRE-FLIGHT ---");
@@ -151,14 +180,25 @@ function check(name, cond, extra) {
   console.log("--- LEDGER (ManualEntry.jsx -> Ledger tab) ---");
   r = await api("/api/accounting/entries", "POST", { description: "Verify " + stamp, amount: 500, entry_type: "expense", category: "Verification", payment_status: "completed" }, tok);
   check("create ledger entry", r.status === 201 || r.status === 200, r.body.substring(0, 90));
+  // The list shape differs per route: /api/admin/ledger returns { entries },
+  // /api/accounting/entries returns { entries } too, but some admin routers wrap
+  // in { data }. Accept any of them, and fall back to a raw array.
+  const ledgerRows = (b) => {
+    const p = J(b);
+    if (!p) return [];
+    if (Array.isArray(p)) return p;
+    return p.entries || p.data || p.rows || p.ledger || [];
+  };
   r = await api("/api/admin/ledger", "GET", null, tok);
-  const entry = (J(r.body)?.entries || []).find(e => e.description === "Verify " + stamp);
-  check("ledger entry persisted & listed", !!entry);
+  const entry = ledgerRows(r.body).find(e => e.description === "Verify " + stamp);
+  check("ledger entry persisted & listed", !!entry,
+    r.status !== 200 ? "HTTP " + r.status + " " + (r.body || "").substring(0, 90)
+                     : "entry not in list of " + ledgerRows(r.body).length);
   if (entry) {
     const del = await api("/api/accounting/entries/" + entry.id, "DELETE", null, tok);
-    check("delete ledger entry", del.status === 200);
+    check("delete ledger entry", del.status === 200, (del.body || "").substring(0, 80));
     r = await api("/api/admin/ledger", "GET", null, tok);
-    check("deleted entry gone from ledger", !(J(r.body)?.entries || []).some(e => e.id === entry.id));
+    check("deleted entry gone from ledger", !ledgerRows(r.body).some(e => e.id === entry.id));
   }
 
   console.log("--- REPORTS (Reports.jsx) ---");
@@ -264,6 +304,36 @@ function check(name, cond, extra) {
   r = await api("/api/admin/change-requests", "GET", null, tok);
   check("change-requests (NotificationBell)", r.status === 200);
 
+  console.log("--- WHATSAPP OTP (portal/APK verification codes) ---");
+  // Health probe — never exposes secrets; reports provider + template state.
+  r = await api("/api/auth/whatsapp/status", "GET");
+  check("whatsapp status 200 + configured flag", r.status === 200 && "configured" in (J(r.body) || {}), (r.body || "").substring(0, 90));
+  // Unknown identifier answers 200 generically (no enumeration oracle).
+  r = await api("/api/auth/whatsapp/request-code", "POST", { identifier: "nobody-" + stamp + "@test.com" });
+  check("otp request-code unknown identifier 200 generic", r.status === 200 && J(r.body)?.success === true, (r.body || "").substring(0, 90));
+  // Malformed identifier rejected 400.
+  r = await api("/api/auth/whatsapp/request-code", "POST", { identifier: "!!" });
+  check("otp request-code malformed identifier 400", r.status === 400, "status=" + r.status);
+  // Real client flow: register a client with a phone, request a code. Without a
+  // provider the code is simulated (echoed outside production); with one it
+  // travels over WhatsApp. Either way the endpoint must answer 200.
+  const otpEm = "otpuser" + Date.now() + "@test.com";
+  await api("/api/users/register", "POST", { email: otpEm, password: "Verify123", first_name: "Otp", last_name: "User", phone: "+254700000021" });
+  r = await api("/api/auth/whatsapp/request-code", "POST", { identifier: otpEm });
+  check("otp request-code known user 200", r.status === 200 && J(r.body)?.success === true, (r.body || "").substring(0, 90));
+  // Cooldown: immediate re-request answers exactly like a fresh send.
+  const r2 = await api("/api/auth/whatsapp/request-code", "POST", { identifier: otpEm });
+  check("otp request-code cooldown answers generically", r2.status === 200 && J(r2.body)?.success === true, (r2.body || "").substring(0, 90));
+  // Wrong code rejected 400 (validates verify-code path without knowing the code).
+  r = await api("/api/auth/whatsapp/verify-code", "POST", { identifier: otpEm, code: "000000" });
+  check("otp verify-code wrong code 400", r.status === 400, "status=" + r.status + " " + (r.body || "").substring(0, 60));
+
+  console.log("--- M-PESA STK (simulated fallback) ---");
+  // Without Daraja credentials (or with rejected ones) the endpoint must still
+  // answer a simulated success with a checkoutRequestId — never a 500.
+  r = await api("/api/mpesa/stkpush", "POST", { phoneNumber: "254700000021", amount: 10 }, tok);
+  check("stkpush simulated 200 + checkoutRequestId", r.status === 200 && !!J(r.body)?.checkoutRequestId, (r.body || "").substring(0, 90));
+
   console.log("--- PROJECT DETAIL / DASHBOARD ---");
   const pid = projects[0]?.id || projects[0]?.project_id;
   if (pid) {
@@ -289,5 +359,8 @@ function check(name, cond, extra) {
   console.log("FEATURE VERIFICATION: " + pass + " passed, " + fail + " failed, " + (pass + fail) + " total");
   if (failures.length) console.log("FAILURES: " + failures.join(" | "));
   console.log("==================================================");
-  process.exit(0);
+  // Non-zero exit on ANY failure so `npm run test:*` / CI actually gates on
+  // this. It used to exit 0 unconditionally, which reported "7 failed" as a
+  // green build and let every regression above pass unnoticed.
+  process.exit(fail ? 1 : 0);
 })().catch(e => { console.error("FATAL:", e.message); process.exit(1); });

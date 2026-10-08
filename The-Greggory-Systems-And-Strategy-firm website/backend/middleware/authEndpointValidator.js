@@ -255,7 +255,7 @@ function authEndpointValidator(platform, tableName) {
         success: false
       });
 
-      console.error(`[AUTH ENDPOINT] ${requestId} VALIDATION FAILED: ${validation.errorCode}`);
+      console.error(`[AUTH ENDPOINT] ${requestId} VALIDATION FAILED: ${validation.errorCode} — ${validation.details || validation.error}`);
 
       return res.status(400).json({
         success: false,
@@ -264,7 +264,17 @@ function authEndpointValidator(platform, tableName) {
         platform: platform,
         tableName: tableName,
         errorCode: validation.errorCode,
-        violations: validation.violations || []
+        violations: validation.violations || [],
+        // VALIDATION_ERROR means the ENGINE failed (usually a DB/socket fault
+        // reaching auth_platform_mapping), NOT that the caller sent bad input —
+        // so violations is legitimately empty and the message alone reads like a
+        // form error. Surface the underlying cause with the requestId so a
+        // support report can be matched against the server log. The other
+        // codes (VALIDATION_FAILED / RATE_LIMIT_EXCEEDED) are real request
+        // faults and get no extra detail.
+        ...(validation.errorCode === 'VALIDATION_ERROR'
+          ? { details: validation.details, infrastructure: true }
+          : {})
       });
     }
 
