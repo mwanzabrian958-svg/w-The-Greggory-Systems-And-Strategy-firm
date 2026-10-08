@@ -86,6 +86,14 @@ const USERS_CODE_COLUMNS = {
     { name: "profile_photo_blob", def: "longblob" },
     { name: "profile_photo_mime_type", def: "varchar(100)" },
     { name: "profile_photo_file_name", def: "varchar(255)" },
+    // WhatsApp portal/APK verification codes (backend/routes/whatsappAuth.js):
+    // request-code stores the SHA-256 hash + expiry, verify-code burns them.
+    { name: "whatsapp_verified", def: "BOOLEAN DEFAULT FALSE" },
+    { name: "whatsapp_auth_key", def: "VARCHAR(10) DEFAULT NULL" },
+    { name: "whatsapp_code_hash", def: "VARCHAR(64) DEFAULT NULL" },
+    { name: "whatsapp_code_expires", def: "DATETIME DEFAULT NULL" },
+    { name: "whatsapp_code_attempts", def: "TINYINT UNSIGNED NOT NULL DEFAULT 0" },
+    { name: "whatsapp_code_sent_at", def: "DATETIME DEFAULT NULL" },
   ],
 };
 

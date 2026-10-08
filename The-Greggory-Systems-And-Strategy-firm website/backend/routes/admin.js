@@ -10,6 +10,9 @@ const PDFDocument = require('pdfkit');
 const { stampLogo, stampWatermark } = require('../../server/lib/documentBrand');
 const { formatActivityLog } = require('../utils/activityLogFormatter');
 const { verifySessionToken } = require('../utils/sessionToken');
+// admin_settings has no CREATE TABLE in the schema (see the module doc); these
+// three routes would otherwise die with ER_NO_SUCH_TABLE -> 500 on every call.
+const { ensureAdminSettingsTable } = require('../utils/ensureAdminSettings');
 
 /**
  * Timing-safe secret comparison — hashes both sides to a fixed length first so
@@ -1418,6 +1421,7 @@ router.delete('/crm/contacts/:id', async (req, res) => {
 // =============================================
 router.get('/settings', async (req, res) => {
   try {
+    await ensureAdminSettingsTable(db);
     const [settings] = await db.promise().query('SELECT * FROM admin_settings ORDER BY setting_group, setting_key');
     const settingsMap = {};
     settings.forEach(s => { settingsMap[s.setting_key] = s.setting_value; });
@@ -1435,6 +1439,7 @@ router.put('/settings', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid settings data' });
     }
     const keys = Object.keys(updates);
+    await ensureAdminSettingsTable(db);
     for (const key of keys) {
       await db.promise().query(
         'INSERT INTO admin_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?',

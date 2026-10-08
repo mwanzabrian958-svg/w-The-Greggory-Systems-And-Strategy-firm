@@ -87,12 +87,25 @@ const DDL_REQUEST_LOG = `CREATE TABLE IF NOT EXISTS auth_request_log (
  * @returns {Promise<{endpoints:number, repaired:number, details:Array}>}
  */
 async function ensureAuthSeedData({ log = console.log, endpoints } = {}) {
-  const list = endpoints || require("../server/config/dbEndpoints").endpoints();
+  const { liveEndpoints } = require("../server/config/dbEndpoints");
+  const list = endpoints || await liveEndpoints();
   const summary = { endpoints: 0, repaired: 0, details: [] };
 
   for (const cfg of list) {
     const { label, ...opts } = cfg;
-    const conn = await mysql.createConnection({ connectTimeout: 20000, ...opts });
+    let conn;
+    try {
+      conn = await mysql.createConnection({ connectTimeout: 20000, ...opts });
+    } catch (e) {
+      // A configured-but-dead endpoint (XAMPP stopped locally) must not abort the
+      // whole pre-flight. It used to throw out of the loop on the FIRST dead node
+      // with an unhandled "connect ECONNREFUSED 127.0.0.1:3306", which meant the
+      // seed rows were never checked on the endpoint that IS live — and every
+      // register/login then failed with MAPPING_NOT_LOCKED, i.e. "login attempt
+      // N failed (401)" cascading through the whole verification suite.
+      log(`   [${label || opts.host}] unreachable (${e.code || e.message}) — skipped`);
+      continue;
+    }
     const detail = { endpoint: label || opts.host, mappings: 0, added: 0, rules: 0 };
     try {
       await conn.query(DDL_MAPPING);

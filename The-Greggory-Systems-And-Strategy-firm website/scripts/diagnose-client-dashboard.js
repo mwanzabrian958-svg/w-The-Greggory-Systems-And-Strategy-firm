@@ -59,8 +59,8 @@ async function connectFirstEndpoint(prefer) {
   for (const cfg of list) {
     const { label, ...opts } = cfg;
     try {
-      const conn = await mysql.createConnection({ ...opts, database: DB_NAME });
-      console.log(`[OK] Connected to endpoint "${label}" -> ${opts.host}:${opts.port} / ${DB_NAME}`);
+      const conn = await mysql.createConnection(opts); // endpoint carries its own database
+      console.log(`[OK] Connected to endpoint "${label}" -> ${opts.host}:${opts.port} / ${opts.database}`);
       return { conn, label };
     } catch (err) {
       const msg = `${err.code || ""} ${err.message}`.trim();

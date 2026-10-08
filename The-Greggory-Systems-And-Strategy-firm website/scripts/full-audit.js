@@ -74,7 +74,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   record("Public", "GET /api/health", await req("GET", "/api/health"), [200]);
   const home = await req("GET", "/");
   record("Public", "GET / (SPA)", home, [200], home.body.includes('<div id="root">') ? "react root ok" : "no react root");
-  record("Public", "GET /api/user-projects", await req("GET", "/api/user-projects"), [200]);
+  // /api/user-projects returns client project rows and sits behind
+  // authenticateAny — assert it REFUSES an anonymous caller rather than
+  // serving one. (No public page calls it; only signed-in admin/portal views.)
+  record("Public", "GET /api/user-projects (auth-gated)", await req("GET", "/api/user-projects"), [401]);
   record("Public", "GET /api/blog-articles", await req("GET", "/api/blog-articles"), [200]);
   record("Public", "GET /api/company-personnel", await req("GET", "/api/company-personnel"), [200]);
   record("Public", "GET /api/website-content", await req("GET", "/api/website-content"), [200]);
@@ -110,7 +113,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   record("Client", "foreign project isolation", await req("GET", "/api/users/project-team-template/1", null, ct), [403, 404]);
 
   // ---------- 3. ADMIN AUTH + PHOTO ----------
-  record("Admin", "register", await req("POST", "/api/admin-verification/register", { email: ae, password: "Audit123", first_name: "Audit", last_name: "Admin", role: "admin" }), [201]);
+  // admin_code is REQUIRED — without it the server answers 403 and every
+  // Admin/AdminData/Team/Billing check below cascades into 401/429.
+  record("Admin", "register", await req("POST", "/api/admin-verification/register", { email: ae, password: "Audit123", first_name: "Audit", last_name: "Admin", role: "admin", admin_code: process.env.ADMIN_CODE }), [201]);
   const al = await req("POST", "/api/admin-verification/authenticate-enhanced", { email: ae, password: "Audit123" });
   record("Admin", "login", al, [200]);
   const at = al.json?.token;

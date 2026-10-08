@@ -51,10 +51,10 @@ async function main() {
   const list = endpoints();
   const cfg = label === "cloud" ? list[list.length - 1] : list[0];
   const { label: lbl, ...opts } = cfg;
-  const conn = await mysql.createConnection({ ...opts, database: DB_NAME });
+  const conn = await mysql.createConnection(opts); // endpoint carries its own database
   const [rows] = await conn.query("SHOW TABLES");
   const live = new Set(rows.map((r) => String(Object.values(r)[0]).toLowerCase()));
-  console.log(`Endpoint "${lbl}" -> ${DB_NAME}: ${live.size} live tables`);
+  console.log(`Endpoint "${lbl}" -> ${opts.database}: ${live.size} live tables`);
   console.log(`server.js references ${tables.size} distinct tables\n`);
 
   const missing = [...tables].filter((t) => !live.has(t)).sort();
