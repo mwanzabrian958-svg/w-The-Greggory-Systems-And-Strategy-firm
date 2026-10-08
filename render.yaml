@@ -165,6 +165,13 @@ services:
       # Optional; the code defaults to v20.0 when unset.
       - key: WHATSAPP_CLOUD_API_VERSION
         value: v20.0
+      # Optional Meta template for portal/APK verification CODES
+      # (backend/routes/whatsappAuth.js). Business-initiated messages outside
+      # the 24h customer-service window must be pre-approved Authentication /
+      # Utility templates with ONE body parameter = the code. Unset = codes
+      # send as plain text (dev / Africa's Talking fallback).
+      - key: WHATSAPP_OTP_TEMPLATE_NAME
+        sync: false
       # ---- Firebase Cloud Messaging (push) ----
       # Path to the service-account JSON INSIDE the deployed container. Defaults
       # to backend/config/firebase-service-account.json; set only to override.

@@ -48,6 +48,10 @@ const recommended = {
   COMPANY_WHATSAPP_NUMBER: 'WhatsApp hub number',
   GOOGLE_CLIENT_ID: 'Google Sign-In — server-side token verification (empty = button hidden)',
   VITE_GOOGLE_CLIENT_ID: 'Google Sign-In — baked into the frontend bundle; must MATCH GOOGLE_CLIENT_ID',
+  WHATSAPP_CLOUD_TOKEN: 'WhatsApp Meta Cloud API (preferred provider)',
+  WHATSAPP_CLOUD_PHONE_ID: 'WhatsApp Meta Cloud API — numeric Phone number ID from API Setup',
+  WHATSAPP_CLOUD_API_VERSION: 'WhatsApp Meta Cloud API version (defaults to v20.0)',
+  WHATSAPP_OTP_TEMPLATE_NAME: 'WhatsApp verification-code template (Authentication/Utility, 1 body param = code)',
 };
 
 // ---- Local-only: never copy these to Render --------------------------------
@@ -102,6 +106,23 @@ if (process.env.COMPANY_PHONE_NUMBER && !phoneOk(process.env.COMPANY_PHONE_NUMBE
 if (process.env.COMPANY_WHATSAPP_NUMBER && !phoneOk(process.env.COMPANY_WHATSAPP_NUMBER)) {
   problems++;
   console.log('!! COMPANY_WHATSAPP_NUMBER must be E.164, e.g. +254115525854');
+}
+// ── WhatsApp: warn (never fail) on shape problems that silently disable sends
+// (mirrors backend/services/whatsappService.js — non-blocking; sends simulate).
+{
+  const pid = (process.env.WHATSAPP_CLOUD_PHONE_ID || '').trim();
+  const tok = (process.env.WHATSAPP_CLOUD_TOKEN || '').trim();
+  if ((pid || tok) && !(pid && tok)) {
+    console.log('--  WhatsApp Meta Cloud is half-configured — set BOTH WHATSAPP_CLOUD_TOKEN and WHATSAPP_CLOUD_PHONE_ID (else sends simulate)');
+  } else if (pid && !/^\d+$/.test(pid)) {
+    console.log(`--  WHATSAPP_CLOUD_PHONE_ID="${pid}" is not a numeric Meta Phone number ID (copy it from developers.facebook.com -> app -> WhatsApp -> API Setup) — Meta Cloud API is DISABLED until fixed`);
+  }
+  if ((process.env.AFRICASTALKING_USERNAME || '').trim() && /\s/.test(process.env.AFRICASTALKING_USERNAME)) {
+    console.log('--  AFRICASTALKING_USERNAME contains whitespace — use the bare app username (e.g. "sandbox")');
+  }
+  if (!(process.env.WHATSAPP_OTP_TEMPLATE_NAME || '').trim() && pid && tok) {
+    console.log('--  WHATSAPP_OTP_TEMPLATE_NAME unset — verification codes send as plain text (only delivered inside the 24h window); set an Authentication/Utility template for production');
+  }
 }
 if (/(^|[^:\w])\/\//.test(process.env.RATE_LIMIT_WINDOW_MS || '') || /\/\//.test(process.env.RATE_LIMIT_MAX || '')) {
   console.log('--  RATE_LIMIT_* contains an inline "//" comment (not read by code; limits are hardcoded)');
