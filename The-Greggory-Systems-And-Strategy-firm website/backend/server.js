@@ -59,7 +59,9 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 10000, // allow verification/active sessions to exceed the default 100/req per window without throttling
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use(limiter);
 
