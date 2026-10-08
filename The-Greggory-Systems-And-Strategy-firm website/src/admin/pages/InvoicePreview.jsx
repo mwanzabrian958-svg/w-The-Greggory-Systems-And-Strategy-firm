@@ -117,7 +117,7 @@ export function InvoicePreview() {
       </div>
 
       {sendMsg && (
-         <div className={`mx-10 mt-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border ${sendMsg.ok ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
+         <div className={`mx-10 mt-4 px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border ${sendMsg.ok ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
             {sendMsg.text}
          </div>
       )}

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, FileText, Plus, Search, Download, Calendar, Filter, BarChart3, PieChart, TrendingUp, FileSpreadsheet, Printer, Share2, Eye, CheckCircle } from 'lucide-react';
 import { apiCall } from '../../../services/api';
 
@@ -189,7 +189,7 @@ export function ReportsModal({ isOpen, onClose }) {
         </div>
 
         {notice && (
-          <div className={`px-6 py-2 text-xs font-bold flex items-center gap-2 ${notice.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+          <div className={`px-6 py-2 text-xs font-bold flex items-center gap-2 ${notice.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-emerald-50 text-emerald-700'}`}>
             <CheckCircle className="w-4 h-4" /> {notice.text}
           </div>
         )}

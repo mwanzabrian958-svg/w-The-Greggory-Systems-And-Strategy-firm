@@ -255,7 +255,11 @@ export function Team() {
                 ))}
               </div>
             ) : (
-              <div className="py-14 text-center opacity-30"><Users size={24} className="mx-auto mb-2" /><p className="text-[9px] uppercase font-bold">No team members found</p></div>
+              <div className="py-14 text-center">
+                <Users size={24} className="mx-auto mb-2 text-teal-400" />
+                <p className="text-[9px] uppercase font-bold text-slate-500">No team members found</p>
+                <button onClick={() => setShowMemberForm(true)} className="mt-3 px-3 py-1.5 bg-teal-600 text-white rounded-lg text-[7px] font-black uppercase tracking-widest hover:bg-teal-700 transition-colors">+ Add member</button>
+              </div>
             )}
           </div>
         </div>

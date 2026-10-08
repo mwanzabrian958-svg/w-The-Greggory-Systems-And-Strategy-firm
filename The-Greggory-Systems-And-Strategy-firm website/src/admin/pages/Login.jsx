@@ -160,9 +160,9 @@ export function Login({ onLoginSuccess }) {
                 </div>
 
                 {error && (
-                  <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-3">
-                    <Shield className="w-5 h-5 text-rose-500 shrink-0" />
-                    <span className="text-rose-700 text-[10px] font-black uppercase tracking-widest leading-tight">{error}</span>
+                  <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-emerald-500 shrink-0" />
+                    <span className="text-emerald-700 text-[10px] font-black uppercase tracking-widest leading-tight">{error}</span>
                   </div>
                 )}
 
@@ -219,7 +219,7 @@ export function Login({ onLoginSuccess }) {
                     <input type="password" placeholder="Confirm Key" value={regData.confirmPassword} onChange={(e) => setRegData({...regData, confirmPassword: e.target.value})} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
                     <input type="password" placeholder="Admin registration code" value={regData.admin_code} onChange={(e) => setRegData({...regData, admin_code: e.target.value})} autoComplete="off" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
 
-                    {error && <p className="text-[8px] font-black text-rose-500 uppercase text-center">{error}</p>}
+                    {error && <p className="text-[8px] font-black text-emerald-500 uppercase text-center">{error}</p>}
 
                     <button type="submit" disabled={loading} className="w-full bg-teal-600 hover:bg-teal-500 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] shadow-xl transition-all">
                       {loading ? <Spinner size={16} tone="white" /> : "Create account"}

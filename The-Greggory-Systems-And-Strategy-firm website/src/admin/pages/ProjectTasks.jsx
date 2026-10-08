@@ -155,10 +155,11 @@ export function ProjectTasks() {
               <div key={task.id} className="bg-white/2 border border-white/5 rounded-[32px] p-5 hover:bg-white/5 transition-all group flex flex-col h-full shadow-2xl">
                 <div className="flex justify-between items-start mb-4">
                    <span className={`px-2 py-0.5 rounded text-[6px] font-black uppercase border ${
+                     task.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
                      task.priority === 'urgent' ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' :
                      task.priority === 'high' ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' :
                      'bg-blue-500/10 text-blue-500 border-blue-500/20'
-                   }`}>{task.priority}</span>
+                   }`}>{task.status === 'completed' ? 'Completed' : task.priority}</span>
                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => handleDeleteTask(task.id)} className="p-1.5 bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={10} /></button>
                    </div>
@@ -197,9 +198,9 @@ export function ProjectTasks() {
                 </div>
               </div>
             )) : (
-              <div className="col-span-full py-20 text-center bg-white/2 rounded-[40px] border border-dashed border-white/5">
-                 <CheckSquare size={48} className="mx-auto text-slate-800 mb-4 opacity-20" />
-                 <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">No Active Task Nodes Found</p>
+              <div className="col-span-full py-20 text-center bg-white/2 rounded-[40px] border border-dashed border-emerald-500/30">
+                 <CheckSquare size={48} className="mx-auto text-emerald-500 mb-4" />
+                 <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">No Active Task Nodes Found</p>
               </div>
             )}
           </div>

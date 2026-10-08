@@ -339,8 +339,8 @@ export function Posts() {
       </div>
 
       {error ? (
-        <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-4 py-3 text-[9px] font-bold">
-          <AlertCircle size={14} /> {error}
+        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 text-[9px] font-bold">
+          <CheckCircle size={14} /> {error}
         </div>
       ) : null}
       {notice ? (

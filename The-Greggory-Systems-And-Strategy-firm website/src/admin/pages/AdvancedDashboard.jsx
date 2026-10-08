@@ -159,7 +159,7 @@ export function AdvancedDashboard({ user }) {
           { label: "New Invoice", icon: DollarSign, path: "/admin/billing/create", tone: "text-emerald-600 bg-emerald-50" },
           { label: "Add Personnel", icon: UserCheck, path: "/admin/users", tone: "text-sky-600 bg-sky-50" },
           { label: "Team Management", icon: Users, path: "/admin/team", tone: "text-teal-700 bg-teal-50" },
-          { label: "Data Safety", icon: Shield, path: "/admin/data-safety", tone: "text-rose-600 bg-rose-50" },
+          { label: "Data Safety", icon: Shield, path: "/admin/data-safety", tone: "text-emerald-600 bg-emerald-50" },
         ].map((a) => (
           <button key={a.label} onClick={() => navigate(a.path)} className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm flex items-center gap-3 hover:border-teal-500/40 hover:shadow-md transition-all group text-left">
             <span className={`p-2 rounded-lg ${a.tone}`}><a.icon size={14} /></span>
@@ -347,10 +347,10 @@ export function AdvancedDashboard({ user }) {
       <div className="bg-[#0f172a] rounded-2xl shadow-2xl p-5 border border-white/5">
         <div className="flex items-center justify-between mb-5 border-b border-white/5 pb-3">
           <div className="flex items-center gap-3">
-            <Shield size={14} className="text-rose-400" />
+            <Shield size={14} className="text-emerald-400" />
             <h3 className="text-[9px] font-black text-white uppercase tracking-widest">Data Safety & Compliance</h3>
           </div>
-          <button onClick={() => navigate('/admin/data-safety')} className="text-[7px] font-black text-rose-400 uppercase tracking-widest hover:text-white transition-colors">Access Hub</button>
+          <button onClick={() => navigate('/admin/data-safety')} className="text-[7px] font-black text-emerald-400 uppercase tracking-widest hover:text-white transition-colors">Access Hub</button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[

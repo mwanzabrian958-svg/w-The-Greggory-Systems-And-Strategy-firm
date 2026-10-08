@@ -72,7 +72,7 @@ function AddUserQuickForm({ onSubmit, onCancel, loading, setLoading, error, setE
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-600">
           {error}
         </div>
       )}
@@ -172,7 +172,7 @@ function NewProjectQuickForm({ onSubmit, onCancel, loading, setLoading, error, s
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-600">
           {error}
         </div>
       )}
@@ -256,7 +256,7 @@ function SendMessageQuickForm({ onSubmit, onCancel, loading, setLoading, error, 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-600">
           {error}
         </div>
       )}
@@ -340,7 +340,7 @@ function CreateContentQuickForm({ onSubmit, onCancel, loading, setLoading, error
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-600">
           {error}
         </div>
       )}

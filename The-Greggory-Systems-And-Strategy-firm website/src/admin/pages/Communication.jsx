@@ -241,7 +241,7 @@ export function Communication() {
               </div>
 
               {feedbackStatus && (
-                <div className={`p-2.5 rounded-xl text-[8px] font-bold uppercase tracking-wider text-center ${feedbackStatus.type === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-rose-50 text-rose-700 border border-rose-100"}`}>
+                <div className={`p-2.5 rounded-xl text-[8px] font-bold uppercase tracking-wider text-center ${feedbackStatus.type === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-emerald-50 text-emerald-700 border border-emerald-100"}`}>
                   {feedbackStatus.message}
                 </div>
               )}

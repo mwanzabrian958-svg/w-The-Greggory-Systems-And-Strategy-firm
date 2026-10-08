@@ -273,8 +273,8 @@ export function Settings({ user }) {
       </div>
 
       {feedback && (
-        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-widest ${feedback.type === "ok" ? "bg-teal-50 border-teal-200 text-teal-700" : "bg-rose-50 border-rose-200 text-rose-700"}`}>
-          {feedback.type === "ok" ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />} {feedback.text}
+        <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-[9px] font-black uppercase tracking-widest ${feedback.type === "ok" ? "bg-teal-50 border-teal-200 text-teal-700" : "bg-teal-50 border-teal-200 text-teal-700"}`}>
+          <CheckCircle2 size={13} /> {feedback.text}
         </div>
       )}
 

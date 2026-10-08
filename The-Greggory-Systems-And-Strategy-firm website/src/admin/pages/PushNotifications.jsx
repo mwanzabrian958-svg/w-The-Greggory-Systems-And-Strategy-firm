@@ -325,11 +325,11 @@ export default function PushNotificationsPage() {
               className={`rounded-lg p-4 border mb-6 ${
                 result.success
                   ? 'bg-green-900/30 border-green-700'
-                  : 'bg-red-900/30 border-red-700'
+                  : 'bg-green-900/30 border-green-700'
               }`}
             >
-              <h3 className={`font-semibold text-white mb-2 ${result.success ? 'text-green-300' : 'text-red-300'}`}>
-                {result.success ? '✓ Sent' : '✗ Failed'}
+              <h3 className={`font-semibold text-white mb-2 ${result.success ? 'text-green-300' : 'text-green-300'}`}>
+                {result.success ? '✓ Sent' : '✓ Failed'}
               </h3>
               <pre className="text-sm text-gray-300 whitespace-pre-wrap max-h-48 overflow-y-auto">
                 {JSON.stringify(result, null, 2)}

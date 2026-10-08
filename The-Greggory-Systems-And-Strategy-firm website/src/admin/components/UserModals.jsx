@@ -75,7 +75,7 @@ export function CreateUserModal({ isOpen, onClose, onCreate }) {
     <Modal isOpen={isOpen} onClose={onClose} title="Create New User" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-600">
             {error}
           </div>
         )}
@@ -227,7 +227,7 @@ export function EditUserModal({ isOpen, onClose, onUpdate, user, currentUser }) 
     <Modal isOpen={isOpen} onClose={onClose} title={`Edit User: ${user?.display_name || user?.email}`} size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-600">
             {error}
           </div>
         )}

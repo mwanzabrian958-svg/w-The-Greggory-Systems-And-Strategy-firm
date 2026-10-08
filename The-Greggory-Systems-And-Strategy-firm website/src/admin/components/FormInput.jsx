@@ -50,7 +50,7 @@ export function FormInput({
           autoComplete={autoComplete}
           className={`w-full ${Icon ? 'pl-10' : 'pl-4'} ${showClearButton ? 'pr-10' : 'pr-4'} py-2.5 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
             error 
-              ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+              ? 'border-emerald-300 focus:ring-emerald-500 focus:border-emerald-500 bg-emerald-50' 
               : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-white'
           } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
         />
@@ -67,8 +67,8 @@ export function FormInput({
       </div>
       
       {error && (
-        <div className="flex items-center gap-1.5 text-sm text-red-600">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="flex items-center gap-1.5 text-sm text-emerald-600">
+          <Check className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
@@ -147,14 +147,14 @@ export function Textarea({
         rows={rows}
         className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 transition-all resize-none ${
           error 
-            ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+            ? 'border-emerald-300 focus:ring-emerald-500 focus:border-emerald-500 bg-emerald-50' 
             : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-white'
         } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
       />
       
       {error && (
-        <div className="flex items-center gap-1.5 text-sm text-red-600">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="flex items-center gap-1.5 text-sm text-emerald-600">
+          <Check className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
@@ -197,7 +197,7 @@ export function Select({
         required={required}
         className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
           error 
-            ? 'border-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+            ? 'border-emerald-300 focus:ring-emerald-500 focus:border-emerald-500 bg-emerald-50' 
             : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-white'
         } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
       >
@@ -210,8 +210,8 @@ export function Select({
       </select>
       
       {error && (
-        <div className="flex items-center gap-1.5 text-sm text-red-600">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="flex items-center gap-1.5 text-sm text-emerald-600">
+          <Check className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}

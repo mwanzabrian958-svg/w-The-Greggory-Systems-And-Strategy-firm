@@ -42,7 +42,7 @@ export function BlogPreview() {
   if (!article) {
     return (
       <div className="fixed inset-0 bg-[#0f172a] flex flex-col items-center justify-center text-white p-6">
-        <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-4">Node Not Found</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-4">Node Not Found</p>
         <button onClick={() => navigate('/admin/content')} className="px-6 py-2 bg-white/5 border border-white/10 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center gap-2">
           <ChevronLeft size={12} /> Return to Hub
         </button>

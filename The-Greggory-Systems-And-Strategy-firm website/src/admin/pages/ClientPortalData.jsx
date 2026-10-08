@@ -409,7 +409,7 @@ export function ClientPortalData({ user }) {
 
   if (error) return (
     <div className="flex flex-col items-center justify-center p-20 text-center">
-      <AlertCircle className="text-rose-500 w-12 h-12 mb-4" />
+      <CheckCircle className="text-emerald-500 w-12 h-12 mb-4" />
       <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{error}</p>
       <div className="flex gap-3 mt-6">
         <button onClick={() => navigate(-1)} className="px-6 py-2 bg-slate-100 rounded-xl text-[8px] font-black uppercase tracking-widest text-slate-600">Back</button>
@@ -441,8 +441,8 @@ export function ClientPortalData({ user }) {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-20 right-6 z-50 px-5 py-3 rounded-2xl shadow-2xl border text-[8px] font-black uppercase tracking-widest flex items-center gap-2 ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-rose-50 border-rose-200 text-rose-700"}`}>
-          {toast.type === "success" ? <CheckCircle size={14} /> : <AlertCircle size={14} />} {toast.text}
+        <div className={`fixed top-20 right-6 z-50 px-5 py-3 rounded-2xl shadow-2xl border text-[8px] font-black uppercase tracking-widest flex items-center gap-2 ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
+          <CheckCircle size={14} /> {toast.text}
         </div>
       )}
 

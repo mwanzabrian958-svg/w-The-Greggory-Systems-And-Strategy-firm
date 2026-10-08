@@ -8,10 +8,10 @@ export function Security() {
   const [loading, setLoading] = useState(false);
 
   const SECURITY_NODES = [
-    { label: "Encrypted Relay", status: "Active", node: "AES-256" },
-    { label: "Identity Node", status: "Solidified", node: "WhatsApp" },
-    { label: "Ledger Audit", status: "Valid", node: "MySQL-Sync" },
-    { label: "Data Safety", status: "Compliant", node: "GDPR/KRA" },
+    { label: "Encrypted Relay", status: "Active", node: "AES-256", ok: true },
+    { label: "Identity Node", status: "Solidified", node: "WhatsApp", ok: true },
+    { label: "Ledger Audit", status: "Valid", node: "MySQL-Sync", ok: true },
+    { label: "Data Safety", status: "Compliant", node: "GDPR/KRA", ok: true },
   ];
 
   if (loading) return <InlineLoader label="Verifying Security Posture…" tone="teal" rail />;
@@ -35,7 +35,19 @@ export function Security() {
           <div key={node.label} className="bg-white rounded-xl p-3 border border-slate-100 shadow-md flex items-center justify-between">
             <div>
               <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{node.label}</p>
-              <p className="text-sm font-black text-slate-900">{node.status}</p>
+              <div className="flex items-center gap-2">
+                {node.ok ? (
+                  <>
+                    <ShieldCheck size={14} className="text-emerald-500" />
+                    <p className="text-sm font-black text-emerald-600">{node.status}</p>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle size={14} className="text-amber-500" />
+                    <p className="text-sm font-black text-amber-600">{node.status}</p>
+                  </>
+                )}
+              </div>
             </div>
             <div className="bg-slate-50 p-2 rounded-lg text-slate-400"><p className="text-[6px] font-black">{node.node}</p></div>
           </div>
@@ -66,7 +78,7 @@ export function Security() {
         <section className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xl overflow-hidden">
            <div className="flex items-center justify-between border-b border-slate-50 pb-4 mb-4">
             <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Data Safety & Compliance</h3>
-            <FileText size={14} className="text-rose-500" />
+            <ShieldCheck size={14} className="text-emerald-500" />
           </div>
           <div className="space-y-2">
              <button onClick={() => navigate('/admin/data-safety')} className="w-full p-3 bg-slate-50/50 rounded-xl border border-slate-100 flex items-center justify-between group hover:bg-white transition-all">

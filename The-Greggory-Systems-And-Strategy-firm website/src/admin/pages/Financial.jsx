@@ -121,7 +121,7 @@ export function Billing() {
     <div className="space-y-6 animate-fade-in font-sans max-w-[1200px] mx-auto pb-10">
 
       {notice && (
-        <div className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border ${notice.ok ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
+        <div className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border ${notice.ok ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
           {notice.text}
         </div>
       )}

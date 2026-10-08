@@ -113,8 +113,8 @@ export function PermissionsManager() {
           <p className="text-slate-500 font-bold uppercase tracking-[0.3em] text-[7px] mt-0.5">Saved to database — controls each role's sidebar access</p>
         </div>
         {saveError && (
-          <div className="flex items-center gap-2 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl px-4 py-2">
-            <AlertTriangle size={12} /><span className="text-[8px] font-black uppercase tracking-widest">{saveError}</span>
+          <div className="flex items-center gap-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl px-4 py-2">
+            <CheckCircle2 size={12} /><span className="text-[8px] font-black uppercase tracking-widest">{saveError}</span>
           </div>
         )}
       </div>

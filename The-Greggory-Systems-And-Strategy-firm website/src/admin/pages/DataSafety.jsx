@@ -283,12 +283,12 @@ export function DataSafety() {
           ) : (
             <>
               {!backupStatus.configured && (
-                <p className="text-[8px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
+                <p className="text-[8px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
                   Cloud DB not configured — set DB_CLOUD_HOST / DB_CLOUD_USER / DB_CLOUD_PASSWORD in .env
                 </p>
               )}
               {backupStatus.lastRun && !backupStatus.lastRun.ok && backupStatus.lastRun.error && (
-                <p className="text-[8px] font-black uppercase tracking-wide text-orange-600 bg-orange-50 border border-orange-100 rounded-lg px-3 py-2">
+                <p className="text-[8px] font-black uppercase tracking-wide text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
                   Last run failed: {backupStatus.lastRun.error}
                 </p>
               )}

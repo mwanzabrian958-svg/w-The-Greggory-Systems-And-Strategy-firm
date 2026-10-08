@@ -49,7 +49,7 @@ export function UserDetail() {
 
   if (!user) return (
     <div className="flex flex-col items-center justify-center p-20">
-       <XCircle className="text-rose-500 w-12 h-12 mb-4" />
+       <CheckCircle className="text-emerald-500 w-12 h-12 mb-4" />
        <p className="text-[10px] font-black text-slate-900 uppercase">Node Identity Missing from Matrix</p>
        <button onClick={() => navigate('/admin/users')} className="mt-6 px-6 py-2 bg-slate-900 text-white rounded-xl text-[8px] font-black uppercase tracking-widest">Return to Hub</button>
     </div>
