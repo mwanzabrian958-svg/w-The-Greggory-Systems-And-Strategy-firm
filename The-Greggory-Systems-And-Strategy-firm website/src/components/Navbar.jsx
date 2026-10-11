@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, LogIn, ChevronDown, User } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -45,6 +45,8 @@ const Navbar = () => {
   const [companiesDropdownOpen, setCompaniesDropdownOpen] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
   const scrollTimer = useRef(null)
+  const navRef = useRef(null)
+  const [navHeight, setNavHeight] = useState(0)
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -64,6 +66,20 @@ const Navbar = () => {
       window.removeEventListener('scroll', handleScroll)
       if (scrollTimer.current) clearTimeout(scrollTimer.current)
     }
+  }, [])
+
+  // Measure the nav's rendered height so that, when it slides away on scroll,
+  // we can collapse the exact space it reserved. Without this the sticky
+  // <header> in App.jsx keeps holding the bar's full height open, leaving a
+  // blank gap the size of the navbar between the top of the screen and the
+  // page content. Re-measure on resize (the bar is h-24 on mobile, h-28 up).
+  useLayoutEffect(() => {
+    const el = navRef.current
+    if (!el) return
+    const measure = () => setNavHeight(el.offsetHeight)
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
   }, [])
 
   // Always attempt to load the photo if we have a user ID; fall back to initials on error.
@@ -98,7 +114,11 @@ const Navbar = () => {
   }
 
   return (
-    <nav className={`${NAV_BG} sticky top-0 z-50 shadow-lg shadow-orange-900/20 transition-all duration-500 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+    <nav
+      ref={navRef}
+      className={`${NAV_BG} sticky top-0 z-50 shadow-lg shadow-orange-900/20 transition-all duration-500 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}
+      style={!isVisible && navHeight ? { marginBottom: `-${navHeight}px` } : undefined}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-24 sm:h-28">
           <div className="flex items-center flex-shrink-0">
