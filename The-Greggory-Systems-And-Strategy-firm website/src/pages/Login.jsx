@@ -119,9 +119,10 @@ const Login = () => {
       login(userInfo);
 
       // Redirect after login: if we came from a protected page, go back there;
-      // otherwise drop the client into the portal instead of the home page.
+      // otherwise STAY on the website (home) — do NOT force-open the portal.
+      // The "Client Portal" link in the navbar is enough to reach it on demand.
       const from = location.state?.from;
-      const defaultPath = '/client-portal';
+      const defaultPath = '/';
       navigate(from || defaultPath, { replace: true })
     } catch (err) {
       console.error('Login failed:', err)

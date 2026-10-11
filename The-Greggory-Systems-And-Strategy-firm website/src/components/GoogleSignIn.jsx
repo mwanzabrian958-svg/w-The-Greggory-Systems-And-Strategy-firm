@@ -101,8 +101,9 @@ const GoogleSignIn = ({ buttonText = 'Sign up with Google', isSignUp = true }) =
       });
 
       // Same destination as the password login: back to the page that bounced
-      // the client here, otherwise the portal (not the marketing home page).
-      navigate(location.state?.from || '/client-portal', { replace: true });
+      // the client here, otherwise stay on the website (home) — the navbar's
+      // "Client Portal" link is enough to reach the portal.
+      navigate(location.state?.from || '/', { replace: true });
     } catch (error) {
       console.error('Google Auth protocol failure:', error);
       alert(error.message || 'Google sign-in failed. Please try again.');
