@@ -46,6 +46,9 @@ const recommended = {
   AFRICASTALKING_API_KEY: 'SMS / WhatsApp relay',
   COMPANY_PHONE_NUMBER: 'SMS hub number',
   COMPANY_WHATSAPP_NUMBER: 'WhatsApp hub number',
+  WHATSAPP_INFOBIP_BASE_URL: 'WhatsApp via Infobip (PREFERRED provider) — account base URL',
+  WHATSAPP_INFOBIP_API_KEY: 'WhatsApp via Infobip — API key (sent as Authorization: App <key>)',
+  WHATSAPP_INFOBIP_SENDER: 'WhatsApp via Infobip — sender number (defaults to test sender 447860088970)',
   GOOGLE_CLIENT_ID: 'Google Sign-In — server-side token verification (empty = button hidden)',
   VITE_GOOGLE_CLIENT_ID: 'Google Sign-In — baked into the frontend bundle; must MATCH GOOGLE_CLIENT_ID',
   WHATSAPP_CLOUD_TOKEN: 'WhatsApp Meta Cloud API (preferred provider)',
@@ -112,6 +115,14 @@ if (process.env.COMPANY_WHATSAPP_NUMBER && !phoneOk(process.env.COMPANY_WHATSAPP
 {
   const pid = (process.env.WHATSAPP_CLOUD_PHONE_ID || '').trim();
   const tok = (process.env.WHATSAPP_CLOUD_TOKEN || '').trim();
+  const ibBase = (process.env.WHATSAPP_INFOBIP_BASE_URL || '').trim();
+  const ibKey = (process.env.WHATSAPP_INFOBIP_API_KEY || '').trim();
+  if ((ibBase || ibKey) && !(ibBase && ibKey)) {
+    console.log('--  Infobip is half-configured — set BOTH WHATSAPP_INFOBIP_BASE_URL and WHATSAPP_INFOBIP_API_KEY (else WhatsApp falls through to Meta/AT/simulated)');
+  }
+  if (ibBase && /\s/.test(ibBase)) {
+    console.log(`--  WHATSAPP_INFOBIP_BASE_URL="${ibBase}" contains whitespace — use the bare host (e.g. "4kzn46.api.infobip.com") or its https:// URL`);
+  }
   if ((pid || tok) && !(pid && tok)) {
     console.log('--  WhatsApp Meta Cloud is half-configured — set BOTH WHATSAPP_CLOUD_TOKEN and WHATSAPP_CLOUD_PHONE_ID (else sends simulate)');
   } else if (pid && !/^\d+$/.test(pid)) {

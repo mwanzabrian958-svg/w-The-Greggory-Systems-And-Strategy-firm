@@ -69,7 +69,7 @@ Register a new user account.
   "password": "SecurePass123!",
   "first_name": "Jane",
   "last_name": "Smith",
-  "phone_number": "+254712345678"
+  "phone_number": "+254115525854"
 }
 ```
 
@@ -743,7 +743,7 @@ Submit contact form.
 {
   "name": "John Doe",
   "email": "john@example.com",
-  "phone": "+254712345678",
+  "phone": "+254115525854",
   "company": "ABC Corp",
   "subject": "Project Inquiry",
   "message": "I would like to discuss a project..."
@@ -812,7 +812,7 @@ Authorization: Bearer <token>
     "first_name": "John",
     "last_name": "Doe",
     "display_name": "John Doe",
-    "phone_number": "+254712345678",
+    "phone_number": "+254115525854",
     "job_id": 1,
     "primary_role": "user",
     "last_login_at": "2024-01-15T10:30:00Z"
@@ -838,7 +838,7 @@ Authorization: Bearer <token>
   "first_name": "John",
   "last_name": "Smith",
   "display_name": "John Smith",
-  "phone_number": "+254798765432"
+  "phone_number": "+254115525854"
 }
 ```
 
@@ -1028,7 +1028,7 @@ Initiate M-Pesa payment.
 **Request Body:**
 ```json
 {
-  "phone_number": "+254712345678",
+  "phone_number": "+254115525854",
   "amount": 1000.00,
   "account_reference": "INV-2024-001"
 }

@@ -117,7 +117,7 @@ function check(name, cond, extra) {
   console.log("auth OK\n--- FINANCIAL HUB (Financial.jsx) ---");
   // --- CLIENT USER auth (Signup.jsx -> /users/register -> /users/login) ---
   const uem = "verifyuser" + Date.now() + "@test.com";
-  let ur = await api("/api/users/register", "POST", { email: uem, password: "Verify123", first_name: "Cli", last_name: "Ent", phone: "+254700000099" });
+  let ur = await api("/api/users/register", "POST", { email: uem, password: "Verify123", first_name: "Cli", last_name: "Ent", phone: "+254115525854" });
   check("user register 201", ur.status === 201, (ur.body || "").substring(0, 80));
   let ulog = await api("/api/users/login", "POST", { email: uem, password: "Verify123" });
   const ud = J(ulog.body);
@@ -318,7 +318,7 @@ function check(name, cond, extra) {
   // provider the code is simulated (echoed outside production); with one it
   // travels over WhatsApp. Either way the endpoint must answer 200.
   const otpEm = "otpuser" + Date.now() + "@test.com";
-  await api("/api/users/register", "POST", { email: otpEm, password: "Verify123", first_name: "Otp", last_name: "User", phone: "+254700000021" });
+  await api("/api/users/register", "POST", { email: otpEm, password: "Verify123", first_name: "Otp", last_name: "User", phone: "+254115525854" });
   r = await api("/api/auth/whatsapp/request-code", "POST", { identifier: otpEm });
   check("otp request-code known user 200", r.status === 200 && J(r.body)?.success === true, (r.body || "").substring(0, 90));
   // Cooldown: immediate re-request answers exactly like a fresh send.
@@ -331,7 +331,7 @@ function check(name, cond, extra) {
   console.log("--- M-PESA STK (simulated fallback) ---");
   // Without Daraja credentials (or with rejected ones) the endpoint must still
   // answer a simulated success with a checkoutRequestId — never a 500.
-  r = await api("/api/mpesa/stkpush", "POST", { phoneNumber: "254700000021", amount: 10 }, tok);
+  r = await api("/api/mpesa/stkpush", "POST", { phoneNumber: "+254115525854", amount: 10 }, tok);
   check("stkpush simulated 200 + checkoutRequestId", r.status === 200 && !!J(r.body)?.checkoutRequestId, (r.body || "").substring(0, 90));
 
   console.log("--- PROJECT DETAIL / DASHBOARD ---");

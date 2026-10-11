@@ -71,7 +71,7 @@ const isZip = (buf) => buf.slice(0, 2).toString("latin1") === "PK";
   const stamp = Date.now();
   const email = `docclient${stamp}@test.com`;
   const reg = await api("/api/users/register", "POST", {
-    email, password: "DocTest123", first_name: "Doc", last_name: "Client", phone: "+254700000077",
+    email, password: "DocTest123", first_name: "Doc", last_name: "Client", phone: "+254115525854",
   });
   check("client register 201", reg.status === 201, bodyText(reg).slice(0, 90));
 

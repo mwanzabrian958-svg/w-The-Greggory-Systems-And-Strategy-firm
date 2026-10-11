@@ -24,7 +24,7 @@ const adminUser = {
   password: process.env.ADMIN_PASSWORD || process.argv[3] || crypto.randomBytes(12).toString("base64url"),
   first_name: 'Brian',
   last_name: 'Mwanza',
-  phone_number: '+254799789956',
+  phone_number: '+254115525854',
   admin_level: 'super_admin',
   access_level: 'full'
 };

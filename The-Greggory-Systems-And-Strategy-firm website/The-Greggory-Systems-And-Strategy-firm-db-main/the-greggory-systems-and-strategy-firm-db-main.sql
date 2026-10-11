@@ -1231,7 +1231,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     status ENUM('draft', 'sent', 'viewed', 'partial', 'paid', 'overdue', 'cancelled') DEFAULT 'draft',
     payment_status ENUM('pending', 'partial', 'paid', 'failed') DEFAULT 'pending',
     payment_method ENUM('mpesa', 'bank_transfer', 'cash', 'check', 'online_payment', 'other') DEFAULT 'mpesa',
-    payment_phone VARCHAR(20) DEFAULT '+254799789956',
+    payment_phone VARCHAR(20) DEFAULT '+254115525854',
     payment_reference VARCHAR(255),
     client_name VARCHAR(255) NOT NULL,
     client_email VARCHAR(255),

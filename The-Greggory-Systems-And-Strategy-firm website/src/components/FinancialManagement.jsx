@@ -2165,7 +2165,7 @@ const FinancialManagement = ({
                       .toISOString()
                       .split("T")[0],
                     payment_method: "mpesa",
-                    payment_phone: "+254799789956",
+                    payment_phone: "+254115525854",
                     client_name: "",
                     client_email: "",
                     client_phone: "",

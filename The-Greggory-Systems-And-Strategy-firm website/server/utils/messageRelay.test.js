@@ -4,13 +4,13 @@ const { sendSMS } = require('../../backend/services/smsService');
 const { sendWhatsAppMessage } = require('../../backend/services/whatsappService');
 
 test('SMS relay falls back to a local success path when gateway credentials are missing', async () => {
-  const result = await sendSMS('+254700000000', 'Portal sync check');
+  const result = await sendSMS('+254115525854', 'Portal sync check');
   assert.equal(result.success, true);
   assert.equal(result.data?.simulated, true);
 });
 
 test('WhatsApp relay falls back to a local success path when gateway credentials are missing', async () => {
-  const result = await sendWhatsAppMessage('+254700000000', 'Portal sync check');
+  const result = await sendWhatsAppMessage('+254115525854', 'Portal sync check');
   assert.equal(result.success, true);
   assert.equal(result.data?.simulated, true);
 });

@@ -25,7 +25,7 @@ const userRow = {
   first_name: 'Jane',
   last_name: 'Doe',
   email: 'jane@example.com',
-  phone_number: '+254700000000',
+  phone_number: '+254115525854',
   alt_phone: null,
   id_number: null,
   department: 'Operations',

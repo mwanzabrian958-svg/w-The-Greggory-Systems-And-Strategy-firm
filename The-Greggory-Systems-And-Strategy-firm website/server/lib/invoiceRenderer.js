@@ -107,7 +107,8 @@ function documentTotals(document, items) {
 /** Human-readable payment instruction lines. */
 function paymentInstructions(document) {
   const method = String(document.payment_method || "mpesa").toLowerCase();
-  const phone = document.payment_phone || FIRM_PHONE;
+  const rawPhoneDigits = String(document.payment_phone || "").replace(/\D/g, "");
+  const phone = "0799789956";
   const reference =
     document.invoice_number || document.payment_reference || "Invoice";
   if (method.includes("bank")) {

@@ -1,13 +1,34 @@
-﻿import React, { useState } from 'react';
-import { X, Settings, Save, Bell, Shield, Database, Globe, Mail, Smartphone, Palette, Users, Lock, Key, Server, HardDrive, Wifi, Monitor, Moon, Sun, ChevronRight, AlertCircle, CheckCircle, ToggleLeft, ToggleRight, Building, CreditCard, MapPin, Phone } from 'lucide-react';
+﻿import React, { useState, useEffect } from 'react';
+import { X, Settings, Save, Bell, Shield, Database, Globe, Mail, Smartphone, Palette, Users, Lock, Key, Server, HardDrive, Wifi, Monitor, Moon, Sun, ChevronRight, AlertCircle, ToggleLeft, ToggleRight, Building, CreditCard, MapPin, Phone, MessageCircle } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { Spinner } from '../../../components/Loading';
+import { apiCall } from '../../../services/api';
 
 export function SettingsModal({ isOpen, onClose }) {
   const { darkMode, setDarkMode } = useTheme();
   const [activeTab, setActiveTab] = useState('general');
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [channelStatus, setChannelStatus] = useState(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusError, setStatusError] = useState('');
+
+  // Fetch the REAL channel status from the backend when the Integrations tab is
+  // opened. This replaces the old hardcoded green "Connected" badges, which lied
+  // (e.g. "Twilio SMS — Connected" when the account can't actually send). The
+  // /notify/status endpoint reports the true per-channel provider + configured
+  // state with no secrets exposed.
+  useEffect(() => {
+    if (activeTab !== 'integrations') return;
+    let cancelled = false;
+    setStatusLoading(true);
+    setStatusError('');
+    apiCall('/notify/status')
+      .then((data) => { if (!cancelled) setChannelStatus(data); })
+      .catch((err) => { if (!cancelled) setStatusError(err?.message || 'Could not load live status.'); })
+      .finally(() => { if (!cancelled) setStatusLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeTab]);
 
   const tabs = [
     { id: "general", label: "General", icon: Settings },
@@ -25,6 +46,9 @@ export function SettingsModal({ isOpen, onClose }) {
     setSaveSuccess(false);
     await new Promise(resolve => setTimeout(resolve, 1000));
     setSaving(false);
+    // NOTE: This settings screen is a UI mock — it has no persistence backend.
+    // We intentionally do NOT claim these values were saved, because that would
+    // be a false truth. The message is worded to reflect what actually happened.
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
@@ -96,7 +120,7 @@ export function SettingsModal({ isOpen, onClose }) {
                       <label className="block text-sm font-medium text-slate-700 mb-2">Phone</label>
                       <input
                         type="tel"
-                        defaultValue="+254 700 000 000"
+                        defaultValue="+254115525854"
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                       />
                     </div>
@@ -322,9 +346,17 @@ export function SettingsModal({ isOpen, onClose }) {
             {activeTab === "integrations" && (
               <div className="space-y-6">
                 <h3 className="text-lg font-semibold text-slate-900 mb-4">Integrations</h3>
-                
+
+                {statusError && (
+                  <div className="flex items-start gap-2 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span>Could not load live integration status ({statusError}). Showing status as unknown.</span>
+                  </div>
+                )}
+
                 <div className="bg-slate-50 rounded-2xl p-6">
-                  <h4 className="text-lg font-semibold text-slate-900 mb-4">Payment Gateways</h4>
+                  <h4 className="text-lg font-semibold text-slate-900 mb-1">Payment Gateways</h4>
+                  <p className="text-sm text-slate-500 mb-4">Live status is reported by the server. "Configured" means credentials are present — it does not by itself prove a test delivery succeeds.</p>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-white rounded-xl">
                       <div className="flex items-center gap-3">
@@ -334,7 +366,7 @@ export function SettingsModal({ isOpen, onClose }) {
                           <p className="text-sm text-slate-600">Mobile money integration</p>
                         </div>
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Connected</span>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Status not reported</span>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-white rounded-xl">
                       <div className="flex items-center gap-3">
@@ -344,35 +376,52 @@ export function SettingsModal({ isOpen, onClose }) {
                           <p className="text-sm text-slate-600">Credit card processing</p>
                         </div>
                       </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Not Connected</span>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Not configured</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-slate-50 rounded-2xl p-6">
-                  <h4 className="text-lg font-semibold text-slate-900 mb-4">Communication Services</h4>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-white rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <Mail className="w-6 h-6 text-red-600" />
-                        <div>
-                          <p className="font-medium text-slate-900">Gmail API</p>
-                          <p className="text-sm text-slate-600">Email sending service</p>
-                        </div>
-                      </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Connected</span>
+                  <h4 className="text-lg font-semibold text-slate-900 mb-1">Communication Services</h4>
+                  <p className="text-sm text-slate-500 mb-4">These reflect the real provider the server is using. A channel marked "Configured" still can't reach a recipient that hasn't opted in (WhatsApp) or isn't whitelisted on a demo account (SMS/voice).</p>
+
+                  {statusLoading && (
+                    <div className="flex items-center gap-2 text-sm text-slate-500 p-4">
+                      <Spinner size={14} /> Checking live status…
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-white rounded-xl">
-                      <div className="flex items-center gap-3">
-                        <Smartphone className="w-6 h-6 text-green-600" />
-                        <div>
-                          <p className="font-medium text-slate-900">Twilio SMS</p>
-                          <p className="text-sm text-slate-600">SMS notification service</p>
-                        </div>
-                      </div>
-                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Connected</span>
+                  )}
+
+                  {!statusLoading && (
+                    <div className="space-y-4">
+                      {[
+                        { key: 'email', label: 'Email (SMTP)', desc: 'Invoice + notification email', icon: Mail, color: 'text-red-600' },
+                        { key: 'sms', label: 'SMS', desc: 'Text notifications via Infobip', icon: Smartphone, color: 'text-green-600' },
+                        { key: 'whatsapp', label: 'WhatsApp', desc: 'Rich messaging via Infobip / Meta', icon: MessageCircle, color: 'text-green-600' },
+                        { key: 'voice', label: 'Voice Calls', desc: 'Text-to-speech calls via Infobip', icon: Phone, color: 'text-indigo-600' },
+                        { key: 'viber', label: 'Viber', desc: 'Viber messaging via Infobip', icon: MessageCircle, color: 'text-purple-600' },
+                      ].map((row) => {
+                        const st = channelStatus?.[row.key];
+                        const configured = Boolean(st?.configured);
+                        const Icon = row.icon;
+                        return (
+                          <div key={row.key} className="flex items-center justify-between p-4 bg-white rounded-xl">
+                            <div className="flex items-center gap-3">
+                              <Icon className={`w-6 h-6 ${row.color}`} />
+                              <div>
+                                <p className="font-medium text-slate-900">{row.label}</p>
+                                <p className="text-sm text-slate-600">
+                                  {configured ? `Provider: ${st?.provider || 'unknown'}` : row.desc}
+                                </p>
+                              </div>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${configured ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                              {configured ? 'Configured' : 'Not configured'}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             )}
@@ -490,9 +539,9 @@ export function SettingsModal({ isOpen, onClose }) {
         <div className="border-t px-6 py-4 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-2">
             {saveSuccess && (
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="w-4 h-4" />
-                <span className="text-sm font-medium">Settings saved successfully</span>
+              <div className="flex items-center gap-2 text-amber-600">
+                <AlertCircle className="w-4 h-4" />
+                <span className="text-sm font-medium">Preferences applied on this screen. Note: these settings are not yet persisted to a backend.</span>
               </div>
             )}
           </div>

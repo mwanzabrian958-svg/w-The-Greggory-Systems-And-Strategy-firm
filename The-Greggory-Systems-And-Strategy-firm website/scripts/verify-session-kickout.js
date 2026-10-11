@@ -61,7 +61,7 @@ const PASSWORD = `KickOut!${stamp % 100000}x`;
     const reg = await api("/api/users/register", "POST", {
       email: EMAIL, password: PASSWORD,
       first_name: "Kick", last_name: "Out",
-      display_name: "Kick Out", phone: "0700000000",
+      display_name: "Kick Out", phone: "0115525854",
     });
     check("register 201/200", [200, 201].includes(reg.status), `got ${reg.status} ${JSON.stringify(reg.data).slice(0, 120)}`);
     if (![200, 201].includes(reg.status)) throw new Error("abort: cannot register");

@@ -95,6 +95,7 @@ if (!(process.env.GOOGLE_CLIENT_ID || "").trim()) {
 if (!whatsappProviderConfigured()) {
   console.warn(
     "[WHATSAPP] No WhatsApp provider configured — sends are SIMULATED. Set " +
+      "WHATSAPP_INFOBIP_BASE_URL + WHATSAPP_INFOBIP_API_KEY (Infobip, preferred) or " +
       "WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID (Meta Cloud API) or " +
       "AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY.",
   );
@@ -4384,7 +4385,7 @@ app.post("/api/quotes/:id/convert-to-invoice", async (req, res) => {
       new Date().toISOString().split("T")[0],
       due_date,
       "mpesa",
-      "+254799789956",
+      "+254115525854",
       quote.client_name,
       quote.client_email,
       quote.client_phone,
@@ -7074,6 +7075,15 @@ try {
   console.log("[SERVER] WhatsApp routes loaded successfully");
 } catch (error) {
   console.error("[SERVER] Error loading WhatsApp routes:", error.message);
+}
+
+// Multi-channel notify endpoints (SMS / Email / Voice / Viber)
+try {
+  const notifyRoutes = require("./backend/routes/notify");
+  app.use("/api/notify", notifyRoutes);
+  console.log("[SERVER] Notify routes mounted at /api/notify");
+} catch (error) {
+  console.error("[SERVER] Error loading Notify routes:", error.message);
 }
 
 // WhatsApp auth-code endpoints (client portal / APK verification codes)

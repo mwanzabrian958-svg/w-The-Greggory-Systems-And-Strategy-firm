@@ -358,7 +358,7 @@ Borders: rounded-lg for buttons, rounded-2xl for cards, rounded-3xl for containe
 │ Logo: [📷 Upload] [Current Logo]                                  │
 │ Tagline: [Building Excellence________________________]          │
 │ Email: [info@thegreggorysystemsandstrategyfirm.com____________]                 │
-│ Phone: [+254 799 789 956________________]                       │
+│ Phone: [+254 115 525 854________________]                       │
 │ Address: [Nairobi, Kenya__________________________]               │
 │                                                                 │
 │ [Cancel] [Save Changes]                                          │

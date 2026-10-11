@@ -184,7 +184,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   record("Billing", "client NOTIFIED on invoice create", { status: notesAfter > notesBefore ? 200 : 599 }, [200], `before=${notesBefore} after=${notesAfter}`);
   const send = await req("POST", `/api/invoices/${trash.invoiceId}/send`, {}, at);
   record("Billing", "invoice send (email)", send, [200], (send.json?.message || send.json?.error || "").slice(0, 60));
-  const stk = await req("POST", "/api/mpesa/stkpush", { phoneNumber: "254700000000", amount: 1, accountReference: "AUD" + stamp, userId: cid });
+  const stk = await req("POST", "/api/mpesa/stkpush", { phoneNumber: "254115525854", amount: 1, accountReference: "AUD" + stamp, userId: cid });
   record("Billing", "mpesa stkpush (sim)", stk, [200]);
   const crid = stk.json?.checkoutRequestId;
   if (crid) {

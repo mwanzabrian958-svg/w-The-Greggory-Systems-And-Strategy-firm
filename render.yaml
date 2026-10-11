@@ -153,11 +153,39 @@ services:
         sync: false
       - key: MPESA_SHORTCODE
         sync: false
+      # ---- Infobip WhatsApp API (preferred provider) ----
+      # backend/services/whatsappService.js selects Infobip FIRST when BOTH of
+      # the base URL and API key are set (sent as `Authorization: App <key>`).
+      # Base URL: Infobip portal → account → API base URL (e.g.
+      # "https://4kzn46.api.infobip.com"); API key: My account → API keys.
+      # Sender defaults to Infobip's test sender 447860088970 — set it only
+      # after registering your own WhatsApp number with Infobip.
+      - key: WHATSAPP_INFOBIP_BASE_URL
+        sync: false
+      - key: WHATSAPP_INFOBIP_API_KEY
+        sync: false
+      - key: WHATSAPP_INFOBIP_SENDER
+        sync: false
+      # ---- Multi-channel OTP + notify (ride the Infobip key above) ----
+      # OTP chain order (default: whatsapp,sms,email,voice,viber). SMS sender
+      # is alphanumeric (no registration). Viber sender MUST be registered in
+      # the portal or Viber sends fail cleanly and the chain skips the channel.
+      - key: OTP_CHANNELS
+        sync: false
+      - key: INFOBIP_SMS_SENDER
+        sync: false
+      - key: INFOBIP_VIBER_SENDER
+        sync: false
+      - key: INFOBIP_VOICE_FROM
+        sync: false
+      - key: INFOBIP_VOICE_LANGUAGE
+        sync: false
       # ---- WhatsApp Cloud API (Meta) ----
-      # backend/services/whatsappService.js prefers Meta Cloud when BOTH of these
-      # are set (otherwise it falls back to Africa's Talking, then to a simulated
-      # relay). They were present in the local .env but never declared here, so
-      # production had no way to receive them and every WhatsApp send simulated.
+      # Used only when Infobip is NOT configured. Both must be set, and
+      # PHONE_ID must be Meta's NUMERIC Phone number ID (a "+254…" phone number
+      # is rejected at boot — it used to select Meta and then fail every send
+      # with HTTP 404). Falls through to Africa's Talking, then to a simulated
+      # relay.
       - key: WHATSAPP_CLOUD_TOKEN
         sync: false
       - key: WHATSAPP_CLOUD_PHONE_ID

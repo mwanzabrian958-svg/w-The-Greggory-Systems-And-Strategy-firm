@@ -113,6 +113,21 @@ function ensureOtpColumns() {
   return otpSchemaReady;
 }
 
+/**
+ * Best-effort E.164 conversion for DELIVERY. Kenyan profiles commonly store
+ * local formats ("+254115525854", "115525854") that WhatsApp providers reject
+ * (Infobip answers REJECTED_PREFIX_MISSING — "Number prefix missing"), so
+ * normalize to +254… before anything leaves. Unknown shapes keep the generic
+ * "+<digits>" behaviour. Example: 07XXXXXXXX → +2547XXXXXXXX.
+ */
+function toE164ForDelivery(rawPhone) {
+  const d = String(rawPhone || '').replace(/\D/g, '');
+  if (/^0\d{9}$/.test(d)) return `+254${d.slice(1)}`; // 07XXXXXXXX → +2547…
+  if (/^[17]\d{8}$/.test(d)) return `+254${d}`;        //  7XXXXXXXX → +2547…
+  if (/^254\d{9}$/.test(d)) return `+${d}`;           // 2547XXXXXXX → +2547…
+  return `+${d}`;
+}
+
 /** Accepts an email or a phone in any common format ("0712…", "+254 712…"). */
 function normalizeIdentifier(raw) {
   const v = String(raw || '').trim();
@@ -120,7 +135,7 @@ function normalizeIdentifier(raw) {
   if (v.includes('@')) return { type: 'email', value: v.toLowerCase() };
   const digits = v.replace(/\D/g, '');
   if (digits.length < 9 || digits.length > 15) return null;
-  return { type: 'phone', value: `+${digits}`, digits };
+  return { type: 'phone', value: toE164ForDelivery(digits), digits };
 }
 
 const hashOtp = (code) => crypto.createHash('sha256').update(String(code)).digest('hex');
@@ -186,46 +201,34 @@ async function storeAndSendCode(user) {
   const code = generateOtp();
   const message = buildCodeMessage(user, code);
 
-  // ── SIMULATED MODE ─ no provider: store the code (verify-code works
+  // SIMULATED MODE - no provider: store the code (verify-code works
   // locally) and hand it to the caller outside production.
   if (!providerConfigured()) {
     await db.promise().query(
-      `UPDATE users
-          SET whatsapp_code_hash = ?,
-              whatsapp_code_expires = DATE_ADD(NOW(), INTERVAL ? MINUTE),
-              whatsapp_code_attempts = 0,
-              whatsapp_code_sent_at = NOW(),
-              updated_at = NOW()
-        WHERE id = ?`,
+      'UPDATE users SET whatsapp_code_hash = ?, whatsapp_code_expires = DATE_ADD(NOW(), INTERVAL ? MINUTE), whatsapp_code_attempts = 0, whatsapp_code_sent_at = NOW(), updated_at = NOW() WHERE id = ?',
       [hashOtp(code), OTP_TTL_MINUTES, user.id],
     );
     await sendWhatsAppToUser(user.phone_number, message); // records the relay
-    console.log(`[WHATSAPP OTP] SIMULATED code for user ${user.id}: ${code}`);
+    console.log('[WHATSAPP OTP] SIMULATED code for user ' + user.id + ': ' + code);
     return { simulated: true, code };
   }
 
-  // ── REAL MODE ─ strict delivery first; persist the hash only on success.
-  const wa = OTP_TEMPLATE_NAME
-    ? await sendWhatsAppTemplateStrict(user.phone_number, OTP_TEMPLATE_NAME, [code], {
-        fallbackMessage: message,
-      })
-    : await sendWhatsAppToUserStrict(user.phone_number, message);
-  if (!wa.success) {
-    console.error(`[WHATSAPP OTP] delivery failed for user ${user.id}: ${wa.error}`);
-    return { failure: wa };
+  // REAL MODE - multi-channel chain (WhatsApp, SMS, Email, Voice, Viber);
+  // persist the hash only after a channel actually delivers.
+  const { dispatchOtp } = require('../services/otpDispatcher');
+  const deliveryUser = { ...user, phone_number: user.phone_number ? toE164ForDelivery(user.phone_number) : user.phone_number };
+  const sent = await dispatchOtp({ user: deliveryUser, code, message, ttlMinutes: OTP_TTL_MINUTES });
+  if (sent.failure) {
+    console.error('[OTP] all channels failed for user ' + user.id + ': ' + (sent.attempts || []).join(' | '));
+    return { failure: { error: sent.attempts.join(' | ') } };
   }
 
   await db.promise().query(
-    `UPDATE users
-        SET whatsapp_code_hash = ?,
-            whatsapp_code_expires = DATE_ADD(NOW(), INTERVAL ? MINUTE),
-            whatsapp_code_attempts = 0,
-            whatsapp_code_sent_at = NOW(),
-            updated_at = NOW()
-      WHERE id = ?`,
+    'UPDATE users SET whatsapp_code_hash = ?, whatsapp_code_expires = DATE_ADD(NOW(), INTERVAL ? MINUTE), whatsapp_code_attempts = 0, whatsapp_code_sent_at = NOW(), updated_at = NOW() WHERE id = ?',
     [hashOtp(code), OTP_TTL_MINUTES, user.id],
   );
-  return { simulated: false, provider: wa.provider };
+  console.log('[OTP] code delivered to user ' + user.id + ' via ' + sent.channel + ' (' + sent.provider + ')');
+  return { simulated: false, provider: sent.channel + ':' + sent.provider, channel: sent.channel };
 }
 
 /** POST /request-code — Body: { identifier: email | phone } */

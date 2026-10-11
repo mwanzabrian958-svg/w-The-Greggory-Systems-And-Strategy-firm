@@ -1,6 +1,15 @@
 const africastalking = require('africastalking');
 
-// Initialize Africa's Talking with credentials from environment variables
+// SMS Service — Infobip (preferred) / Africa's Talking / simulated fallback
+const {
+  INFOBIP_SENDER,
+  infobipReady,
+  infobipPost,
+  throwOnInfobipRejection,
+  toDigits,
+} = require('./infobipClient');
+
+// --- Africa's Talking (legacy fallback path) ---
 const username = process.env.AFRICASTALKING_USERNAME || 'sandbox';
 const apiKey = process.env.AFRICASTALKING_API_KEY || '';
 
@@ -20,6 +29,9 @@ try {
 // Company phone number that receives messages
 const COMPANY_PHONE_NUMBER = process.env.COMPANY_PHONE_NUMBER || '+254115525854';
 
+// Infobip alphanumerical sender for SMS (no opt-in needed, unlike WhatsApp).
+const SMS_SENDER = (process.env.INFOBIP_SMS_SENDER || 'Greggory').trim();
+
 function buildSimulatedResponse(provider, action) {
   return {
     success: true,
@@ -34,6 +46,89 @@ function buildSimulatedResponse(provider, action) {
     }
   };
 }
+
+const providerConfigured = () => infobipReady || Boolean(sms);
+const activeProvider = infobipReady ? 'infobip' : (sms ? 'africastalking' : 'none');
+
+/** Raw Infobip SMS send — throws on rejection. Live-tested (PENDING_ACCEPTED). */
+async function sendViaInfobip(toDigitsList, message) {
+  const payload = await infobipPost('/sms/2/text/advanced', {
+    messages: [
+      {
+        destinations: toDigitsList.map((to) => ({ to })),
+        from: SMS_SENDER,
+        text: message,
+      },
+    ],
+  });
+  throwOnInfobipRejection(payload);
+  return payload;
+}
+
+/**
+ * Send SMS FROM company TO user (OTP codes, notifications).
+ * Provider order: Infobip → Africa's Talking → simulated.
+ */
+async function sendSMSToUser(toPhone, message) {
+  const to = toDigits(toPhone);
+  if (infobipReady) {
+    try {
+      const payload = await sendViaInfobip([to], message);
+      console.log(`[SMS SERVICE] sent via Infobip to ${to}`);
+      return { success: true, simulated: false, provider: 'infobip', data: payload };
+    } catch (error) {
+      console.error('[SMS SERVICE] Infobip send failed, trying fallback:', error.message);
+    }
+  }
+  if (sms) {
+    try {
+      const response = await sms.send({
+        to: [`+${to}`],
+        message,
+        from: COMPANY_PHONE_NUMBER,
+      });
+      return { success: true, simulated: false, provider: 'africastalking', data: response };
+    } catch (error) {
+      console.error('[SMS SERVICE] Africa\'s Talking send failed:', error.message);
+    }
+  }
+  console.warn('[SMS SERVICE] No provider delivered; using simulated relay path');
+  return { ...buildSimulatedResponse('sms', 'send-to-user'), success: true };
+}
+
+/**
+ * STRICT send to a user — never simulated. Used for OTP codes.
+ */
+async function sendSMSToUserStrict(toPhone, message) {
+  if (!providerConfigured()) {
+    return {
+      success: false,
+      simulated: false,
+      error: 'NO_PROVIDER',
+      message: 'No SMS provider is configured. Set WHATSAPP_INFOBIP_BASE_URL + WHATSAPP_INFOBIP_API_KEY (Infobip) or AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY.',
+    };
+  }
+  const to = toDigits(toPhone);
+  const errors = [];
+  if (infobipReady) {
+    try {
+      const payload = await sendViaInfobip([to], message);
+      return { success: true, simulated: false, provider: 'infobip', data: payload };
+    } catch (error) {
+      errors.push(`infobip: ${error.message}`);
+    }
+  }
+  if (sms) {
+    try {
+      const response = await sms.send({ to: [`+${to}`], message, from: COMPANY_PHONE_NUMBER });
+      return { success: true, simulated: false, provider: 'africastalking', data: response };
+    } catch (error) {
+      errors.push(`africastalking: ${error.message}`);
+    }
+  }
+  return { success: false, simulated: false, error: errors.join(' | ') || 'SMS delivery failed' };
+}
+
 
 /**
  * Send SMS FROM user TO company phone number
@@ -116,5 +211,9 @@ async function sendBulkSMS(phoneNumbers, message) {
 module.exports = {
   sendSMS,
   sendBulkSMS,
+  sendSMSToUser,
+  sendSMSToUserStrict,
+  providerConfigured,
+  activeProvider,
   COMPANY_PHONE_NUMBER
 };

@@ -1,5 +1,51 @@
-// WhatsApp Service — Meta WhatsApp Cloud API (preferred) / Africa's Talking / simulated fallback
+// WhatsApp Service — Infobip (preferred) / Meta WhatsApp Cloud API / Africa's Talking / simulated fallback
 const africastalking = require('africastalking');
+
+// --- Infobip WhatsApp API (preferred when its credentials are present) ---
+// Account base URL from the Infobip portal (e.g. "4kzn46.api.infobip.com" or
+// the full "https://…" form — both accepted) plus an API key (My account →
+// API keys), sent as `Authorization: App <key>`. The sender is the registered
+// WhatsApp number; it defaults to Infobip's test sender so OTP delivery works
+// out of the box on a trial account (recipients opt in by messaging the sender
+// first — its keyword is shown by GET /whatsapp/1/senders).
+const INFOBIP_BASE_URL = (() => {
+  const raw = (process.env.WHATSAPP_INFOBIP_BASE_URL || '').trim().replace(/\/+$/, '');
+  if (!raw) return '';
+  return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+})();
+const INFOBIP_API_KEY = (process.env.WHATSAPP_INFOBIP_API_KEY || '').trim();
+const INFOBIP_SENDER = (process.env.WHATSAPP_INFOBIP_SENDER || '447860088970').replace(/^\+/, '');
+
+function infobipHeaders() {
+  return {
+    Authorization: `App ${INFOBIP_API_KEY}`,
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+}
+
+// Infobip answers HTTP 200 with a per-message status object. groupId >= 5 is a
+// final rejection (e.g. REJECTED_DESTINATION_NOT_REGISTERED when the recipient
+// never opted in to the sender); 1–4 are ACCEPTED/ENQUEUED/SENT/DELIVERED
+// transitions that resolve asynchronously via webhook. Strict callers must see
+// rejections as failures — a 200 alone does not mean delivery happened.
+function throwOnInfobipRejection(payload) {
+  // Response shapes differ: /message/template wraps per-message statuses in
+  // payload.messages[], while /message/text answers with a single top-level
+  // { messageId, status } object.
+  const statuses = Array.isArray(payload && payload.messages)
+    ? payload.messages.map((m) => m && m.status).filter(Boolean)
+    : payload && payload.status
+      ? [payload.status]
+      : [];
+  for (const status of statuses) {
+    if (status.groupId >= 5) {
+      const err = new Error(`Infobip ${status.name}${status.description ? `: ${status.description}` : ''}`);
+      err.providerPayload = payload;
+      throw err;
+    }
+  }
+}
 
 // --- Africa's Talking (legacy path) ---
 const username = process.env.AFRICASTALKING_USERNAME || 'sandbox';
@@ -60,17 +106,29 @@ if (atReady && atUsernameHasSpace) {
   );
 }
 
-// The provider that will actually deliver messages:
+const infobipReady = Boolean(INFOBIP_BASE_URL && INFOBIP_API_KEY);
+const infobipBaseHasSpace = /\s/.test(INFOBIP_BASE_URL);
+if (infobipReady && infobipBaseHasSpace) {
+  providerIssues.push(
+    `WHATSAPP_INFOBIP_BASE_URL="${INFOBIP_BASE_URL}" contains whitespace — expected the bare ` +
+    'Infobip host (e.g. "4kzn46.api.infobip.com") or its https:// URL. Infobip is DISABLED until this is fixed.',
+  );
+}
+
+// The provider that will actually deliver messages (priority order):
+//   'infobip'         → Infobip WhatsApp API (WHATSAPP_INFOBIP_BASE_URL + WHATSAPP_INFOBIP_API_KEY)
 //   'meta-cloud'      → Meta WhatsApp Cloud API (WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID)
 //   'africastalking'  → Africa's Talking (AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY)
 //   'none'            → nothing (or nothing VALID) configured; senders fall back
 //                        to the simulated relay and boot logs list the issues.
 const activeProvider =
-  metaReady && cloudPhoneIdLooksNumeric
-    ? 'meta-cloud'
-    : atReady && !atUsernameHasSpace
-      ? 'africastalking'
-      : 'none';
+  infobipReady && !infobipBaseHasSpace
+    ? 'infobip'
+    : metaReady && cloudPhoneIdLooksNumeric
+      ? 'meta-cloud'
+      : atReady && !atUsernameHasSpace
+        ? 'africastalking'
+        : 'none';
 
 const providerConfigured = () => activeProvider !== 'none';
 
@@ -109,6 +167,29 @@ function buildSimulatedResponse(provider, action) {
  * @param {Object} [opts] - { from } overrides the sender for Africa's Talking
  */
 async function dispatchWhatsApp(toArray, message, opts = {}) {
+  if (activeProvider === 'infobip') {
+    const results = [];
+    for (const to of toArray) {
+      const toDigits = String(to).replace(/\D/g, '');
+      const httpRes = await fetch(`${INFOBIP_BASE_URL}/whatsapp/1/message/text`, {
+        method: 'POST',
+        headers: infobipHeaders(),
+        body: JSON.stringify({ from: INFOBIP_SENDER, to: toDigits, content: { text: message } }),
+      });
+      const payload = await httpRes.json().catch(() => ({}));
+      if (!httpRes.ok) {
+        const err = new Error(
+          payload?.requestError?.serviceException?.text || `Infobip WhatsApp HTTP ${httpRes.status}`,
+        );
+        err.providerPayload = payload;
+        throw err;
+      }
+      throwOnInfobipRejection(payload);
+      results.push({ to, messageId: payload.messageId || null, status: (payload.status && payload.status.name) || null });
+    }
+    return { provider: 'infobip', response: { results } };
+  }
+
   if (activeProvider === 'meta-cloud') {
     const results = [];
     for (const to of toArray) {
@@ -167,6 +248,46 @@ async function dispatchWhatsApp(toArray, message, opts = {}) {
  * @throws on provider-level failure — callers decide how to report it.
  */
 async function dispatchWhatsAppTemplate(to, templateName, placeholders, opts = {}) {
+  if (activeProvider === 'infobip') {
+    const toDigits = String(to).replace(/\D/g, '');
+    const httpRes = await fetch(`${INFOBIP_BASE_URL}/whatsapp/1/message/template`, {
+      method: 'POST',
+      headers: infobipHeaders(),
+      body: JSON.stringify({
+        messages: [
+          {
+            from: INFOBIP_SENDER,
+            to: toDigits,
+            content: {
+              templateName,
+              language: opts.language || 'en',
+              // Meta templates use positional {{1}}{{2}}… placeholders; Infobip
+              // passes them in order inside templateData.body.placeholders.
+              // Authentication templates with a "Copy code" button also need
+              // buttons:[{type:"URL",parameter:<code>}] per Infobip docs.
+              templateData: {
+                body: { placeholders: (placeholders || []).map(String) },
+                buttons: (placeholders || []).length
+                  ? [{ type: 'URL', parameter: String(placeholders[0]) }]
+                  : undefined,
+              },
+            },
+          },
+        ],
+      }),
+    });
+    const payload = await httpRes.json().catch(() => ({}));
+    if (!httpRes.ok) {
+      const err = new Error(
+        payload?.requestError?.serviceException?.text || `Infobip WhatsApp HTTP ${httpRes.status}`,
+      );
+      err.providerPayload = payload;
+      throw err;
+    }
+    throwOnInfobipRejection(payload);
+    return { provider: 'infobip', response: payload };
+  }
+
   if (activeProvider === 'meta-cloud') {
     const toDigits = String(to).replace(/\D/g, ''); // Cloud API expects digits only
     const httpRes = await fetch(
@@ -311,7 +432,7 @@ async function sendWhatsAppToUserStrict(toPhone, message) {
       success: false,
       simulated: false,
       error: 'NO_PROVIDER',
-      message: 'No WhatsApp provider is configured. Set WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID (Meta Cloud API) or AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY (Africa\'s Talking) in .env.',
+      message: 'No WhatsApp provider is configured. Set WHATSAPP_INFOBIP_BASE_URL + WHATSAPP_INFOBIP_API_KEY (Infobip) or WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID (Meta Cloud API) or AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY (Africa\'s Talking) in .env.',
     };
   }
   try {
@@ -338,7 +459,7 @@ async function sendWhatsAppTemplateStrict(toPhone, templateName, placeholders, o
       success: false,
       simulated: false,
       error: 'NO_PROVIDER',
-      message: 'No WhatsApp provider is configured. Set WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID (Meta Cloud API) or AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY (Africa\'s Talking) in .env.',
+      message: 'No WhatsApp provider is configured. Set WHATSAPP_INFOBIP_BASE_URL + WHATSAPP_INFOBIP_API_KEY (Infobip) or WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID (Meta Cloud API) or AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY (Africa\'s Talking) in .env.',
     };
   }
   if (!templateName) {

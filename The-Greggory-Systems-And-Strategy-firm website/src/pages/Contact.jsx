@@ -155,7 +155,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <label htmlFor="phone" name="phone" className="mb-1.5 block text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Phone Number</label>
-                    <input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} className="w-full rounded-xl border border-[#e3d2bb] bg-white px-3 py-2 text-xs text-slate-900 outline-none transition-all duration-200 focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="+254 700 000 000" />
+                    <input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} className="w-full rounded-xl border border-[#e3d2bb] bg-white px-3 py-2 text-xs text-slate-900 outline-none transition-all duration-200 focus:border-[#4c6a4d] focus:ring-2 focus:ring-[#dce8dc] dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="+254115525854" />
                   </div>
                 </div>
 

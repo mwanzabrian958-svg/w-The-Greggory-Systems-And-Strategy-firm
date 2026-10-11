@@ -24,7 +24,7 @@ const developerUser = {
   password: process.env.DEV_PASSWORD || process.argv[3] || crypto.randomBytes(12).toString('base64url'),
   first_name: 'Developer',
   last_name: 'User',
-  phone_number: '+254700000000',
+  phone_number: '+254115525854',
   developer_level: 'senior',
   tech_stack: JSON.stringify(['React', 'Node.js', 'MySQL', 'TailwindCSS'])
 };

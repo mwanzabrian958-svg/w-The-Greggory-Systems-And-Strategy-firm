@@ -63,7 +63,7 @@ function check(name, cond, extra) {
 
   // --- USER (client) ---
   const usr = "authusr" + stamp + "@test.com";
-  const ur = await api("/api/users/register", "POST", { email: usr, password: "Test1234", first_name: "Cli", last_name: "Ent", phone: "+254700000099" });
+  const ur = await api("/api/users/register", "POST", { email: usr, password: "Test1234", first_name: "Cli", last_name: "Ent", phone: "++254115525854" });
   check("user register 201", ur.status === 201, ur.body.substring(0, 80));
   const ul = await api("/api/users/login", "POST", { email: usr, password: "Test1234" });
   const ud = J(ul.body);
