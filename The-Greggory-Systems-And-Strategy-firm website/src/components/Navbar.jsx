@@ -66,9 +66,15 @@ const Navbar = () => {
         return
       }
 
-      const scrollingDown = y > lastY
-      // Hide while scrolling down, reveal the moment the user scrolls back up.
-      setIsVisible(!scrollingDown)
+      // Only react to a DELIBERATE scroll (ignore sub-threshold jitter from
+      // trackpads / momentum). Without this, a 1-2px up-flick mid-scroll
+      // toggles the bar and restarts its animation, which reads as "struggling".
+      const delta = y - lastY
+      if (Math.abs(delta) > 6) {
+        // Hide while scrolling down, reveal the moment the user scrolls up.
+        setIsVisible(delta < 0)
+        lastY = y
+      }
 
       // Safety net: no matter the direction, if scrolling STOPS, bring the
       // navbar back. This is what guarantees it reappears once the scroll is
@@ -76,8 +82,6 @@ const Navbar = () => {
       // the user actually stops.
       if (scrollTimer.current) clearTimeout(scrollTimer.current)
       scrollTimer.current = setTimeout(() => setIsVisible(true), 250)
-
-      lastY = y
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -135,7 +139,7 @@ const Navbar = () => {
   return (
     <nav
       ref={navRef}
-      className={`${NAV_BG} sticky top-0 z-50 shadow-lg shadow-orange-900/20 transition-all duration-500 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}
+      className={`${NAV_BG} z-50 shadow-lg shadow-orange-900/20 transition-all duration-300 ease-out will-change-transform ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}
       style={!isVisible && navHeight ? { marginBottom: `-${navHeight}px` } : undefined}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
