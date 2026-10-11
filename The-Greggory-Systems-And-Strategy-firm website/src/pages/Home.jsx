@@ -52,6 +52,18 @@ const Home = () => {
   const [strategyImgOk, setStrategyImgOk] = useState(true)
   const [buildImgOk, setBuildImgOk] = useState(true)
   const [supportImgOk, setSupportImgOk] = useState(true)
+  // "What We Deliver" service badges use the same photo-with-fallback pattern:
+  // one jpg per service, falling back to its lucide icon if the file is missing.
+  const [svc1DesignImgOk, setSvc1DesignImgOk] = useState(true)
+  const [svc2StrategyImgOk, setSvc2StrategyImgOk] = useState(true)
+  const [svc3MaintImgOk, setSvc3MaintImgOk] = useState(true)
+  const [svc4WebDevImgOk, setSvc4WebDevImgOk] = useState(true)
+  const [svc5AppsImgOk, setSvc5AppsImgOk] = useState(true)
+  const [svc6MobileImgOk, setSvc6MobileImgOk] = useState(true)
+  const [svc7SupportImgOk, setSvc7SupportImgOk] = useState(true)
+  const [svc8HardwareImgOk, setSvc8HardwareImgOk] = useState(true)
+  const [svc9NetworkImgOk, setSvc9NetworkImgOk] = useState(true)
+  const [svc10ConsultImgOk, setSvc10ConsultImgOk] = useState(true)
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -491,8 +503,18 @@ const Home = () => {
           <div className="max-w-4xl mx-auto space-y-12">
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <Target className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {svc1DesignImgOk ? (
+                    <img
+                      src="/deliver-systems-design.jpg"
+                      alt="Systems design"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSvc1DesignImgOk(false)}
+                    />
+                  ) : (
+                    <Target className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -518,8 +540,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <Lightbulb className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {svc2StrategyImgOk ? (
+                    <img
+                      src="/deliver-strategic-creation.jpg"
+                      alt="Strategic creation"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSvc2StrategyImgOk(false)}
+                    />
+                  ) : (
+                    <Lightbulb className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -545,8 +577,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <CheckCircle className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {svc3MaintImgOk ? (
+                    <img
+                      src="/deliver-continuous-maintenance.jpg"
+                      alt="Continuous maintenance"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSvc3MaintImgOk(false)}
+                    />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -572,8 +614,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <Globe className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {svc4WebDevImgOk ? (
+                    <img
+                      src="/deliver-website-development.jpg"
+                      alt="Website development"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSvc4WebDevImgOk(false)}
+                    />
+                  ) : (
+                    <Globe className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -596,8 +648,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <Monitor className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {svc5AppsImgOk ? (
+                    <img
+                      src="/deliver-web-desktop-apps.jpg"
+                      alt="Web and desktop applications"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSvc5AppsImgOk(false)}
+                    />
+                  ) : (
+                    <Monitor className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -623,8 +685,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <Smartphone className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {svc6MobileImgOk ? (
+                    <img
+                      src="/deliver-mobile-applications.jpg"
+                      alt="Mobile applications"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSvc6MobileImgOk(false)}
+                    />
+                  ) : (
+                    <Smartphone className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -650,8 +722,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <Wrench className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {svc7SupportImgOk ? (
+                    <img
+                      src="/deliver-product-support.jpg"
+                      alt="Product maintenance and support"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSvc7SupportImgOk(false)}
+                    />
+                  ) : (
+                    <Wrench className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -677,8 +759,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <Cpu className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {svc8HardwareImgOk ? (
+                    <img
+                      src="/deliver-hardware-installations.jpg"
+                      alt="Hardware and software installations"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSvc8HardwareImgOk(false)}
+                    />
+                  ) : (
+                    <Cpu className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -704,8 +796,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <Network className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {svc9NetworkImgOk ? (
+                    <img
+                      src="/deliver-network-infrastructure.jpg"
+                      alt="Network installations and infrastructure"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSvc9NetworkImgOk(false)}
+                    />
+                  ) : (
+                    <Network className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -731,8 +833,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <Briefcase className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {svc10ConsultImgOk ? (
+                    <img
+                      src="/deliver-strategy-consultations.jpg"
+                      alt="Strategy consultations and general projects"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSvc10ConsultImgOk(false)}
+                    />
+                  ) : (
+                    <Briefcase className="w-4 h-4" />
+                  )}
                 </div>
               </div>
               <div>
