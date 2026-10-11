@@ -46,10 +46,12 @@ const Home = () => {
   // pixel-for-pixel the layout it has always had.
   const heroRef = useRef(null)
   const [heroTop, setHeroTop] = useState(0)
-  // Phase 01 "Systems Analysis" badge shows a photo; falls back to the Server
-  // icon if /systems-analysis.jpg is missing (same graceful pattern the navbar
-  // profile photo uses).
+  // Phase badges in "How We Deliver" show photos; each falls back to its
+  // lucide icon if the image file is missing (same graceful pattern).
   const [analysisImgOk, setAnalysisImgOk] = useState(true)
+  const [strategyImgOk, setStrategyImgOk] = useState(true)
+  const [buildImgOk, setBuildImgOk] = useState(true)
+  const [supportImgOk, setSupportImgOk] = useState(true)
 
   useLayoutEffect(() => {
     const measure = () => {
@@ -366,8 +368,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <LineChart className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {strategyImgOk ? (
+                    <img
+                      src="/strategy-formulation.jpg"
+                      alt="Strategy formulation"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setStrategyImgOk(false)}
+                    />
+                  ) : (
+                    <LineChart className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -393,8 +405,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <GitBranch className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {buildImgOk ? (
+                    <img
+                      src="/network-systems-build.jpg"
+                      alt="Network and systems build"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setBuildImgOk(false)}
+                    />
+                  ) : (
+                    <GitBranch className="w-4 h-4" />
+                  )}
                 </div>
                 <div className="w-px h-full bg-slate-200 mt-2" />
               </div>
@@ -420,8 +442,18 @@ const Home = () => {
 
             <div className="relative pl-16">
               <div className="absolute left-0 top-0 flex flex-col items-center">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                  <ShieldCheck className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+                  {supportImgOk ? (
+                    <img
+                      src="/optimization-support.jpg"
+                      alt="Optimization and support"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={() => setSupportImgOk(false)}
+                    />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4" />
+                  )}
                 </div>
               </div>
               <div>
