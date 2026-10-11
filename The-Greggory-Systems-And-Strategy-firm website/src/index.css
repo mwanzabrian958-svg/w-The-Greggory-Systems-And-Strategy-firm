@@ -175,12 +175,22 @@ body {
    This yields the correct top→bottom reading order, with the
    navigation and the footer kept off the hero and out of the
    keyboard flow where they do not belong. */
+/* ── Sticky site header ────────────────────────────────────────────────────
+   TRANSPARENT on purpose. The header is only a sticky frame around the
+   navbar; the bar's own bg-orange-500 is what paints the top of the screen.
+   Do NOT add `background` or `backdrop-filter` here: when the navbar slides
+   away on scroll, an opaque header box leaves a ~106px blank band (the old
+   "gap"). The previous workaround — collapsing that band with a negative
+   margin on the nav — mutated layout above the viewport, which triggered
+   Chrome's scroll anchoring to compensate scrollY. The compensating scroll
+   events re-hid the bar and reset its idle timer in a self-sustaining loop,
+   so the bar never popped back while the page sat stationary. With a
+   transparent header, content slides beneath the bar instead: no layout
+   change, no anchoring, no loop. */
 .site-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: var(--bg-primary);
-  backdrop-filter: blur(12px);
 }
 
 .site-footer {

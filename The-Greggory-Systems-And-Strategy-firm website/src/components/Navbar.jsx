@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Menu, X, LogIn, ChevronDown, User } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -46,7 +46,6 @@ const Navbar = () => {
   const [isVisible, setIsVisible] = useState(true)
   const scrollTimer = useRef(null)
   const navRef = useRef(null)
-  const [navHeight, setNavHeight] = useState(0)
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -84,6 +83,13 @@ const Navbar = () => {
       scrollTimer.current = setTimeout(() => setIsVisible(true), 250)
     }
 
+    // NOTE: we deliberately do NOT use the `scrollend` event as an immediate
+    // "show" trigger: Chrome fires it after every discrete wheel tick settles,
+    // which would instantly re-show the bar between notches (flicker). The
+    // 250ms debounce below is the single source of truth for "scrolling has
+    // stopped" — it cannot be starved anymore because the scroll-anchoring
+    // feedback loop (negative-margin collapse) has been removed.
+
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => {
       window.removeEventListener('scroll', handleScroll)
@@ -91,19 +97,15 @@ const Navbar = () => {
     }
   }, [])
 
-  // Measure the nav's rendered height so that, when it slides away on scroll,
-  // we can collapse the exact space it reserved. Without this the sticky
-  // <header> in App.jsx keeps holding the bar's full height open, leaving a
-  // blank gap the size of the navbar between the top of the screen and the
-  // page content. Re-measure on resize (the bar is h-24 on mobile, h-28 up).
-  useLayoutEffect(() => {
-    const el = navRef.current
-    if (!el) return
-    const measure = () => setNavHeight(el.offsetHeight)
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [])
+  // NOTE: the bar used to collapse the space it reserved with a negative
+  // margin when hidden. That mutated layout ABOVE the viewport while the
+  // page was scrolled, which made Chrome's scroll anchoring compensate
+  // scrollY — firing synthetic scroll events that re-hid the bar and reset
+  // its idle timer in an endless loop (diagnosed: 78 scroll events + 29
+  // visibility flips in 3 seconds of zero input; bar stuck hidden).
+  // `.site-header` is now a transparent sticky frame, so content slides
+  // beneath the bar with zero layout involvement instead — no margin, no
+  // anchoring, no loop, no content jump on reveal.
 
   // Always attempt to load the photo if we have a user ID; fall back to initials on error.
   // This avoids depending solely on has_photo (which may be stale in localStorage for sessions
@@ -140,7 +142,6 @@ const Navbar = () => {
     <nav
       ref={navRef}
       className={`${NAV_BG} z-50 shadow-lg shadow-orange-900/20 transition-all duration-300 ease-out will-change-transform ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}
-      style={!isVisible && navHeight ? { marginBottom: `-${navHeight}px` } : undefined}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-24 sm:h-28">
