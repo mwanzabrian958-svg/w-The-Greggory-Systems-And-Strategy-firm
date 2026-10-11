@@ -53,15 +53,34 @@ const Navbar = () => {
   const { isAuthenticated, logout, user } = useAuth()
 
   useEffect(() => {
+    let lastY = window.scrollY
+
     const handleScroll = () => {
-      setIsVisible(false)
-      if (scrollTimer.current) clearTimeout(scrollTimer.current)
-      scrollTimer.current = setTimeout(() => {
+      const y = window.scrollY
+
+      // Always show the bar at the very top of the page.
+      if (y <= 8) {
         setIsVisible(true)
-      }, 200)
+        if (scrollTimer.current) clearTimeout(scrollTimer.current)
+        lastY = y
+        return
+      }
+
+      const scrollingDown = y > lastY
+      // Hide while scrolling down, reveal the moment the user scrolls back up.
+      setIsVisible(!scrollingDown)
+
+      // Safety net: no matter the direction, if scrolling STOPS, bring the
+      // navbar back. This is what guarantees it reappears once the scroll is
+      // complete. Each scroll event resets the timer, so it only fires after
+      // the user actually stops.
+      if (scrollTimer.current) clearTimeout(scrollTimer.current)
+      scrollTimer.current = setTimeout(() => setIsVisible(true), 250)
+
+      lastY = y
     }
 
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => {
       window.removeEventListener('scroll', handleScroll)
       if (scrollTimer.current) clearTimeout(scrollTimer.current)
