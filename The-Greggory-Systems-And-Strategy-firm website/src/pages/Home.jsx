@@ -126,9 +126,22 @@ const Home = () => {
           message. No blurred "atmosphere" canvas, no second asset to
           regenerate or keep in sync with the desktop art.
 
-          Tablet/PC: unchanged - the same file filling a min-h-screen hero
-          with object-cover, the default centre anchoring, plus a clarity
-          lift so the artwork reads clean instead of hazy.
+          Tablet/PC: the same file FITTED WHOLE into the min-h-screen hero -
+          object-contain on the section's own #030712, default centre
+          anchoring, plus a clarity lift so the artwork reads clean instead
+          of hazy. Nothing is cropped, so the wings and the GREGGORY
+          wordmark read exactly as they do on a phone, and the letterbox
+          gaps stay plain background for the same reason the phone leaves
+          them plain: an invented backdrop is not the image.
+
+          Why not cover: object-cover fills by center-cropping, and this art
+          is 1.69:1. Measured against real viewports it sliced 21% off the
+          sides at 1024x768 and 59% at 820x1180 - "GREGGORY" rendered as
+          "GREGGO", half a wing gone - and it fits by MAX scale, stretching
+          the 1324px file up to 1.45x at 1920x1080, which is where the blur
+          came from. Contain fits by MIN scale instead: 1.09x at 1440x900
+          and a 0.62x DOWNscale on a portrait tablet, so >=641px never
+          upscales harder than the viewport itself forces.
 
           Why the lift: the haze in this hero is real pixels, not an overlay.
           Measured band by band, the section paints the JPEG faithfully (top
@@ -136,10 +149,9 @@ const Home = () => {
           of the >=641px hero is dim, low-saturation haze - the grey-brown
           smoke. brightness(1.12) contrast(1.22) saturate(1.22) takes that to
           0.3% while holding overall luminance flat (87.3 -> 87.2), so it
-          de-smokes without dimming or flattening the art. It is also the one
-          place the artwork needs help: below 641px it is DOWNscaled 3.4x
-          (1324 -> 390) and reads crisply on its own, at >=641px the same
-          1324px file is stretched back up to 1440-1920.
+          de-smokes without dimming or flattening the art. Below 641px the
+          file is DOWNscaled 3.4x (1324 -> 390) and reads crisply on its own
+          with no lift at all.
 
           Every phone/desktop switch in this hero is `min-[641px]:`, the
           project's own definition of "mobile" (getDeviceCategory in
@@ -152,12 +164,13 @@ const Home = () => {
       >
         {/* Phone: a normal flow child, so the column puts the artwork at the
             top and the copy at the bottom of the hero. Tablet/PC: promoted
-            back to the original full-bleed cover layer. */}
+            back to the full-hero layer, the artwork fitted whole (never
+            cropped) with object-contain. */}
         <div className="w-full min-[641px]:absolute min-[641px]:inset-0">
           <img
             src="/hero-phoenix.jpg"
             alt="Phoenix rising over a city skyline — The Greggory Systems And Strategy Firm"
-            className="block w-full h-auto min-[641px]:absolute min-[641px]:inset-0 min-[641px]:h-full min-[641px]:object-cover min-[641px]:brightness-[1.12] min-[641px]:contrast-[1.22] min-[641px]:saturate-[1.22]"
+            className="block w-full h-auto min-[641px]:absolute min-[641px]:inset-0 min-[641px]:h-full min-[641px]:object-contain min-[641px]:brightness-[1.12] min-[641px]:contrast-[1.22] min-[641px]:saturate-[1.22]"
             fetchpriority="high"
           />
         </div>
