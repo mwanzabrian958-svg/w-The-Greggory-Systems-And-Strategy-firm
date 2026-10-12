@@ -118,7 +118,6 @@ async function createDeveloperUser() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('\nDeveloper Login Details:');
     console.log('  Endpoint: /api/developer/authenticate');
-    console.log('  Or use the same admin code (your ADMIN_CODE) if DEV_CODE not set');
     console.log('\nMake sure to set DEV_CODE in your .env file (optional):');
     console.log('Example: DEV_CODE=GF-DEV-2024-SECURE');
     

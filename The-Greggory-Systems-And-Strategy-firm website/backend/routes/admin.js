@@ -5,7 +5,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
 const { stampLogo, stampWatermark } = require('../../server/lib/documentBrand');
 const { formatActivityLog } = require('../utils/activityLogFormatter');
@@ -13,17 +12,6 @@ const { verifySessionToken } = require('../utils/sessionToken');
 // admin_settings has no CREATE TABLE in the schema (see the module doc); these
 // three routes would otherwise die with ER_NO_SUCH_TABLE -> 500 on every call.
 const { ensureAdminSettingsTable } = require('../utils/ensureAdminSettings');
-
-/**
- * Timing-safe secret comparison — hashes both sides to a fixed length first so
- * timingSafeEqual never throws on differing input lengths. Mirrors the helper in
- * backend/routes/admin-verification.js.
- */
-function safeEqual(a, b) {
-  const ha = crypto.createHash('sha256').update(String(a), 'utf8').digest();
-  const hb = crypto.createHash('sha256').update(String(b), 'utf8').digest();
-  return crypto.timingSafeEqual(ha, hb);
-}
 
 /**
  * Authenticate an admin session (same scheme as the main server's
@@ -272,8 +260,7 @@ router.post('/create-admin', requireAdminSession, async (req, res) => {
       password,
       admin_level = 'admin',
       access_level = 'full',
-      department = 'General',
-      admin_code
+      department = 'General'
     } = req.body;
 
     // Basic validation
@@ -284,30 +271,8 @@ router.post('/create-admin', requireAdminSession, async (req, res) => {
       });
     }
 
-    // SECOND FACTOR for creating a privileged account, matching POST /register in
-    // backend/routes/admin-verification.js. This used to be `if (admin_code) {...}`,
-    // which meant OMITTING the field skipped the check entirely — so holding a
-    // valid admin session was enough to mint another admin_users row without the
-    // code ever being asked for. The code is now mandatory, compared timing-safely,
-    // and the route fails CLOSED (503) when the server has no ADMIN_CODE: a missing
-    // dashboard secret disables the feature instead of silently opening it.
-    const expectedCode = String(process.env.ADMIN_CODE || '').trim();
-    const providedCode = String(admin_code || '').trim();
-    if (!expectedCode) {
-      console.warn('[CREATE-ADMIN] REJECTED - ADMIN_CODE is not configured on this server');
-      return res.status(503).json({
-        success: false,
-        message: 'Admin account creation is disabled on this server'
-      });
-    }
-    if (!providedCode || !safeEqual(providedCode, expectedCode)) {
-      console.warn('[CREATE-ADMIN] REJECTED - missing or invalid admin creation code');
-      return res.status(403).json({
-        success: false,
-        message: 'Invalid or missing admin code for admin account creation'
-      });
-    }
-
+    // NOTE: the admin-code second factor was purged (legacy). The remaining gate
+    // is the admin session required by requireAdminSession above.
     // Check if user already exists in admin table
     const [existingAdmin] = await db.promise().query(
       'SELECT id FROM admin_users WHERE email = ?',

@@ -8,19 +8,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
 const { signSessionToken } = require('../utils/sessionToken');
-
-/**
- * Timing-safe secret comparison — hashes both sides to a fixed length first
- * so timingSafeEqual never throws on differing input lengths.
- */
-function safeEqual(a, b) {
-  const ha = crypto.createHash('sha256').update(String(a), 'utf8').digest();
-  const hb = crypto.createHash('sha256').update(String(b), 'utf8').digest();
-  return crypto.timingSafeEqual(ha, hb);
-}
 
 // Apply endpoint validation middleware to admin routes
 router.use(authEndpointValidator('admin', 'admin_users'));
@@ -228,28 +217,9 @@ router.post('/profile/:id/photo', (req, res) => {
 // AUTH PROTOCOL: Admin/Developer registration
 // Admins go to admin_users table, Developers go to developer_users table
 router.post('/register', async (req, res) => {
-  // SECURITY: this endpoint creates privileged accounts (admin_users /
-  // developer_users), so it requires the ADMIN_CODE second factor and fails
-  // CLOSED when the server has no ADMIN_CODE configured.
-  const expectedCode = (process.env.ADMIN_CODE || '').trim();
-  const providedCode = String((req.body && req.body.admin_code) || '').trim();
-
-  if (!expectedCode) {
-    console.warn('[REGISTER] REJECTED - ADMIN_CODE is not configured on this server');
-    return res.status(503).json({
-      success: false,
-      message: 'Admin registration is disabled on this server'
-    });
-  }
-
-  if (!providedCode || !safeEqual(providedCode, expectedCode)) {
-    console.warn('[REGISTER] REJECTED - missing or invalid admin registration code');
-    return res.status(403).json({
-      success: false,
-      message: 'Invalid or missing admin registration code'
-    });
-  }
-
+  // NOTE: the admin-code second factor was purged (legacy — the admin auth
+  // platform it guarded is unlisted). Signups are email+password only;
+  // scripts/test-admin-code-guard.js fails if any admin-code check comes back.
   try {
     const { email, password, first_name, last_name, role, admin_level, developer_level, profile_image_id } = req.body;
     

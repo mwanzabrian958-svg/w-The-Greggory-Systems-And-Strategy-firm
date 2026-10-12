@@ -113,9 +113,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   record("Client", "foreign project isolation", await req("GET", "/api/users/project-team-template/1", null, ct), [403, 404]);
 
   // ---------- 3. ADMIN AUTH + PHOTO ----------
-  // admin_code is REQUIRED — without it the server answers 403 and every
-  // Admin/AdminData/Team/Billing check below cascades into 401/429.
-  record("Admin", "register", await req("POST", "/api/admin-verification/register", { email: ae, password: "Audit123", first_name: "Audit", last_name: "Admin", role: "admin", admin_code: process.env.ADMIN_CODE }), [201]);
+  record("Admin", "register", await req("POST", "/api/admin-verification/register", { email: ae, password: "Audit123", first_name: "Audit", last_name: "Admin", role: "admin" }), [201]);
   const al = await req("POST", "/api/admin-verification/authenticate-enhanced", { email: ae, password: "Audit123" });
   record("Admin", "login", al, [200]);
   const at = al.json?.token;

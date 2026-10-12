@@ -71,8 +71,9 @@ services:
         value: 7d
       - key: ADMIN_SESSION_SECRET
         sync: false
-      - key: ADMIN_CODE
-        sync: false
+      # NOTE: there is deliberately no ADMIN_CODE here any more — the admin-code
+      # second factor was purged; nothing reads it (scripts/validate-env.js flags
+      # a leftover value as retired).
       - key: SESSION_SECRET
         sync: false
       # NOTE: there is deliberately no ADMIN_KEY here any more. The x-admin-key

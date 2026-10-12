@@ -160,8 +160,6 @@ async function createAdminUser() {
     console.log(`Name:     ${adminUser.first_name} ${adminUser.last_name}`);
     console.log(`Role:     ${adminUser.admin_level}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('\nMake sure to set ADMIN_CODE in your .env file!');
-    console.log('Example: ADMIN_CODE=***REMOVED***');
     
   } catch (error) {
     console.error('Error creating admin user:', error);

@@ -27,7 +27,7 @@ export function Login({ onLoginSuccess }) {
   const [regStep, setRegStep] = useState(1);
   const [regData, setRegData] = useState({
     first_name: "", last_name: "", email: "",
-    password: "", confirmPassword: "", admin_code: ""
+    password: "", confirmPassword: ""
   });
 
   const handleLoginSubmit = async (e) => {
@@ -217,7 +217,6 @@ export function Login({ onLoginSuccess }) {
                     <input type="email" placeholder="Email address" value={regData.email} onChange={(e) => setRegData({...regData, email: e.target.value})} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
                     <input type="password" placeholder="Access Key" value={regData.password} onChange={(e) => setRegData({...regData, password: e.target.value})} required minLength={8} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
                     <input type="password" placeholder="Confirm Key" value={regData.confirmPassword} onChange={(e) => setRegData({...regData, confirmPassword: e.target.value})} required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
-                    <input type="password" placeholder="Admin registration code" value={regData.admin_code} onChange={(e) => setRegData({...regData, admin_code: e.target.value})} autoComplete="off" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[11px] font-bold text-slate-900 outline-none" />
 
                     {error && <p className="text-[8px] font-black text-emerald-500 uppercase text-center">{error}</p>}
 

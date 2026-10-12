@@ -15,7 +15,7 @@ import { apiCall, getApiUrl } from "../services/api";
 
 /**
  * Full "Authentication platform" experience: gradient header, member sign-in/up, admin console path.
- * Opened from footer three-dots or navbar; admin step uses server-backed credentials + code.
+ * Opened from footer three-dots or navbar; admin step uses server-backed credentials.
  */
 export default function AuthPlatformModal({
   isOpen,
@@ -40,7 +40,6 @@ export default function AuthPlatformModal({
     email: "",
     password: "",
     confirmPassword: "",
-    admin_code: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [regError, setRegError] = useState("");
@@ -107,7 +106,6 @@ export default function AuthPlatformModal({
       email: "",
       password: "",
       confirmPassword: "",
-      admin_code: "",
     });
     setRegError("");
     setProfilePhoto(null);
@@ -152,7 +150,6 @@ export default function AuthPlatformModal({
         last_name: regData.last_name,
         email: regData.email,
         password: regData.password,
-        admin_code: regData.admin_code,
         role: "admin",
       };
 
@@ -358,7 +355,6 @@ export default function AuthPlatformModal({
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2 text-gray-400 hover:text-gray-600 transition-colors">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                   </div>
                   <input type="password" value={regData.confirmPassword} onChange={(e) => setRegData({ ...regData, confirmPassword: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Confirm password" />
-                  <input type="password" value={regData.admin_code} onChange={(e) => setRegData({ ...regData, admin_code: e.target.value })} autoComplete="off" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Admin registration code" />
                   <button type="submit" disabled={isSubmitting} className="w-full px-4 py-3 bg-teal-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">{isSubmitting ? "Creating account..." : "Create account"}</button>
                   <p className="text-center text-[7px] font-black text-gray-400 uppercase tracking-widest">Already have an account? <button type="button" onClick={() => setView("admin")} className="text-teal-700">Sign in here</button></p>
                 </form>

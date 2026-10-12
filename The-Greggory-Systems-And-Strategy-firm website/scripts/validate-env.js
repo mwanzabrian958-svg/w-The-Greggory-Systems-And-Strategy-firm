@@ -27,7 +27,7 @@ if (dups.length) console.log(`!! duplicate keys in .env: ${dups.join(', ')}`);
 // ---- Required for the app to boot & auth to work --------------------------
 const required = [
   'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER',
-  'JWT_SECRET', 'JWT_EXPIRES_IN', 'ADMIN_SESSION_SECRET', 'ADMIN_CODE', 'SESSION_SECRET',
+  'JWT_SECRET', 'JWT_EXPIRES_IN', 'ADMIN_SESSION_SECRET', 'SESSION_SECRET',
   'FRONTEND_URL',
 ];
 
@@ -197,6 +197,7 @@ const genHint =
 // backend/middleware/adminSession.js for why the x-admin-key guard was deleted.
 for (const [k, why] of Object.entries({
   ADMIN_KEY: 'the x-admin-key guard no longer exists; admin routes verify the Bearer session token',
+  ADMIN_CODE: 'the admin-code second factor was purged; nothing reads it (scripts/test-admin-code-guard.js guards the purge)',
 })) {
   if ((process.env[k] || '').trim()) {
     console.log(`--  ${k} is set but NOTHING reads it — ${why}. Delete it from Render and .env.`);
@@ -214,17 +215,6 @@ for (const k of ['JWT_SECRET', 'ADMIN_SESSION_SECRET', 'SESSION_SECRET']) {
     console.log(`!!  ${k} is only ${v.length} chars — secrets must be >= ${MIN_SECRET_LEN} random chars. ${genHint}`);
   } else {
     console.log(`OK  ${k} strength (${v.length} chars)`);
-  }
-}
-{
-  const ac = (process.env.ADMIN_CODE || '').trim();
-  if (ac) {
-    if (looksPlaceholder(ac) || /^\d{1,7}$/.test(ac) || ac.length < 8) {
-      problems++;
-      console.log(`!!  ADMIN_CODE is weak (${ac.length} chars) — use >= 8 chars mixing letters+digits; not a placeholder or short PIN`);
-    } else {
-      console.log(`OK  ADMIN_CODE strength (${ac.length} chars)`);
-    }
   }
 }
 {

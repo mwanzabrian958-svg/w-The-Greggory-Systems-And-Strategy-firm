@@ -21,7 +21,7 @@ This document links all authentication platforms with their respective database 
 | Platform | Table | Purpose | Access Code Required |
 |----------|-------|---------|---------------------|
 | **Regular User** | `users` | Public users, donors, beneficiaries | No |
-| **Admin** | `admin_users` | Administrative staff, moderators | Yes (ADMIN_CODE) |
+| **Admin** | `admin_users` | Administrative staff, moderators | No (ADMIN_CODE purged) |
 | **Developer** | `developer_users` | Development team, technical staff | Yes (DEV_CODE) |
 
 ---
@@ -155,7 +155,7 @@ CREATE TABLE admin_users (
 
 | Endpoint | Method | Purpose | Request Body |
 |----------|--------|---------|--------------|
-| `/api/admin/authenticate` | POST | Admin login with code | `{email, password, adminCode}` |
+| `/api/admin/authenticate` | POST | LEGACY — removed; admin-code login no longer exists | — |
 | `/api/admin/session` | GET | Validate admin session | Header: `Authorization: Bearer <token>` |
 | `/api/admin/create` | POST | Create new admin (super admin only) | `{email, password, first_name, last_name, admin_level, ...}` |
 
@@ -163,9 +163,9 @@ CREATE TABLE admin_users (
 
 ```
 1. Admin clicks "Admin Access" in auth modal
-2. Enters: email, password, admin code
-3. POST /api/admin/authenticate
-   - Validates adminCode against ADMIN_CODE env variable
+2. Enters: email, password (no admin code — the requirement was purged)
+3. POST /api/admin-verification/authenticate-enhanced
+   - (the old adminCode-vs-ADMIN_CODE check was purged with the code)
    - Queries admin_users table: SELECT * FROM admin_users WHERE email = ?
    - Checks IP restriction (localhost only)
    - Verifies password with bcrypt
