@@ -1,6 +1,6 @@
 /**
  * SESSION TOKEN UTIL
- * Signs/verifies admin & developer session tokens in the EXACT format that the
+ * Signs/verifies admin session tokens in the EXACT format that the
  * main server (server.js -> signAdminSessionToken / verifyAdminSessionToken)
  * accepts: `base64url(JSON payload).base64url(HMAC-SHA256 signature)`.
  *
@@ -30,7 +30,7 @@ function getSessionSecret() {
 /**
  * Sign a user id into a session token.
  * @param {number|string} userId
- * @param {string} [role] - 'admin' | 'developer' (informational only)
+ * @param {string} [role] - 'admin' (informational only)
  * @returns {string} `${base64url(payload)}.${base64url(hmac)}`
  */
 function signSessionToken(userId, role) {

@@ -4,7 +4,6 @@ import {
   hasAnyPermission, 
   hasAllPermissions,
   isAdmin,
-  isDeveloper,
   isSuperAdmin,
   getNavigationItems,
   PERMISSIONS
@@ -19,7 +18,6 @@ export function usePermissions(user) {
     
     // Role checks
     isAdmin: () => isAdmin(user),
-    isDeveloper: () => isDeveloper(user),
     isSuperAdmin: () => isSuperAdmin(user),
     
     // Navigation
@@ -27,7 +25,7 @@ export function usePermissions(user) {
     
     // User data
     user,
-    role: user?.admin_level || user?.developer_level || user?.primary_role,
+    role: user?.admin_level || user?.primary_role,
     
     // Constants for convenience
     PERMISSIONS

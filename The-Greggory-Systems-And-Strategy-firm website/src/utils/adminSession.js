@@ -74,11 +74,10 @@ export async function verifyAdminSession() {
   }
 }
 
-// NOTE: the former adminAuthenticate()/developerAuthenticate() helpers called
-// POST /api/admin/authenticate and /api/developer/authenticate. Neither route
-// exists on the server (verified live 2026-09-29 by scripts/check-auth-route-map.js:
-// /api/admin/authenticate fails closed 401 via admin.js's blanket session gate,
-// /api/developer/authenticate is 404). The real login flows use
-// /admin-verification/authenticate-enhanced (AuthPlatformModal, admin/hooks/useAuth)
-// and /developer-verification/authenticate. See AUTH-PLATFORMS-LINKING.md.
+// NOTE: the former adminAuthenticate() helper called
+// POST /api/admin/authenticate. That route does not exist on the server
+// (verified live 2026-09-29 by scripts/check-auth-route-map.js:
+// /api/admin/authenticate fails closed 401 via admin.js's blanket session gate).
+// The real login flow uses /admin-verification/authenticate-enhanced
+// (AuthPlatformModal, admin/hooks/useAuth). See AUTH-PLATFORMS-LINKING.md.
 

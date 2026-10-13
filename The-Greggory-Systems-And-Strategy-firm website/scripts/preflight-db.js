@@ -11,7 +11,7 @@
  * platform, every auth request is rejected with
  *   400 { errorCode: "MAPPING_NOT_LOCKED" }
  * — which silently breaks the whole login pipeline (admin console, client
- * portal, developer console) and makes every auth-dependent audit fail.
+ * portal) and makes every auth-dependent audit fail.
  *
  * The mapping rows are seed data (the system-reset scripts purge them), so this
  * pre-flight restores them across EVERY configured endpoint and reports what it
@@ -28,8 +28,6 @@ const RULES = [
   ["user", "password_required", "password", "Password is mandatory for user registration"],
   ["admin", "email_required", "email", "Email is mandatory for admin registration"],
   ["admin", "password_required", "password", "Password is mandatory for admin registration"],
-  ["developer", "email_required", "email", "Email is mandatory for developer registration"],
-  ["developer", "password_required", "password", "Password is mandatory for developer registration"],
 ];
 
 const DDL_MAPPING = `CREATE TABLE IF NOT EXISTS auth_platform_mapping (

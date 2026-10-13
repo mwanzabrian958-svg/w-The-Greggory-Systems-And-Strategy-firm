@@ -58,13 +58,6 @@ const MAPPINGS = [
     login: "/api/admin-verification/authenticate-enhanced",
     description: "Admin console platform",
   },
-  {
-    platform: "developer",
-    table: "developer_users",
-    register: "/api/admin-verification/register",
-    login: "/api/developer-verification/authenticate",
-    description: "Developer console platform",
-  },
 ];
 
 async function ensureTables() {
@@ -146,8 +139,6 @@ const RULES = [
   ["user", "password_required", "required_field", "password", "Password is mandatory for user registration", "strict"],
   ["admin", "email_required", "required_field", "email", "Email is mandatory for admin registration", "strict"],
   ["admin", "password_required", "required_field", "password", "Password is mandatory for admin registration", "strict"],
-  ["developer", "email_required", "required_field", "email", "Email is mandatory for developer registration", "strict"],
-  ["developer", "password_required", "required_field", "password", "Password is mandatory for developer registration", "strict"],
 ];
 
 async function seedRules() {
@@ -188,7 +179,7 @@ if (require.main === module) {
       await seedMappings();
       await seedRules();
       await verify();
-      console.log("[SEED] DONE — admin/user/developer auth endpoints are unblocked");
+      console.log("[SEED] DONE — admin/user auth endpoints are unblocked");
       process.exit(0);
     } catch (e) {
       console.error("[SEED] FAILED:", e.message);

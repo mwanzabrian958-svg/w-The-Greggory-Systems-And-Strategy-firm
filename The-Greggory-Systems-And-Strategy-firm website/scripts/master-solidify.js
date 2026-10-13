@@ -12,10 +12,9 @@ async function solidify() {
   try {
     const email = 'brianmwanza651@gmail.com';
 
-    // Solidify across all tables
+    // Solidify across live tables
     await conn.query('UPDATE users SET whatsapp_verified = 1, whatsapp_auth_key = NULL WHERE email = ?', [email]);
     await conn.query('UPDATE admin_users SET whatsapp_verified = 1, whatsapp_auth_key = NULL WHERE email = ?', [email]);
-    await conn.query('UPDATE developer_users SET whatsapp_verified = 1, whatsapp_auth_key = NULL WHERE email = ?', [email]);
 
     console.log(`✅ Account Ownership Solidified across all tables for: ${email}`);
     console.log('You can now log in directly without a verification key.');

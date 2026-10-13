@@ -22,7 +22,7 @@ export function AdminRoute({
     return <Navigate to={fallback} state={{ from: location }} replace />;
   }
 
-  // Admin and Developer checks
+  // Admin check
   if (!isAdmin(user)) {
     return <Navigate to="/admin/login" replace />;
   }

@@ -594,9 +594,8 @@ app.use(async (req, res, next) => {
       // 1. Check for Admin Session Token (Custom HMAC)
       const adminPayload = verifyAdminSessionToken(token);
       if (adminPayload && adminPayload.uid) {
-        // Fire and forget updates to both admin and developer tables
+        // Fire and forget the admin activity stamp (the Developer platform was purged)
         mainDb.query("UPDATE admin_users SET last_active_at = NOW() WHERE id = ?", [adminPayload.uid]).catch(() => {});
-        mainDb.query("UPDATE developer_users SET last_active_at = NOW() WHERE id = ?", [adminPayload.uid]).catch(() => {});
       } else {
         // 2. Check for Standard JWT (Regular Users)
         try {
@@ -1429,16 +1428,13 @@ app.get("/api/db/:database/table/:table", authenticateAdmin, async (req, res) =>
 // Users API
 app.get("/api/users", authenticateAdmin, async (req, res) => {
   try {
-    // Union all identity tables to provide a master view for the admin panel.
+    // Union the identity tables to provide a master view for the admin panel.
     // `has_photo` is read from each row's OWN table so the UI can render the
-    // right photo (client -> users, admin -> admin_users, developer ->
-    // developer_users) without guessing.
+    // right photo (client -> users, admin -> admin_users) without guessing.
     const [users] = await mainDb.query(`
       SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, primary_role AS role, is_active, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL) as has_photo, 'client' as source_table FROM users WHERE deleted_at IS NULL
       UNION ALL
       SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, admin_level AS role, is_active, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL OR profile_image_id IS NOT NULL) as has_photo, 'admin' as source_table FROM admin_users WHERE deleted_at IS NULL
-      UNION ALL
-      SELECT id, email, first_name, last_name, display_name, phone_number, alt_phone, id_number, physical_address, developer_level AS role, is_active, last_active_at, whatsapp_auth_key, whatsapp_verified, created_at, (profile_photo_blob IS NOT NULL OR profile_image_id IS NOT NULL) as has_photo, 'developer' as source_table FROM developer_users WHERE deleted_at IS NULL
       ORDER BY created_at DESC
     `);
     res.json({ success: true, users });
@@ -2358,22 +2354,20 @@ app.post("/api/users/google-auth", async (req, res) => {
     const displayName = payload.name || `${firstName} ${lastName}`.trim() || email.split("@")[0];
 
     // ── 2. Staff emails never become client nodes ───────────────────────────
-    // An admin/developer signing in with Google must use the staff sign-in:
+    // An admin signing in with Google must use the staff sign-in:
     // auto-creating a client node for a staff mailbox would drop a staff member
     // into the client portal and into the client list.
-    for (const staffTable of ["admin_users", "developer_users"]) {
-      try {
-        const [staff] = await mainDb.query(`SELECT id FROM ${staffTable} WHERE email = ? LIMIT 1`, [email]);
-        if (staff.length > 0) {
-          return res.status(409).json({
-            success: false,
-            message: "This email belongs to a staff account. Please use the staff sign-in.",
-          });
-        }
-      } catch (lookupError) {
-        // A missing staff table can never contain this email — keep going.
-        console.warn(`[GOOGLE AUTH] ${staffTable} lookup skipped:`, lookupError.code || lookupError.message);
+    try {
+      const [staff] = await mainDb.query(`SELECT id FROM admin_users WHERE email = ? LIMIT 1`, [email]);
+      if (staff.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: "This email belongs to a staff account. Please use the staff sign-in.",
+        });
       }
+    } catch (lookupError) {
+      // A missing staff table can never contain this email — keep going.
+      console.warn(`[GOOGLE AUTH] admin_users lookup skipped:`, lookupError.code || lookupError.message);
     }
 
     // ── 3. Resolve the client node: Google id first, then email ─────────────
@@ -2535,7 +2529,6 @@ app.post("/api/users/admin-create", authenticateAdmin, async (req, res) => {
       password,
       role = "user",
       admin_level = "admin",
-      developer_level = "mid",
       phone_number,
       physical_address,
       id_number,
@@ -2584,6 +2577,12 @@ app.post("/api/users/admin-create", authenticateAdmin, async (req, res) => {
       private_notes || null, manual_projects || null, emergency_contact_name || null, emergency_contact_phone || null
     ];
 
+    // The Developer platform was purged — reject instead of falling through
+    // into the client table with a retired role value (DEVELOPER_PURGE_NOTES.md).
+    if (role === "developer") {
+      return res.status(400).json({ success: false, message: "The developer role was retired; choose admin or user" });
+    }
+
     // Create user in appropriate table based on role
     if (role === "admin") {
       tableUsed = "admin_users";
@@ -2593,16 +2592,6 @@ app.post("/api/users/admin-create", authenticateAdmin, async (req, res) => {
       [result] = await mainDb.query(
         `INSERT INTO admin_users (${commonCols}, admin_level, access_level, department) VALUES (${commonPlaceholders}, ?, 'full', ?)`,
         [...commonVals, admin_level, department || 'General']
-      );
-      userId = result.insertId;
-    } else if (role === "developer") {
-      tableUsed = "developer_users";
-      const [existing] = await mainDb.query("SELECT id FROM developer_users WHERE email = ?", [email]);
-      if (existing.length > 0) return res.status(409).json({ success: false, message: "Developer user with this email already exists" });
-
-      [result] = await mainDb.query(
-        `INSERT INTO developer_users (${commonCols}, developer_level) VALUES (${commonPlaceholders}, ?)`,
-        [...commonVals, developer_level]
       );
       userId = result.insertId;
     } else {
@@ -5472,8 +5461,9 @@ app.post("/api/currencies/convert", async (req, res) => {
 // REMOVED INLINE HANDLERS - HANDLED BY MODULAR ROUTER /backend/routes/admin-verification.js
 
 // Developer Authentication removed as per architectural update
+// (The Developer platform itself was later purged entirely — see DEVELOPER_PURGE_NOTES.md)
 
-// Admin/Developer registration (frontend expects this endpoint)
+// Admin registration (frontend expects this endpoint)
 // REMOVED INLINE HANDLERS - HANDLED BY MODULAR ROUTER /backend/routes/admin-verification.js
 
 // Validate admin session token (required for admin UI — not forgeable without server secret)
@@ -5493,8 +5483,9 @@ app.get("/api/admin/session", async (req, res) => {
         .json({ success: false, message: "Invalid or expired session" });
     }
 
-        // Check admin_users table first
-    let [admins] = await mainDb.query(
+    // Admin platform only — the Developer platform was purged, so a session
+    // uid that is not in admin_users gets no admin privileges.
+    const [admins] = await mainDb.query(
       `SELECT id, email, first_name, last_name, phone_number, admin_level, access_level, department,
               profile_photo_blob IS NOT NULL as has_photo, profile_image_id IS NOT NULL as has_image
        FROM admin_users
@@ -5503,33 +5494,16 @@ app.get("/api/admin/session", async (req, res) => {
       [payload.uid],
     );
 
-    // If not found in admin_users, check developer_users
-    let user = null;
-    let role = "admin";
-
     if (admins.length === 0) {
-            const [developers] = await mainDb.query(
-        `SELECT id, email, first_name, last_name, phone_number, developer_level, tech_stack,
-                profile_photo_blob IS NOT NULL as has_photo, profile_image_id IS NOT NULL as has_image
-         FROM developer_users
-         WHERE id = ? AND is_active = TRUE AND deleted_at IS NULL
-         LIMIT 1`,
-        [payload.uid],
-      );
-
-      if (developers.length === 0) {
-        return res
-          .status(403)
-          .json({ success: false, message: "Admin privileges required" });
-      }
-
-      user = developers[0];
-      role = "developer";
-    } else {
-      user = admins[0];
+      return res
+        .status(403)
+        .json({ success: false, message: "Admin privileges required" });
     }
 
-        res.json({
+    const user = admins[0];
+    const role = "admin";
+
+    res.json({
       success: true,
       user: {
         id: user.id,
@@ -5541,8 +5515,6 @@ app.get("/api/admin/session", async (req, res) => {
         admin_level: user.admin_level,
         access_level: user.access_level,
         department: user.department,
-        developer_level: user.developer_level,
-        tech_stack: user.tech_stack,
         has_photo: Boolean(user.has_photo || user.has_image),
         has_image: Boolean(user.has_image),
       },
@@ -6801,7 +6773,7 @@ app.get("/api/users/profile-photo/:userId", async (req, res) => {
   }
 });
 
-// Admin/Developer profile photo upload endpoint (accepts base64 JSON)
+// Admin profile photo upload endpoint (accepts base64 JSON)
 app.post("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
   try {
     const {
@@ -6842,12 +6814,12 @@ app.post("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
     }
 
     // Write to the identity's OWN table (see PHOTO_ROLE_TABLES) — a client's
-    // photo must land in `users`, never in an admin/developer table.
+    // photo must land in `users`, never in an admin table.
     const tableName = photoTableForRole(role);
     if (!tableName) {
       return res.status(400).json({
         success: false,
-        message: "Valid role (admin|developer|user|client) is required",
+        message: "Valid role (admin|user|client) is required",
       });
     }
 
@@ -6919,14 +6891,12 @@ function resolveImageMimeType(blob, storedMime) {
  *
  *   client / user  -> users            (client-portal profile photo)
  *   admin          -> admin_users      (admin platform profile photo)
- *   developer      -> developer_users
  *
  * Every photo route (GET / POST / DELETE) resolves its table through this map,
  * so a client's photo is never read from - or written to - an admin table.
  */
 const PHOTO_ROLE_TABLES = {
   admin: "admin_users",
-  developer: "developer_users",
   user: "users",
   client: "users",
 };
@@ -6934,7 +6904,7 @@ const PHOTO_ROLE_TABLES = {
 const photoTableForRole = (role) =>
   PHOTO_ROLE_TABLES[String(role || "").trim().toLowerCase()] || null;
 
-// Admin/Developer/Client profile photo retrieval endpoint
+// Client/Admin profile photo retrieval endpoint
 app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
   try {
     const { role, userId } = req.params;
@@ -6945,7 +6915,7 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
     if (!userId || !tableName) {
       return res.status(400).json({
         success: false,
-        message: "Valid role (admin|developer|user|client) and userId are required",
+        message: "Valid role (admin|user|client) and userId are required",
       });
     }
 
@@ -6974,7 +6944,7 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
     }
 
     // Check BOTH storage locations:
-    // 1. profile_photo_blob directly on the admin/developer table
+    // 1. profile_photo_blob directly on the admin table
     //    (used by server.js inline POST /api/admin/profile-photo)
     // 2. images table via profile_image_id
     //    (used by admin-verification.js POST /profile/:id/photo)
@@ -7020,7 +6990,7 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
   }
 });
 
-// Admin/Developer profile photo removal endpoint
+// Admin profile photo removal endpoint
 app.delete("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
   try {
     const { userId, role } = req.body;
@@ -7031,7 +7001,7 @@ app.delete("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
     if (!tableName) {
       return res.status(400).json({
         success: false,
-        message: "Valid role (admin|developer|user|client) is required",
+        message: "Valid role (admin|user|client) is required",
       });
     }
     // `users` has no profile_image_id column — clear only the blob trio there.
@@ -7151,7 +7121,6 @@ const modularRoutes = [
   { path: "/api/admin", route: "./backend/routes/admin" },
   { path: "/api/admin-complete", route: "./backend/routes/admin-complete" },
   { path: "/api/admin-verification", route: "./backend/routes/admin-verification" },
-  { path: "/api/developer-verification", route: "./backend/routes/developer-verification" },
   { path: "/api/mpesa", route: "./backend/routes/mpesa" },
   { path: "/api/users", route: "./backend/routes/users" },
   // Content posts (testimonials + work portfolio). The public half
@@ -7474,6 +7443,15 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
            );
          }
        } catch (nErr) { console.warn('[INVOICE] notification skipped:', nErr.message); }
+        // Auto-push to Android (display + cache receipt/report payload) — fire-and-forget.
+        try {
+          const { invoiceSentPush } = require("./backend/utils/notificationHelper");
+          invoiceSentPush(mainDb, {
+            clientEmail: client_email, invoiceId: result.insertId,
+            invoiceNumber: invoice_number, title, clientName,
+            amount: subtotal, dueDate: due,
+          }).catch(() => {});
+        } catch (pushErr) { console.warn('[INVOICE] push skipped:', pushErr.message); }
      }
      res.status(201).json({ success: true, id: result.insertId });
   } catch (error) { console.error('[POST /api/invoices]', error.code || '', error.message, '\nSQL:', String(error.sql || '').substring(0, 500)); res.status(500).json({ error: 'Failed', detail: error.message }); }
@@ -8254,19 +8232,6 @@ app.listen(PORT, "0.0.0.0", async () => {
   );
   console.log(
     `GET  /api/admin/profile-photo/user/:id             - Retrieve client photo (admin panel)`,
-  );
-
-  console.log(`\n========================================`);
-  console.log(`DEVELOPER AUTH PLATFORM (developer_users table)`);
-  console.log(`========================================`);
-  console.log(
-    `POST /api/admin-verification/register           - Register with photo BLOB`,
-  );
-  console.log(
-    `POST /api/developer-verification/authenticate   - Login returns photo info`,
-  );
-  console.log(
-    `GET  /api/admin/profile-photo/developer/:id     - Retrieve dev photo`,
   );
   console.log(`========================================\n`);
 });

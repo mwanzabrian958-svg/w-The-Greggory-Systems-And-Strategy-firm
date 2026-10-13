@@ -3,7 +3,7 @@
    DANGER: destructive. Backup first (step2), then run this.
 
    Purges:
-   - Credentials: users, admin_users, developer_users, user_roles, auth_platform_mapping
+   - Credentials: users, admin_users, user_roles, auth_platform_mapping (developer_users deliberately left intact)
    - Logs: activity_logs, admin_activity_logs, audit_logs, auth_request_log, data_access_logs
    - User-owned data: projects, tasks, teams, invoices, payments, feedback, notifications,
      documents, quotes, signatures, change requests, images (avatar refs), crm contacts.
@@ -20,8 +20,8 @@ const db = require('../backend/config/database');
 
 // Tables to wipe completely (TRUNCATE resets AUTO_INCREMENT to 1 for InnoDB).
 const PURGE = [
-  // Credentials
-  'users', 'admin_users', 'developer_users', 'user_roles', 'auth_platform_mapping',
+  // Credentials (developer_users deliberately excluded — DB left intact)
+  'users', 'admin_users', 'user_roles', 'auth_platform_mapping',
   // Logs
   'activity_logs', 'admin_activity_logs', 'audit_logs', 'auth_request_log', 'data_access_logs',
   // User projects + all project-owned data

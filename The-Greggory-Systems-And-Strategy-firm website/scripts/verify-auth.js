@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
- * Auth flow verification — proves the three platforms register & log in cleanly
+ * Auth flow verification — proves the two platforms register & log in cleanly
  * with NO email-token / email-verification gating (that is not a feature of
  * this system). Run:  node scripts/verify-auth.js
  *
  * Platforms:
  *   admin      -> /api/admin-verification/register | /admin-verification/authenticate-enhanced
- *   developer  -> /api/admin-verification/register | /developer-verification/authenticate   (role: developer)
  *   user       -> /api/users/register             | /users/login
+ *
+ * (The developer platform was purged — no developer register/login is tested.)
  *
  * Real Nodemailer is NOT required: the checks are HTTP status + token presence.
  */
@@ -53,14 +54,6 @@ function check(name, cond, extra) {
   const ad = J(al.body);
   check("admin login 200 + token", al.status === 200 && !!ad?.token, al.body.substring(0, 80));
 
-  // --- DEVELOPER ---
-  const dev = "authdev" + stamp + "@test.com";
-  const dr = await api("/api/admin-verification/register", "POST", { email: dev, password: "Test1234", first_name: "Dev", last_name: "Eloper", role: "developer" });
-  check("developer register 201", dr.status === 201, dr.body.substring(0, 80));
-  const dl = await api("/api/developer-verification/authenticate", "POST", { email: dev, password: "Test1234" });
-  const dd = J(dl.body);
-  check("developer login 200 + token", dl.status === 200 && !!dd?.token, dl.body.substring(0, 80));
-
   // --- USER (client) ---
   const usr = "authusr" + stamp + "@test.com";
   const ur = await api("/api/users/register", "POST", { email: usr, password: "Test1234", first_name: "Cli", last_name: "Ent", phone: "++254115525854" });
@@ -69,7 +62,7 @@ function check(name, cond, extra) {
   const ud = J(ul.body);
   check("user login 200 + token (no email-token gating)", ul.status === 200 && !!ud?.token, ul.body.substring(0, 80));
 
-  // Clean up the throw-away admin/developer/client accounts created above.
+  // Clean up the throw-away admin/client accounts created above.
   // Without this every run left residue in BOTH databases (this script used to
   // have no cleanup at all).
   console.log("\n--- CLEANUP ---");

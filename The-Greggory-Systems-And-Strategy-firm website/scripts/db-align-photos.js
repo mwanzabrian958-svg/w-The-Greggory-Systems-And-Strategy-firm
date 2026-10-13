@@ -5,10 +5,10 @@
  *   node scripts/db-align-photos.js --apply    # write the alignment
  *
  * Why: the photo routes resolve by source table —
- *   client -> users | admin -> admin_users | developer -> developer_users —
+ *   client -> users | admin -> admin_users —
  * so a person who uploaded a photo from the client portal only has it on
- * `users`. Their admin/developer row stays NULL and the admin platform shows
- * initials. This script copies that photo onto the matching admin/developer row
+ * `users`. Their admin row stays NULL and the admin platform shows
+ * initials. This script copies that photo onto the matching admin row
  * (never overwriting an existing one) and normalizes wildcard MIME values such
  * as "image/*" to the real image type.
  */
@@ -58,9 +58,9 @@ async function main() {
   let linked = 0;
   let normalized = 0;
 
-  // ── 1. Fill a missing photo on admin/developer rows from the same person's
+  // ── 1. Fill a missing photo on admin rows from the same person's
   //       `users` row (matched on email). Never overwrites an existing photo.
-  for (const table of ["admin_users", "developer_users"]) {
+  for (const table of ["admin_users"]) {
     if (!(await tableExists(conn, table))) {
       console.log(`${table}: (table does not exist — skipped)`);
       continue;
@@ -97,7 +97,7 @@ async function main() {
 
   // ── 2. Normalize wildcard/invalid MIME values so <img> tags render.
   console.log("");
-  for (const table of ["users", "admin_users", "developer_users"]) {
+  for (const table of ["users", "admin_users"]) {
     if (!(await tableExists(conn, table))) continue;
     const [rows] = await conn.query(
       `SELECT id, profile_photo_mime_type, profile_photo_blob

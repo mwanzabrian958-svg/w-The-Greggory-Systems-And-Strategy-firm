@@ -157,7 +157,6 @@ const API_ENDPOINTS = {
   ADMIN: {
     GET_ALL_USERS: '/api/admin/users',
     GET_ADMINS: '/api/admin/admin-users',
-    GET_DEVELOPERS: '/api/admin/developer-users',
     CREATE_USER: '/api/admin/create-user',
     UPDATE_USER: '/api/admin/update-user/:id',
     DELETE_USER: '/api/admin/delete-user/:id',

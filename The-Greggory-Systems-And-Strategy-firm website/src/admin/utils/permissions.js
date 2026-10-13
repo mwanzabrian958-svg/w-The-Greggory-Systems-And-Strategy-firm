@@ -7,7 +7,6 @@ export const ROLES = {
   SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
   MODERATOR: 'moderator',
-  DEVELOPER: 'developer',
   USER: 'user'
 };
 
@@ -55,13 +54,7 @@ export const PERMISSIONS = {
 export function isAdmin(user) {
   if (!user) return false;
   const level = user.admin_level || user.role;
-  return ['super_admin', 'admin', 'moderator', 'developer'].includes(level);
-}
-
-export function isDeveloper(user) {
-  if (!user) return false;
-  const level = user.developer_level || user.role;
-  return level === 'developer' || !!user.developer_level;
+  return ['super_admin', 'admin', 'moderator'].includes(level);
 }
 
 export function isSuperAdmin(user) {

@@ -184,10 +184,6 @@ function buildClientPortalPayload({
       { title: "Project oversight", description: "Live status, invoices, and approvals are synced for your engagement." },
       { title: "Executive reporting", description: "Portfolio summaries and delivery notes are shared directly through this portal." },
     ],
-    developer: [
-      { title: "Delivery updates", description: "Implementation milestones and task progress are visible in real time." },
-      { title: "Quality assurance", description: "Testing checkpoints and completion notes are published as work progresses." },
-    ],
   };
 
   return {

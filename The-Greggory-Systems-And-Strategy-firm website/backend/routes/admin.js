@@ -61,10 +61,6 @@ router.get('/live-users', requireAdminSession, async (req, res) => {
       (SELECT id, display_name, email, admin_level as role_type, last_active_at, profile_photo_blob IS NOT NULL as has_photo
        FROM admin_users
        WHERE last_active_at > DATE_SUB(NOW(), INTERVAL ${LIVE_THRESHOLD}) AND deleted_at IS NULL)
-      UNION ALL
-      (SELECT id, display_name, email, developer_level as role_type, last_active_at, profile_photo_blob IS NOT NULL as has_photo
-       FROM developer_users
-       WHERE last_active_at > DATE_SUB(NOW(), INTERVAL ${LIVE_THRESHOLD}) AND deleted_at IS NULL)
       ORDER BY last_active_at DESC
     `);
 
@@ -330,8 +326,6 @@ router.get('/users/:id/export-pdf', requireAdminSession, async (req, res) => {
     let query;
     if (role_type === 'admin') {
       query = 'SELECT * FROM admin_users WHERE id = ? AND deleted_at IS NULL';
-    } else if (role_type === 'developer') {
-      query = 'SELECT * FROM developer_users WHERE id = ? AND deleted_at IS NULL';
     } else {
       query = 'SELECT * FROM users WHERE id = ? AND deleted_at IS NULL';
     }
@@ -388,7 +382,7 @@ router.get('/users/:id/export-pdf', requireAdminSession, async (req, res) => {
     doc.moveDown(0.4);
     row('Full name', name);
     row('Primary email', user.email);
-    row('Role', user.admin_level || user.developer_level || user.primary_role || 'Personnel');
+    row('Role', user.admin_level || user.primary_role || 'Personnel');
     row('Secure line', user.phone_number);
     row('Backup phone', user.alt_phone);
     row('ID / Passport', user.id_number);
@@ -450,13 +444,13 @@ router.put('/users/:id', requireAdminSession, async (req, res) => {
       emergency_contact_name, emergency_contact_phone
     } = req.body;
 
-    const roleType = req.query.role_type || (role === 'admin' ? 'admin' : role === 'developer' ? 'developer' : 'client');
+    const roleType = req.query.role_type || (role === 'admin' ? 'admin' : 'client');
 
     let tableName;
     let updates = [];
     let params = [];
 
-    // Every identity table (users / admin_users / developer_users) carries the same
+    // Every identity table (users / admin_users) carries the same
     // contact/notes columns PLUS department and mission_briefing — so all of them
     // live in the shared update list and actually persist (previously admin edits
     // silently dropped mission_briefing,and client edits dropped department).
@@ -476,7 +470,6 @@ router.put('/users/:id', requireAdminSession, async (req, res) => {
 
     const tableMap = {
       admin: 'admin_users', admin_users: 'admin_users', 'admin-user': 'admin_users',
-      developer: 'developer_users', developer_users: 'developer_users', 'developer-user': 'developer_users',
       client: 'users', user: 'users', users: 'users'
     };
     tableName = tableMap[String(roleType.toLowerCase())] || 'users';
@@ -484,9 +477,6 @@ router.put('/users/:id', requireAdminSession, async (req, res) => {
     if (tableName === 'admin_users') {
       updates = [...commonUpdates, 'admin_level = ?'];
       params = [...commonParams, admin_level || role || 'admin'];
-    } else if (tableName === 'developer_users') {
-      updates = [...commonUpdates, 'developer_level = ?'];
-      params = [...commonParams, (role === 'developer' ? 'mid' : null) || 'mid'];
     } else {
       updates = [...commonUpdates, 'primary_role = ?'];
       params = [...commonParams, role || 'user'];
@@ -532,8 +522,6 @@ router.put('/users/:id/status', async (req, res) => {
     let tableName;
     if (role_type === 'admin') {
       tableName = 'admin_users';
-    } else if (role_type === 'developer' || role_type === 'developer_users') {
-      tableName = 'developer_users';
     } else {
       tableName = 'users';
     }
@@ -588,8 +576,7 @@ router.delete('/users/:id', requireAdminSession, async (req, res) => {
     // `admin_users` are active identity tables.
     const tableMap = {
       admin: 'admin_users', admin_users: 'admin_users', 'admin-user': 'admin_users',
-      client: 'users', user: 'users', users: 'users',
-      developer: 'developer_users', developer_users: 'developer_users', 'developer-user': 'developer_users'
+      client: 'users', user: 'users', users: 'users'
     };
     const tableName = tableMap[String(role_type).toLowerCase()] || 'users';
 
@@ -692,19 +679,6 @@ router.get('/users/:id', requireAdminSession, async (req, res) => {
           au.created_at, au.updated_at, au.deleted_at
         FROM admin_users au
         WHERE au.id = ? AND au.deleted_at IS NULL
-      `;
-    } else if (tableName === 'developer_users') {
-      query = `
-        SELECT 
-          du.id, du.email, du.first_name, du.last_name, du.display_name,
-          du.phone_number, du.physical_address, du.id_number, du.alt_phone,
-          du.expertise, du.private_notes, du.manual_projects,
-          du.emergency_contact_name, du.emergency_contact_phone,
-          du.developer_level, du.tech_stack, du.department, du.mission_briefing,
-          du.is_active, du.last_login_at, du.last_login_ip,
-          du.created_at, du.updated_at, du.deleted_at
-        FROM developer_users du
-        WHERE du.id = ? AND du.deleted_at IS NULL
       `;
     } else {
       query = `
@@ -833,8 +807,7 @@ router.get('/dashboard', async (req, res) => {
     const [liveUsersCount] = await db.promise().query(`
       SELECT
         (SELECT COUNT(*) FROM users WHERE last_active_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE) AND deleted_at IS NULL) +
-        (SELECT COUNT(*) FROM admin_users WHERE last_active_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE) AND deleted_at IS NULL) +
-        (SELECT COUNT(*) FROM developer_users WHERE last_active_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE) AND deleted_at IS NULL) as count
+        (SELECT COUNT(*) FROM admin_users WHERE last_active_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE) AND deleted_at IS NULL) as count
     `);
 
     // Get recent activity

@@ -7,10 +7,10 @@
  *
  *   LIVE  /api/users/login                          -> users table          (401 on fake creds)
  *   LIVE  /api/admin-verification/authenticate-enhanced -> admin_users      (401 on fake creds)
- *   LIVE  /api/developer-verification/authenticate  -> developer_users      (401 on fake creds)
- *   LIVE  /api/admin/session                        -> admin_users + developer_users (401 bad token)
+ *   LIVE  /api/admin/session                        -> admin_users (401 bad token)
  *   DEAD  /api/admin/authenticate      -> 404 (only in stale docs + dead adminSession.js helper)
- *   DEAD  /api/developer/authenticate  -> 404 (only in stale docs + dead adminSession.js helper)
+ *   DEAD  /api/developer/authenticate  -> 404 (purged platform — route does not exist)
+ *   DEAD  /api/developer-verification/authenticate -> 404 (purged platform — route removed)
  *   DEAD  /api/login  /api/signup      -> 404 (stale docs; real paths are /api/users/...)
  *
  * Fake credentials only — no accounts created, no sessions opened.
@@ -52,20 +52,20 @@ const CASES = [
     (r) => [400, 401, 403].includes(r.status),
   ],
   [
-    "developer login route LIVE (developer_users)",
-    "POST",
-    "/api/developer-verification/authenticate",
-    FAKE,
-    null,
-    (r) => [400, 401, 403].includes(r.status),
-  ],
-  [
     "admin/dev session route LIVE",
     "GET",
     "/api/admin/session",
     null,
     { Authorization: "Bearer invalid-token-route-map-check" },
     (r) => r.status === 401,
+  ],
+  [
+    "purged /api/developer-verification/authenticate DEAD (404)",
+    "POST",
+    "/api/developer-verification/authenticate",
+    FAKE,
+    null,
+    (r) => r.status === 404,
   ],
   [
     "legacy /api/admin/authenticate DEAD-but-fail-closed (401 via blanket admin gate)",

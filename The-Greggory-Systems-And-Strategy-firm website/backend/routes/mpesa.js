@@ -201,6 +201,15 @@ router.post('/callback', async (req, res) => {
                     `INSERT INTO notifications (user_id, notification_type, title, message, status, related_entity_type, related_entity_id, created_at)
                      VALUES (?, 'payment_received', ?, ?, 'unread', 'invoices', ?, NOW())`,
                     [clients[0].id, `Payment received — ${inv.title}`, `Your M-Pesa payment of KSH ${Number(tx.amount).toLocaleString()} for invoice ${tx.account_reference} has been received. Receipt: ${mpesaReceiptNumber || checkoutRequestId}.`, inv.id]
+                  // Auto-push receipt to Android (display + cache) — fire-and-forget.
+                  try {
+                    const { receiptPush } = require('../utils/notificationHelper');
+                    receiptPush(db.promise(), {
+                      clientEmail: inv.client_email, invoiceId: inv.id,
+                      invoiceNumber: tx.account_reference, title: inv.title,
+                      amount: tx.amount, receiptNumber: mpesaReceiptNumber || checkoutRequestId,
+                    }).catch(() => {});
+                  } catch (pushErr) { console.warn('[MPESA] receipt push skipped:', pushErr.message); }
                   );
                 }
               }

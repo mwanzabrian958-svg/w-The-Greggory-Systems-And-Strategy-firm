@@ -81,40 +81,6 @@ async function createAdminUser() {
       console.log('✓ admin_users table exists');
     }
     
-    // Check if developer_users table exists
-    const [devTables] = await connection.execute(
-      "SHOW TABLES LIKE 'developer_users'"
-    );
-    
-    if (devTables.length === 0) {
-      console.log('Creating developer_users table...');
-      await connection.execute(`
-        CREATE TABLE IF NOT EXISTS developer_users (
-          id BIGINT AUTO_INCREMENT PRIMARY KEY,
-          email VARCHAR(255) NOT NULL UNIQUE,
-          email_verified BOOLEAN DEFAULT FALSE,
-          password_hash VARCHAR(255) DEFAULT NULL,
-          first_name VARCHAR(100) NOT NULL,
-          last_name VARCHAR(100) NOT NULL,
-          display_name VARCHAR(200) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED,
-          phone_number VARCHAR(50),
-          developer_level ENUM('senior', 'mid', 'junior', 'lead') DEFAULT 'mid',
-          tech_stack JSON,
-          is_active BOOLEAN DEFAULT TRUE,
-          last_login_at TIMESTAMP NULL DEFAULT NULL,
-          last_login_ip VARCHAR(45) DEFAULT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          deleted_at TIMESTAMP NULL DEFAULT NULL,
-          INDEX idx_developer_users_email (email),
-          INDEX idx_developer_users_active (is_active, deleted_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-      `);
-      console.log('✓ developer_users table created');
-    } else {
-      console.log('✓ developer_users table exists');
-    }
-    
     // Check if admin already exists
     const [existing] = await connection.execute(
       'SELECT id FROM admin_users WHERE email = ?',

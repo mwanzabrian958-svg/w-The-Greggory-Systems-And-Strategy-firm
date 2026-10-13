@@ -37,9 +37,7 @@ const API_ENDPOINTS = {
   ADMIN: {
     GET_USERS: '/api/admin/users',
     GET_ADMINS: '/api/admin/admin-users',
-    GET_DEVELOPERS: '/api/admin/developer-users',
     CREATE_ADMIN: '/api/admin/create-admin',
-    CREATE_DEVELOPER: '/api/admin/create-developer',
     UPDATE_PERMISSIONS: '/api/admin/permissions/:id',
     ACTIVITY_LOG: '/api/admin/activity-log',
     SECURITY_SETTINGS: '/api/admin/security'

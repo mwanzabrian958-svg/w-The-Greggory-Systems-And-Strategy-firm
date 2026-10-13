@@ -126,7 +126,7 @@ const Navbar = () => {
     { name: 'Contact', path: '/contact' },
     ...(isAuthenticated && user ? [{
       name: 'Client Portal',
-      path: user?.admin_level || user?.developer_level ? '/admin' : '/client-portal'
+      path: user?.admin_level ? '/admin' : '/client-portal'
     }] : []),
   ]
 

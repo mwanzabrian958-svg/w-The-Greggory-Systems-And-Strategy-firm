@@ -165,7 +165,6 @@ export function SecurityModal({ isOpen, onClose }) {
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Permission</th>
                         <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Admin</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Developer</th>
                         <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">User</th>
                       </tr>
                     </thead>
@@ -174,7 +173,6 @@ export function SecurityModal({ isOpen, onClose }) {
                         <tr key={perm}>
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">{perm}</td>
                           <td className="px-4 py-3 text-center"><input type="checkbox" defaultChecked className="rounded" /></td>
-                          <td className="px-4 py-3 text-center"><input type="checkbox" defaultChecked={perm === 'View Dashboard' || perm === 'Manage Projects'} className="rounded" /></td>
                           <td className="px-4 py-3 text-center"><input type="checkbox" defaultChecked={perm === 'View Dashboard'} className="rounded" /></td>
                         </tr>
                       ))}

@@ -35,7 +35,6 @@ export {
   hasAllPermissions,
   getRolePermissions,
   isAdmin,
-  isDeveloper,
   isSuperAdmin,
   getNavigationItems
 } from './utils/permissions';

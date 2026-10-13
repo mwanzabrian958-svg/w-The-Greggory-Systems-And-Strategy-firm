@@ -106,7 +106,7 @@ async function connectWithRetry() {
     // A partial import (e.g. a previous run aborted on a foreign-key error)
     // leaves some tables behind; detect it via the core auth tables so we can
     // wipe and re-import instead of silently skipping a broken schema.
-    const coreTables = ['users', 'admin_users', 'developer_users'];
+    const coreTables = ['users', 'admin_users'];
     if (coreTables.every((t) => tableNames.includes(t))) {
       process.stdout.write(`[import] ${tableNames.length} tables exist - skipping import\n`);
       return;

@@ -446,7 +446,6 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
                 { value: 'project_manager', label: 'Manager' },
                 { value: 'team_member', label: 'Member' },
                 { value: 'consultant', label: 'Consultant' },
-                { value: 'developer', label: 'Developer' },
                 { value: 'designer', label: 'Designer' }
               ]}
             />

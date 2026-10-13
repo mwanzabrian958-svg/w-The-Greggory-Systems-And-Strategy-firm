@@ -6,7 +6,7 @@
  *   node scripts/purge-test-data.js --dry-run  # report only
  *
  * scripts/verify-auth.js, scripts/verify-features.js and scripts/full-audit.js
- * all create throw-away admin/developer/client accounts plus invoice, feedback,
+ * all create throw-away admin/client accounts plus invoice, feedback,
  * category and crew rows. Historically they either cleaned up through ONE pool
  * (leaving residue in the other database) or not at all, so repeated runs
  * polluted the live DB.
@@ -72,11 +72,6 @@ const STEPS = [
     table: "admin_users",
     where: "email LIKE '%@test.com' OR email LIKE '%@example.com'",
     label: "test admin accounts",
-  },
-  {
-    table: "developer_users",
-    where: "email LIKE '%@test.com' OR email LIKE '%@example.com'",
-    label: "test developer accounts",
   },
   // Runs after the account deletes above so it also collects rows orphaned by them.
   {

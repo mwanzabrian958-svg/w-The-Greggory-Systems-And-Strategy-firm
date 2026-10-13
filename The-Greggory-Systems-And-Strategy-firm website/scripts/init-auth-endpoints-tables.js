@@ -64,8 +64,8 @@ async function initializeAuthEndpointsTables() {
         INDEX idx_platform_name (platform_name),
         INDEX idx_table_name (table_name),
         INDEX idx_is_locked (is_locked),
-        CONSTRAINT check_platform_name CHECK (platform_name IN ('user', 'admin', 'developer')),
-        CONSTRAINT check_table_name CHECK (table_name IN ('users', 'admin_users', 'developer_users'))
+        CONSTRAINT check_platform_name CHECK (platform_name IN ('user', 'admin')),
+        CONSTRAINT check_table_name CHECK (table_name IN ('users', 'admin_users'))
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `, (err) => {
       if (err) {
@@ -168,16 +168,6 @@ async function initializeAuthEndpointsTables() {
         TRUE,
         TRUE,
         'SYSTEM'
-      ),
-      (
-        'developer',
-        'developer_users',
-        'POST /api/admin/developer-create (admin-create via users.js)',
-        'POST /api/developer-verification/authenticate',
-        'Development team - senior, mid, junior, lead level developers',
-        TRUE,
-        TRUE,
-        'SYSTEM'
       );
     `, (err) => {
       if (err) {
@@ -197,7 +187,6 @@ async function initializeAuthEndpointsTables() {
       ['user', 'last_name_required', 'required_field', 'last_name', 'Last name field is mandatory for user registration', 'strict'],
       ['user', 'only_users_table', 'table_isolation', 'users', 'User auth MUST ONLY reference users table', 'strict'],
       ['user', 'no_admin_check', 'cross_check', 'admin_users', 'NEVER check admin_users table in user auth flow', 'strict'],
-      ['user', 'no_developer_check', 'cross_check', 'developer_users', 'NEVER check developer_users table in user auth flow', 'strict'],
       ['user', 'password_min_length', 'password_policy', '8', 'Password must be minimum 8 characters', 'strict'],
       // Admin platform rules
       ['admin', 'email_required', 'required_field', 'email', 'Email field is mandatory for admin registration', 'strict'],
@@ -207,18 +196,7 @@ async function initializeAuthEndpointsTables() {
       ['admin', 'role_required', 'required_field', 'role', 'Role field is mandatory for admin registration', 'strict'],
       ['admin', 'only_admin_users_table', 'table_isolation', 'admin_users', 'Admin auth MUST ONLY reference admin_users table', 'strict'],
       ['admin', 'no_users_check', 'cross_check', 'users', 'NEVER check users table in admin auth flow', 'strict'],
-      ['admin', 'no_developer_check', 'cross_check', 'developer_users', 'NEVER check developer_users table in admin auth flow', 'strict'],
-      ['admin', 'password_min_length', 'password_policy', '8', 'Password must be minimum 8 characters', 'strict'],
-      // Developer platform rules
-      ['developer', 'email_required', 'required_field', 'email', 'Email field is mandatory for developer registration', 'strict'],
-      ['developer', 'password_required', 'required_field', 'password', 'Password field is mandatory for developer registration', 'strict'],
-      ['developer', 'first_name_required', 'required_field', 'first_name', 'First name field is mandatory for developer registration', 'strict'],
-      ['developer', 'last_name_required', 'required_field', 'last_name', 'Last name field is mandatory for developer registration', 'strict'],
-      ['developer', 'role_required', 'required_field', 'role', 'Role field is mandatory for developer registration', 'strict'],
-      ['developer', 'only_developer_users_table', 'table_isolation', 'developer_users', 'Developer auth MUST ONLY reference developer_users table', 'strict'],
-      ['developer', 'no_users_check', 'cross_check', 'users', 'NEVER check users table in developer auth flow', 'strict'],
-      ['developer', 'no_admin_check', 'cross_check', 'admin_users', 'NEVER check admin_users table in developer auth flow', 'strict'],
-      ['developer', 'password_min_length', 'password_policy', '8', 'Password must be minimum 8 characters', 'strict']
+      ['admin', 'password_min_length', 'password_policy', '8', 'Password must be minimum 8 characters', 'strict']
     ];
 
     connection.query('DELETE FROM auth_validation_rules', (err) => {
@@ -249,9 +227,9 @@ async function initializeAuthEndpointsTables() {
               console.log('✅ AUTH ENDPOINTS INITIALIZATION COMPLETE');
               console.log('=' .repeat(60));
               console.log('\n📊 Database Summary:');
-              console.log('  • auth_platform_mapping: 3 locked platforms');
+              console.log('  • auth_platform_mapping: 2 locked platforms');
               console.log('  • auth_request_log: Ready for audit logging');
-              console.log('  • auth_validation_rules: 25 strict validation rules');
+              console.log('  • auth_validation_rules: 16 strict validation rules');
               console.log('\n🔒 Locked Platforms:');
               console.log('  1. user → users table');
               console.log('     POST /api/users/register');
@@ -259,9 +237,6 @@ async function initializeAuthEndpointsTables() {
               console.log('  2. admin → admin_users table');
               console.log('     POST /api/users/admin-create');
               console.log('     POST /api/admin-verification/authenticate-enhanced');
-              console.log('  3. developer → developer_users table');
-              console.log('     POST /api/users/admin-create');
-              console.log('     POST /api/developer-verification/authenticate');
               console.log('\n📝 View mappings: SELECT * FROM v_active_auth_platforms;');
               console.log('📊 View stats: SELECT * FROM v_auth_request_stats;');
               console.log('=' .repeat(60) + '\n');

@@ -319,12 +319,12 @@ function authEndpointValidator(platform, tableName) {
 async function validateTableIsolation(platform, allowedTable, queryString) {
   const forbiddenTables = [];
   
+  // The Developer platform was purged — only the user and admin platforms
+  // remain, and each must stay inside its own identity table.
   if (platform === 'user') {
-    forbiddenTables.push('admin_users', 'developer_users');
+    forbiddenTables.push('admin_users');
   } else if (platform === 'admin') {
-    forbiddenTables.push('users', 'developer_users');
-  } else if (platform === 'developer') {
-    forbiddenTables.push('users', 'admin_users');
+    forbiddenTables.push('users');
   }
 
   const violations = [];

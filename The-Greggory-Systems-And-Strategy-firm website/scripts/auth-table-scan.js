@@ -15,13 +15,12 @@ const path = require("path");
 const R = (f) => path.join(__dirname, "..", f);
 
 const ROUTE_RE = /(?:router|app)\.(get|post|put|delete|patch)\(\s*["'`]([^"'`]+)["'`]/;
-const TABLE_RE = /\b(?:FROM|INTO|UPDATE|JOIN)\s+`?(users|admin_users|admin_user_sessions|user_sessions|developers|developer_sessions|clients|team_members)\b/gi;
+const TABLE_RE = /\b(?:FROM|INTO|UPDATE|JOIN)\s+`?(users|admin_users|admin_user_sessions|user_sessions|clients|team_members)\b/gi;
 
 const FILES = [
   "backend/routes/users.js",
   "backend/routes/admin.js",
   "backend/routes/admin-verification.js",
-  "backend/routes/developer-verification.js",
   "server/utils/clientAuth.js",
   "server/utils/adminAuth.js",
 ];
@@ -53,7 +52,7 @@ for (let i = 0; i < sLines.length; i++) {
   const m = sLines[i].match(ROUTE_RE);
   if (m) {
     const p = m[2];
-    cur = /login|register|auth|session|password|token|verify|developer/i.test(p) ? `${m[1].toUpperCase()} ${p}` : null;
+    cur = /login|register|auth|session|password|token|verify/i.test(p) ? `${m[1].toUpperCase()} ${p}` : null;
   }
   if (!cur) continue;
   TABLE_RE.lastIndex = 0;

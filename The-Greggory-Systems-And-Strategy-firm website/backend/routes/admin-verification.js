@@ -1,7 +1,7 @@
 /**
  * AUTH PROTOCOL - ADMIN ONLY
  * This file MUST ONLY reference the `admin_users` table.
- * NEVER query users or developer_users tables from this file.
+ * NEVER query other identity tables from this file.
  * See AUTH_PROTOCOL.md for full specification.
  */
 const express = require('express');
@@ -214,17 +214,24 @@ router.post('/profile/:id/photo', (req, res) => {
   });
 });
 
-// AUTH PROTOCOL: Admin/Developer registration
-// Admins go to admin_users table, Developers go to developer_users table
+// AUTH PROTOCOL: Admin registration (admin_users only)
+// The Developer platform was purged — a `role: "developer"` payload is
+// rejected outright (see DEVELOPER_PURGE_NOTES.md).
 router.post('/register', async (req, res) => {
   // NOTE: the admin-code second factor was purged (legacy — the admin auth
   // platform it guarded is unlisted). Signups are email+password only;
   // scripts/test-admin-code-guard.js fails if any admin-code check comes back.
   try {
-    const { email, password, first_name, last_name, role, admin_level, developer_level, profile_image_id } = req.body;
+    const { email, password, first_name, last_name, role, admin_level, profile_image_id } = req.body;
     
     const userRole = role || 'admin';
-    const tableName = userRole === 'developer' ? 'developer_users' : 'admin_users';
+    if (userRole === 'developer') {
+      return res.status(400).json({
+        success: false,
+        message: 'The developer role was retired; register as admin'
+      });
+    }
+    const tableName = 'admin_users';
     
     console.log('[REGISTER] =========================================');
     console.log('[REGISTER] ROLE:', userRole);
@@ -238,9 +245,9 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // auth_validation_rules seeds password_min_length = 8 for the 'admin' and
-    // 'developer' platforms (and 'user', enforced in backend/routes/users.js).
-    // All three platforms therefore share one policy: 8 characters minimum.
+    // auth_validation_rules seeds password_min_length = 8 for the 'admin'
+    // platform (and 'user', enforced in backend/routes/users.js).
+    // Both platforms share one policy: 8 characters minimum.
     if (typeof password !== 'string' || password.length < 8) {
       return res.status(400).json({
         success: false,
@@ -248,17 +255,16 @@ router.post('/register', async (req, res) => {
       });
     }
     
-    // Check if email exists in appropriate table
-    const checkQuery = userRole === 'developer' 
-      ? 'SELECT id FROM developer_users WHERE email = ? AND deleted_at IS NULL'
-      : 'SELECT id FROM admin_users WHERE email = ? AND deleted_at IS NULL';
-    
-    const [existing] = await db.promise().query(checkQuery, [email]);
+    // Check if email exists in the admin table
+    const [existing] = await db.promise().query(
+      'SELECT id FROM admin_users WHERE email = ? AND deleted_at IS NULL',
+      [email]
+    );
     
     if (existing.length > 0) {
       return res.status(409).json({ 
         success: false, 
-        message: `Email already registered as ${userRole}` 
+        message: 'Email already registered as admin' 
       });
     }
     
@@ -268,23 +274,13 @@ router.post('/register', async (req, res) => {
     
     let result;
     
-    if (userRole === 'developer') {
-      // Insert into developer_users table with optional profile_image_id
-      const level = developer_level || 'mid';
-      [result] = await db.promise().query(
-        `INSERT INTO developer_users (email, password_hash, first_name, last_name, display_name, developer_level, access_level, is_active, profile_image_id, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'limited', true, ?, NOW())`,
-        [email, hashedPassword, first_name, last_name, displayName, level, profile_image_id || null]
-      );
-    } else {
-      // Insert into admin_users table with optional profile_image_id
-      const level = admin_level || 'admin';
-      [result] = await db.promise().query(
-        `INSERT INTO admin_users (email, password_hash, first_name, last_name, display_name, admin_level, is_active, profile_image_id, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, true, ?, NOW())`,
-        [email, hashedPassword, first_name, last_name, displayName, level, profile_image_id || null]
-      );
-    }
+    // Insert into admin_users table with optional profile_image_id
+    const level = admin_level || 'admin';
+    [result] = await db.promise().query(
+      `INSERT INTO admin_users (email, password_hash, first_name, last_name, display_name, admin_level, is_active, profile_image_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, true, ?, NOW())`,
+      [email, hashedPassword, first_name, last_name, displayName, level, profile_image_id || null]
+    );
     
     console.log('[REGISTER] ✓ SUCCESS - Inserted into TABLE:', tableName, '| ID:', result.insertId);
     console.log('[REGISTER] =========================================');

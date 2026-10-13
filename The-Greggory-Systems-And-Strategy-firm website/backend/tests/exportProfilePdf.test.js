@@ -39,7 +39,6 @@ const userRow = {
   private_notes: null,
   is_active: 1,
   admin_level: null,
-  developer_level: null,
   primary_role: null,
 };
 
@@ -153,10 +152,6 @@ test('export-pdf queries the table that matches role_type', async () => {
   await invoke('get', '/users/:id/export-pdf', { params: { id: '3' }, query: { role_type: 'admin' } });
   assert.match(lastQuery.sql, /FROM admin_users/);
   assert.deepEqual(lastQuery.params, ['3']);
-
-  reset();
-  await invoke('get', '/users/:id/export-pdf', { params: { id: '3' }, query: { role_type: 'developer' } });
-  assert.match(lastQuery.sql, /FROM developer_users/);
 
   reset();
   await invoke('get', '/users/:id/export-pdf', { params: { id: '3' } });

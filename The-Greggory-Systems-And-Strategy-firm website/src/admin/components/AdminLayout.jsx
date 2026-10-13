@@ -35,7 +35,7 @@ function AdminLayout({ user, children, onLogout }) {
     useEffect(() => {
     const fetchPhoto = () => {
       if (user?.id) {
-        const role = user.role === 'developer' ? 'developer' : 'admin';
+        const role = 'admin';
         setProfilePhotoUrl(`/api/admin/profile-photo/${role}/${user.id}?v=${Date.now()}`);
         setImagePhotoError(false);
       } else {

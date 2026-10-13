@@ -14,7 +14,7 @@ const REQUIRED_COLUMNS = {
   whatsapp_code_sent_at: 'DATETIME DEFAULT NULL',
 };
 
-const TABLES = ['users', 'admin_users', 'developer_users'];
+const TABLES = ['users', 'admin_users'];
 
 async function setup() {
   console.log('🚀 Setting up WhatsApp Verification columns...');
@@ -39,7 +39,7 @@ async function setup() {
       }
       const [cols] = await connection.query(`SHOW COLUMNS FROM ${table}`);
       const existing = new Set(cols.map((c) => c.Field));
-      // admin/developer tables only ever carried the legacy pair; the OTP
+      // admin tables only ever carried the legacy pair; the OTP
       // code columns live on `users` (the portal identity).
       const wanted =
         table === 'users' ? Object.entries(REQUIRED_COLUMNS) : Object.entries(REQUIRED_COLUMNS).slice(0, 2);

@@ -6,17 +6,12 @@ import { Filter, UserPlus, Shield, User, CheckCircle, Download, MoreVertical, Ch
 
 /**
  * The photo for an identity is served from the table that owns it:
- *   client -> users | admin -> admin_users | developer -> developer_users
+ *   client -> users | admin -> admin_users
  * Falls back to the initial letter only when that table has no photo (404).
  */
 function NodeAvatar({ user }) {
   const [failed, setFailed] = useState(false);
-  const role =
-    user.source_table === "admin"
-      ? "admin"
-      : user.source_table === "developer"
-        ? "developer"
-        : "user";
+  const role = user.source_table === "admin" ? "admin" : "user";
   const initial = (user.display_name || user.name || "U")[0];
   // `has_photo` comes from the master list; attempt the image when it's absent
   // (older payloads) and let onError decide.

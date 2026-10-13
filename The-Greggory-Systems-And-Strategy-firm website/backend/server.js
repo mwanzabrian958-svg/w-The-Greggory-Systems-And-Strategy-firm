@@ -93,7 +93,6 @@ const blogArticleRoutes = require('./routes/blog-articles');
 const userProjectRoutes = require('./routes/user-projects');
 const adminRoutes = require('./routes/admin');
 const adminVerificationRoutes = require('./routes/admin-verification');
-const developerVerificationRoutes = require('./routes/developer-verification');
 const easyAdminRoutes = require('./routes/easy-admin');
 const whatsappAuthRoutes = require('./routes/whatsappAuth');
 
@@ -107,7 +106,6 @@ app.use('/api/blog-articles', blogArticleRoutes);
 app.use('/api/user-projects', userProjectRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin-verification', adminVerificationRoutes);
-app.use('/api/developer-verification', developerVerificationRoutes);
 app.use('/api/easy-admin', easyAdminRoutes);
 
 // WhatsApp auth-code endpoints (client portal / APK verification codes) —

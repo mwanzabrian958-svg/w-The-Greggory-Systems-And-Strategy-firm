@@ -14,7 +14,7 @@ const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1552664730-d307ca88
 const CaseStudies = () => {
   useSeo(SEO.caseStudies)
   const { isAuthenticated, user } = useAuth()
-  const canEdit = isAuthenticated && user && (user.role === 'employee' || user.role === 'developer')
+  const canEdit = isAuthenticated && user && (user.role === 'employee' || user.role === 'admin')
   const [editMode, setEditMode] = useState(false)
 
   const defaultStudies = [

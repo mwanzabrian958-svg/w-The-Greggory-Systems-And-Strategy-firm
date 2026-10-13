@@ -71,7 +71,7 @@ const mysql = require("mysql2/promise");
   await conn.query(`CREATE TABLE IF NOT EXISTS data_access_logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    user_type ENUM('admin', 'developer', 'user', 'system') NOT NULL,
+    user_type ENUM('admin', 'user', 'system') NOT NULL,
     entity_type VARCHAR(100) NOT NULL,
     entity_id BIGINT NOT NULL,
     action ENUM('view', 'create', 'update', 'delete', 'export', 'download', 'share') NOT NULL,

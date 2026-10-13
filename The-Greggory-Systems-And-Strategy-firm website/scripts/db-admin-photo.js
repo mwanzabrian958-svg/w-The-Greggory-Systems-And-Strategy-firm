@@ -1,9 +1,9 @@
 /**
- * db-admin-photo.js — inspect where the admin/developer profile photo lives.
+ * db-admin-photo.js — inspect where the admin profile photo lives.
  *
  *   node scripts/db-admin-photo.js
  *
- * Prints the photo/image-related columns of admin_users and developer_users,
+ * Prints the photo/image-related columns of admin_users,
  * plus every row's photo reference (with byte-length for binary columns).
  */
 require("dotenv").config({ quiet: true });
@@ -27,7 +27,7 @@ async function main() {
     connectTimeout: 20000,
   });
 
-  for (const table of ["admin_users", "developer_users", "users"]) {
+  for (const table of ["admin_users", "users"]) {
     console.log(`\n=== ${table} ===`);
     let cols;
     try {

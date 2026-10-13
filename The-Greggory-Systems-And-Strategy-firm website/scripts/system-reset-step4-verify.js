@@ -4,7 +4,7 @@ require('dotenv').config();
 const db = require('../backend/config/database');
 
 const IMPORTANT = [
-  'users', 'admin_users', 'developer_users', 'user_roles', 'auth_platform_mapping',
+  'users', 'admin_users', 'user_roles', 'auth_platform_mapping',
   'activity_logs', 'admin_activity_logs', 'audit_logs', 'auth_request_log', 'data_access_logs',
   'user_projects', 'team_members', 'team_templates', 'team_template_members',
   'invoices', 'accounting_entries', 'mpesa_transactions', 'user_feedback', 'notifications',

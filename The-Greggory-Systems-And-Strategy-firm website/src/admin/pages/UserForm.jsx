@@ -36,7 +36,7 @@ export function UserForm() {
             setForm({
               ...form,
               ...data.user,
-              role: data.user.admin_level ? 'admin' : data.user.developer_level ? 'developer' : (data.user.primary_role || data.user.role || 'user')
+              role: data.user.admin_level ? 'admin' : (data.user.primary_role || data.user.role || 'user')
             });
 
             // Fetch real linked projects
@@ -117,7 +117,6 @@ export function UserForm() {
                   <select value={form.role} onChange={(e) => setForm({...form, role: e.target.value})} className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-[10px] font-bold text-white outline-none focus:border-teal-500">
                       <option value="user" className="bg-[#0f172a]">Client Profile</option>
                       <option value="admin" className="bg-[#0f172a]">Administrator Node</option>
-                      <option value="developer" className="bg-[#0f172a]">Developer Node</option>
                   </select>
                   <input type="text" placeholder="Department or Group Name" value={form.department} onChange={(e) => setForm({...form, department: e.target.value})} className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-[10px] font-bold text-white outline-none focus:border-teal-500" />
                   <input type="text" placeholder="ID or Passport Number" value={form.id_number} onChange={(e) => setForm({...form, id_number: e.target.value})} className="bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-[10px] font-bold text-white outline-none focus:border-teal-500" />

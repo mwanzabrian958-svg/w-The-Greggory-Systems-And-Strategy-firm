@@ -120,7 +120,6 @@ const profileUser = {
   private_notes: "Top-performing lead. Eligible for promotion review in January.",
   is_active: 1,
   admin_level: "senior_admin",
-  developer_level: null,
   primary_role: null,
 };
 // ── Profile export: invoke the real route handler with a stubbed DB ─────────
