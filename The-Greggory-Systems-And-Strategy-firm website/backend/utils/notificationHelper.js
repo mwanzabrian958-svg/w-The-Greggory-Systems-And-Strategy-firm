@@ -14,7 +14,7 @@
 // Fire-and-forget by design — push failures are logged, never thrown, so a
 // Firebase outage can never fail an invoice creation or payment callback.
 const db = require('../config/database');
-const { sendToDevice } = require('./firebaseAdmin');
+const { sendToDevice } = require('../services/firebaseAdmin');
 
 /**
  * Creates a real notification in the database for a specific user.
