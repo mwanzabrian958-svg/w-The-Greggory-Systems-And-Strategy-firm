@@ -128,6 +128,22 @@ const resetConsumerLimiter = rateLimit({
   message: { success: false, message: 'Too many attempts. Please try again in a few minutes.' },
 });
 
+// Per-IP brake on password guessing (OWASP API-5). 15 attempts per 15 minutes
+// is generous for humans (typos) but makes online brute force infeasible;
+// the DB-driven per-IP auth validator behind it still provides the 50/min
+// abuse ceiling. Wrong-password responses stay identical so the 429 endpoint
+// cannot be used as an account-enumeration oracle.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many sign-in attempts from this device. Please try again in a few minutes.',
+  },
+});
+
 const RESET_RESEND_COOLDOWN_MS = 60 * 1000;
 const lastResetSendByAddress = new Map();
 
@@ -531,7 +547,7 @@ router.post('/register', authEndpointValidator('user', 'users'), async (req, res
 });
 
 // AUTH PROTOCOL: User login
-router.post('/login', authEndpointValidator('user', 'users'), async (req, res) => {
+router.post('/login', loginLimiter, authEndpointValidator('user', 'users'), async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 

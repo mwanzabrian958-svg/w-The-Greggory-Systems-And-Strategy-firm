@@ -45,6 +45,23 @@ const IS_LOCAL_HOST = (h) =>
 // does not. Inference exists because a Render service created manually
 // (not from render.yaml) can end up without the DB_SSL variable, which
 // silently broke the cloud connection ("Pool does Not have online node").
+//
+// SECURITY: cloud connections verify the server certificate against the PINNED
+// Aiven Project CA (server/config/dbCa.js) — never rejectUnauthorized:false.
+// Live-verified 14 Oct 2026: pinned-CA verification connects; verifying
+// against anything else fails the TLS handshake, which is exactly the MITM
+// protection we want. Rotation envs (DB_CA_FILE / DB_CA_PEM) take precedence
+// over the bundled anchor for zero-deploy recovery.
+const { loadCa } = require("./dbCa");
+let _cloudCa = null; // lazy: resolving reads a file and must not run at require() time
+function cloudCa() {
+  if (!_cloudCa) {
+    const { ca, source } = loadCa();
+    console.log(`[DB TLS] cloud certificate chain verified against: ${source}`);
+    _cloudCa = ca;
+  }
+  return _cloudCa;
+}
 function cloudSslEnabled() {
   if (process.env.DB_SSL !== undefined) return process.env.DB_SSL === "true";
   return !IS_LOCAL_HOST(process.env.DB_HOST || process.env.DB_CLOUD_HOST || "");
@@ -61,7 +78,8 @@ function buildEndpoint({ host, port, user, password, database, ssl, label }) {
     label: label || `${host || "localhost"}:${port || 3306}`,
     connectTimeout: 15000,
     // Cloud MySQL (Aiven, claude...) requires TLS; local XAMPP does not.
-    ...(ssl ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false } } : {}),
+    // MITM-hardened: verify the chain against the PINNED Aiven Project CA.
+    ...(ssl ? { ssl: { minVersion: "TLSv1.2", ca: cloudCa() } } : {}),
   };
   return cfg;
 }

@@ -142,6 +142,31 @@ if (
 
 // ── AUTH MIDDLEWARE ──────────────────────────────────────────
 
+// Routing-integrity guard (mirrors backend/middleware/clientAuth.js): the phone
+// APK always sends X-Greggory-Client-ID carrying its OWN user id. If a caller
+// presents a valid token for user A but a header naming user B, the request is
+// a cross-identity replay (OWASP API-1 BOLA) and must be rejected — even though
+// the token itself is genuine. Returns true when the request may proceed.
+// NOTE: the modular clientAuth middleware enforces this for router-mounted
+// routes; this copy exists because the inline authenticateUser below (not the
+// modular one) guards the inline routes — e.g. GET /api/users/client-dashboard
+// at ~line 2078, which Express matches BEFORE the late usersRouter mount.
+function enforceRoutingIntegrity(req, res) {
+  const claimedHeader =
+    req.header("x-greggory-client-id") || req.header("X-Greggory-Client-ID");
+  if (claimedHeader === undefined || claimedHeader === null || claimedHeader === "") {
+    return true; // header absent (web app, curl) — not a cross-identity replay
+  }
+  const claimed = Number(claimedHeader);
+  if (Number(req.userId) !== claimed) {
+    return res.status(403).json({
+      success: false,
+      message: "Client identity mismatch between token and request header",
+    });
+  }
+  return true;
+}
+
 const authenticateUser = async (req, res, next) => {
   const authHeader = req.header('authorization') || req.header('Authorization');
   let token = null;
@@ -169,6 +194,9 @@ const authenticateUser = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Invalid authentication token' });
     }
 
+    // Routing-integrity (OWASP API-1): valid token + foreign client-id header → 403.
+    if (!enforceRoutingIntegrity(req, res)) return;
+
     next();
   } catch (error) {
     // Not a JWT — the modular users routes (backend/routes/users.js) issue
@@ -191,6 +219,7 @@ const authenticateUser = async (req, res, next) => {
           };
           req.userId = sessionUser.id;
           req.authToken = token;
+          if (!enforceRoutingIntegrity(req, res)) return;
           return next();
         }
 
@@ -203,6 +232,7 @@ const authenticateUser = async (req, res, next) => {
           req.authUser = { userId: rows[0].id, email: rows[0].email, role: "user" };
           req.userId = rows[0].id;
           req.authToken = token;
+          if (!enforceRoutingIntegrity(req, res)) return;
           return next();
         }
       } catch (dbErr) {
@@ -505,8 +535,12 @@ const corsOptions = {
       /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(origin)
     )
       return callback(null, true);
-    // Block everything else
-    callback(new Error(`CORS: origin ${origin} not allowed`));
+    // Block everything else — WITHOUT an error: the cors package treats a
+    // callback(Error) as a server failure and Express answers 500, which turns
+    // every hostile-Origin probe into a (false) availability finding and leaks
+    // stack text. callback(null, false) simply omits the ACAO headers, so the
+    // browser refuses the cross-origin read while the server stays healthy.
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -514,6 +548,7 @@ const corsOptions = {
     "Content-Type",
     "Authorization",
     "X-Requested-With",
+    "X-Greggory-Client-ID",
   ],
 };
 // Same-origin allowance: browsers attach an Origin header to same-origin
@@ -540,18 +575,36 @@ app.use(
           return cb(null, true);
         if (/^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(origin))
           return cb(null, true);
-        return cb(new Error(`CORS: origin ${origin} not allowed`));
+        // Same silent-deny as the primary CORS options above: no ACAO headers,
+        // no 500, the browser blocks the cross-origin read.
+        return cb(null, false);
       },
     });
   }),
 );
 app.use(
   helmet({
-    // helmet's default Content-Security-Policy would block the built app's
-    // cross-origin resources (Google Sign-In script, external fonts/images)
-    // once it is served from this server in production. All other helmet
-    // security headers stay active.
-    contentSecurityPolicy: false,
+    // Content-Security-Policy scoped to what the built SPA actually loads:
+    // same-origin bundles, Google Fonts (stylesheet + woff2), Google Identity
+    // Services (external GSI script + button iframe), same-origin API calls,
+    // self/data:/https: images (DB profile photos arrive as data: URIs), and
+    // 'unsafe-inline' styles ONLY (boot screen + Vite runtime style injection —
+    // scripts stay strict: no 'unsafe-inline', no wildcards).
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "https://accounts.google.com", "https://apis.google.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "https://accounts.google.com"],
+        frameSrc: ["https://accounts.google.com"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+      },
+    },
     crossOriginEmbedderPolicy: false,
   }),
 );
