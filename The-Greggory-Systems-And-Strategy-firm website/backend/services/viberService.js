@@ -72,7 +72,8 @@ async function sendViberToUserStrict(toPhone, message) {
     throwOnInfobipRejection(payload);
     return { success: true, simulated: false, provider: 'infobip-viber', data: payload };
   } catch (error) {
-    return { success: false, simulated: false, error: error.message };
+    console.error('[VIBER SERVICE] send failed:', error.message);
+    return { success: false, simulated: false, error: 'Viber delivery failed' };
   }
 }
 

@@ -53,7 +53,8 @@ async function notifyUser(to, message, opts = {}) {
         results.viber = await sendViberToUser(to.phone, message);
       }
     } catch (error) {
-      results[channel] = { success: false, error: error.message };
+      console.error(`[NOTIFY] channel ${channel} failed:`, error.message);
+      results[channel] = { success: false, error: 'Channel delivery failed' };
     }
   }
   return results;

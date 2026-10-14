@@ -107,7 +107,7 @@ router.post('/send', authenticateUser, async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Error sending WhatsApp message',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -170,7 +170,7 @@ router.post('/send-bulk', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Error sending bulk WhatsApp',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });

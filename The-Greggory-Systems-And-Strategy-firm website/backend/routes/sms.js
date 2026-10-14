@@ -107,7 +107,7 @@ router.post('/send', authenticateUser, async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Error sending message',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -170,7 +170,7 @@ router.post('/send-bulk', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Error sending bulk SMS',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -231,7 +231,7 @@ router.post('/send-all', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Error sending bulk SMS to all users',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });

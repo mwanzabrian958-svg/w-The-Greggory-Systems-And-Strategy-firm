@@ -526,7 +526,7 @@ router.post('/register', authEndpointValidator('user', 'users'), async (req, res
     await createNotification(result.insertId, 'system', 'Account Initialized', 'Welcome to the tactical portal.', 'normal');
     res.status(201).json({ success: true, message: 'Registered', userId: result.insertId });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
@@ -613,7 +613,7 @@ router.get('/client-dashboard', authenticateUser, async (req, res) => {
 
     return res.json({ success: true, dashboard });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Error', error: error.message });
+    return res.status(500).json({ success: false, message: 'Error', error: "Internal server error" });
   }
 });
 
@@ -915,7 +915,7 @@ router.get('/my-invoices/:id/pdf', authenticateUser, async (req, res) => {
 
     res.status(404).json({ success: false, message: 'PDF document not generated yet' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 

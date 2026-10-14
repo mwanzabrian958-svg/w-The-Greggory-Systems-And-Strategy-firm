@@ -45,7 +45,7 @@ router.post('/send', authenticateUser, async (req, res) => {
     res.json({ success: anySuccess, results });
   } catch (error) {
     console.error('[NOTIFY SEND] Error:', error);
-    res.status(500).json({ success: false, message: 'Error sending notification', error: error.message });
+    res.status(500).json({ success: false, message: 'Error sending notification', error: "Internal server error" });
   }
 });
 
@@ -65,7 +65,7 @@ router.post('/test-otp', authenticateUser, async (req, res) => {
     }
     res.json({ success: true, channel: sent.channel, provider: sent.provider, attemptsNote: 'first success wins; later channels skipped' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 

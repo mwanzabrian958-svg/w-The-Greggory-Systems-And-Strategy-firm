@@ -442,7 +442,7 @@ async function sendWhatsAppToUserStrict(toPhone, message) {
     return { success: true, simulated: false, provider: result.provider, data: result.response };
   } catch (error) {
     console.error('[WHATSAPP SERVICE] STRICT send failed:', error.message);
-    return { success: false, simulated: false, error: error.message };
+    return { success: false, simulated: false, error: 'WhatsApp delivery failed' };
   }
 }
 
@@ -477,7 +477,7 @@ async function sendWhatsAppTemplateStrict(toPhone, templateName, placeholders, o
     return { success: true, simulated: false, provider: result.provider, data: result.response };
   } catch (error) {
     console.error('[WHATSAPP SERVICE] STRICT template send failed:', error.message);
-    return { success: false, simulated: false, error: error.message };
+    return { success: false, simulated: false, error: 'WhatsApp delivery failed' };
   }
 }
 

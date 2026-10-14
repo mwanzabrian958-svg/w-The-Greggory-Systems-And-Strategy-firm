@@ -75,7 +75,7 @@ router.get('/live-users', requireAdminSession, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching live users:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 
@@ -133,7 +133,7 @@ router.get('/search', async (req, res) => {
     });
   } catch (error) {
     console.error('Global Search Error:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 
@@ -185,7 +185,7 @@ router.get('/admin-users', requireAdminSession, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch admin users',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -239,7 +239,7 @@ router.get('/users', requireAdminSession, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch regular users',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -309,7 +309,7 @@ router.post('/create-admin', requireAdminSession, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create admin user',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -500,7 +500,7 @@ router.put('/users/:id', requireAdminSession, async (req, res) => {
 
   } catch (error) {
     console.error('Error updating user:', error);
-    res.status(500).json({ success: false, message: 'Internal update failure', error: error.message });
+    res.status(500).json({ success: false, message: 'Internal update failure', error: "Internal server error" });
   }
 });
 
@@ -550,7 +550,7 @@ router.put('/users/:id/status', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to update user status',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -640,7 +640,7 @@ router.delete('/users/:id', requireAdminSession, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete user',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -716,7 +716,7 @@ router.get('/users/:id', requireAdminSession, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch user',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -771,7 +771,7 @@ router.get('/activity-logs', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch activity logs',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -886,7 +886,7 @@ router.get('/dashboard', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch dashboard data',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -940,7 +940,7 @@ router.get('/pending-approvals', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch pending approvals',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -977,7 +977,7 @@ router.get('/pending-invoices', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch pending invoices',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -1019,7 +1019,7 @@ router.get('/client-feedback', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch client feedback',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -1091,7 +1091,7 @@ router.get('/ledger', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching ledger:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 
@@ -1138,7 +1138,7 @@ router.get('/risk-alerts', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch risk alerts',
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -1207,7 +1207,7 @@ router.get('/crm-telemetry', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching CRM telemetry:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ success: false, error: "Internal server error" });
   }
 });
 

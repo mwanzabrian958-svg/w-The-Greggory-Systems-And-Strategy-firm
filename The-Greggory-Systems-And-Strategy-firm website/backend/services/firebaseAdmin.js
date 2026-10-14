@@ -187,7 +187,7 @@ async function sendToDevice(fcmToken, payload) {
       );
     }
     console.error('[FIREBASE ADMIN] Push failed:', error.message);
-    return { success: false, error: error.message, simulated: false };
+    return { success: false, error: 'Push delivery failed', simulated: false };
   }
 }
 
@@ -293,7 +293,7 @@ async function sendToTopic(topic, payload) {
     return { success: true, messageId: response, simulated: false };
   } catch (error) {
     console.error(`[FIREBASE ADMIN] Topic push failed for /${topic}:`, error.message);
-    return { success: false, error: error.message, simulated: false };
+    return { success: false, error: 'Push delivery failed', simulated: false };
   }
 }
 

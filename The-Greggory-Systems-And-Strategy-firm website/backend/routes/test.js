@@ -12,7 +12,7 @@ router.get('/test-db', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Database connection failed', 
-      error: error.message 
+      error: "Internal server error" 
     });
   }
 });
@@ -35,7 +35,7 @@ router.post('/test-insert', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Test insert failed', 
-      error: error.message 
+      error: "Internal server error" 
     });
   }
 });
@@ -50,7 +50,7 @@ router.get('/test-users', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: 'Test select failed', 
-      error: error.message 
+      error: "Internal server error" 
     });
   }
 });

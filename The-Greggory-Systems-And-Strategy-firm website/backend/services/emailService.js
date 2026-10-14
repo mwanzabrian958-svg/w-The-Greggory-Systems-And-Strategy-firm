@@ -52,7 +52,7 @@ const sendMail = async ({
     return { success: true, simulated: false };
   } catch (error) {
     console.error(`[EMAIL FAILURE] Failed to send to ${to}:`, error.message);
-    return { success: false, simulated: false, error: error.message };
+    return { success: false, simulated: false, error: 'Email delivery failed' };
   }
 };
 
@@ -92,7 +92,8 @@ const verifySmtp = async () => {
     await transporter.verify();
     return { ok: true, simulated: false, message: "SMTP connection + authentication OK" };
   } catch (error) {
-    return { ok: false, simulated: false, message: error.message, code: error.code };
+    console.error('[SMTP VERIFY] failed:', error.message);
+    return { ok: false, simulated: false, message: 'SMTP verification failed', code: error.code };
   }
 };
 

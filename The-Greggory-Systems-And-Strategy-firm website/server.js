@@ -1134,7 +1134,7 @@ app.get("/api/test-mongodb", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "MongoDB connection test failed",
-      error: error.message
+      error: "Internal server error"
     });
   }
 });
@@ -1300,8 +1300,8 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
     console.error('[MPESA] STK push failed:', error);
     return res.status(500).json({
       success: false,
-      message: error.message || 'Failed to send M-Pesa PIN request.',
-      error: error.message,
+      message: "Internal server error",
+      error: "Internal server error",
     });
   }
 });
@@ -1320,7 +1320,7 @@ app.get("/api/databases", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching databases",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -1380,7 +1380,7 @@ app.use("/api/db/:database", authenticateAdmin, async (req, res, next) => {
     res.status(500).json({
       success: false,
       message: `Failed to connect to database: ${database}`,
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -1395,7 +1395,7 @@ app.get("/api/db/:database/tables", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching tables",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -1442,7 +1442,7 @@ app.get("/api/db/:database/table/:table", authenticateAdmin, async (req, res) =>
     res.status(500).json({
       success: false,
       message: `Error fetching data from ${table}`,
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -1467,7 +1467,7 @@ app.get("/api/users", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching users",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -1494,7 +1494,7 @@ app.post("/api/users", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error creating user",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -2086,7 +2086,7 @@ app.get("/api/users/client-dashboard", authenticateUser, async (req, res) => {
     }
     res.json({ success: true, dashboard: payload });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Could not fetch client dashboard data", error: error.message });
+    res.status(500).json({ success: false, message: "Could not fetch client dashboard data", error: "Internal server error" });
   }
 });
 
@@ -2107,7 +2107,7 @@ app.get("/api/admin/client-portal/:id", authenticateAdmin, async (req, res) => {
     res.json({ success: true, dashboard: payload });
   } catch (error) {
     console.error("[ADMIN CLIENT PORTAL] Error:", error);
-    res.status(500).json({ success: false, message: "Could not fetch client portal data", error: error.message });
+    res.status(500).json({ success: false, message: "Could not fetch client portal data", error: "Internal server error" });
   }
 });
 
@@ -2649,7 +2649,7 @@ app.post("/api/users/admin-create", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to create user",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -2682,7 +2682,7 @@ app.get("/api/users/projects", authenticateUser, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch projects",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -2735,7 +2735,7 @@ app.get("/api/projects/:id/photos", authenticateAny, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch project photos",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -2814,7 +2814,7 @@ app.post(
       res.status(500).json({
         success: false,
         message: "Failed to upload photo",
-        error: error.message,
+        error: "Internal server error",
       });
     }
   },
@@ -2861,7 +2861,7 @@ app.delete("/api/projects/:id/photos/:photoId", authenticateAny, async (req, res
     res.status(500).json({
       success: false,
       message: "Failed to delete photo",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -2927,7 +2927,7 @@ app.get("/api/accounting/entries", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch accounting entries",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3028,7 +3028,7 @@ app.post("/api/accounting/entries", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to create accounting entry",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3055,7 +3055,7 @@ app.delete("/api/accounting/entries/:id", authenticateAdmin, async (req, res) =>
     res.status(500).json({
       success: false,
       message: "Failed to delete accounting entry",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3075,7 +3075,7 @@ app.get("/api/accounting/categories", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch accounting categories",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3111,7 +3111,7 @@ app.get("/api/accounting/periods", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch accounting periods",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3159,7 +3159,7 @@ app.post("/api/accounting/categories", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to create category",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3213,7 +3213,7 @@ app.put("/api/accounting/categories/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to update category",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3237,7 +3237,7 @@ app.delete("/api/accounting/categories/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to delete category",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3339,7 +3339,7 @@ app.post("/api/accounting/periods", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to create period",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3407,7 +3407,7 @@ app.put("/api/accounting/periods/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to update period",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3439,7 +3439,7 @@ app.delete("/api/accounting/periods/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to delete period",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3554,7 +3554,7 @@ app.get("/api/accounting/reports/summary", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to build accounting summary",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3637,7 +3637,7 @@ app.post("/api/financial/reports", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to save report",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3686,7 +3686,7 @@ app.get("/api/financial/reports", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch financial reports",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3763,7 +3763,7 @@ app.get("/api/invoices", authenticateAny, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch invoices",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3789,7 +3789,7 @@ app.delete("/api/invoices/:id", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to delete invoice",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3849,7 +3849,7 @@ app.get("/api/mpesa/transactions", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch M-Pesa transactions",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3913,7 +3913,7 @@ app.post("/api/mpesa/transactions", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to create M-Pesa transaction",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -3974,7 +3974,7 @@ app.put("/api/mpesa/transactions/:id", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to update M-Pesa transaction",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4049,7 +4049,7 @@ app.get("/api/feedback", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch feedback",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4103,7 +4103,7 @@ app.post("/api/feedback", authenticateUser, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to submit feedback",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4143,7 +4143,7 @@ app.put("/api/feedback/:id", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to update feedback",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4194,7 +4194,7 @@ app.get("/api/quotes", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch quotes",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4308,7 +4308,7 @@ app.post("/api/quotes", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to create quote",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4345,7 +4345,7 @@ app.put("/api/quotes/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to update quote",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4440,7 +4440,7 @@ app.post("/api/quotes/:id/convert-to-invoice", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to convert quote to invoice",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4465,7 +4465,7 @@ app.delete("/api/quotes/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to delete quote",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4489,7 +4489,7 @@ app.get("/api/quotes/:quoteId/items", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch quote items",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4546,7 +4546,7 @@ app.post("/api/quotes/:quoteId/items", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to add quote item",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4577,7 +4577,7 @@ app.get("/api/quotes/:quoteId/activities", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch quote activities",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4659,7 +4659,7 @@ app.get("/api/documents/:type/:id/pdf", authenticateAny, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to generate PDF",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4791,7 +4791,7 @@ app.post("/api/documents/generate/:type/:id", authenticateAny, async (req, res) 
     res.status(500).json({
       success: false,
       message: "Failed to generate document",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -4863,7 +4863,7 @@ app.post("/api/invoices/:id/send", authenticateAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error("[INVOICE SEND] Error:", error);
-    res.status(500).json({ success: false, message: "Failed to send invoice", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to send invoice", error: "Internal server error" });
   }
 });
 
@@ -4967,7 +4967,7 @@ app.post("/api/documents/send", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to send document",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -5007,7 +5007,7 @@ app.get("/api/documents/client/:clientId", authenticateAny, async (req, res) => 
     res.status(500).json({
       success: false,
       message: "Failed to fetch client documents",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -5066,7 +5066,7 @@ app.get("/api/projects/:projectId/documents", authenticateAny, async (req, res) 
     res.status(500).json({
       success: false,
       message: "Failed to fetch project documents",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -5203,7 +5203,7 @@ app.post("/api/pdf/generate-completion", authenticateAny, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to generate completion PDF",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -5248,7 +5248,7 @@ app.get("/api/pdf/completion/:recordType/:recordId", authenticateAny, async (req
     res.status(500).json({
       success: false,
       message: "Failed to generate completion PDF",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -5287,7 +5287,7 @@ app.get("/api/currencies", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch currencies",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -5325,7 +5325,7 @@ app.post("/api/currencies", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to add currency",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -5356,7 +5356,7 @@ app.put("/api/currencies/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to update currency",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -5386,7 +5386,7 @@ app.delete("/api/currencies/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to deactivate currency",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -5422,7 +5422,7 @@ app.post("/api/currencies/:id/set-default", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to set default currency",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -5473,7 +5473,7 @@ app.post("/api/currencies/convert", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to convert currency",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -6041,7 +6041,7 @@ app.get("/api/admin/team-templates", authenticateAdmin, async (req, res) => {
     res.json({ success: true, templates });
   } catch (error) {
     console.error("[ADMIN TEAM TEMPLATES LIST] Error:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch team templates", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to fetch team templates", error: "Internal server error" });
   }
 });
 
@@ -6078,7 +6078,7 @@ app.get("/api/admin/team-templates/:id", authenticateAdmin, async (req, res) => 
     res.json({ success: true, template });
   } catch (error) {
     console.error("[ADMIN TEAM TEMPLATE GET] Error:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch template", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to fetch template", error: "Internal server error" });
   }
 });
 
@@ -6107,7 +6107,7 @@ app.post("/api/admin/team-templates", authenticateAdmin, async (req, res) => {
     res.status(201).json({ success: true, id: templateId, message: "Team template created" });
   } catch (error) {
     console.error("[ADMIN TEAM TEMPLATE CREATE] Error:", error);
-    res.status(500).json({ success: false, message: "Failed to create team template", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to create team template", error: "Internal server error" });
   }
 });
 
@@ -6151,7 +6151,7 @@ app.put("/api/admin/team-templates/:id", authenticateAdmin, async (req, res) => 
     res.json({ success: true, message: "Team template updated" });
   } catch (error) {
     console.error("[ADMIN TEAM TEMPLATE UPDATE] Error:", error);
-    res.status(500).json({ success: false, message: "Failed to update team template", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to update team template", error: "Internal server error" });
   }
 });
 
@@ -6167,7 +6167,7 @@ app.delete("/api/admin/team-templates/:id", authenticateAdmin, async (req, res) 
     res.json({ success: true, message: "Team template deleted" });
   } catch (error) {
     console.error("[ADMIN TEAM TEMPLATE DELETE] Error:", error);
-    res.status(500).json({ success: false, message: "Failed to delete team template", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to delete team template", error: "Internal server error" });
   }
 });
 
@@ -6211,7 +6211,7 @@ app.get("/api/users/project-team-template/:projectId", authenticateUser, async (
     res.json({ success: true, template });
   } catch (error) {
     console.error("[CLIENT PROJECT TEAM TEMPLATE] Error:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch project team", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to fetch project team", error: "Internal server error" });
   }
 });
 
@@ -6228,7 +6228,7 @@ app.get("/api/website-content", async (req, res) => {
     res.json({ success: true, content });
   } catch (error) {
     console.error("Error fetching website content:", error);
-    res.status(500).json({ success: false, message: "Error fetching website content", error: error.message });
+    res.status(500).json({ success: false, message: "Error fetching website content", error: "Internal server error" });
   }
 });
 
@@ -6273,7 +6273,7 @@ app.get("/api/blog-articles", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching blog articles:", error);
-    res.status(500).json({ success: false, message: "Error fetching blog articles", error: error.message });
+    res.status(500).json({ success: false, message: "Error fetching blog articles", error: "Internal server error" });
   }
 });
 
@@ -6341,7 +6341,7 @@ app.post("/api/blog-articles", async (req, res) => {
     res.json({ success: true, articleId: result.insertId });
   } catch (error) {
     console.error("Error creating blog article:", error);
-    res.status(500).json({ success: false, message: "Error creating blog article", error: error.message });
+    res.status(500).json({ success: false, message: "Error creating blog article", error: "Internal server error" });
   }
 });
 
@@ -6364,7 +6364,7 @@ app.delete("/api/blog-articles/:id", async (req, res) => {
     res.json({ success: true, message: "Blog article deleted successfully" });
   } catch (error) {
     console.error("Error deleting blog article:", error);
-    res.status(500).json({ success: false, message: "Error deleting blog article", error: error.message });
+    res.status(500).json({ success: false, message: "Error deleting blog article", error: "Internal server error" });
   }
 });
 
@@ -6385,7 +6385,7 @@ app.get("/api/company-personnel", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching company personnel:", error);
-    res.status(500).json({ success: false, message: "Error fetching company personnel", error: error.message });
+    res.status(500).json({ success: false, message: "Error fetching company personnel", error: "Internal server error" });
   }
 });
 
@@ -6430,7 +6430,7 @@ app.post("/api/blog-subscriptions", async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating blog subscription:", error);
-    res.status(500).json({ success: false, message: "Subscription failed", error: error.message });
+    res.status(500).json({ success: false, message: "Subscription failed", error: "Internal server error" });
   }
 });
 
@@ -6450,7 +6450,7 @@ app.get("/api/contact-forms", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching contact forms",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -6518,7 +6518,7 @@ app.get("/api/videos", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching videos",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -6562,7 +6562,7 @@ app.post("/api/videos", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error creating video",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -6603,7 +6603,7 @@ app.delete("/api/:type/:id", async (req, res, next) => {
     res.status(500).json({
       success: false,
       message: `Error deleting ${req.params.type}`,
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -6645,7 +6645,7 @@ app.post("/api/images/profile", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to upload profile photo",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -6754,7 +6754,7 @@ app.post(
       res.status(500).json({
         success: false,
         message: "Failed to upload profile photo",
-        error: error.message,
+        error: "Internal server error",
       });
     }
   },
@@ -6792,7 +6792,7 @@ app.get("/api/users/profile-photo/:userId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to retrieve profile photo",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -6874,7 +6874,7 @@ app.post("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to upload profile photo",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -7009,7 +7009,7 @@ app.get("/api/admin/profile-photo/:role/:userId", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to retrieve profile photo",
-      error: error.message,
+      error: "Internal server error",
     });
   }
 });
@@ -7040,7 +7040,7 @@ app.delete("/api/admin/profile-photo", authenticateAdmin, async (req, res) => {
     res.json({ success: true, message: "Profile photo removed" });
   } catch (error) {
     console.error("Admin profile photo removal error:", error);
-    res.status(500).json({ success: false, message: "Failed to remove profile photo", error: error.message });
+    res.status(500).json({ success: false, message: "Failed to remove profile photo", error: "Internal server error" });
   }
 });
 
@@ -7478,7 +7478,7 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
         } catch (pushErr) { console.warn('[INVOICE] push skipped:', pushErr.message); }
      }
      res.status(201).json({ success: true, id: result.insertId });
-  } catch (error) { console.error('[POST /api/invoices]', error.code || '', error.message, '\nSQL:', String(error.sql || '').substring(0, 500)); res.status(500).json({ error: 'Failed', detail: error.message }); }
+  } catch (error) { console.error('[POST /api/invoices]', error.code || '', error.message, '\nSQL:', String(error.sql || '').substring(0, 500)); res.status(500).json({ error: 'Failed', detail: "Internal server error" }); }
 });
 
 // Accounting Entries Create
@@ -7493,7 +7493,7 @@ app.post("/api/accounting-entries", async (req, res) => {
       [description, parseFloat(amount), entry_type || 'expense', category || 'General', resolvedProjectId, userId]
     );
     res.status(201).json({ success: true, id: result.insertId });
-  } catch (error) { console.error('[POST /api/accounting-entries]', error.code || '', error.message); res.status(500).json({ error: 'Failed', detail: error.message }); }
+  } catch (error) { console.error('[POST /api/accounting-entries]', error.code || '', error.message); res.status(500).json({ error: 'Failed', detail: "Internal server error" }); }
 });
 
 // NOTE: Properties/Baraka Housing Agency endpoints removed (module purged).
@@ -7539,7 +7539,7 @@ app.post("/api/projects/:projectId/tasks", authenticateAny, async (req, res) => 
     if (!task_name) return res.status(400).json({ error: 'Task name required' });
     const [result] = await mainDb.query('INSERT INTO project_tasks (project_id, task_name, assigned_to, status, priority, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [projectId, task_name, assigned_to || null, status || 'not_started', priority || 'medium']);
     res.status(201).json({ success: true, id: result.insertId });
-  } catch (error) { console.error('[POST /api/projects/:id/tasks]', error.code || '', error.message); res.status(500).json({ error: 'Failed', detail: error.message }); }
+  } catch (error) { console.error('[POST /api/projects/:id/tasks]', error.code || '', error.message); res.status(500).json({ error: 'Failed', detail: "Internal server error" }); }
 });
 
 // Task Management APIs — reads are shared (clients scoped to their own
