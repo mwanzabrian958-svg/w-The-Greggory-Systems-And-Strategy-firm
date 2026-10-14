@@ -29,7 +29,9 @@ const {
 } = require('../services/firebaseAdmin');
 const { createNotification } = require('../utils/notificationHelper');
 
-function requireAdminSession(req, res, next) {
+// Verifies a signed admin session AND that the admin it names is still
+// active. Fails closed on lookup errors.
+async function requireAdminSession(req, res, next) {
   const authHeader =
     (req.headers.authorization || req.headers.Authorization || '').trim();
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
@@ -40,6 +42,29 @@ function requireAdminSession(req, res, next) {
   if (!payload) {
     return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
   }
+
+  // OWASP A01/A07 (ASVS v3.3.2): a cryptographically valid token is NOT
+  // enough — the admin it names must still exist, be active and not
+  // deleted, so a disabled/deleted admin loses push access immediately
+  // instead of surviving for the token's full 8h lifetime.
+  try {
+    const [admins] = await db.promise().query(
+      `SELECT id FROM admin_users
+        WHERE id = ?
+          AND (is_active IS NULL OR is_active = 1)
+          AND deleted_at IS NULL
+        LIMIT 1`,
+      [payload.uid]
+    );
+    if (!admins.length) {
+      return res.status(401).json({ success: false, message: 'Admin session no longer valid' });
+    }
+  } catch (err) {
+    // Fail closed — never grant admin access because of a DB hiccup.
+    console.error('[FCM] Admin session verification failed:', err.message);
+    return res.status(500).json({ success: false, message: 'Authentication check failed' });
+  }
+
   req.adminId = payload.uid;
   req.adminEmail = payload.email;
   next();
@@ -97,7 +122,7 @@ router.post('/send', requireAdminSession, async (req, res) => {
     res.json({ success: true, timestamp: new Date().toISOString(), sentBy: req.adminId, ...result });
   } catch (error) {
     console.error('[FCM /send] Send failed:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Failed to send push notification' });
   }
 });
 
@@ -113,9 +138,16 @@ router.post('/send', requireAdminSession, async (req, res) => {
 //
 router.post('/register-token', authenticateUser, async (req, res) => {
   try {
-    const { fcmToken, deviceInfo } = req.body;
-    if (!fcmToken || typeof fcmToken !== 'string') {
+    const { fcmToken: rawToken, deviceInfo } = req.body;
+    if (!rawToken || typeof rawToken !== 'string') {
       return res.status(400).json({ success: false, message: 'fcmToken is required (string)' });
+    }
+    // OWASP A07 (ASVS v13.4 / v5.1): bound the credential we persist.
+    // Real FCM tokens are ~150-250 chars; the cap rejects junk and
+    // accidental blob uploads without breaking future token formats.
+    const fcmToken = rawToken.trim();
+    if (!fcmToken || fcmToken.length > 4096) {
+      return res.status(400).json({ success: false, message: 'fcmToken must be 1-4096 characters' });
     }
 
     // Update the CALLING user's row, scoped by id.
@@ -153,24 +185,32 @@ router.post('/register-token', authenticateUser, async (req, res) => {
       console.warn('[FCM /register-token] Topic subscription failed (non-fatal):', subErr.message);
     }
 
-    // Also try admin_users table (best-effort, in case client is also admin).
-    // Same UPDATE-by-id shape as unregister-token below; still scoped so it
-    // can never create a stray row.
-    try {
-      await db.promise().query(
-        `UPDATE admin_users
-            SET fcm_token = ?, device_info = ?, updated_at = NOW()
-          WHERE id = ? AND deleted_at IS NULL`,
-        [fcmToken, deviceInfo ? JSON.stringify(deviceInfo) : null, req.userId]
-      );
-    } catch (adminErr) {
-      console.debug('[FCM /register-token] admin_users update skipped:', adminErr.message);
+    // Also mirror the token into admin_users when the caller is genuinely
+    // the same person (best-effort, in case they have rows in both tables).
+    //
+    // OWASP A01: match by EMAIL, never by users.id — users.id and
+    // admin_users.id are INDEPENDENT auto-increment sequences, so the old
+    // id-scoped UPDATE let a plain client with users.id = N overwrite the
+    // device token of admin_users.id = N, redirecting that admin's pushes
+    // to the client's device.
+    const callerEmail = (req.authUser && req.authUser.email) || null;
+    if (callerEmail) {
+      try {
+        await db.promise().query(
+          `UPDATE admin_users
+              SET fcm_token = ?, device_info = ?, updated_at = NOW()
+            WHERE email = ? AND deleted_at IS NULL`,
+          [fcmToken, deviceInfo ? JSON.stringify(deviceInfo) : null, callerEmail]
+        );
+      } catch (adminErr) {
+        console.debug('[FCM /register-token] admin_users update skipped:', adminErr.message);
+      }
     }
 
     res.json({ success: true, message: 'FCM token registered and topic subscribed' });
   } catch (error) {
     console.error('[FCM /register-token] Registration failed:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Failed to register FCM token' });
   }
 });
 
@@ -190,7 +230,15 @@ router.post('/unregister-token', authenticateUser, async (req, res) => {
 
     // Clear from DB
     await db.promise().query('UPDATE users SET fcm_token = NULL, device_info = NULL WHERE id = ?', [req.userId]);
-    await db.promise().query('UPDATE admin_users SET fcm_token = NULL, device_info = NULL WHERE id = ?', [req.userId]);
+    // OWASP A01: clear by EMAIL, not id — users.id and admin_users.id are
+    // independent sequences, so an id-matched UPDATE blanked the token of
+    // an unrelated admin who happened to share the numeric id.
+    const callerEmail = (req.authUser && req.authUser.email) || null;
+    if (callerEmail) {
+      await db
+        .promise()
+        .query('UPDATE admin_users SET fcm_token = NULL, device_info = NULL WHERE email = ?', [callerEmail]);
+    }
 
     // Unsubscribe from topics (best-effort)
     if (oldToken) {
@@ -208,7 +256,7 @@ router.post('/unregister-token', authenticateUser, async (req, res) => {
     res.json({ success: true, message: 'FCM token unregistered' });
   } catch (error) {
     console.error('[FCM /unregister-token] Unregister failed:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Failed to unregister FCM token' });
   }
 });
 
@@ -248,7 +296,7 @@ router.get('/devices', requireAdminSession, async (req, res) => {
     });
   } catch (error) {
     console.error('[FCM /devices] List failed:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Failed to list devices' });
   }
 });
 
@@ -276,7 +324,7 @@ router.get('/status', async (req, res) => {
     });
   } catch (error) {
     console.error('[FCM /status] Status check failed:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Failed to check FCM status' });
   }
 });
 
