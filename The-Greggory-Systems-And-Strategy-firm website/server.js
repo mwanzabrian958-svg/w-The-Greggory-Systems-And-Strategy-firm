@@ -218,21 +218,9 @@ function getAdminSessionSecret() {
   return ADMIN_SESSION_SECRET;
 }
 
-function signAdminSessionToken(userId) {
-  const payload = {
-    uid: Number(userId),
-    exp: Date.now() + 8 * 60 * 60 * 1000,
-  };
-  const secret = getAdminSessionSecret();
-  const body = Buffer.from(JSON.stringify(payload), "utf8").toString(
-    "base64url",
-  );
-  const sig = crypto
-    .createHmac("sha256", secret)
-    .update(body)
-    .digest("base64url");
-  return `${body}.${sig}`;
-}
+// NOTE: the old signAdminSessionToken() helper was deleted — it was dead code
+// (zero call sites; every caller uses backend/utils/sessionToken.js via
+// admin-verification.js). server.js only ever VERIFIES admin session tokens.
 
 function verifyAdminSessionToken(token) {
   if (!token || typeof token !== "string") return null;
@@ -288,7 +276,13 @@ const authenticateAdmin = (req, res, next) => {
 // sets req.authRole = "admin" | "user" so handlers can scope rows.
 const authenticateAny = async (req, res, next) => {
   const raw = String(
-    req.headers.authorization || req.header("x-auth-token") || req.query.token || req.body?.token || ""
+    req.headers.authorization ||
+      req.header("x-auth-token") ||
+      req.body?.token ||
+      // OWASP A07: query-string tokens (authenticated PDF <a href> links)
+      // leak into logs/history — accepted on GET/HEAD only, never mutations.
+      (req.method === "GET" || req.method === "HEAD" ? req.query.token : "") ||
+      ""
   ).trim();
   const m = raw.match(/^Bearer\s+(.+)$/i);
   const token = (m ? m[1] : raw).trim();
@@ -496,11 +490,20 @@ const corsOptions = {
     // Always allow the configured FRONTEND_URL env var
     if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL)
       return callback(null, true);
-    // Allow localhost on any port
-    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin))
+    // Allow localhost on any port — DEVELOPMENT ONLY. In production the only
+    // web origins allowed are FRONTEND_URL and the site's own hostname (the
+    // same-origin fallback below), so a local page can't read the live API
+    // (OWASP A02).
+    if (
+      process.env.NODE_ENV !== "production" &&
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+    )
       return callback(null, true);
-    // Allow any private-network IP on any port
-    if (/^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(origin))
+    // Allow any private-network IP on any port — DEVELOPMENT ONLY (OWASP A02)
+    if (
+      process.env.NODE_ENV !== "production" &&
+      /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(origin)
+    )
       return callback(null, true);
     // Block everything else
     callback(new Error(`CORS: origin ${origin} not allowed`));

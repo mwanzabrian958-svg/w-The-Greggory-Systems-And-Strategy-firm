@@ -1,92 +1,88 @@
-# Developer Purge Notes
+# Developer Purge — Status Notes (rewritten 2026-10-12)
 
-## Summary
-Developer-related items have been purged from the project **except the database tables**. This document tracks what was removed and what remains to avoid confusion during future development.
+> This replaces the old purge notes, which were stale — they still described
+> the developer platform as active. **The purge is COMPLETE in code.**
 
-## What Was Purged (Code/Files)
+## TL;DR
 
-### Frontend
-- Developer-specific UI components, pages, and routes that were separate from admin/client flows
-- Developer dashboard panels and widgets
-- Developer-specific navigation items
-- Developer onboarding/wizard flows
+The "developer" role was removed from the application **in code only**. The
+database was deliberately left intact (developer-prefixed tables and mapping
+rows were never dropped), so the purge is non-destructive and reversible.
 
-### Backend
-- Dedicated developer route modules (if any existed separately)
-- Developer-specific middleware
-- Developer notification templates
+- **Platforms: 2** — `admin` (`admin_users`) and `user` (`users`). There is no
+  developer login, navbar entry, route, or permission anywhere in the codebase.
+- **Auth validation rules: 25 → 16** — the 9 developer-platform rules were
+  removed from the ruleset; the `auth_validation_rules` DB rows are untouched.
+- **Commits:** `fff844a` (purge), `6dc567e` (mpesa.js syntax fix), `02ba3a2`
+  (fcm.js OWASP hardening), plus the M-Pesa/CORS/token sweep after it.
 
-### Auth & Verification
-- Developer verification routes merged into admin verification flow
-- Developer registration flows consolidated
+## What was purged (code/scripts only)
 
-## What Remains (Database Tables)
+- Frontend permissions, Navbar links, CaseStudies references, SecurityModal,
+  Users page, `adminSession` helpers — all developer paths removed.
+- Scripts: `init-auth-endpoints-tables`, `verify-auth`, `purge-test-data`,
+  `system-reset-step3/4`, `master-solidify`, `preflight-db`, etc.
+- `server.js`, `backend/server.js`, `admin-verification.js`, `sessionToken.js`
+  — developer branches removed.
+- Dead code removed: `server.js signAdminSessionToken()` (zero call sites —
+  admin session tokens are minted only by `backend/utils/sessionToken.js`).
 
-The following developer-related database tables are **INTACT** and still in use:
+## Intentional survivors — DO NOT REMOVE
 
-| Table | Status | Notes |
-|-------|--------|-------|
-| `developer_users` | ✅ Active | Stores developer identity records |
-| `developer_level` enum | ✅ Active | Used in `developer_users.developer_level` |
+1. **Fail-closed role guards** — `if (role === 'developer') return 400` in
+   `server.js` (~line 2582) and `backend/routes/admin-verification.js`
+   (~line 228). These reject any legacy or hand-crafted developer session
+   instead of silently accepting it. They are a security control, not debris.
+2. **Purge-history comments** across touched files explaining why code went.
+3. **DB tables/rows** — `developer_users`, `auth_platform_mapping`,
+   `auth_validation_rules` data. The system runs fine with them present.
 
-### Table Schema (developer_users)
-```sql
--- Core identity columns (shared with users/admin_users)
-id, email, first_name, last_name, display_name, phone_number,
-physical_address, id_number, alt_phone, expertise, private_notes,
-manual_projects, emergency_contact_name, emergency_contact_phone,
-department, mission_briefing, is_active, last_login_at, last_login_ip,
-created_at, updated_at, deleted_at,
+## Verification performed
 
--- Developer-specific
-developer_level, tech_stack, access_level,
-password_hash, profile_image_id,
-whatsapp_auth_key, whatsapp_verified, last_active_at
-```
+- `git grep -i developer` across all `.js/.jsx` → only intentional guards,
+  comments, Meta dev-URL constants and test fixtures remain.
+- `node --check` passes on every touched file; `npx vite build` passes.
 
-## Active Code Paths That Still Reference Developers
+## Hardening done alongside (OWASP Top 10:2025 + ASVS)
 
-### Backend Routes (`backend/routes/admin.js`)
-- `GET /api/admin/users/:id?role_type=developer` — fetches a developer user
-- `PUT /api/admin/users/:id?role_type=developer` — updates a developer user
-- `DELETE /api/admin/users/:id?role_type=developer` — soft-deletes a developer user
-- `GET /api/admin/users` list — includes `developer_users` in the UNION
-- `GET /api/admin/live-users` — includes `developer_users` in the UNION
+- `backend/routes/fcm.js`: register/unregister scoped by **email** (A01),
+  `requireAdminSession` re-checks `admin_users` per request (A01/A07), generic
+  error messages (A10), FCM token length cap 4096 (A07).
+- `/api/fcm/status` + `/api/fcm/devices` now require an admin session;
+  `/devices` returns **masked tokens only**; the dashboard targets devices via
+  `POST /api/fcm/send` `targets: [{id, userType}]` so real tokens stay
+  server-side.
+- `backend/routes/mpesa.js` callback hardened (A01/A06):
+  - optional `MPESA_CALLBACK_TOKEN` secret path segment (timing-safe compare),
+    auto-appended to the default CallBackURL by `mpesaService.js`;
+  - the CheckoutRequestID must match a pending row WE created at /stkpush time
+    (invented IDs → 404);
+  - callback Amount must match the recorded amount; a receipt number can only
+    be attached to one transaction; Safaricom retries stay idempotent;
+  - no internal error messages echoed (A10).
+- `backend/middleware/clientAuth.js` + `server.js authenticateAny`:
+  query-string tokens accepted on **GET/HEAD only** (A07) — authenticated PDF
+  download links keep working; mutating requests must use headers.
+- `server.js` CORS: localhost / private-LAN allowances are now
+  development-only (`NODE_ENV !== 'production'`) (A02).
+- Verified secure (no change needed): parameterized SQL everywhere checked
+  (A05); HMAC session tokens are timing-safe with `exp` (ASVS v3.2/v3.3);
+  all `/api/fcm/*` routes are authenticated.
 
-### Frontend
-- `Users.jsx` — user list shows `source_table = 'developer'` entries
-- `UserDetail.jsx` — view page handles `roleType = 'developer'`
-- `UserForm.jsx` — edit form handles `role_type = 'developer'`
-- `AdminRouter.jsx` — routes `/admin/users/detail/:id/developer` → UserDetail
+## Accepted risks (documented, deliberately unchanged)
 
-### Database
-- `developer_users` table is actively queried by the above routes
-- Foreign keys from other tables may reference `developer_users.id`
+- `/api/fcm/send` with no target broadcasts to all client devices — an
+  intentional broadcast tool for the logged-in admin console.
+- M-Pesa callback authenticity ultimately relies on the secret URL path above
+  plus Daraja portal IP allowlisting (Safaricom does not sign STK callbacks).
+- The Android app should move auth tokens out of URLs where it still uses
+  them — the server now rejects query-token auth on any mutating request.
 
-## What This Means for Development
+## Operational TODOs (not code)
 
-1. **Do NOT re-add developer-specific UI panels** — the admin dashboard handles all user types through the unified user management interface.
-
-2. **The `developer_users` table is still live** — any developer accounts in the DB are still accessible via the admin panel (Users → click a developer name → edit).
-
-3. **The `role_type=developer` path is still functional** — the admin routes handle developer users through the same code path as admin/client users, just with a different `tableName` mapping.
-
-4. **If you need to fully purge developers in the future**, you would need to:
-   - Drop the `developer_users` table
-   - Remove the `developer_users` UNION from the user list queries
-   - Remove the `developer` branch from the `tableMap` in the PUT/GET/DELETE handlers
-   - Remove developer-specific columns from shared queries
-
-## Verification
-
-To confirm the current state:
-```bash
-# Check developer_users table exists and has data
-node -e "const db=require('./backend/config/database'); db.promise().query('SELECT COUNT(*) as n FROM developer_users WHERE deleted_at IS NULL').then(([r])=>{console.log('Active dev users:', r[0].n); process.exit(0);});"
-
-# Check admin routes handle developer role_type
-grep -n "developer" backend/routes/admin.js
-```
-
----
-*Last updated: 2026-09-03*
+1. Generate and set `MPESA_CALLBACK_TOKEN` (32+ random bytes) in Render env
+   vars, then confirm a live STK Push callback succeeds. The server logs a
+   one-time warning while it is unset. See `.env.example`.
+2. Verify the Safaricom Daraja portal IP allowlisting points at Render's
+   egress IPs.
+3. Push the local commits to origin when ready.

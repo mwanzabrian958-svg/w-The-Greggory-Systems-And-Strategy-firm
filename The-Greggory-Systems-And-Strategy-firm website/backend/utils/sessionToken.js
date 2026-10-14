@@ -1,8 +1,11 @@
 /**
  * SESSION TOKEN UTIL
  * Signs/verifies admin session tokens in the EXACT format that the
- * main server (server.js -> signAdminSessionToken / verifyAdminSessionToken)
- * accepts: `base64url(JSON payload).base64url(HMAC-SHA256 signature)`.
+ * main server (server.js -> verifyAdminSessionToken) accepts:
+ * `base64url(JSON payload).base64url(HMAC-SHA256 signature)`.
+ * (server.js never SIGNS admin tokens — the old signAdminSessionToken()
+ * helper there was dead code and has been deleted; this module is the
+ * only minter.)
  *
  * Before this module existed, the login endpoints returned an UNSIGNED
  * placeholder token (`admin-session-<timestamp>-<id>`), so every subsequent

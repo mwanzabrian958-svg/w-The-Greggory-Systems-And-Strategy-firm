@@ -8,8 +8,8 @@
  *   POST /api/fcm/send           — admin pushes to Android app
  *   POST /api/fcm/register-token — Android app registers FCM token
  *   POST /api/fcm/unregister-token — Android app unregisters
- *   GET  /api/fcm/devices        — admin lists registered devices
- *   GET  /api/fcm/status         — public FCM config check
+ *   GET  /api/fcm/devices        — admin lists registered devices (MASKED tokens)
+ *   GET  /api/fcm/status         — admin FCM config check (admin session)
  */
 
 const express = require('express');
@@ -81,7 +81,7 @@ async function requireAdminSession(req, res, next) {
 //
 router.post('/send', requireAdminSession, async (req, res) => {
   try {
-    const { title, body, fcmTokens, userId, topic, data, priority } = req.body;
+    const { title, body, fcmTokens, targets, userId, topic, data, priority } = req.body;
 
     await createNotification(
       userId || req.adminId,
@@ -99,6 +99,29 @@ router.post('/send', requireAdminSession, async (req, res) => {
       result = await sendToTopic(topic, { title, body, data, priority });
     } else if (fcmTokens && Array.isArray(fcmTokens) && fcmTokens.length > 0) {
       result = await sendToDevices(fcmTokens, { title, body, data, priority });
+    } else if (targets && Array.isArray(targets) && targets.length > 0) {
+      // Targeting by device id (preferred): GET /devices returns masked tokens
+      // only, so the dashboard sends [{id, userType}] and the full tokens are
+      // resolved here, server-side (OWASP A01 — keeps real tokens out of the
+      // browser). Table names come from a fixed mapping, never user input.
+      if (targets.length > 500) {
+        return res.status(400).json({ success: false, message: 'Too many device targets (max 500)' });
+      }
+      const targetTokens = [];
+      for (const t of targets) {
+        const id = Number(t && t.id);
+        const table = t && t.userType === 'admin' ? 'admin_users' : 'users';
+        if (!Number.isInteger(id) || id <= 0) continue;
+        const [rows] = await db.promise().query(
+          `SELECT fcm_token FROM ${table} WHERE id = ? AND fcm_token IS NOT NULL AND fcm_token <> '' AND deleted_at IS NULL LIMIT 1`,
+          [id]
+        );
+        if (rows[0] && rows[0].fcm_token) targetTokens.push(rows[0].fcm_token);
+      }
+      if (targetTokens.length === 0) {
+        return res.json({ success: true, message: 'No matching devices found — nothing to send', sent: 0, simulated: !isConfigured() });
+      }
+      result = await sendToDevices(targetTokens, { title, body, data, priority });
     } else if (userId) {
       const [rows] = await db.promise().query(
         'SELECT fcm_token FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1',
@@ -290,7 +313,9 @@ router.get('/devices', requireAdminSession, async (req, res) => {
         userType: r.user_type,
         deviceInfo: r.device_info ? JSON.parse(r.device_info) : null,
         lastActiveAt: r.last_active_at,
-        fcmToken: r.fcm_token,
+        // OWASP A01: full tokens are intentionally NOT returned — the dashboard
+        // targets devices via POST /send `targets: [{id, userType}]` instead and
+        // the server resolves the real tokens internally.
         fcmTokenMasked: r.fcm_token ? r.fcm_token.slice(0, 20) + '...' + r.fcm_token.slice(-10) : null,
       })),
     });
@@ -306,7 +331,7 @@ router.get('/devices', requireAdminSession, async (req, res) => {
 // Public: check whether Firebase Admin SDK is configured. Used by the
 // admin dashboard Push Notifications page to show config status.
 //
-router.get('/status', async (req, res) => {
+router.get('/status', requireAdminSession, async (req, res) => {
   try {
     // Idempotent init. Nothing else runs at boot, so without this the SDK is
     // never initialized and isConfigured() would report false even when valid

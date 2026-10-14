@@ -31,7 +31,14 @@ const authenticateUser = async (req, res, next) => {
   }
 
   if (!token) {
-    token = req.header("x-auth-token") || req.query.token || req.body?.token;
+    // OWASP A07: query-string tokens leak into server/proxy logs and browser
+    // history, so they are only accepted on GET/HEAD — the authenticated PDF
+    // download links (<a href> / window.open) are the sole legitimate use.
+    // Mutations (POST/PUT/DELETE) must send the token via header or body.
+    token =
+      req.header("x-auth-token") ||
+      req.body?.token ||
+      ((req.method === "GET" || req.method === "HEAD") ? req.query.token : null);
   }
 
   if (!token) {

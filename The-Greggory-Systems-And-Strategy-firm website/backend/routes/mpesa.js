@@ -1,7 +1,17 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const { initiateSTKPush } = require('../services/mpesaService');
 const db = require('../config/database');
+
+// OWASP A07: constant-time comparison for the shared-secret callback path —
+// never use === on secrets (leaks prefix length via timing).
+function safeEqual(a, b) {
+  const bufA = Buffer.from(String(a || ''), 'utf8');
+  const bufB = Buffer.from(String(b || ''), 'utf8');
+  if (bufA.length !== bufB.length || bufA.length === 0) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
 /**
  * Trigger STK Push
@@ -67,18 +77,49 @@ router.post('/stkpush', async (req, res) => {
       });
     }
   } catch (error) {
+    // A10: never echo internal error details to the caller.
     console.error('[MPESA STKPUSH] Error:', error);
-    res.status(500).json({ success: false, message: 'Server error during STK Push', error: error.message });
+    res.status(500).json({ success: false, message: 'Server error during STK Push' });
   }
 });
 
 /**
  * M-Pesa Callback (Safaricom calls this)
- * POST /api/mpesa/callback
+ * POST /api/mpesa/callback[/:urlToken]
+ *
+ * Hardened (OWASP A01/A06 — never trust the caller):
+ *   1. Optional shared-secret path segment: set MPESA_CALLBACK_TOKEN and the
+ *      STK Push advertises `.../callback/<token>` as its CallBackURL (see
+ *      backend/services/mpesaService.js). When the env var is set, a missing
+ *      or wrong token is rejected 401 before any DB work.
+ *   2. The CheckoutRequestID must match a row WE recorded as 'pending' at
+ *      /stkpush time (mpesa_transactions.transaction_id) — invented IDs 404.
+ *   3. On success, the callback Amount must match the recorded amount and the
+ *      MpesaReceiptNumber must not already belong to another transaction
+ *      (blocks receipt-replay forgery). Safaricom retries stay idempotent.
  */
-router.post('/callback', async (req, res) => {
+const MPESA_CALLBACK_TOKEN = process.env.MPESA_CALLBACK_TOKEN || '';
+let callbackTokenWarned = false;
+
+router.post(['/callback', '/callback/:urlToken'], async (req, res) => {
   try {
-    const { Body } = req.body;
+    // (1) Shared-secret path segment — fail closed when configured.
+    if (MPESA_CALLBACK_TOKEN) {
+      if (!safeEqual(req.params.urlToken, MPESA_CALLBACK_TOKEN)) {
+        console.warn('[MPESA CALLBACK] Rejected: missing/invalid callback token');
+        return res.status(401).json({ ResultCode: 1, ResultDesc: 'Unauthorized' });
+      }
+    } else if (!callbackTokenWarned) {
+      callbackTokenWarned = true;
+      console.warn(
+        '[MPESA CALLBACK] MPESA_CALLBACK_TOKEN is not set — the callback URL relies solely on CheckoutRequestID secrecy. Set it and redeploy to enable the shared-secret check.'
+      );
+    }
+
+    const { Body } = req.body || {};
+    if (!Body || !Body.stkCallback || !Body.stkCallback.CheckoutRequestID) {
+      return res.status(400).json({ ResultCode: 1, ResultDesc: 'Invalid callback payload' });
+    }
     const stkCallback = Body.stkCallback;
 
     const checkoutRequestId = stkCallback.CheckoutRequestID;
@@ -87,13 +128,56 @@ router.post('/callback', async (req, res) => {
 
     console.log(`[MPESA CALLBACK] Received for ${checkoutRequestId}: ${resultDesc} (${resultCode})`);
 
+    // (2) The transaction must be one WE created as pending at STK Push time.
+    const [pendingRows] = await db.promise().query(
+      'SELECT id, amount, status FROM mpesa_transactions WHERE transaction_id = ? LIMIT 1',
+      [checkoutRequestId]
+    );
+    if (!pendingRows.length) {
+      console.warn(`[MPESA CALLBACK] Rejected: unknown CheckoutRequestID ${checkoutRequestId}`);
+      return res.status(404).json({ ResultCode: 1, ResultDesc: 'Unknown transaction' });
+    }
+    const pending = pendingRows[0];
+    if (pending.status === 'completed') {
+      // Safaricom retries a callback it never got a 200 for — acknowledge quietly.
+      return res.json({ ResultCode: 0, ResultDesc: 'Success' });
+    }
+    if (pending.status !== 'pending') {
+      return res.status(409).json({ ResultCode: 1, ResultDesc: 'Transaction not pending' });
+    }
+
     let status = resultCode === 0 ? 'completed' : 'failed';
     let mpesaReceiptNumber = null;
 
     if (resultCode === 0) {
-      const callbackMetadata = stkCallback.CallbackMetadata.Item;
-      const receiptItem = callbackMetadata.find(item => item.Name === 'MpesaReceiptNumber');
+      const items =
+        (stkCallback.CallbackMetadata && stkCallback.CallbackMetadata.Item) || [];
+
+      // (3a) Amount cross-check — a forged "success" cannot change the price.
+      const amountItem = items.find((item) => item.Name === 'Amount');
+      if (amountItem && Number(amountItem.Value) !== Number(pending.amount)) {
+        console.error(
+          `[MPESA CALLBACK] Rejected: amount mismatch for ${checkoutRequestId} (callback ${amountItem.Value} vs recorded ${pending.amount})`
+        );
+        return res.status(400).json({ ResultCode: 1, ResultDesc: 'Amount mismatch' });
+      }
+
+      const receiptItem = items.find((item) => item.Name === 'MpesaReceiptNumber');
       mpesaReceiptNumber = receiptItem ? receiptItem.Value : null;
+
+      // (3b) A receipt number can only ever belong to one transaction.
+      if (mpesaReceiptNumber) {
+        const [dupes] = await db.promise().query(
+          'SELECT transaction_id FROM mpesa_transactions WHERE mpesa_receipt = ? AND transaction_id <> ? LIMIT 1',
+          [mpesaReceiptNumber, checkoutRequestId]
+        );
+        if (dupes.length) {
+          console.error(
+            `[MPESA CALLBACK] Rejected: receipt ${mpesaReceiptNumber} already used by ${dupes[0].transaction_id}`
+          );
+          return res.status(409).json({ ResultCode: 1, ResultDesc: 'Receipt already processed' });
+        }
+      }
     }
 
     // Update transaction in database
@@ -226,8 +310,9 @@ router.post('/callback', async (req, res) => {
 
     res.json({ ResultCode: 0, ResultDesc: "Success" });
   } catch (error) {
+    // A10: never echo internal error details to the caller.
     console.error('[MPESA CALLBACK] Error:', error);
-    res.status(500).json({ ResultCode: 1, ResultDesc: "Internal Server Error" });
+    res.status(500).json({ ResultCode: 1, ResultDesc: 'Internal Server Error' });
   }
 });
 

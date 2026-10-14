@@ -1,3 +1,9 @@
+> **STATUS (2026-10-12): Historical document — the developer role/platform was
+> purged from the code (commit `fff844a`). No developer portal exists in the
+> current 2-platform system (admin + user). Retained for history only; see
+> `DEVELOPER_PURGE_NOTES.md`.**
+
+
 # Developer Portal UI Mockups & Design Specifications
 ## The-Greggory-Systems-And-Strategy-firm - Developer Experience Visual Guide
 

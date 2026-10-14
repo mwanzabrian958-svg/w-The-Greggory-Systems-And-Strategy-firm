@@ -75,7 +75,11 @@ async function initiateSTKPush(phoneNumber, amount, accountReference, transactio
     PartyA: formattedPhone,
     PartyB: MPESA_SHORTCODE,
     PhoneNumber: formattedPhone,
-    CallBackURL: process.env.MPESA_CALLBACK_URL || `${process.env.BACKEND_URL || 'https://your-domain.com'}/api/mpesa/callback`,
+    // OWASP A01/A06: when MPESA_CALLBACK_TOKEN is set, it travels as a secret
+    // path segment so backend/routes/mpesa.js can reject unauthenticated
+    // callback POSTs. A fully custom MPESA_CALLBACK_URL wins — include the
+    // token in it manually if you use one.
+    CallBackURL: process.env.MPESA_CALLBACK_URL || `${process.env.BACKEND_URL || 'https://your-domain.com'}/api/mpesa/callback${process.env.MPESA_CALLBACK_TOKEN ? '/' + process.env.MPESA_CALLBACK_TOKEN : ''}`,
     AccountReference: accountReference,
     TransactionDesc: transactionDesc
   });

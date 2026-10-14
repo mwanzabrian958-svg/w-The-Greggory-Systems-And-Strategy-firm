@@ -6,7 +6,7 @@
  *
  * Backed by:
  *   POST /api/fcm/send        — send push (admin session token required)
- *   GET  /api/fcm/devices     — list registered Android devices
+ *   GET  /api/fcm/devices     — list registered Android devices (masked tokens)
  *   GET  /api/fcm/status      — check if Firebase is configured
  *
  * Created alongside: backend/routes/fcm.js, backend/services/firebaseAdmin.js
@@ -89,8 +89,10 @@ export default function PushNotificationsPage() {
     setSending(true);
     setResult(null);
     try {
-      const targetTokens = selectedDeviceIds.length > 0
-        ? devices.filter(d => selectedDeviceIds.includes(deviceKey(d))).map(d => d.fcmToken).filter(Boolean)
+      // Devices are targeted by {id, userType} — GET /fcm/devices only returns
+      // masked tokens now; the server resolves full tokens internally.
+      const targetDevices = selectedDeviceIds.length > 0
+        ? devices.filter(d => selectedDeviceIds.includes(deviceKey(d))).map(d => ({ id: d.id, userType: d.userType }))
         : undefined;
       const targetUserId = userId.trim() ? parseInt(userId, 10) : undefined;
       let data;
@@ -103,7 +105,7 @@ export default function PushNotificationsPage() {
         }
       }
 
-      if (!targetTokens && !targetUserId && !topic) {
+      if ((!targetDevices || targetDevices.length === 0) && !targetUserId && !topic) {
         setResult({ success: false, message: 'Select a topic, a user ID, or specific devices.' });
         setSending(false);
         return;
@@ -114,7 +116,7 @@ export default function PushNotificationsPage() {
         body: JSON.stringify({
           title: title.trim(),
           body: body.trim(),
-          fcmTokens: targetTokens,
+          targets: targetDevices,
           userId: targetUserId,
           topic: topic || undefined,
           data,
