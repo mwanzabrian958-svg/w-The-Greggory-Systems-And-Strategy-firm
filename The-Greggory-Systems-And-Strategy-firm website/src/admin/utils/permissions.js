@@ -98,11 +98,19 @@ const NAV_PERMISSION_MAP = {
   '/admin/applications': 'VIEW_APPLICATIONS',
   '/admin/content': 'VIEW_CONTENT',
   '/admin/posts': 'VIEW_CONTENT',
+  '/admin/media': 'VIEW_CONTENT',
   '/admin/personnel': 'VIEW_CONTENT',
   '/admin/billing': 'VIEW_FINANCIAL',
   '/admin/reports': 'VIEW_REPORTS',
   '/admin/settings': 'VIEW_SETTINGS',
-  '/admin/notifications': 'VIEW_SETTINGS'
+  '/admin/push-notifications': 'VIEW_SETTINGS',
+  '/admin/support': 'VIEW_SUPPORT',
+  '/admin/security': 'VIEW_SECURITY',
+  '/admin/activity': 'VIEW_ACTIVITY_LOGS',
+  '/admin/team': 'MANAGE_TEAM',
+  '/admin/data-safety': 'VIEW_DATA_SAFETY',
+  '/admin/messages': 'VIEW_COMMUNICATION',
+  '/admin/permissions': 'MANAGE_ADMINS'
 };
 
 function cachedRoleLevel(user) {
@@ -129,15 +137,23 @@ export function getNavigationItems(user) {
   const allItems = [
     { path: '/admin', label: 'Dashboard', icon: 'Home' },
     { path: '/admin/users', label: 'User Management', icon: 'Users' },
+    { path: '/admin/personnel', label: 'Personnel', icon: 'Users' },
+    { path: '/admin/team', label: 'Team', icon: 'Users' },
     { path: '/admin/projects', label: 'Projects', icon: 'FolderKanban' },
     { path: '/admin/applications', label: 'Applications', icon: 'ClipboardList' },
-    { path: '/admin/content', label: 'Blog Management', icon: 'Briefcase' },
+    { path: '/admin/content', label: 'Blog', icon: 'Briefcase' },
     { path: '/admin/posts', label: 'Posts & Portfolio', icon: 'MessageSquare' },
-    { path: '/admin/personnel', label: 'Personnel Management', icon: 'Users' },
+    { path: '/admin/media', label: 'Media Library', icon: 'Image' },
+    { path: '/admin/messages', label: 'Messages', icon: 'MessageSquare' },
+    { path: '/admin/support', label: 'Support', icon: 'LifeBuoy' },
     { path: '/admin/billing', label: 'Financial Hub', icon: 'Calculator' },
-    { path: '/admin/reports', label: 'Reports', icon: 'FileText' },
+    { path: '/admin/reports', label: 'Reports', icon: 'BarChart3' },
+    { path: '/admin/security', label: 'Security', icon: 'ShieldCheck' },
+    { path: '/admin/data-safety', label: 'Data Safety', icon: 'Building2' },
+    { path: '/admin/activity', label: 'Activity Logs', icon: 'Activity' },
+    { path: '/admin/permissions', label: 'Roles & Permissions', icon: 'KeyRound' },
     { path: '/admin/settings', label: 'Settings', icon: 'ShieldCheck' },
-    { path: '/admin/notifications', label: 'Push Notifications', icon: 'Bell' }
+    { path: '/admin/push-notifications', label: 'Push Notifications', icon: 'Bell' }
   ];
 
   if (!isAdmin(user)) return [{ path: '/admin', label: 'Dashboard', icon: 'Home' }];

@@ -4,7 +4,7 @@ import {
   LogOut, Search, Bell, X, ChevronRight, HelpCircle,
   Home, Users, FolderKanban, Calculator, Building2,
   Briefcase, MessageSquare, LifeBuoy, BarChart3, ShieldCheck, Activity, ClipboardList,
-  FileText
+  FileText, Image, KeyRound
 } from "lucide-react";
 import { apiCall } from "../../services/api";
 import { getNavigationItems } from "../utils/permissions";
@@ -14,7 +14,7 @@ import { NotificationBell } from "./NotificationBell";
 const ICON_MAP = {
   Home, Users, FolderKanban, Calculator, Building2,
   Briefcase, MessageSquare, LifeBuoy, BarChart3, ShieldCheck, Activity, ClipboardList,
-  FileText, Search, Bell, LogOut, X, ChevronRight, HelpCircle
+  FileText, Image, KeyRound, Search, Bell, LogOut, X, ChevronRight, HelpCircle
 };
 
 function AdminLayout({ user, children, onLogout }) {
