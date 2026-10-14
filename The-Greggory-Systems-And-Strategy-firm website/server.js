@@ -1088,10 +1088,31 @@ app.get("/api/test-db", async (req, res) => {
     // This route is public, so never serialize the driver error: MySQL/Aiven
     // error messages can disclose internal hostnames and infrastructure details.
     // Keep the { success: false } contract — clients only probe it for health.
-    console.error("[DATABASE] connection test failed:", error.code || error.name || "UNKNOWN_ERROR");
+    //
+    // BUT a bare "connection failed" is unactionable on a live deploy. The usual
+    // cause is a missing/blank DB_* env var in the host environment: buildEndpoint()
+    // silently falls back to host:"localhost", and a Render container has no local
+    // MySQL, so every query fails. We therefore attach NON-SECRET diagnostics —
+    // only whether each required var is present, never the values, host, or the
+    // driver error — so a misconfigured deploy names the culprit without leaking it.
+    const diag = {
+      DB_HOST_set: Boolean(process.env.DB_HOST),
+      DB_PORT_set: Boolean(process.env.DB_PORT),
+      DB_USER_set: Boolean(process.env.DB_USER),
+      DB_PASSWORD_set: Boolean((process.env.DB_PASSWORD || "").trim()),
+      DB_NAME_set: Boolean(process.env.DB_NAME),
+      DB_SSL: process.env.DB_SSL === undefined ? "(unset)" : process.env.DB_SSL,
+      hostIsLocalhostFallback: !process.env.DB_HOST,
+    };
+    console.error("[DATABASE] connection test failed:", (error && (error.code || error.name)) || "UNKNOWN_ERROR", diag);
+    const missingEnv = !diag.DB_HOST_set || !diag.DB_USER_set || !diag.DB_PASSWORD_set || !diag.DB_NAME_set || diag.hostIsLocalhostFallback;
     res.status(500).json({
       success: false,
       message: "Database connection failed",
+      diagnostics: diag,
+      hint: missingEnv
+        ? "A required DB_* env var is missing/blank (or the host fell back to localhost). Set DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME and DB_SSL=true in the Render service Environment, then redeploy."
+        : "All DB_* env vars are present; check the server logs for the driver error code (timeout / TLS / auth).",
     });
   }
 });
@@ -8202,13 +8223,22 @@ app.listen(PORT, "0.0.0.0", async () => {
       ) ENGINE=InnoDB;
     `);
     console.log('[DATABASE] Verified project_reports table.');
+    // Only claim "connected" AFTER a query has actually succeeded (moved up
+    // from below the catch, which printed this unconditionally and falsely
+    // reported success even when the CREATE TABLE had just failed).
+    console.log(
+      `Connected to MySQL server at ${process.env.DB_HOST || "localhost"} (fails over to claude if it goes down)`,
+    );
   } catch (err) {
-    console.error('[DATABASE] Schema sync error:', err.message);
+    // Never let a boot-time DB problem crash the process: a missing/blank DB_*
+    // env var would otherwise take the whole service down as CRASHED instead of
+    // staying up so GET /api/test-db can report exactly which var is missing.
+    // Guard err.message — the failover runner (_dbRun) can reject with a
+    // non-Error (e.g. undefined when no pool answered), which threw here and
+    // killed boot before /api/test-db was ever reachable.
+    console.error('[DATABASE] Schema sync error:', (err && err.message) || err || 'unknown error');
+    console.error('[DATABASE] Server is up but the database is unreachable — GET /api/test-db reports the exact missing env var.');
   }
-
-  console.log(
-    `Connected to MySQL server at ${process.env.DB_HOST || "localhost"} (fails over to claude if it goes down)`,
-  );
   console.log(`Access the API at http://localhost:${PORT}/api`);
 
   console.log(`\n========================================`);
