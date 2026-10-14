@@ -126,22 +126,11 @@ const Home = () => {
           message. No blurred "atmosphere" canvas, no second asset to
           regenerate or keep in sync with the desktop art.
 
-          Tablet/PC: the same file FITTED WHOLE into the min-h-screen hero -
-          object-contain on the section's own #030712, default centre
-          anchoring, plus a clarity lift so the artwork reads clean instead
-          of hazy. Nothing is cropped, so the wings and the GREGGORY
-          wordmark read exactly as they do on a phone, and the letterbox
-          gaps stay plain background for the same reason the phone leaves
-          them plain: an invented backdrop is not the image.
-
-          Why not cover: object-cover fills by center-cropping, and this art
-          is 1.69:1. Measured against real viewports it sliced 21% off the
-          sides at 1024x768 and 59% at 820x1180 - "GREGGORY" rendered as
-          "GREGGO", half a wing gone - and it fits by MAX scale, stretching
-          the 1324px file up to 1.45x at 1920x1080, which is where the blur
-          came from. Contain fits by MIN scale instead: 1.09x at 1440x900
-          and a 0.62x DOWNscale on a portrait tablet, so >=641px never
-          upscales harder than the viewport itself forces.
+          Tablet/PC: the same file COVERING the min-h-screen hero edge to
+          edge - object-cover, default centre anchoring, plus a clarity lift
+          so the artwork reads clean instead of hazy. Because the hero is
+          taller/wider than the 1.69:1 art, cover center-crops the sides so
+          the wings fill the frame; that is the deliberate look for >=641px.
 
           Why the lift: the haze in this hero is real pixels, not an overlay.
           Measured band by band, the section paints the JPEG faithfully (top
@@ -164,13 +153,13 @@ const Home = () => {
       >
         {/* Phone: a normal flow child, so the column puts the artwork at the
             top and the copy at the bottom of the hero. Tablet/PC: promoted
-            back to the full-hero layer, the artwork fitted whole (never
-            cropped) with object-contain. */}
+            back to the full-hero layer, the artwork covering the whole hero
+            edge to edge with object-cover. */}
         <div className="w-full min-[641px]:absolute min-[641px]:inset-0">
           <img
             src="/hero-phoenix.jpg"
             alt="Phoenix rising over a city skyline — The Greggory Systems And Strategy Firm"
-            className="block w-full h-auto min-[641px]:absolute min-[641px]:inset-0 min-[641px]:h-full min-[641px]:object-contain min-[641px]:brightness-[1.12] min-[641px]:contrast-[1.22] min-[641px]:saturate-[1.22]"
+            className="block w-full h-auto min-[641px]:absolute min-[641px]:inset-0 min-[641px]:h-full min-[641px]:w-full min-[641px]:object-cover min-[641px]:brightness-[1.12] min-[641px]:contrast-[1.22] min-[641px]:saturate-[1.22]"
             fetchpriority="high"
           />
         </div>
@@ -201,8 +190,7 @@ const Home = () => {
               96px clears the button with room to spare. Tablet/desktop never
               render this block, and they do not need it - the FAB sits over
               the image there, not over text. */}
-          <h1 className="text-[28px] font-black leading-[1.12] tracking-tight text-white">Strategic systems, <span className="text-gold-400">delivered and stood behind.</span></h1>
-          <p className="mt-2.5 text-[13px] leading-relaxed text-slate-300">We develop, maintain, upgrade and support the platforms your business depends on.</p>
+          <p className="text-[13px] leading-relaxed text-slate-300">We develop, maintain, upgrade and support the platforms your business depends on.</p>
           <div className="mt-5 flex flex-col gap-2.5">
             <Link to="/contact" className="inline-flex items-center justify-center gap-2 rounded-lg bg-gold-500 px-5 py-3.5 text-sm font-bold text-slate-950 shadow-lg shadow-gold-500/20 hover:bg-gold-400 transition-all active:scale-95">Start a project<ArrowRight className="w-4 h-4" /></Link>
             <Link to="/services" className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 px-5 py-3.5 text-sm font-bold text-white backdrop-blur-sm hover:bg-white/15 transition-all active:scale-95">Explore services</Link>
@@ -225,8 +213,7 @@ const Home = () => {
           1440x900 and 820x1180. */}
       <section className="relative hidden min-[641px]:block bg-[#030712] pb-16 pt-6">
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">Strategic systems, delivered <span className="text-gold-400">and stood behind.</span></h1>
-          <p className="mt-4 max-w-2xl mx-auto text-sm sm:text-base text-slate-300 leading-relaxed">We develop, maintain, upgrade, and support the projects, systems, and platforms our clients depend on — for individuals and organizations, for-profit and non-profit, across every industry.</p>
+          <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-300 leading-relaxed">We develop, maintain, upgrade, and support the projects, systems, and platforms our clients depend on — for individuals and organizations, for-profit and non-profit, across every industry.</p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link to="/contact" className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-lg shadow-gold-500/10 hover:bg-gold-400 transition-all active:scale-95">Start a project<ArrowRight className="w-4 h-4" /></Link>
             <Link to="/services" className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-5 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all">Explore services</Link>
