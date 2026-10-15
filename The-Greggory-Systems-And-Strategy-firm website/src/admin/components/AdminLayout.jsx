@@ -68,7 +68,8 @@ function AdminLayout({ user, children, onLogout }) {
 
   const handleLogoutClick = () => {
     if (onLogout) onLogout();
-    else { sessionStorage.clear(); localStorage.clear(); navigate("/admin/login", { replace: true }); }
+    // No onLogout wired: still tear down the session and land on the public home page.
+    else { sessionStorage.clear(); localStorage.clear(); navigate("/", { replace: true }); }
   };
 
   const isActive = (path) => {

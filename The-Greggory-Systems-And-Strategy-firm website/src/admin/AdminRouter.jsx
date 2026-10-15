@@ -57,13 +57,17 @@ export function AdminRouter() {
       const token = session?.token || localStorage.getItem('gf_admin_session_token');
       if (!token) { setIsLoading(false); return; }
       const data = await apiCall("/admin/session", { headers: { 'Authorization': `Bearer ${token}` } });
-      if (data.success && data.user) { setUser(data.user); setIsAuthenticated(true); } else { handleLogout(); }
+      if (data.success && data.user) { setUser(data.user); setIsAuthenticated(true); }
+      else { handleLogout('/admin/login'); } // invalid session on load → re-auth screen
     } catch (e) { console.error("Session sync failure", e); } finally { setIsLoading(false); }
   };
 
-  const handleLogout = () => {
+  // Explicit logout (header Logout button) destroys the session and returns the
+  // admin to the PUBLIC WEBSITE HOME PAGE. An expired/invalid session detected
+  // on load passes '/admin/login' instead so the admin can re-authenticate.
+  const handleLogout = (redirectTo = '/') => {
     sessionStorage.clear(); localStorage.clear(); setUser(null); setIsAuthenticated(false);
-    if (!location.pathname.includes('/login')) navigate('/admin/login', { replace: true });
+    if (!location.pathname.includes('/login')) navigate(redirectTo, { replace: true });
   };
 
   if (isLoading) return (
