@@ -4702,7 +4702,6 @@ app.get("/api/documents/:type/:id/pdf", authenticateAny, async (req, res) => {
           Number(document.client_id) === Number(req.userId);
         if (!mine) return res.status(403).json({ success: false, message: "Not your receipt" });
       }
-    }
     } else if (type === "client_documents") {
       const [docs] = await mainDb.query("SELECT * FROM client_documents WHERE id = ?", [id]);
       document = docs[0];
