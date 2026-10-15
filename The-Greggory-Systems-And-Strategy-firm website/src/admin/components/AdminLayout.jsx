@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LogOut, Search, Bell, X, ChevronRight, HelpCircle,
@@ -79,6 +80,22 @@ function AdminLayout({ user, children, onLogout }) {
   const activeNavItem = navItems.find(item => isActive(item.path) && item.path !== '/admin');
   const workstationLabel = activeNavItem ? activeNavItem.label : "Management";
 
+  // The workstation is a full-page takeover: lock background scroll while open.
+  useEffect(() => {
+    if (isDashboard) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [isDashboard]);
+
+  // Escape closes the workstation and returns to the dashboard home (same as X).
+  useEffect(() => {
+    if (isDashboard) return;
+    const onKeyDown = (e) => { if (e.key === "Escape") navigate("/admin"); };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isDashboard, navigate]);
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex flex-col overflow-hidden">
       <header className="bg-[#0f172a] border-b border-white/10 sticky top-0 z-50 flex-shrink-0 shadow-2xl">
@@ -133,14 +150,19 @@ function AdminLayout({ user, children, onLogout }) {
       </nav>
 
       <main className="flex-1 overflow-y-auto bg-slate-50 relative">
-        {/* DASHBOARD VIEW */}
-        {isDashboard ? (
+        {/* DASHBOARD VIEW — plain in-flow layout */}
+        {isDashboard && (
           <div className="max-w-[1600px] mx-auto px-6 py-10">
             {children}
           </div>
-        ) : (
-          /* FULL-PAGE OPERATIONAL WORKSTATION */
-          <div className="fixed inset-0 bg-white z-[1000] flex flex-col animate-in fade-in duration-200">
+        )}
+      </main>
+
+      {/* FULL-PAGE OPERATIONAL WORKSTATION — portaled straight to <body> so it
+          always occupies the entire viewport, immune to any ancestor
+          stacking/clipping context. X (or Escape) closes it → dashboard home. */}
+      {!isDashboard && createPortal(
+        <div className="fixed inset-0 bg-white z-[1000] flex flex-col" role="dialog" aria-modal="true" aria-label={`${workstationLabel} workstation`}>
             {/* Workstation Navbar - Edge to Edge */}
             <div className="bg-[#0f172a] text-white px-6 py-4 flex items-center justify-between border-b border-white/10 shadow-xl flex-shrink-0">
               <div className="flex items-center gap-4">
@@ -186,12 +208,12 @@ function AdminLayout({ user, children, onLogout }) {
 
             {/* Terminal Status Bar */}
             <div className="bg-[#0f172a] h-8 border-t border-white/5 flex items-center px-6 justify-between flex-shrink-0">
-               <p className="text-[6px] font-black text-slate-500 uppercase tracking-[0.4em]">Property of Greggory Systems & Strategy Firm © {new Date().getFullYear()}</p>
-               <p className="text-[6px] font-black text-slate-700 uppercase tracking-[0.6em]">SECURE ARCHITECTURE v4.0</p>
+               <p className="hidden sm:block text-[6px] font-black text-slate-500 uppercase tracking-[0.4em] whitespace-nowrap">Property of Greggory Systems & Strategy Firm © {new Date().getFullYear()}</p>
+               <p className="text-[6px] font-black text-slate-700 uppercase tracking-[0.6em] whitespace-nowrap">SECURE ARCHITECTURE v4.0</p>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
-      </main>
     </div>
   );
 }
