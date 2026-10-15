@@ -812,7 +812,7 @@ const ClientPortal = () => {
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded-lg">
-                {profilePhotoSrc ? <img src={profilePhotoSrc} alt="U" className="w-5 h-5 rounded-full" /> : <div className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-600 flex items-center justify-center text-[8px] font-bold">{(portalUser?.display_name || "U")[0]}</div>}
+                {profilePhotoSrc ? <img src={profilePhotoSrc} alt="U" className="w-5 h-5 rounded-full object-cover" /> : <div className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-600 flex items-center justify-center text-[8px] font-bold">{(portalUser?.display_name || "U")[0]}</div>}
                 <p className="text-[8px] font-bold hidden sm:block">{portalUser?.display_name || "User"}</p>
               </div>
               <button onClick={closePortal} aria-label="Close portal" className="p-1 bg-slate-50 dark:bg-slate-800 hover:bg-rose-600/20 rounded-lg transition-all"><X size={12} /></button>
