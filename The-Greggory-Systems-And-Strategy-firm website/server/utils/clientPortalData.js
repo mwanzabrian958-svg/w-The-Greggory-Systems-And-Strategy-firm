@@ -229,7 +229,12 @@ function buildClientPortalPayload({
       // System documents carry negative ids (e.g. the GSSF registration
       // agreement) and are streamed by the client reports endpoint — expose the
       // path so the portal can render a working browser download.
-      downloadPath: Number(doc.id) < 0 ? `/api/users/my-reports/${doc.id}/download` : null,
+      downloadPath:
+        Number(doc.id) < 0
+          ? `/api/users/my-reports/${doc.id}/download`
+          : doc.file_path || doc.file_data
+            ? `/api/documents/client_documents/${doc.id}/pdf`
+            : null,
     })),
     budgetOverview: {
       planned: plannedBudget,

@@ -35,6 +35,7 @@ import { DataSafety } from './pages/DataSafety';
 import { MediaLibrary } from './pages/MediaLibrary';
 import { EmailInbox } from './pages/EmailInbox';
 import { PermissionsManager } from './pages/PermissionsManager';
+import { Records } from './pages/Records';
 import { PERMISSIONS } from './utils/permissions';
 import { Posts } from './pages/Posts';
 import { apiCall } from '../services/api';
@@ -117,6 +118,7 @@ export function AdminRouter() {
                <Route path="support" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_SUPPORT}><Support /></AdminRoute>} />
                <Route path="security" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_SECURITY}><Security /></AdminRoute>} />
                <Route path="reports" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_REPORTS}><Reports user={user} /></AdminRoute>} />
+               <Route path="records" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_RECORDS}><Records user={user} /></AdminRoute>} />
                <Route path="settings" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_SETTINGS}><Settings user={user} /></AdminRoute>} />
                <Route path="activity" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_ACTIVITY_LOGS}><ActivityLogs /></AdminRoute>} />
                <Route path="team" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.MANAGE_TEAM}><Team /></AdminRoute>} />

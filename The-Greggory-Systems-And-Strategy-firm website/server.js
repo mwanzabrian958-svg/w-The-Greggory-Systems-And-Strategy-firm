@@ -2047,6 +2047,19 @@ const loadClientPortalPayload = async (id) => {
        LIMIT 15`,
       projectIds.length > 0 ? projectIds : [],
     );
+    const [clientDocumentRows] = await safeQuery(
+      "client_documents",
+      `SELECT cd.id, cd.project_id, cd.document_name, cd.document_type, cd.category,
+              cd.file_size, cd.version_number AS version, cd.created_at, cd.file_path,
+              up.project_name
+       FROM client_documents cd
+       LEFT JOIN user_projects up ON up.id = cd.project_id
+       WHERE cd.client_id = ?
+       ORDER BY cd.created_at DESC
+       LIMIT 15`,
+      [id],
+    );
+
 
     // Global system documents (the GSSF client registration agreement) belong
     // to EVERY client's vault — they are not tied to a project. Negative ids
@@ -2118,7 +2131,7 @@ const loadClientPortalPayload = async (id) => {
       tasks: taskRows,
       activities: activityRows,
       invoices: invoiceRows,
-      documents: [...systemDocumentRows, ...documentRows],
+      documents: [...systemDocumentRows, ...documentRows, ...clientDocumentRows],
       feedback: feedbackRows,
       summary,
       teamMembers,
@@ -4645,7 +4658,7 @@ app.get("/api/quotes/:quoteId/activities", async (req, res) => {
 app.get("/api/documents/:type/:id/pdf", authenticateAny, async (req, res) => {
   try {
     const { type, id } = req.params;
-    const allowedTypes = new Set(["invoices", "quotes", "receipt", "transactions"]);
+    const allowedTypes = new Set(["invoices", "quotes", "receipt", "transactions", "client_documents"]);
     if (!allowedTypes.has(type)) {
       return res.status(400).json({ success: false, message: "Unsupported document type" });
     }
@@ -4689,6 +4702,32 @@ app.get("/api/documents/:type/:id/pdf", authenticateAny, async (req, res) => {
           Number(document.client_id) === Number(req.userId);
         if (!mine) return res.status(403).json({ success: false, message: "Not your receipt" });
       }
+    }
+    } else if (type === "client_documents") {
+      const [docs] = await mainDb.query("SELECT * FROM client_documents WHERE id = ?", [id]);
+      document = docs[0];
+      if (document && req.authRole === "user") {
+        if (Number(document.client_id) !== Number(req.userId)) {
+          return res.status(403).json({ success: false, message: "Not your document" });
+        }
+      }
+    }
+
+
+    // Serve stored client document directly (blob or file path) — no regeneration.
+    if (type === "client_documents") {
+      if (!document.file_data && !document.file_path) {
+        return res.status(404).json({ success: false, message: "PDF document not available" });
+      }
+      const baseName = document.document_name || `client_document_${id}`;
+      const fileName =
+        baseName.toLowerCase().endsWith(".pdf") ? baseName : `${baseName}.pdf`;
+      if (document.file_data) {
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+        return res.send(document.file_data);
+      }
+      return res.download(document.file_path, fileName);
     }
 
     if (!document) {
@@ -5122,6 +5161,92 @@ app.get("/api/projects/:projectId/documents", authenticateAny, async (req, res) 
       error: "Internal server error",
     });
   }
+// Admin: compose (upload) a client document into the vault. Stores the
+// metadata row in client_documents and the PDF at file_path.
+// Callers are admins; ownership is scoped by client_id / project_id.
+app.post("/api/documents", authenticateAdmin, async (req, res) => {
+  try {
+    const {
+      document_name,
+      document_type = "other",
+      category = "general",
+      description = null,
+      file_path = null,
+      file_size = null,
+      file_type = "application/pdf",
+      version_number = 1,
+      is_current_version = true,
+      parent_document_id = null,
+      status = "draft",
+      access_level = "private",
+      project_id = null,
+      client_id = null,
+      tags = null,
+      created_by = null,
+      updated_by = null,
+    } = req.body || {};
+
+    if (!document_name) {
+      return res.status(400).json({
+        success: false,
+        message: "document_name is required",
+      });
+    }
+
+    if (!file_path) {
+      return res.status(400).json({
+        success: false,
+        message: "file_path is required (the stored PDF link)",
+      });
+    }
+
+    const [rows] = await mainDb.query(
+      `INSERT INTO client_documents
+        (project_id, client_id, document_name, document_type, category, description,
+         file_path, file_size, file_type, version_number, is_current_version,
+         parent_document_id, status, access_level, tags,
+         created_by, updated_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        project_id,
+        client_id,
+        document_name,
+        document_type,
+        category,
+        description,
+        file_path,
+        file_size,
+        file_type,
+        version_number,
+        is_current_version ? 1 : 0,
+        parent_document_id,
+        status,
+        access_level,
+        tags,
+        created_by,
+        updated_by,
+      ],
+    );
+
+    const documentId = Number(rows.insertId);
+
+    res.status(201).json({
+      success: true,
+      id: documentId,
+      message: "Document composed and stored in the client vault.",
+    });
+  } catch (error) {
+    console.error("Error composing document:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to compose document",
+      error: "Internal server error",
+    });
+  }
+});
+
+// =============================================================================
+// Completion PDF Co-Generator
 });
 
 // =============================================================================
@@ -8026,8 +8151,47 @@ app.get("/api/admin/search", authenticateAdmin, async (req, res) => {
     const [p] = await mainDb.query(`SELECT 'project' as type, id, project_name as title, client_name as subtitle, '/admin/projects' as link FROM user_projects WHERE (project_name LIKE ? OR client_name LIKE ?) AND deleted_at IS NULL LIMIT ${l}`, [t, t]);
     const [lg] = await mainDb.query(`SELECT 'ledger' as type, id, description as title, CONCAT('KSH ',FORMAT(amount,2)) as subtitle, '/admin/billing' as link FROM accounting_entries WHERE (description LIKE ? OR transaction_reference LIKE ?) AND deleted_at IS NULL LIMIT ${l}`, [t, t]);
     const [tk] = await mainDb.query(`SELECT 'task' as type, id, task_name as title, status, priority, CONCAT('/admin/projects/',project_id,'/tasks') as link FROM project_tasks WHERE (task_name LIKE ? OR task_description LIKE ?) AND deleted_at IS NULL LIMIT ${l}`, [t, t]);
-    res.json({ success: true, results: [...u, ...p, ...lg, ...tk] });
+    const [d] = await mainDb.query(
+      `(SELECT 'document' as type, cd.id, cd.document_name as title,
+        CONCAT_WS(' | ', COALESCE(u.display_name, CONCAT_WS(' ', u.first_name, u.last_name)), cp.project_name) as subtitle,
+        '/admin/records' as link
+        FROM client_documents cd
+        LEFT JOIN users u ON u.id = cd.client_id AND u.deleted_at IS NULL
+        LEFT JOIN client_projects cp ON cp.id = cd.project_id
+        WHERE cd.deleted_at IS NULL
+          AND (cd.document_name LIKE ?
+            OR COALESCE(u.display_name, CONCAT_WS(' ', u.first_name, u.last_name)) LIKE ?
+            OR u.phone LIKE ?
+            OR u.email LIKE ?
+            OR cp.project_name LIKE ?)
+        ORDER BY cd.created_at DESC LIMIT ${l})`,
+      [t, t, t, t, t]
+    );
+    res.json({ success: true, results: [...u, ...p, ...lg, ...tk, ...d] });
   } catch (e) { res.status(500).json({ success: false, message: "Search failed" }); }
+});
+
+// ── Admin Client Documents (Records) ────────────────────────────────────────
+// Lists every generated client document with receiver + project info for the
+// admin Records workstation. Admin session only.
+app.get("/api/admin/client-documents", authenticateAdmin, async (req, res) => {
+  try {
+    const [rows] = await mainDb.query(
+      `SELECT cd.id, cd.project_id, cd.client_id, cd.document_name,
+        cd.document_type, cd.category, cd.description, cd.file_path,
+        cd.file_size, cd.file_type, cd.version_number, cd.status,
+        cd.created_at, cd.updated_at,
+        COALESCE(u.display_name, CONCAT_WS(' ', u.first_name, u.last_name)) AS client_name,
+        u.phone AS client_phone, u.email AS client_email,
+        cp.project_name
+        FROM client_documents cd
+        LEFT JOIN users u ON u.id = cd.client_id AND u.deleted_at IS NULL
+        LEFT JOIN client_projects cp ON cp.id = cd.project_id
+        WHERE cd.deleted_at IS NULL
+        ORDER BY cd.created_at DESC`
+    );
+    res.json({ success: true, documents: rows });
+  } catch (e) { res.status(500).json({ success: false, message: "Failed to load documents" }); }
 });
 
 // ── Admin CRM Contacts ──────────────────────────────────────────────────────

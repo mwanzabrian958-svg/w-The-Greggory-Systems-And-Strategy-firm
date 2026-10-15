@@ -1279,6 +1279,33 @@ const ClientPortal = () => {
                       <p className="text-[7px] text-slate-600 dark:text-slate-300 mt-0.5">{d.category} Â· {d.project} Â· {d.size} Â· {d.version}</p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (!d.downloadPath) return;
+                        fetch(d.downloadPath, {
+                          headers: {
+                            Authorization: `Bearer ${user?.token || ""}`,
+                          },
+                        })
+                          .then((r) => r.blob())
+                          .then((blob) => {
+                            const u = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = u;
+                            a.download = d.name || "document.pdf";
+                            a.click();
+                            URL.revokeObjectURL(u);
+                          });
+                      }}
+                      disabled={!d.downloadPath}
+                      title="Download PDF"
+                      className="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 hover:text-teal-600 transition-all"
+                    >
+                      <Download size={11} />
+                    </button>
+                  </div>
+
                   {d.date && <span className="hidden sm:inline text-[7px] text-slate-600 dark:text-slate-300 font-mono shrink-0">{new Date(d.date).toLocaleDateString()}</span>}
                   {d.downloadPath && (
                     <button
