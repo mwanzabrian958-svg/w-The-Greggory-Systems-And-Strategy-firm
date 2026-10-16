@@ -610,6 +610,78 @@ app.use(
 );
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+// ── Dynamic sitemap.xml (static routes + published journal articles) ─────────
+// scripts/generate-sitemap.js bakes the static public routes into
+// dist/sitemap.xml at build time, but /blog/:id articles live in MySQL and
+// change between deploys — leaving them out makes every published article
+// invisible to crawlers. This route merges the two at request time.
+//
+// It MUST be registered before the express.static mounts below: those serve
+// dist/sitemap.xml directly, so a route added later (see the crawler-files
+// block near the SPA fallback) would never fire.
+//
+// Failure policy: any error (DB unreachable, file missing) falls back to the
+// static sitemap or next() — a crawler file is never served as an error page,
+// and the SPA shell is never served for this path.
+let dynamicSitemapCache = { xml: null, at: 0 };
+const DYNAMIC_SITEMAP_TTL_MS = 10 * 60 * 1000;
+app.get("/sitemap.xml", async (req, res, next) => {
+  try {
+    if (dynamicSitemapCache.xml && Date.now() - dynamicSitemapCache.at < DYNAMIC_SITEMAP_TTL_MS) {
+      return res.type("application/xml; charset=utf-8").send(dynamicSitemapCache.xml);
+    }
+    const candidates = [
+      path.join(__dirname, "dist", "sitemap.xml"),
+      path.join(__dirname, "public", "sitemap.xml"),
+    ];
+    const found = candidates.find((candidate) => fs.existsSync(candidate));
+    if (!found) return next(); // no build present (local dev) -> 404 handler, never the SPA shell
+    const staticXml = fs.readFileSync(found, "utf8");
+    let merged = staticXml;
+    try {
+      // Same visibility rule the public journal listing uses: published only,
+      // soft-deleted excluded. /blog/:id is served by the MySQL-backed
+      // /api/blog-articles/:id endpoint, so MySQL is the source of truth here.
+      const [rows] = await mainDb.query(
+        "SELECT id, updated_at, published_date FROM blog_articles WHERE is_published = 1 AND deleted_at IS NULL"
+      );
+      if (rows.length) {
+        // Reuse the origin the build already wrote into the static file so the
+        // merged URLs can never point at a different host than the canonical.
+        const originMatch = staticXml.match(/<loc>(https?:\/\/[^/<'"]+)/);
+        if (originMatch) {
+          const origin = originMatch[1];
+          const articleUrls = rows
+            .map((row) => {
+              const lastmod = new Date(row.updated_at || row.published_date || Date.now())
+                .toISOString()
+                .slice(0, 10);
+              return (
+                "  <url>\n" +
+                "    <loc>" + origin + "/blog/" + row.id + "</loc>\n" +
+                "    <lastmod>" + lastmod + "</lastmod>\n" +
+                "    <changefreq>monthly</changefreq>\n" +
+                "    <priority>0.6</priority>\n" +
+                "  </url>"
+              );
+            })
+            .join("\n");
+          merged = staticXml.replace(/<\/urlset>\s*$/, articleUrls + "\n</urlset>\n");
+        }
+      }
+    } catch (dbError) {
+      // DB unreachable — serve the static sitemap rather than failing the route.
+      console.error("[sitemap] blog-article merge skipped:", dbError.message);
+    }
+    dynamicSitemapCache = { xml: merged, at: Date.now() };
+    res.type("application/xml; charset=utf-8").send(merged);
+  } catch (e) {
+    console.error("[sitemap] dynamic sitemap failed:", e.message);
+    next(); // -> static mounts / 404 handler, never the SPA shell
+  }
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 // Single-origin production mode: serve the built React app (dist/) from this
@@ -8345,16 +8417,18 @@ app.get("/api/blog-articles/:id", async (req, res) => {
 // shares and old scrapes keep unfurling instead of 404ing — and, most
 // importantly, so the request never falls through to the SPA shell below.
 app.get("/hero-phoenix.png", (req, res) => res.redirect(301, "/hero-phoenix.jpg"));
-// ── Crawler files (robots.txt / sitemap.xml) ───────────────────────────────
+// ── Crawler files (robots.txt) ──────────────────────────────────────────────
 // These must NEVER fall through to the React shell: a crawler that receives
 // index.html (HTTP 200, content-type text/html) treats the directive as
 // missing — Search Console then reports "sitemap could not be read" and the
 // robots rules are ignored. express.static covers the normal case (the build
 // copies both files from public/ into dist/), while this route guarantees the
 // right content type and a genuine 404 when a file is absent.
+// NOTE: sitemap.xml is intentionally NOT handled here — it is generated
+// dynamically by the route registered before the static mounts (static routes
+// + published /blog/:id articles).
 const CRAWLER_FILES = {
   "/robots.txt": { file: "robots.txt", type: "text/plain; charset=utf-8" },
-  "/sitemap.xml": { file: "sitemap.xml", type: "application/xml; charset=utf-8" },
 };
 app.get(Object.keys(CRAWLER_FILES), (req, res, next) => {
   const entry = CRAWLER_FILES[req.path];
