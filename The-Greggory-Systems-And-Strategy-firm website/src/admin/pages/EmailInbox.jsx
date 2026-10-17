@@ -14,9 +14,9 @@ export function EmailInbox() {
     try {
       setLoading(true);
       const data = await apiCall("/api/contact-forms");
-      const items = Array.isArray(data) ? data : (data.contacts || data.data || []);
+      const items = Array.isArray(data) ? data : (data.forms || data.contacts || data.data || []);
       setMessages(items);
-    } catch (e) { console.error("Failed to fetch messages:", e); }
+    } catch (e) { console.error("Failed to fetch messages:", e); setMessages([]); }
     finally { setLoading(false); }
   };
 

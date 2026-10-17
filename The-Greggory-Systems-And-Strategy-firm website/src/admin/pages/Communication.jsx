@@ -36,8 +36,8 @@ export function Communication() {
     try {
       setMessagesLoading(true);
       setMessagesError(null);
-      const d = await apiCall("/feedback?author=client&limit=25");
-      setMessages(Array.isArray(d?.feedback) ? d.feedback : []);
+      const d = await apiCall("/admin/communication");
+      setMessages(Array.isArray(d?.messages) ? d.messages : []);
     } catch (err) {
       console.error("Failed to load relay stream:", err);
       setMessagesError(err.message || "Relay unavailable");
@@ -80,7 +80,7 @@ export function Communication() {
     setFeedbackStatus(null);
 
     try {
-      const data = await apiCall("/api/admin/client-feedback", {
+      const data = await apiCall("/admin/communication", {
         method: "POST",
         body: JSON.stringify({
           userId: selectedClientId,
@@ -91,7 +91,7 @@ export function Communication() {
       });
       if (!data.success) throw new Error(data.message || "Relay Failure");
 
-      setFeedbackStatus({ type: "success", message: "Data successfully posted to Client Portal." });
+      setFeedbackStatus({ type: "success", message: "Message sent on secure relay." });
       setFeedbackTitle("");
       setFeedbackMessage("");
     } catch (error) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Briefcase, User, X, Save, RefreshCw, Send } from "lucide-react";
-import { getApiUrl, API_BASE_URL, getAdminToken, apiCall } from "../../services/api";
+import { apiCall } from "../../services/api";
 import { Spinner } from "../../components/Loading";
 import { formatKSH } from "../../utils/currencyUtils";
 import { TAX_PRESETS, taxLabel, roundMoney } from "../../utils/kraTax";
@@ -11,6 +11,8 @@ export function CreateInvoice() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [projectSearch, setProjectSearch] = useState('');
+  const [showProjectSuggestions, setShowProjectSuggestions] = useState(false);
 
   const [invoiceForm, setInvoiceForm] = useState({
     project_id: '', title: '', invoice_type: 'project_fee', tax_type: 'vat', tax_rate: '16',
@@ -40,6 +42,11 @@ export function CreateInvoice() {
   const taxAmount = roundMoney(itemsSubtotal * (taxPct / 100));
   const grandTotal = roundMoney(itemsSubtotal + taxAmount);
 
+  // DB-backed project suggestions — filters as the admin types
+  const filteredProjects = projects.filter((p) =>
+    (p.project_name || p.name || '').toLowerCase().includes(projectSearch.toLowerCase())
+  );
+
   const pickTaxPreset = (pct) => {
     const preset = TAX_PRESETS.find(p => p.pct === Number(pct)) || TAX_PRESETS[0];
     setInvoiceForm((f) => ({ ...f, tax_rate: String(preset.pct), tax_type: preset.type }));
@@ -52,17 +59,16 @@ export function CreateInvoice() {
   const removeLineItem = (idx) =>
     setInvoiceForm((f) => ({ ...f, items: f.items.length > 1 ? f.items.filter((_, i) => i !== idx) : f.items }));
 
+  const [sendStatus, setSendStatus] = useState(null); // { stage: 'creating' | 'sending' | 'done', message }
+
   const handleInvoiceSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSendStatus(null);
     try {
-      const token = getAdminToken();
-      const response = await fetch(`${API_BASE_URL}/invoices`, {
+      // ── 1) Create the invoice ──
+      const created = await apiCall('/invoices', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
         body: JSON.stringify({
           ...invoiceForm,
           subtotal: itemsSubtotal,
@@ -72,16 +78,52 @@ export function CreateInvoice() {
             unit_price: parseFloat(it.unit_price || 0),
             line_total: parseFloat(it.quantity || 1) * parseFloat(it.unit_price || 0),
           })),
-          currency: 'KES'
-        })
+          currency: 'KES',
+        }),
       });
-      if (response.ok) navigate('/admin/billing');
-      else {
-        const d = await response.json().catch(() => ({}));
-        window.alert(d?.message || d?.error || `Invoice failed (${response.status}). Check you are signed in as admin.`);
+
+      const invoiceId = created?.id;
+      if (!invoiceId) {
+        throw new Error('Invoice created but no id returned');
       }
-    } catch (error) { console.error(error); window.alert(error.message); }
-    setIsSubmitting(false);
+
+      // ── 2) Generate PDF + email it to the client ──
+      setSendStatus({ stage: 'sending', message: 'Generating PDF & sending to client…' });
+      const clientEmail = invoiceForm.client_email || '';
+      if (!clientEmail) {
+        setSendStatus({
+          stage: 'done',
+          message: 'Invoice created, but no client email — PDF not sent. Open the invoice and click Send to email it.',
+        });
+      } else {
+        const sent = await apiCall(`/invoices/${invoiceId}/send`, {
+          method: 'POST',
+          body: JSON.stringify({}),
+        });
+        if (sent?.success) {
+          setSendStatus({
+            stage: 'done',
+            message: sent.message || `Invoice ${invoiceForm.invoice_number || 'INV-' + invoiceId} sent to ${clientEmail}.`,
+          });
+        } else {
+          setSendStatus({
+            stage: 'done',
+            message: sent?.message || 'Invoice created, but email delivery failed.',
+          });
+        }
+      }
+
+      // Show the result before navigating away
+      if (sendStatus) {
+        window.alert(sendStatus.message);
+      }
+      navigate('/admin/billing');
+    } catch (error) {
+      console.error(error);
+      window.alert(error.message || 'Invoice failed. Check you are signed in as admin.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -108,11 +150,41 @@ export function CreateInvoice() {
               <section className="space-y-3">
                 <div className="flex items-center gap-2 text-teal-500 border-b border-white/5 pb-1.5"><Briefcase size={10} /><h4 className="text-[7px] font-black uppercase tracking-widest">Alignment</h4></div>
                 <div className="grid gap-3">
-                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Project Node</label>
-                    <select value={invoiceForm.project_id} onChange={(e) => setInvoiceForm({...invoiceForm, project_id: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" required>
-                      <option value="" className="bg-[#0f172a]">Select Mission...</option>
-                      {projects.map(p => <option key={p.id} value={p.id} className="bg-[#0f172a]">{p.project_name || p.name}</option>)}
-                    </select>
+                  <div className="relative"><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Project Node</label>
+                    <input
+                      type="text"
+                      value={projectSearch}
+                      placeholder="Type to search projects…"
+                      onChange={(e) => {
+                        setProjectSearch(e.target.value);
+                        setShowProjectSuggestions(true);
+                      }}
+                      onFocus={() => setShowProjectSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowProjectSuggestions(false), 150)}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all"
+                      required
+                    />
+                    {showProjectSuggestions && projectSearch.trim() && filteredProjects.length > 0 && (
+                      <div className="absolute z-50 w-full bg-[#0f172a] border border-white/10 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto">
+                        {filteredProjects.slice(0, 10).map((p) => (
+                          <div
+                            key={p.id}
+                            onClick={() => {
+                              const name = p.project_name || p.name || '';
+                              setProjectSearch(name);
+                              setInvoiceForm({ ...invoiceForm, project_id: String(p.id) });
+                              setShowProjectSuggestions(false);
+                            }}
+                            className="px-3 py-2 text-[9px] text-white hover:bg-teal-600 cursor-pointer border-b border-white/5 last:border-0"
+                          >
+                            {name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {!invoiceForm.project_id && !projectSearch && (
+                      <p className="text-[6px] font-bold text-slate-500 mt-1 px-1">Select a mission from the list</p>
+                    )}
                   </div>
                   <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Objective</label><input type="text" placeholder="Description..." value={invoiceForm.title} onChange={(e) => setInvoiceForm({...invoiceForm, title: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" required /></div>
                   <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Tax (KRA rate)</label>

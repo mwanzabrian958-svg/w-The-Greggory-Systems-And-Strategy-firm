@@ -71,9 +71,59 @@ export function hasFullAdminAccess(user) {
 }
 
 export function hasPermission(user, permission) {
-  if (!user) return false;
+  if (!user || !permission) return false;
+
+  // SUPER_ADMIN and ADMIN get full access (no matrix required)
   if (hasFullAdminAccess(user)) return true;
-  return true;
+
+  // MODERATOR: allowed read-only + team management; all others require matrix
+  const moderatorPerms = new Set([
+    PERMISSIONS.VIEW_USERS,
+    PERMISSIONS.VIEW_CONTENT,
+    PERMISSIONS.VIEW_PROJECTS,
+    PERMISSIONS.VIEW_APPLICATIONS,
+    PERMISSIONS.VIEW_FINANCIAL,
+    PERMISSIONS.VIEW_SETTINGS,
+    PERMISSIONS.VIEW_CRM,
+    PERMISSIONS.VIEW_COMMUNICATION,
+    PERMISSIONS.VIEW_SUPPORT,
+    PERMISSIONS.VIEW_SECURITY,
+    PERMISSIONS.VIEW_REPORTS,
+    PERMISSIONS.VIEW_RECORDS,
+    PERMISSIONS.VIEW_ACTIVITY_LOGS,
+    PERMISSIONS.VIEW_DATA_SAFETY,
+    PERMISSIONS.VIEW_TASKS,
+    PERMISSIONS.MANAGE_TEAM,
+    PERMISSIONS.VIEW_DATA_SAFETY,
+    PERMISSIONS.ACCESS_API_DOCS,
+    PERMISSIONS.MANAGE_BACKUPS,
+    PERMISSIONS.EXPORT_DATA
+  ]);
+  if (user.admin_level === ROLES.MODERATOR) {
+    return moderatorPerms.has(permission);
+  }
+
+  // USER role: minimal read-only access
+  if (user.admin_level === ROLES.USER) {
+    return [
+      PERMISSIONS.VIEW_USERS,
+      PERMISSIONS.VIEW_CONTENT,
+      PERMISSIONS.VIEW_PROJECTS,
+      PERMISSIONS.VIEW_APPLICATIONS,
+      PERMISSIONS.VIEW_FINANCIAL,
+      PERMISSIONS.VIEW_COMMUNICATION,
+      PERMISSIONS.VIEW_SUPPORT,
+      PERMISSIONS.VIEW_SECURITY,
+      PERMISSIONS.VIEW_REPORTS,
+      PERMISSIONS.VIEW_RECORDS,
+      PERMISSIONS.VIEW_ACTIVITY_LOGS,
+      PERMISSIONS.VIEW_DATA_SAFETY,
+      PERMISSIONS.ACCESS_API_DOCS
+    ].includes(permission);
+  }
+
+  // Fallback for any unrecognised role — deny by default
+  return false;
 }
 
 export function hasAnyPermission(user, permissions) {

@@ -15,6 +15,7 @@ import { Support } from './pages/Support';
 import { Security } from './pages/Security';
 import { Reports } from './pages/Reports';
 import { Billing } from './pages/Financial';
+import { Communication } from './pages/Communication';
 import { CreateInvoice } from './pages/CreateInvoice';
 import { ManualEntry } from './pages/ManualEntry';
 import { ProfitLossReport } from './pages/ProfitLossReport';
@@ -125,6 +126,7 @@ export function AdminRouter() {
                <Route path="data-safety" element={<AdminRoute user={user} isAuthenticated={isAuthenticated} requiredPermission={PERMISSIONS.VIEW_DATA_SAFETY}><DataSafety /></AdminRoute>} />
                 <Route path="media" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><MediaLibrary /></AdminRoute>} />
                 <Route path="messages" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><EmailInbox /></AdminRoute>} />
+                <Route path="communication" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><Communication /></AdminRoute>} />
                 <Route path="permissions" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><PermissionsManager /></AdminRoute>} />
                <Route path="push-notifications" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><PushNotificationsPage /></AdminRoute>} />
                 <Route path="search" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><SearchResults /></AdminRoute>} />

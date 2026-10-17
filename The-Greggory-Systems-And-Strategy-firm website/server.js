@@ -6751,6 +6751,66 @@ app.post("/api/contact-forms", async (req, res) => {
   }
 });
 
+// Communication Hub API
+app.get("/api/admin/communication", authenticateAdmin, async (req, res) => {
+  try {
+    // Messages (client-origin, from the relay stream):
+    const [messages] = await mainDb.query(
+      "SELECT id, user_id, title, message, priority, status, created_at, updated_at FROM communication_messages WHERE status != 'deleted' ORDER BY created_at DESC LIMIT 25"
+    );
+    // Announcements (optional static feed shown in the relay header):
+    const [announcements] = await mainDb.query(
+      "SELECT id, title, message, priority, created_at FROM announcements ORDER BY created_at DESC LIMIT 5"
+    );
+    res.json({
+      success: true,
+      messages: messages || [],
+      announcements: announcements || [],
+    });
+  } catch (error) {
+    console.error("Error fetching communication hub:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to load communication hub",
+    });
+  }
+});
+
+app.post("/api/admin/communication", authenticateAdmin, async (req, res) => {
+  try {
+    const { userId, title, message, priority = "medium" } = req.body || {};
+    if (!userId || !message || !title) {
+      return res.status(400).json({
+        success: false,
+        message: "user_id, title and message are required",
+      });
+    }
+    const [result] = await mainDb.query(
+      "INSERT INTO communication_messages (user_id, title, message, priority, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'sent', NOW(), NOW())",
+      [userId, title, message, priority]
+    );
+    // Notify the client (if a notification channel exists for them)
+    try {
+      const [u] = await mainDb.query("SELECT email, first_name FROM users WHERE id = ?", [userId]);
+      if (u.length && u[0]?.email) {
+        // Notification placeholders; real delivery handled by notification service
+      }
+    } catch (err) { /* notify only — do not break relay on missing notification config */ }
+
+    res.json({
+      success: true,
+      message: "Message sent on secure relay.",
+      id: result.insertId,
+    });
+  } catch (error) {
+    console.error("Error sending communication hub message:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to send message on secure relay.",
+    });
+  }
+});
+
 // Videos API
 app.get("/api/videos", async (req, res) => {
   try {

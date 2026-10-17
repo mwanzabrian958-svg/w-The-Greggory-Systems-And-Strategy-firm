@@ -35,7 +35,7 @@ export function ActivityLogs() {
       setLoading(true);
       const data = await apiCall("/admin/activity-logs");
       if (data) {
-        setLogs(Array.isArray(data) ? data : []);
+        setLogs(Array.isArray(data) ? data : (data.logs || data.activity || []));
       }
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
