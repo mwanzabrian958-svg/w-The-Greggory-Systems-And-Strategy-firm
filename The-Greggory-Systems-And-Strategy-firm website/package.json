@@ -15,6 +15,7 @@
     "open:workspace": "node scripts/dev-open.js",
     "build": "node scripts/generate-sitemap.js && vite build",
     "generate-sitemap": "node scripts/generate-sitemap.js",
+    "indexnow": "node scripts/indexnow.js",
     "preview": "vite preview",
     "db:init": "node scripts/initialize-db.js",
     "backup:cloud-to-local": "node scripts/backup-cloud-to-local.js",
