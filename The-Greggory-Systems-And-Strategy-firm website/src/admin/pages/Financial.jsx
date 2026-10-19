@@ -5,7 +5,7 @@ import { apiCall, getPdfUrl } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import {
   TrendingUp, Banknote, RefreshCw, FilePlus2,
-  Trash2, Eye, Plus, Wallet, Receipt, Send, FileDown
+  Trash2, Eye, Plus, Wallet, Receipt, Send, FileDown, CreditCard
 } from "lucide-react";
 
 export function Billing() {
@@ -13,6 +13,7 @@ export function Billing() {
   const [displayMode, setDisplayMode] = useState("invoices"); // 'invoices' | 'ledger' | 'mpesa'
   const [loading, setLoading] = useState(true);
   const [sendingId, setSendingId] = useState(null);
+  const [recordingId, setRecordingId] = useState(null);
   const [notice, setNotice] = useState(null);
   const [financials, setFinancials] = useState({
     revenue: 0, expenses: 0, net_income: 0, outstanding: 0,
@@ -99,6 +100,39 @@ export function Billing() {
       const res = await apiCall(`/invoices/${id}`, { method: 'DELETE' });
       if (res.success) fetchFinancialData();
     } catch (e) { console.error(e); }
+  };
+
+  const handleRecordBankPayment = async (inv) => {
+    const ref = window.prompt(`Enter payment reference for ${inv.invoice_number || `INV-${inv.id}`} (e.g. KCB transaction ref):`);
+    if (ref === null) return; // user cancelled
+    const trimmed = String(ref).trim();
+    if (!trimmed) {
+      setNotice({ ok: false, text: "A payment reference is required." });
+      return;
+    }
+    setRecordingId(inv.id);
+    setNotice(null);
+    try {
+      const res = await apiCall(`/invoices/${inv.id}/record-payment`, {
+        method: "POST",
+        body: JSON.stringify({
+          payment_method: "bank_transfer",
+          payment_reference: trimmed,
+          transaction_reference: trimmed,
+          notes: "Recorded via Financial Hub — KCB bank transfer",
+        }),
+      });
+      if (res.success) {
+        setNotice({ ok: true, text: `Payment recorded for ${inv.invoice_number || `INV-${inv.id}`}.` });
+        fetchFinancialData();
+      } else {
+        setNotice({ ok: false, text: res.message || res.error || "Failed to record payment." });
+      }
+    } catch (e) {
+      setNotice({ ok: false, text: String(e.message || e) });
+    }
+    setRecordingId(null);
+    setTimeout(() => setNotice(null), 6000);
   };
 
   const statusBadge = (status) => {
@@ -220,6 +254,11 @@ export function Billing() {
                           </button>
                           <button onClick={() => handleDownloadCompletion("invoices", inv.id)} title="Download completion PDF" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-teal-600 hover:text-white transition-all"><FileDown size={11} /></button>
                           <button onClick={() => navigate(`/admin/billing/preview/${inv.id}`)} title="View invoice" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-teal-500 hover:text-white transition-all"><Eye size={11} /></button>
+                          {String(inv.status || '').toLowerCase() !== 'paid' && (
+                            <button onClick={() => handleRecordBankPayment(inv)} disabled={recordingId === inv.id} title="Record KCB bank payment" className={`p-1.5 rounded-lg transition-all ${recordingId === inv.id ? "bg-emerald-600 text-emerald-50" : "bg-slate-50 text-slate-400 hover:bg-teal-600 hover:text-white"} disabled:opacity-60`}>
+                              {recordingId === inv.id ? <Spinner size={11} tone="white" /> : <CreditCard size={11} />}
+                            </button>
+                          )}
                           <button onClick={() => handleDeleteInvoice(inv.id)} title="Delete invoice" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={11} /></button>
                         </div>
                       </td>
