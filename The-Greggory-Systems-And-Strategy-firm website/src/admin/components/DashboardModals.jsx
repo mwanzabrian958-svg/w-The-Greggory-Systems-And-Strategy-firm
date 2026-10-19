@@ -33,7 +33,7 @@ export function QuickActionModal({ isOpen, onClose, actionType, onAction }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={titles[actionType]} size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={titles[actionType]} size="screen">
       {renderContent()}
     </Modal>
   );

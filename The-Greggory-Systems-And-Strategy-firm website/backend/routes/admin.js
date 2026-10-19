@@ -1446,6 +1446,20 @@ router.post('/team', async (req, res) => {
 });
 
 // =============================================
+// GET team members (for Team.jsx + AdvancedDashboard)
+// =============================================
+router.get('/team', async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(
+      'SELECT id, name, role, department, description, email, is_active, created_at FROM team_members WHERE deleted_at IS NULL ORDER BY created_at DESC'
+    );
+    res.json({ success: true, team: rows });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch team members' });
+  }
+});
+
+// =============================================
 // DELETE ROUTES
 // =============================================
 router.delete('/accounting/entries/:id', async (req, res) => {

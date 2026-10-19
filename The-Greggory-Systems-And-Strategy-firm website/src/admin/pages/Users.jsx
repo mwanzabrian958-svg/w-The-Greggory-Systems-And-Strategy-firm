@@ -244,8 +244,8 @@ export function Users() {
       )}
 
       {showResetModal && resetUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[600] flex items-center justify-center p-4 font-sans">
-           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-[#0f172a]/95 backdrop-blur-md z-[600] p-0 font-sans">
+           <div className="bg-[#0f172a]/95 backdrop-blur-md w-full max-h-[95vh] overflow-y-auto flex flex-col rounded-none">
               {!resetResult ? (
                 <>
                   <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-5 text-emerald-500 mx-auto border border-emerald-100"><KeyRound size={24} /></div>
@@ -294,8 +294,8 @@ export function Users() {
       )}
 
       {showDeleteModal && deletingUser && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[600] flex items-center justify-center p-4 font-sans">
-           <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-[#0f172a]/95 backdrop-blur-md z-[600] p-0 font-sans">
+           <div className="bg-[#0f172a]/95 backdrop-blur-md w-full max-h-[95vh] overflow-y-auto flex flex-col rounded-none">
               <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center mb-5 text-rose-500 mx-auto border border-rose-100"><AlertCircle size={24} /></div>
               <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter text-center mb-1">Terminate User Node?</h3>
               <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center mb-8">Confirming deletion: <span className="text-slate-900">{deletingUser.display_name}</span></p>

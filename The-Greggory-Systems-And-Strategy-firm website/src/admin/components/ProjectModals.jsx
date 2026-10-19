@@ -88,7 +88,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Initialize Mission Node" size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Initialize Mission Node" size="screen">
       <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
         {error && (
           <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-[10px] font-black uppercase tracking-widest text-emerald-600">

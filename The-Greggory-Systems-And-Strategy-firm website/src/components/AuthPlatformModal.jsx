@@ -214,8 +214,8 @@ export default function AuthPlatformModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/55 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg max-h-[92vh] overflow-hidden rounded-2xl shadow-2xl border border-white/15 bg-slate-900 flex flex-col font-sans">
+    <div className="fixed inset-0 z-[100] bg-[#0f172a]/95 backdrop-blur-md p-0">
+      <div className="relative w-full max-h-[95vh] overflow-y-auto rounded-none bg-[#0f172a]/95 backdrop-blur-md flex flex-col font-sans">
         <button
           type="button"
           onClick={handleClose}

@@ -52,8 +52,8 @@ export function ApplicationsModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-[#0f172a]/95 backdrop-blur-md z-50">
+      <div className="bg-[#0f172a]/95 backdrop-blur-md w-full max-h-[95vh] overflow-y-auto flex flex-col">
         <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ClipboardList className="w-6 h-6 text-white" />
@@ -345,8 +345,8 @@ export function ApplicationsModal({ isOpen, onClose }) {
           )}
 
           {selectedApplication && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="fixed inset-0 bg-[#0f172a]/95 backdrop-blur-md z-60 p-0">
+              <div className="bg-[#0f172a]/95 backdrop-blur-md w-full max-h-[95vh] overflow-y-auto flex flex-col rounded-none">
                 <div className="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4 flex items-center justify-between">
                   <h2 className="text-xl font-bold text-white">Application Details</h2>
                   <button onClick={() => setSelectedApplication(null)} className="p-2 hover:bg-white/20 rounded-lg transition-colors">

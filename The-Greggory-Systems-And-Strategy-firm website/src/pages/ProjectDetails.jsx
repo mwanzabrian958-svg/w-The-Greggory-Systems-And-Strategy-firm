@@ -314,8 +314,8 @@ const ProjectDetails = () => {
 
       {/* Share Modal Protocol */}
       {showShareModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[150] p-4 animate-fade-in">
-          <div className="bg-[#1e293b] rounded-[40px] shadow-2xl max-w-lg w-full border border-white/10 p-10 relative">
+        <div className="fixed inset-0 bg-[#0f172a]/95 backdrop-blur-md z-[150] p-0 animate-fade-in">
+          <div className="bg-[#0f172a]/95 backdrop-blur-md w-full max-h-[95vh] overflow-y-auto flex flex-col rounded-none border-none p-0 relative">
             <h3 className="text-3xl font-black text-white uppercase tracking-tight mb-4">Relay Entity Telemetry</h3>
             <p className="text-slate-400 font-medium leading-relaxed mb-10">Select a secure channel to broadcast project metrics.</p>
             
@@ -333,8 +333,8 @@ const ProjectDetails = () => {
 
       {/* Document Viewer Modal Protocol */}
       {showDocumentViewer && selectedDocument && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-xl flex items-center justify-center z-[200] p-4 md:p-10 animate-fade-in">
-          <div className="bg-[#0f172a] rounded-[40px] w-full max-w-6xl h-full flex flex-col border border-white/10 shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 bg-[#0f172a]/95 backdrop-blur-md z-[200] p-0 animate-fade-in">
+          <div className="bg-[#0f172a]/95 backdrop-blur-md w-full max-h-[95vh] overflow-y-auto flex flex-col rounded-none border-none p-0 overflow-hidden">
             <div className="flex items-center justify-between p-8 border-b border-white/10 bg-white/[0.02]">
               <div className="flex items-center">
                 <div className="p-4 bg-gold-500/10 rounded-2xl text-gold-500 mr-6 border border-gold-500/20"><FileText className="w-6 h-6" /></div>
@@ -356,8 +356,8 @@ const ProjectDetails = () => {
       )}
       {/* Project Feedback Modal */}
       {showFeedbackModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[150] p-4">
-          <div className="bg-[#1e293b] rounded-[40px] shadow-2xl max-w-lg w-full border border-white/10 p-10 relative">
+        <div className="fixed inset-0 bg-[#0f172a]/95 backdrop-blur-md z-[150] p-0">
+          <div className="bg-[#0f172a]/95 backdrop-blur-md w-full max-h-[95vh] overflow-y-auto flex flex-col rounded-none border-none p-0 relative">
             <h3 className="text-3xl font-black text-white uppercase tracking-tight mb-4">Report Anomaly</h3>
             <p className="text-slate-400 font-medium leading-relaxed mb-8">Direct relay to tactical command regarding this entity.</p>
 

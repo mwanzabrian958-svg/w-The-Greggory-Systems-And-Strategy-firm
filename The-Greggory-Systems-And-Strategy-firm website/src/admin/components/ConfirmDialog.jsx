@@ -44,7 +44,7 @@ export function ConfirmDialog({
   const style = variantStyles[variant] || variantStyles.info;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="sm">
+    <Modal isOpen={isOpen} onClose={onClose} size="screen">
       <div className="text-center">
         {/* Icon */}
         <div className={`w-16 h-16 rounded-full ${style.icon} flex items-center justify-center mx-auto mb-4`}>

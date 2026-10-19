@@ -36,8 +36,8 @@ export function SupportModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-[#0f172a]/95 backdrop-blur-md z-50">
+      <div className="bg-[#0f172a]/95 backdrop-blur-md w-full max-h-[95vh] overflow-y-auto flex flex-col">
         <div className="bg-gradient-to-r from-orange-600 to-amber-600 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <HelpCircle className="w-6 h-6 text-white" />

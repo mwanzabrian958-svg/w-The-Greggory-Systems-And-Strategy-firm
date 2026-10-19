@@ -64,8 +64,8 @@ export function AdvancedDashboard({ user }) {
         apiCall("/admin/dashboard"),
         apiCall("/admin/budget-overview"),
         apiCall("/admin/pending-approvals"),
-        apiCall("/invoices").catch(() => null),
-        apiCall("/api/admin/team").catch(() => null)
+        apiCall("/admin/pending-invoices").catch(() => null),
+        apiCall("/admin/team").catch(() => null)
       ]);
 
       if (dashRes.success && dashRes.dashboard) {

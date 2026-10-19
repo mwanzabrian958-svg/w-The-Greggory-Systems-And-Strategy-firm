@@ -72,7 +72,7 @@ export function CreateUserModal({ isOpen, onClose, onCreate }) {
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create New User" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Create New User" size="screen">
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-600">

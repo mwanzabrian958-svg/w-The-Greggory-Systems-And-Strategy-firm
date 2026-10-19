@@ -17,13 +17,13 @@ export function Modal({
 }) {
   const modalRef = useRef(null);
   
-  // Size classes
+  // Size classes — all full-screen occupation, no centered popups
   const sizeClasses = {
-    sm: 'max-w-md my-8',
-    md: 'max-w-lg my-8',
-    lg: 'max-w-2xl my-8',
-    xl: 'max-w-4xl my-8',
-    full: 'max-w-[95%] h-[95%] my-4',
+    sm: 'w-full max-h-[95vh]',
+    md: 'w-full max-h-[95vh]',
+    lg: 'w-full max-h-[95vh]',
+    xl: 'w-full max-h-[95vh]',
+    full: 'w-full h-[95vh]',
     screen: 'w-screen h-screen'
   };
 
@@ -57,7 +57,7 @@ export function Modal({
 
   return (
     <div 
-      className={`fixed inset-0 z-50 flex items-center justify-center ${isScreen ? 'p-0' : 'p-4'}`}
+      className={`fixed inset-0 z-50 bg-[#0f172a]/95 backdrop-blur-md p-0`}
       onClick={handleBackdropClick}
     >
       {/* Backdrop */}
@@ -66,7 +66,7 @@ export function Modal({
       {/* Modal Content */}
       <div 
         ref={modalRef}
-        className={`relative w-full ${sizeClasses[size]} bg-white shadow-2xl ${isScreen ? 'h-screen rounded-none' : 'rounded-3xl border border-white/20'} overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col`}
+        className={`relative w-full ${sizeClasses[size]} bg-[#0f172a]/95 backdrop-blur-md ${isScreen ? 'h-screen rounded-none' : 'rounded-none'} overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col`}
       >
         {/* Header */}
         {title && (
