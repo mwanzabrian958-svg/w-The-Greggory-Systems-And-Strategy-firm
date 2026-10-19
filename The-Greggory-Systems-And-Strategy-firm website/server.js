@@ -4964,7 +4964,12 @@ app.post("/api/documents/generate/:type/:id", authenticateAny, async (req, res) 
 app.post("/api/invoices/:id/send", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { email: overrideEmail, subject: overrideSubject, message } = req.body || {};
+    const body = req.body || {};
+    // The compose UI sends {to, subject, body}; older callers send
+    // {email, subject, message} — accept both shapes.
+    const overrideEmail = body.email || body.to;
+    const overrideSubject = body.subject;
+    const adminMessage = String(body.message || body.body || "").trim();
 
     const [rows] = await db.execute("SELECT * FROM invoices WHERE id = ? AND deleted_at IS NULL", [id]);
     const invoice = rows && rows[0];
@@ -4981,7 +4986,9 @@ app.post("/api/invoices/:id/send", authenticateAdmin, async (req, res) => {
     }
 
     const pdfBuffer = await generatePDFContent("invoices", invoice);
-    const htmlEmail = buildDocumentEmailHtml("invoices", invoice);
+    // The admin's composed note is embedded (HTML-escaped) in the branded HTML
+    // body so clients actually see it — the text part alone is not enough.
+    const htmlEmail = buildDocumentEmailHtml("invoices", invoice, adminMessage);
     const invoiceRef = invoice.invoice_number || `INV-${invoice.id}`;
 
     const sendResult = await sendMail({
@@ -4990,7 +4997,7 @@ app.post("/api/invoices/:id/send", authenticateAdmin, async (req, res) => {
         overrideSubject ||
         `Invoice ${invoiceRef} — The Greggory Systems & Strategy Firm`,
       html: htmlEmail,
-      text: message || undefined,
+      text: adminMessage || undefined,
       attachments: [
         {
           filename: `${invoiceRef}.pdf`,
@@ -7750,17 +7757,24 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
       rawRate ? req.body.tax_rate : _taxType === "withholding" ? 0.05 : _taxType === "vat" ? 0.16 : 0
     );
     const items = Array.isArray(req.body.items) ? JSON.stringify(req.body.items) : (req.body.items || null);
+    // Normalize payment_method to DB enum: 'bank' -> 'bank_transfer'
+    const rawPaymentMethod = String(req.body.payment_method || 'mpesa').toLowerCase();
+    const paymentMethod = rawPaymentMethod === 'bank' ? 'bank_transfer'
+      : rawPaymentMethod === 'mpesa' ? 'mpesa'
+      : rawPaymentMethod;
     const [result] = await mainDb.query(
       `INSERT INTO invoices
         (project_id, invoice_number, invoice_type, title, description, subtotal, tax_rate,
          currency, exchange_rate, issue_date, due_date, status, client_name, client_email,
-         client_phone, items, notes, payment_terms, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, NOW())`,
+         client_phone, items, notes, payment_terms, payment_method, payment_phone, payment_reference, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [project_id, invoice_number, req.body.invoice_type || 'project_fee', title, description || null,
        subtotal, tax_rate, req.body.currency || 'KES',
        req.body.exchange_rate != null ? parseFloat(req.body.exchange_rate) : 1,
        issue_date, due, clientName, client_email || null, req.body.client_phone || null,
-       items, req.body.notes || null, req.body.payment_terms || null, userId]
+       items, req.body.notes || null, req.body.payment_terms || null,
+       paymentMethod, req.body.payment_phone || '+254115525854', req.body.payment_reference || null,
+       userId]
      );
      // Notify the client: look up the user by client_email (the address that
      // belongs to the invoice) and create an in-portal notification. Fire-and-
@@ -7786,6 +7800,30 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
           }).catch(() => {});
         } catch (pushErr) { console.warn('[INVOICE] push skipped:', pushErr.message); }
      }
+     // Ledger: create an accounting_entries row so the invoice appears in the billing ledger
+     // (fire-and-forget; a ledger failure must never roll back the invoice itself).
+     try {
+       const taxAmount = Number(((subtotal || 0) * (tax_rate || 0)).toFixed(2));
+       await mainDb.query(
+         `INSERT INTO accounting_entries
+           (entry_type, category, amount, tax_amount, currency, exchange_rate,
+            transaction_date, transaction_reference, payment_method, payment_status,
+            description, notes, tax_rate, tax_region, project_id, invoice_id,
+            client_email, created_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+         [
+           'invoice', 'income', subtotal, taxAmount,
+           req.body.currency || 'KES', 1,
+           issue_date, invoice_number, null, 'pending',
+           title, req.body.notes || null,
+           tax_rate, 'KE', project_id, result.insertId,
+           client_email || null, userId,
+         ]
+       );
+     } catch (ledgerErr) {
+       console.warn('[INVOICE] ledger entry skipped:', ledgerErr.message);
+     }
+
      res.status(201).json({ success: true, id: result.insertId });
   } catch (error) { console.error('[POST /api/invoices]', error.code || '', error.message, '\nSQL:', String(error.sql || '').substring(0, 500)); res.status(500).json({ error: 'Failed', detail: "Internal server error" }); }
 });
@@ -7978,7 +8016,7 @@ app.put("/api/invoices/:id", authenticateAdmin, async (req, res) => {
     // Column whitelist: SQL identifiers cannot be bound as parameters, so
     // only known descriptive columns may be updated — never ids, money,
     // statuses or generated columns (those move via /:id/send and M-Pesa).
-    const ALLOWED = new Set(["title", "description", "due_date", "client_name", "client_email", "client_phone", "notes", "payment_terms"]);
+    const ALLOWED = new Set(["title", "description", "due_date", "client_name", "client_email", "client_phone", "notes", "payment_terms", "payment_method"]);
     const sets = [];
     const vals = [];
     for (const [k, v] of Object.entries(req.body || {})) {
@@ -7989,6 +8027,82 @@ app.put("/api/invoices/:id", authenticateAdmin, async (req, res) => {
     await mainDb.query(`UPDATE invoices SET ${sets.join(",")} WHERE id=? AND deleted_at IS NULL`, vals);
     res.json({ success: true });
   } catch (e) {
+    res.status(500).json({ error: "Failed" });
+  }
+});
+
+// ── Record a bank (KCB) payment against an invoice ─────────────────────────
+// Marks the invoice paid and creates a matching accounting_entries row
+// (entry_type = 'invoice_payment', category = 'income') so the receipt
+// appears in the billing ledger. Fire-and-forget on the ledger write.
+app.post("/api/invoices/:id/record-payment", authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await mainDb.query("SELECT * FROM invoices WHERE id=? AND deleted_at IS NULL", [id]);
+    if (rows.length === 0) return res.status(404).json({ error: "Invoice not found" });
+    const inv = rows[0];
+    if (inv.status === 'paid' && inv.payment_status === 'paid') {
+      return res.status(400).json({ error: "Invoice is already marked paid" });
+    }
+
+    const {
+      payment_method,
+      payment_reference,
+      transaction_reference,
+      amount,
+      paid_date,
+      notes,
+    } = req.body || {};
+
+    // Normalize 'bank' → 'bank_transfer' to match DB enum
+    const rawMethod = String(payment_method || inv.payment_method || 'bank_transfer').toLowerCase();
+    const safePaymentMethod = rawMethod === 'bank' ? 'bank_transfer' : rawMethod;
+
+    const safeAmount = amount != null && amount !== '' && !isNaN(parseFloat(amount))
+      ? parseFloat(amount)
+      : parseFloat(inv.total_amount_kes || inv.subtotal || 0);
+
+    const safePaidDate = paid_date || new Date().toISOString().split('T')[0];
+    const userId = await resolveAccountingUserId(req.adminId || req.userId || null);
+    const resolvedProjectId = await resolveAccountingProjectId(inv.project_id);
+
+    // Mark invoice as paid
+    await mainDb.query(
+      `UPDATE invoices
+       SET status = 'paid', payment_status = 'paid', paid_date = ?,
+           payment_method = ?, payment_reference = ?, updated_at = NOW(), updated_by = ?
+       WHERE id = ? AND deleted_at IS NULL`,
+      [safePaidDate, safePaymentMethod, payment_reference || null, userId, id]
+    );
+
+    // Create accounting entry (fire-and-forget; a ledger failure never
+    // rolls back the invoice payment itself).
+    try {
+      const taxAmount = Number(((safeAmount || 0) * (inv.tax_rate || 0)).toFixed(2));
+      await mainDb.query(
+        `INSERT INTO accounting_entries
+          (entry_type, category, amount, tax_amount, currency, exchange_rate,
+           transaction_date, transaction_reference, payment_method, payment_status,
+           description, notes, tax_rate, tax_region, project_id, invoice_id,
+           client_email, created_by, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          'invoice_payment', 'income', safeAmount, taxAmount,
+          inv.currency || 'KES', 1,
+          safePaidDate, transaction_reference || payment_reference || null,
+          safePaymentMethod, 'completed',
+          `Bank payment received — Invoice ${inv.invoice_number}`, notes || null,
+          inv.tax_rate || 0, 'KE', resolvedProjectId, id,
+          inv.client_email || null, userId,
+        ]
+      );
+    } catch (ledgerErr) {
+      console.warn('[INVOICE PAYMENT] ledger entry skipped:', ledgerErr.message);
+    }
+
+    res.json({ success: true, message: "Payment recorded", invoiceId: id });
+  } catch (e) {
+    console.error('[INVOICE PAYMENT]', e.message);
     res.status(500).json({ error: "Failed" });
   }
 });

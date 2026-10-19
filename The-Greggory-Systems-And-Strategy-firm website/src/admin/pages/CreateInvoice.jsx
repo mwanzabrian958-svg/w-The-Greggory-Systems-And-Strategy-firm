@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Briefcase, User, X, Save, RefreshCw, Send } from "lucide-react";
+import { Briefcase, User, X, Save, RefreshCw, Send, MailCheck } from "lucide-react";
 import { apiCall } from "../../services/api";
 import { Spinner } from "../../components/Loading";
 import { formatKSH } from "../../utils/currencyUtils";
@@ -18,6 +18,7 @@ export function CreateInvoice() {
     project_id: '', title: '', invoice_type: 'project_fee', tax_type: 'vat', tax_rate: '16',
     issue_date: new Date().toISOString().split('T')[0], due_date: '',
     client_name: '', client_email: '', client_phone: '', notes: '',
+    payment_method: 'bank_transfer',
     items: [{ description: '', quantity: '1', unit_price: '' }]
   });
 
@@ -111,35 +112,52 @@ export function CreateInvoice() {
   };
 
   const handleComposeSend = async () => {
-    if (!pendingInvoiceId) return;
-    setSendStatus({ stage: 'sending', message: 'Generating PDF & sending email…' });
+    if (!pendingInvoiceId || isSubmitting) return;
+    setIsSubmitting(true);
+    setSendStatus({ stage: 'sending', ok: null, message: 'Generating PDF & sending email…' });
     try {
       const sent = await apiCall(`/invoices/${pendingInvoiceId}/send`, {
         method: 'POST',
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          to: composeForm.to,
+          subject: composeForm.subject,
+          body: composeForm.body,
+        }),
       });
       if (sent?.success) {
+        // Keep the compose area open so the success banner can render; the
+        // admin dismisses it with "View Billing" (a stale window.alert here
+        // would read the pre-request status, not this result).
+        setPendingInvoiceId(null);
         setSendStatus({
           stage: 'done',
+          ok: true,
           message: sent.message || `Invoice sent to ${composeForm.to}.`,
         });
-        setShowCompose(false);
-        setPendingInvoiceId(null);
-        // Show result then navigate
-        window.alert(sendStatus.message);
-        navigate('/admin/billing');
       } else {
         setSendStatus({
           stage: 'done',
+          ok: false,
           message: sent?.message || 'Email delivery failed.',
         });
       }
     } catch (error) {
       console.error(error);
-      window.alert(error.message || 'Failed to send invoice email.');
+      setSendStatus({
+        stage: 'done',
+        ok: false,
+        message: String(error.message || error) || 'Failed to send invoice email.',
+      });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const finishCompose = () => {
+    setShowCompose(false);
+    setPendingInvoiceId(null);
+    setSendStatus(null);
+    navigate('/admin/billing');
   };
 
   return (
@@ -339,9 +357,9 @@ export function CreateInvoice() {
 
                 {sendStatus && sendStatus.stage === 'done' && (
                   <div className={`p-3 rounded-lg text-[8px] font-black text-center ${
-                    sendStatus.message?.includes('failed') || sendStatus.message?.includes('Failed')
-                      ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                      : 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                    sendStatus.ok
+                      ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
                   }`}>
                     {sendStatus.message}
                   </div>
@@ -349,20 +367,31 @@ export function CreateInvoice() {
               </div>
 
               <div className="p-6 border-t border-white/5 flex justify-end gap-3">
-                <button
-                  onClick={() => setShowCompose(false)}
-                  disabled={isSubmitting}
-                  className="px-6 py-2 rounded-lg text-[8px] font-black text-slate-400 hover:text-white hover:bg-white/5 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleComposeSend}
-                  disabled={isSubmitting || !composeForm.to}
-                  className="px-8 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-[8px] font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? <Spinner size={14} tone="white" inline /> : <Send size={14} inline />} Send Invoice Email
-                </button>
+                {sendStatus?.stage === 'done' && sendStatus.ok ? (
+                  <button
+                    onClick={finishCompose}
+                    className="px-8 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-[8px] font-black uppercase tracking-widest transition-all shadow-lg"
+                  >
+                    <MailCheck size={14} /> View Billing
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setShowCompose(false)}
+                      disabled={isSubmitting}
+                      className="px-6 py-2 rounded-lg text-[8px] font-black text-slate-400 hover:text-white hover:bg-white/5 transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleComposeSend}
+                      disabled={isSubmitting || !composeForm.to || !pendingInvoiceId}
+                      className="px-8 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-[8px] font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmitting ? <Spinner size={14} tone="white" /> : <Send size={14} />} Send Invoice Email
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

@@ -12,10 +12,17 @@ const { stampLogo, stampWatermark } = require("./documentBrand");
 
 const FIRM_LEGAL_NAME = "THE GREGGORY SYSTEMS AND STRATEGY FIRM";
 const FIRM_TAGLINE = "Strategic Projects, Systems & Business Solutions";
+const FIRM_INTRO =
+  process.env.FIRM_INTRO ||
+  "Thank you for partnering with The Greggory Systems & Strategy Firm. " +
+  "This document outlines professional services delivered as per our agreement. " +
+  "Kindly remit payment using the details provided below.";
 const FIRM_EMAIL =
   process.env.COMPANY_EMAIL || "thegreggorysystemsandstrategyf@gmail.com";
 const FIRM_PHONE = process.env.COMPANY_PHONE_NUMBER || "+254 115 525 854";
 const FIRM_ADDRESS = process.env.COMPANY_ADDRESS || "Nairobi, Kenya";
+const KCB_PAYBILL = process.env.KCB_PAYBILL || "522533";
+const KCB_ACCOUNT_NUMBER = process.env.KCB_ACCOUNT_NUMBER || "129064383";
 
 /** Escape a value for safe interpolation into email HTML. */
 const escHtml = (v) =>
@@ -107,14 +114,19 @@ function documentTotals(document, items) {
 /** Human-readable payment instruction lines. */
 function paymentInstructions(document) {
   const method = String(document.payment_method || "mpesa").toLowerCase();
-  const rawPhoneDigits = String(document.payment_phone || "").replace(/\D/g, "");
-  const phone = "0799789956";
+  const phone = FIRM_PHONE.replace(/\D/g, "");
   const reference =
     document.invoice_number || document.payment_reference || "Invoice";
+  const total = Number(
+    document.grand_total || document.total_amount || document.subtotal || 0
+  );
+  const fmtTotal = total > 0 ? `KES ${total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "KES 0.00";
   if (method.includes("bank")) {
     return [
-      "Bank Transfer",
-      `Account / Details: ${phone}`,
+      "KCB Bank — Paybill / Send Money",
+      `Paybill: ${KCB_PAYBILL}`,
+      `Account Number: ${KCB_ACCOUNT_NUMBER}`,
+      `Amount: ${fmtTotal}`,
       `Reference: ${reference}`,
     ];
   }
@@ -125,6 +137,7 @@ function paymentInstructions(document) {
     "M-Pesa Send Money (Lipa na M-Pesa)",
     `Send to: ${phone}`,
     `Use ${reference} as the account reference`,
+    `…or pay via KCB: Paybill ${KCB_PAYBILL}, Account ${KCB_ACCOUNT_NUMBER}, Amount ${fmtTotal}, Reference ${reference}`,
   ];
 }
 /** Professional document PDF (A4 single page) — invoices / quotes / receipts. */
@@ -205,6 +218,13 @@ function generatePDFContent(type, document) {
 
     doc.rect(M, y, CW, 3).fill(TEAL);
     y += 20;
+
+    // ---- Company pre-text / intro ---
+    doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(6.5);
+    doc.text("FROM THE FIRM", M, y);
+    doc.fillColor(INK).font("Helvetica").fontSize(8.5);
+    doc.text(FIRM_INTRO, M, y + 10, { width: CW, lineGap: 2 });
+    y += 56;
 
     // ---- Bill-to (left) + meta grid (right) ----
     const billTop = y;
@@ -360,8 +380,11 @@ let rowIdx = 1;
  * Professional invoice/quote/receipt email HTML — the client-facing version of
  * the PDF, styled like a contractor/consultant print template. Self-contained
  * inline CSS (safe in Gmail/Outlook) and every supplied value is HTML-escaped.
+ * `message` (optional) is the admin's composed note — rendered as a bordered
+ * block under the header so the client actually sees it (HTML part wins in
+ * every mail client; the text part alone would be ignored).
  */
-function buildDocumentEmailHtml(type, document) {
+function buildDocumentEmailHtml(type, document, message) {
   const isQuote = String(type).toLowerCase().indexOf("quote") === 0;
   const isReceipt = String(type).toLowerCase().indexOf("receipt") === 0;
   const docTitle = isReceipt ? "RECEIPT" : isQuote ? "QUOTE" : "INVOICE";
@@ -423,6 +446,17 @@ const totalsRows = `
     .filter((n) => n && String(n).trim())
     .join("  ·  ");
 
+  // Admin-composed note from the full-screen compose area (escaped; newlines kept)
+  const personalNote =
+    message && String(message).trim()
+      ? `<tr><td colspan="2" style="padding:16px 30px 2px;">
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-left:3px solid #0d9488;border-radius:6px;padding:14px 16px;">
+            <div style="font-size:9px;color:#0d9488;font-weight:800;letter-spacing:2px;text-transform:uppercase;">A note from your project team</div>
+            <div style="font-size:12px;color:#334155;line-height:1.65;margin-top:6px;white-space:pre-line;">${esc(String(message).trim())}</div>
+          </div>
+        </td></tr>`
+      : "";
+
   return `<!doctype html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -455,6 +489,15 @@ const totalsRows = `
             <table width="100%" cellpadding="0" cellspacing="0">${metaRows}</table>
           </td>
         </tr>
+        <tr>
+          <td colspan="2" style="padding:20px 30px;">
+            <div style="background:#f8fafc;border-left:3px solid #0d9488;border-radius:6px;padding:14px 16px;">
+              <div style="font-size:9px;color:#0d9488;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">From The Firm</div>
+              <div style="font-size:12px;color:#334155;line-height:1.6;white-space:pre-line;">${esc(FIRM_INTRO)}</div>
+            </div>
+          </td>
+        </tr>
+${personalNote}
 <tr>
           <td colspan="2" style="padding:18px 30px 8px;">
             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
