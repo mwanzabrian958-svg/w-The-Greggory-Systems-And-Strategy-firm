@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, ChevronRight, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
+import { ArrowRight, ChevronLeft, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, ChevronRight, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
 import { SITE_NAME } from '../constants/siteBrand'
 import { useSeo, SEO } from '../hooks/useSeo'
 import { apiCall } from '../services/api'
@@ -9,6 +9,61 @@ import { getYearsActiveLabel } from '../utils/companyStats'
 const Home = () => {
   useSeo(SEO.home)
   const videoRef = useRef(null)
+  const carouselRef = useRef(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  // Glassy carousel items — square containers with vanishing horizontal scroll
+  const carouselItems = [
+    {
+      id: 1,
+      title: 'Systems Strategy',
+      desc: 'Enterprise architecture roadmaps that align technology with business goals.',
+      icon: <BarChart3 size={20} strokeWidth={2.5} className="text-gold-600" />,
+    },
+    {
+      id: 2,
+      title: 'Digital Transformation',
+      desc: 'End-to-end modernization of legacy platforms into cloud-native systems.',
+      icon: <Zap size={20} strokeWidth={2.5} className="text-teal-600" />,
+    },
+    {
+      id: 3,
+      title: 'Cybersecurity',
+      desc: 'Zero-trust security frameworks and threat monitoring for critical infrastructure.',
+      icon: <ShieldCheck size={20} strokeWidth={2.5} className="text-rose-500" />,
+    },
+    {
+      id: 4,
+      title: 'Cloud Infrastructure',
+      desc: 'Scalable, resilient cloud environments with automated deployment pipelines.',
+      icon: <Server size={20} strokeWidth={2.5} className="text-blue-600" />,
+    },
+    {
+      id: 5,
+      title: 'Data Analytics',
+      desc: 'Business intelligence and predictive analytics that drive informed decisions.',
+      icon: <LineChart size={20} strokeWidth={2.5} className="text-indigo-500" />,
+    },
+  ]
+
+  const handleCarouselScroll = () => {
+    if (!carouselRef.current) return
+    const { scrollLeft, offsetWidth } = carouselRef.current
+    const center = scrollLeft + offsetWidth / 2
+    let closestIndex = 0
+    let closestDistance = Infinity
+    Array.from(carouselRef.current.children).forEach((child, index) => {
+      const rect = child.getBoundingClientRect()
+      const containerRect = carouselRef.current.getBoundingClientRect()
+      const childCenter = rect.left + rect.width / 2 - containerRect.left
+      const dist = Math.abs(center - childCenter)
+      if (dist < closestDistance) {
+        closestDistance = dist
+        closestIndex = index
+      }
+    })
+    setActiveIndex(closestIndex)
+  }
 
   // Testimonials are published from the admin Posts area (backend/routes/posts.js);
   // only rows with status='published' AND is_active=1 are returned. The section
@@ -272,6 +327,104 @@ const Home = () => {
                   <img src="/score-1.jpg" alt="Client results snapshot featured on the Greggory homepage" loading="lazy" className="h-12 sm:h-16 w-auto rounded object-contain" />
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── GLASSY CAROUSEL TABS ── */}
+      <section className="py-16 bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Featured Insights</h2>
+            <div className="h-px w-8 bg-gold-500 mx-auto mb-4" />
+            <p className="text-[11px] text-slate-500 max-w-lg mx-auto">Explore our latest thinking across strategy, systems, and transformation.</p>
+          </div>
+
+          <div className="relative">
+            <div
+              className="flex items-center justify-center gap-4 px-4 sm:px-6 lg:px-8 pb-10 overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+              ref={carouselRef}
+              onScroll={handleCarouselScroll}
+              onWheel={(e) => {
+                if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) {
+                  e.preventDefault()
+                  carouselRef.current.scrollBy({ left: e.deltaX, behavior: 'smooth' })
+                }
+              }}
+            >
+              {carouselItems.map((item, index) => {
+                const distance = Math.abs(index - activeIndex)
+                const isCenter = distance === 0
+                const opacity = distance === 0 ? 1 : distance === 1 ? 0.45 : 0.15
+                const scale = distance === 0 ? 1 : distance === 1 ? 0.85 : 0.7
+                const translateX = distance === 0 ? 0 : index < activeIndex ? -50 : 50
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      setActiveIndex(index)
+                      if (carouselRef.current) {
+                        carouselRef.current.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+                      }
+                    }}
+                    className={`flex-shrink-0 w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 rounded-[28px] bg-white/35 backdrop-blur-md border border-white/40 shadow-xl transition-all duration-500 ease-out snap-center cursor-pointer group relative overflow-hidden z-${20 - distance} ${isCenter ? 'opacity-100 scale-100 ring-2 ring-gold-500 ring-offset-2 ring-offset-white/20' : `opacity-${Math.round(opacity * 100)} scale-[${scale}] translate-x-[${translateX}px]`}`}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-white/30 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
+                    <div className="relative p-8 sm:p-10 h-full flex flex-col items-center justify-center text-center">
+                      <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-gold-500/20 to-teal-500/20 flex items-center justify-center mb-6 sm:mb-8 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        {item.icon}
+                      </div>
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-3 leading-tight group-hover:text-teal-600 transition-colors">{item.title}</h3>
+                      <p className="text-[10px] sm:text-xs text-slate-500 leading-relaxed px-2 max-w-[200px]">{item.desc}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Navigation arrows */}
+            <button
+              onClick={() => {
+                const next = (activeIndex - 1 + carouselItems.length) % carouselItems.length
+                setActiveIndex(next)
+                if (carouselRef.current) {
+                  carouselRef.current.children[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+                }
+              }}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-white/60 text-slate-600 hover:bg-white hover:text-teal-600 shadow-lg transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              onClick={() => {
+                const next = (activeIndex + 1) % carouselItems.length
+                setActiveIndex(next)
+                if (carouselRef.current) {
+                  carouselRef.current.children[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+                }
+              }}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 backdrop-blur-md border border-white/60 text-slate-600 hover:bg-white hover:text-teal-600 shadow-lg transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <ChevronRight size={18} />
+            </button>
+
+            {/* Dots navigation */}
+            <div className="flex justify-center gap-3 mt-8">
+              {carouselItems.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setActiveIndex(index)
+                    if (carouselRef.current) {
+                      carouselRef.current.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+                    }
+                  }}
+                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${index === activeIndex ? 'bg-gold-600 w-6' : 'bg-slate-300 hover:bg-slate-400'}`}
+                />
+              ))}
             </div>
           </div>
         </div>
