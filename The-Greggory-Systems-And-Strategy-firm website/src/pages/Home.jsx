@@ -11,7 +11,7 @@ const Home = () => {
   const videoRef = useRef(null)
   const carouselRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(0)
-  const navigate = useNavigate()\n  const navigate = useNavigate()
+  const navigate = useNavigate()
 
   // The "Project Portfolio" carousel below is fed from the database by the admin
   // Portfolio Manager (src/admin/pages/PortfolioManager.jsx) through
