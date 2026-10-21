@@ -40,7 +40,13 @@ test('buildClientPortalPayload derives business metrics from project rows', () =
   assert.equal(payload.budgetOverview.planned, 120000);
   assert.equal(payload.budgetOverview.spent, 88000);
   assert.equal(payload.documentSummary[0].value, 1);
-  assert.equal(payload.kpiMetrics[0].label, 'On-time Delivery');
+  // The KPI label was intentionally reworded to "Direct Strategy Support"
+  // (the old "On-time Delivery" wording was never a real metric). Keep the
+  // assertion in sync with server/utils/clientPortalData.js.
+  assert.equal(payload.kpiMetrics[0].label, 'Direct Strategy Support');
+  assert.equal(payload.kpiMetrics[0].value, '24/7 Active Lead');
+  assert.equal(payload.kpiMetrics[1].label, 'Client Satisfaction');
+  assert.equal(payload.kpiMetrics[1].value, '5.0/5');
   assert.equal(payload.messages.length, 3);
   assert.equal(payload.resourceAllocations.length, 2);
   assert.equal(payload.teamMembers.length, 2);

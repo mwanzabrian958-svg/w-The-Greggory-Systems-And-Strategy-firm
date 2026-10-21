@@ -53,6 +53,15 @@ const STEPS = [
   { table: "user_feedback", where: "title LIKE 'audit %'", label: "audit feedback" },
   { table: "accounting_categories", where: "name LIKE 'VerifyCat %'", label: "verify categories" },
   { table: "user_projects", where: "project_name LIKE 'Audit Project %'", label: "audit projects" },
+  // Portfolio round-trip rows from scripts/test-portfolio-flow.js. The script
+  // soft-deletes what it creates, so the rows survive as invisible-but-present
+  // records that keep the AUTO_INCREMENT climbing. Matched on the exact test
+  // title, so no real portfolio entry can be caught by it.
+  {
+    table: "portfolio_items",
+    where: "title LIKE 'TEST ENTRY%' AND client_name = 'Test Client'",
+    label: "portfolio test entries",
+  },
   // Session rows for deleted test accounts (also runs after the account
   // deletes below so it collects rows orphaned by them). user_sessions has no
   // FK constraint, so these would otherwise pile up forever.
@@ -102,8 +111,21 @@ async function purgeTestData({ dryRun = false, log = console.log, endpoints } = 
 
   for (const cfg of list) {
     const { label, ...opts } = cfg;
-    const conn = await mysql.createConnection({ connectTimeout: 20000, ...opts });
     const perEndpoint = { endpoint: label || opts.host, deleted: 0, found: 0, steps: [] };
+    let conn;
+    try {
+      conn = await mysql.createConnection({ connectTimeout: 20000, ...opts });
+    } catch (error) {
+      // A dead endpoint must NOT abort the whole purge. The local XAMPP entry
+      // is listed first and is usually simply not running; aborting there used
+      // to mean the cloud endpoint's test rows were NEVER purged, so they
+      // accumulated on every single run.
+      log(
+        `   [${perEndpoint.endpoint}] unreachable (${error.code || error.message}) — skipped`
+      );
+      summary.perEndpoint.push(perEndpoint);
+      continue;
+    }
     try {
       for (const step of STEPS) {
         const found = await countStep(conn, step);

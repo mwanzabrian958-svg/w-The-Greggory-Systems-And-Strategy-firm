@@ -1,4 +1,4 @@
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const { Storage } = require('@google-cloud/storage');
 const path = require('path');
 const fs = require('fs');
@@ -18,13 +18,33 @@ async function testBackup() {
     
     console.log('Environment variables verified');
     
-    // Run the backup script
+    // Run the backup script.
+    // NOTE: the project path can contain spaces (e.g. "C:\Users\Lydia mwanza\...").
+    // An `exec`/`execSync` string would split that path into several arguments
+    // and fail with "Cannot find module", so spawn Node with an explicit
+    // argument array and let the OS do the quoting.
     console.log('\nRunning backup script...');
     const backupScript = path.join(__dirname, 'backup-db.js');
     await new Promise((resolve, reject) => {
-      exec(`node ${backupScript}`, { maxBuffer: 1024 * 1024 * 5 }, (error, stdout, stderr) => {
-        if (error) {
+      const child = spawn(process.execPath, [backupScript], {
+        cwd: path.join(__dirname, '..'),
+        shell: false,
+        windowsHide: true,
+      });
+
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
+      child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+
+      child.on('error', reject);
+      child.on('close', (code) => {
+        if (code !== 0) {
+          const error = new Error(`Backup script exited with code ${code}`);
+          error.stdout = stdout;
+          error.stderr = stderr;
           console.error(`Backup failed: ${error.message}`);
+          if (stderr) console.error(`Backup stderr: ${stderr}`);
           return reject(error);
         }
         if (stderr) {
