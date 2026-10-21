@@ -104,7 +104,7 @@ function Layout() {
 
           <Route path="/contact" element={<Contact />} />
 
-          <Route path="/portal" element={<PrivateRoute><ClientPortal /></PrivateRoute>} />
+          <Route path="/portal" element={<Navigate to="/client-portal" replace />} />
           <Route path="/companies" element={<Companies />} />
 
           <Route path="/login" element={<Login />} />
@@ -209,3 +209,4 @@ function App() {
 
 
 export default App
+

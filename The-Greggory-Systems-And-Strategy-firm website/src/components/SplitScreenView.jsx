@@ -129,7 +129,7 @@ const SplitScreenView = ({ isOpen, onClose, url, title }) => {
             </div>
             <div className="flex items-center gap-4">
               <button
-                onClick={() => window.open(url, '_blank')}
+                onClick={() => { const w = window.open(url, '_blank'); if (!w) { alert('Popup blocked — please allow pop-ups for this site, or use Copy URL below.') } }}
                 className="text-blue-600 hover:text-blue-700 font-medium"
               >
                 Open in New Tab
@@ -149,3 +149,4 @@ const SplitScreenView = ({ isOpen, onClose, url, title }) => {
 }
 
 export default SplitScreenView
+

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import \{ Link, useNavigate \} from 'react-router-dom'
 import { ArrowRight, ChevronLeft, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, ChevronRight, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
 import { SITE_NAME } from '../constants/siteBrand'
 import { useSeo, SEO } from '../hooks/useSeo'
@@ -11,6 +11,7 @@ const Home = () => {
   const videoRef = useRef(null)
   const carouselRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const navigate = useNavigate()\n  const navigate = useNavigate()
 
   // The "Project Portfolio" carousel below is fed from the database by the admin
   // Portfolio Manager (src/admin/pages/PortfolioManager.jsx) through
@@ -390,9 +391,13 @@ const Home = () => {
                   <div
                     key={item.id}
                     onClick={() => {
-                      setActiveIndex(index)
-                      if (carouselRef.current) {
-                        carouselRef.current.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+                      if (isBlank) {
+                        navigate('/projects')
+                      } else {
+                        setActiveIndex(index)
+                        if (carouselRef.current) {
+                          carouselRef.current.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+                        }
                       }
                     }}
                     className={`flex-shrink-0 w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 rounded-[28px] bg-white/35 backdrop-blur-md border border-white/40 shadow-xl transition-all duration-500 ease-out snap-center cursor-pointer group relative overflow-hidden ${isCenter ? 'ring-2 ring-gold-500 ring-offset-2 ring-offset-white/20' : ''}`}
@@ -1442,3 +1447,7 @@ const Home = () => {
 }
 
 export default Home
+
+
+
+

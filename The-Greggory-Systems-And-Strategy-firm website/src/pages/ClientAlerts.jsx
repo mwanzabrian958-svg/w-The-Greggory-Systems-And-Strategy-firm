@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Bell,
   X,
@@ -134,7 +134,7 @@ const ClientAlerts = () => {
         {/* GLOBAL SYSTEM SEARCH */}
         <div className="mb-3 flex justify-end">
           <div className="w-full sm:w-72 md:w-96">
-            <SearchBlock endpoint="/api/users/search" resultsBase="/client-search" variant="client" placeholder="Search workspace…" />
+            <SearchBlock endpoint="/api/users/search" resultsBase="/client-search" variant="client" placeholder="Search workspace�" />
           </div>
         </div>
 
@@ -313,3 +313,4 @@ const ClientAlerts = () => {
 };
 
 export default ClientAlerts;
+
