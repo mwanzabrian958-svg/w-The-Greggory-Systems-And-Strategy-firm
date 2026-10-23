@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, ChevronLeft, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, ChevronRight, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
@@ -42,8 +43,6 @@ const Home = () => {
   // database holds no entries the tiles render deliberately BLANK — no invented
   // copy, no lorem placeholder — so the section never advertises work that has
   // not actually been published.
-  const BLANK_TILES = [{ id: '__blank-1' }, { id: '__blank-2' }, { id: '__blank-3' }];
-
   const carouselItems = useMemo(
     () =>
       (portfolio || []).map((p) => ({
@@ -61,6 +60,8 @@ const Home = () => {
 
   // With no published entries we still show the glass shell (so the layout does
   // not jump when the first entry is published) but the tiles carry no content.
+  const BLANK_TILES = [{ id: '__blank-1' }, { id: '__blank-2' }, { id: '__blank-3' }];
+
   const tiles = carouselItems.length ? carouselItems : BLANK_TILES;
 
   // Keep the focused tile inside the bounds when the number of tiles changes.
@@ -1442,9 +1443,42 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      </div>
     </div>
   )
 }
+
+   Fixed banner at the bottom of the homepage with entrance animations.
+   Fades in on page load and slides up when accepted.
+   ------------------------------------------------------------ */}
+<div
+  id="cookie-banner"
+  className={`fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-sm border-t border-white/10 px-4 py-3 opacity-${
+    cookiesAccepted ? 0 : 100
+  } transition-opacity duration-500 z-40 transform translate-y-${
+    cookiesAccepted ? 0 : -4
+  } full transition-transform duration-500 ease-out`}
+  style={{ transitionDelay: '0.2s' }}
+>
+  <div className="max-w-2xl mx-auto text-center text-sm text-slate-300">
+    <p>
+      We use cookies to improve your experience, analyze site traffic, and serve personalized content.
+      <a href="/privacy" className="underline underline-socket text-slate-400 hover:text-slate-300" target="_blank" rel="noopener">
+        Privacy Policy
+      </a>.
+      By using this site, you consent to our cookie policy.
+    </p>
+    <div className="mt-2">
+      <button
+        onClick={() => setCookiesAccepted(true)}
+        className="mt-2 inline-flex items-center gap-2 rounded-lg bg-gold-500 px-4 py-2 text-sm font-bold text-slate-950 shadow-lg shadow-gold-500/20 hover:bg-gold-400 transition-all"
+        aria-label="Accept cookies">
+        Accept
+      </button>
+    </div>
+  </div>
+</div>
 
 export default Home
 

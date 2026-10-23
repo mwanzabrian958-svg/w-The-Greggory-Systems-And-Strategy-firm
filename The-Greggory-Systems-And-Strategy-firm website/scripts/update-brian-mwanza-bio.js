@@ -8,7 +8,8 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-const newBio = `<p>Brian Mwanza is the visionary force behind The Greggory Systems & Strategy Firm. With over a decade of experience in systemic design and business strategy, he has guided some of the most ambitious organizations through complex digital and operational transformations.</p>
+const newBio = `<p>Brian Mwanza is the founder and driving force behind The Greggory Systems & Strategy Firm. With six years of specialized experience in systemic design and business strategy, he has helped organizations navigate digital transformations and build resilient, people-first systems. As the firm\'s leader, Brian focuses on creating adaptive frameworks that deliver real business value without the typical burnout associated with rapid growth.</p>
+
 
 <p>As Founder & Managing Director, Brian has cultivated a leadership philosophy rooted in the belief that <em>"Strategy is not a document; it's a pulse."</em> This guiding principle has shaped the firm's evolution from a boutique advisory practice into a globally recognized architect of business resonance.</p>
 

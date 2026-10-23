@@ -8,7 +8,6 @@ import PrivateRoute from './components/PrivateRoute'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
-import { PageLoader } from './components/Loading'
 import { lazyWithRetry as lazy } from './utils/lazyWithRetry'
 
 // Landing page stays eager: it's the most common entry point, so we avoid
@@ -48,11 +47,6 @@ const AdminRouter = lazy(() =>
   import('./admin/AdminRouter').then((m) => ({ default: m.AdminRouter }))
 )
 
-// Minimal themed loading state shown while a route chunk is downloading.
-function PageFallback() {
-  return <PageLoader label="Loading" minHeight="min-h-[60vh]" tone="teal" emblemSize={72} />
-}
-
 function Layout() {
   const location = useLocation()
   const authPages = ['/login', '/signup', '/forgot-password', '/reset-password']
@@ -81,7 +75,7 @@ function Layout() {
       {/* ── Page content ─────────────────────────────────────────────────── */}
       <main className="flex-grow">
 
-        <Suspense fallback={<PageFallback />}>
+        <Suspense>
           <Routes>
 
           <Route path="/" element={<Home />} />
