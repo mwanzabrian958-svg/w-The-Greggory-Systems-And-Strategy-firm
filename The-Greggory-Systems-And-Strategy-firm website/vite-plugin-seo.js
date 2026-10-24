@@ -1,4 +1,5 @@
 import seoConfig from './seo.config.json';
+import { COOKIE_CONSENT_EVENT, COOKIE_CONSENT_STORAGE_KEY } from './src/constants/cookieConsent.js';
 
 /**
  * vite-plugin-seo
@@ -107,12 +108,29 @@ function ga4Script(measurementId) {
   return [
     '  <!-- Google Analytics 4 (env: VITE_GA_MEASUREMENT_ID) -->',
     '  <script>',
-    '    window.dataLayer = window.dataLayer || [];',
-    '    function gtag(){ window.dataLayer.push(arguments); }',
-    '    window.gtag = gtag;',
-    "    gtag('js', new Date());",
-    "    gtag('config', '" + id + "', { 'send_page_view': true, 'cookie_domain': 'auto', 'cookie_expires': 63072000 });",
-    "    (function(){ var s=document.createElement('script'); s.src='https://www.googletagmanager.com/gtag/js?id=" + id + "'; s.async=true; s.onload=function(){ if(window.gtag) window.gtag('config','" + id + "'); }; document.head.appendChild(s); })();",
+    '    (function(){',
+    '      var loaded = false;',
+    '      function loadAnalytics(){',
+    '        if (loaded) return;',
+    '        loaded = true;',
+    '        window.dataLayer = window.dataLayer || [];',
+    '        window.gtag = function(){ window.dataLayer.push(arguments); };',
+    "        window.gtag('js', new Date());",
+    "        window.gtag('config', '" + id + "', { 'send_page_view': true, 'cookie_domain': 'auto', 'cookie_expires': 63072000 });",
+    "        var script = document.createElement('script');",
+    "        script.src = 'https://www.googletagmanager.com/gtag/js?id=" + id + "';",
+    '        script.async = true;',
+    '        document.head.appendChild(script);',
+    '      }',
+    '      try {',
+    "        if (window.localStorage.getItem('" + COOKIE_CONSENT_STORAGE_KEY + "') === 'accepted') loadAnalytics();",
+    '      } catch (error) {',
+    "        console.error('[cookie-consent] Could not read saved consent for analytics.', error);",
+    '      }',
+    "      window.addEventListener('" + COOKIE_CONSENT_EVENT + "', function(event){",
+    "        if (event.detail === 'accepted') loadAnalytics();",
+    '      });',
+    '    })();',
     '  </script>',
   ].join('\n');
 }

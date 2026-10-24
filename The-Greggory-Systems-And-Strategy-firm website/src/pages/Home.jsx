@@ -15,7 +15,6 @@ const Home = () => {
   const navigate = useNavigate()
 // Search filter for portfolio items
   const [searchTerm, setSearchTerm] = useState('')
-  const [cookiesAccepted, setCookiesAccepted] = useState(false)
 
   // The "Project Portfolio" carousel below is fed from the database by the admin
   // Portfolio Manager (src/admin/pages/PortfolioManager.jsx) through
@@ -1461,35 +1460,9 @@ const Home = () => {
 
       </div>
 
-    {/* Fixed banner at the bottom of the homepage with entrance animations. */}
-    <div
-      id="cookie-banner"
-      className={`fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-sm border-t border-white/10 px-4 py-3 transition-opacity duration-500 z-40 transition-transform duration-500 ease-out ${
-        cookiesAccepted ? 'opacity-0 translate-y-0' : 'opacity-100 -translate-y-4'
-      }`}
-      style={{ transitionDelay: '0.2s' }}
-    >
-      <div className="max-w-2xl mx-auto text-center text-sm text-slate-300">
-        <p>
-          We use cookies to improve your experience, analyze site traffic, and serve personalized content.
-          <a href="/privacy" className="underline underline-socket text-slate-400 hover:text-slate-300" target="_blank" rel="noopener">
-            Privacy Policy
-          </a>.
-          By using this site, you consent to our cookie policy.
-        </p>
-        <div className="mt-2">
-          <button
-            onClick={() => setCookiesAccepted(true)}
-            className="mt-2 inline-flex items-center gap-2 rounded-lg bg-gold-500 px-4 py-2 text-sm font-bold text-slate-950 shadow-lg shadow-gold-500/20 hover:bg-gold-400 transition-all"
-            aria-label="Accept cookies">
-            Accept
-          </button>
-        </div>
-      </div>
-    </div>
+
     </>
   )
 }
 
 export default Home
-

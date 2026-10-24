@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import FloatingWhatsApp from './components/FloatingWhatsApp'
+import CookieConsentBanner from './components/CookieConsentBanner'
 import PrivateRoute from './components/PrivateRoute'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
@@ -180,6 +181,7 @@ function Layout() {
       {!isAuthPage && !isAdminPage && !isClientPortalPage && <Footer />}
 
       <FloatingWhatsApp />
+      {!isAdminPage && !isClientPortalPage && <CookieConsentBanner />}
     </div>
 
   )
