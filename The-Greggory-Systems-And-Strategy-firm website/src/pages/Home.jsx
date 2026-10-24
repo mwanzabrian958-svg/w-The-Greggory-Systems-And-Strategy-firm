@@ -13,8 +13,11 @@ const Home = () => {
   const carouselRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const navigate = useNavigate()
+// Search filter for portfolio items
+  const [searchTerm, setSearchTerm] = useState('')
 
   // The "Project Portfolio" carousel below is fed from the database by the admin
+-- modified
   // Portfolio Manager (src/admin/pages/PortfolioManager.jsx) through
   // GET /posts/portfolio — only rows with status='published' AND is_active=1 are
   // returned. Until entries exist the glass tiles stay deliberately blank: the
@@ -55,8 +58,19 @@ const Home = () => {
         image: p.image_url,
         icon: <Briefcase size={20} strokeWidth={2.5} className="text-gold-600" />,
       })),
-    [portfolio]
+    [filteredPortfolio]
   );
+// Filtered portfolio items based on search term
+  const filteredPortfolio = useMemo(() => {
+    if (!searchTerm) return portfolio || []
+    const term = searchTerm.trim()
+    const regex = new RegExp(`.*${term}.*`, 'i')
+    return (portfolio || []).filter(p =>
+      regex.test(p.title) ||
+      (p.client_name && regex.test(p.client_name)) ||
+      (p.summary && regex.test(p.summary))
+    )
+  }, [portfolio, searchTerm])
 
   // With no published entries we still show the glass shell (so the layout does
   // not jump when the first entry is published) but the tiles carry no content.
