@@ -1454,7 +1454,7 @@ const Home = () => {
    ------------------------------------------------------------ */}
 <div
   id="cookie-banner"
-  className={`fixed bottom-0 left-0 right-0 bg-slate-950 opacity-95 backdrop-blur-sm border-t border-white opacity-10 px-4 py-3 opacity-${
+  className={`fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-sm border-t border-white/10 px-4 py-3 opacity-${
     cookiesAccepted ? 0 : 100
   } transition-opacity duration-500 z-40 transform translate-y-${
     cookiesAccepted ? 0 : -4
