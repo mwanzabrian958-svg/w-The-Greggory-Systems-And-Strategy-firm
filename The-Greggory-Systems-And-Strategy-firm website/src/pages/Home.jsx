@@ -1418,7 +1418,7 @@ const Home = () => {
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 mb-3">Data Protection & Confidentiality</h3>
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                  We maintain strict confidentiality for all client data and project information. Our systems comply with applicable data protection laws, and we never share client information with third parties without explicit consent.
+                  We maintain strict confidentiality for all client data and project information. Our systems comply with applicable data protection laws, and we never share client information with third parties without explicit consent. Test
                 </p>
               </div>
             </div>
