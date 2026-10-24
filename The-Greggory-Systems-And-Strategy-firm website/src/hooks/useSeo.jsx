@@ -114,8 +114,8 @@ export function useSeo({ title, description, path = '/', image, type = 'website'
 
 export const SEO = {
   home: {
-    title: 'Strategic Systems, Business Consultancy & Project Delivery',
-    description: 'We develop, maintain, upgrade, and stand behind the projects, systems, and platforms clients depend on — for individuals and organizations, for-profit and non-profit, across every industry.',
+    title: 'Your Vision Delivered With Trust',
+    description: 'Your vision delivered with trust. The Greggory Systems And Strategy Firm develops, maintains, upgrades, and supports the systems and projects your business depends on.',
     path: '/',
   },
   about: {

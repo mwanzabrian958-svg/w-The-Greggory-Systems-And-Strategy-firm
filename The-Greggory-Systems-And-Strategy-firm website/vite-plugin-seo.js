@@ -25,8 +25,8 @@ import seoConfig from './seo.config.json';
 // <head> tags in index.html.
 const SITE_NAME = 'The Greggory Systems And Strategy Firm';
 const SITE_DESCRIPTION =
-  'The Greggory Systems And Strategy Firm \u2014 strategic systems engineering and business consultancy across every industry. Develop, maintain, upgrade, and stand behind the projects and platforms clients depend on.';
-const SITE_TAGLINE = 'Strategic Systems \u00b7 Practical Strategy \u00b7 Lasting Confidence';
+  'Your vision delivered with trust. The Greggory Systems And Strategy Firm develops, maintains, upgrades, and supports the systems and projects your business depends on.';
+const SITE_TAGLINE = 'Your Vision Delivered With Trust';
 const LOGO_PATH = '/favicon-256.png';
 // Social image is the real hero JPEG (1324x783). The old .png of the same
 // bytes was deleted — scrapers sniff MIME, so a .png URL serving JPEG bytes
