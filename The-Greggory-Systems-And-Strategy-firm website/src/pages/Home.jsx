@@ -15,6 +15,7 @@ const Home = () => {
   const navigate = useNavigate()
 
   // The "Project Portfolio" carousel below is fed from the database by the admin
+-- modified
   // Portfolio Manager (src/admin/pages/PortfolioManager.jsx) through
   // GET /posts/portfolio — only rows with status='published' AND is_active=1 are
   // returned. Until entries exist the glass tiles stay deliberately blank: the
