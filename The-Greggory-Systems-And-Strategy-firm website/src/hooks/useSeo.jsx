@@ -114,8 +114,8 @@ export function useSeo({ title, description, path = '/', image, type = 'website'
 
 export const SEO = {
   home: {
-    title: 'Your Vision Delivered With Trust',
-    description: 'Your vision delivered with trust. The Greggory Systems And Strategy Firm develops, maintains, upgrades, and supports the systems and projects your business depends on.',
+    title: 'Business Strategy & Systems',
+    description: 'Your Vision Delivered With Trust. The Greggory Systems And Strategy Firm delivers business strategy, systems and software, project delivery, and ongoing IT support.',
     path: '/',
   },
   about: {

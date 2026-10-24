@@ -25,7 +25,7 @@ import seoConfig from './seo.config.json';
 // <head> tags in index.html.
 const SITE_NAME = 'The Greggory Systems And Strategy Firm';
 const SITE_DESCRIPTION =
-  'Your vision delivered with trust. The Greggory Systems And Strategy Firm develops, maintains, upgrades, and supports the systems and projects your business depends on.';
+  'The Greggory Systems And Strategy Firm helps individuals and organizations turn business goals into practical results through systems and software design, business strategy and intelligence, project delivery, and IT infrastructure. From planning and implementation to ongoing maintenance, upgrades, and support, we stand behind the solutions we deliver.';
 const SITE_TAGLINE = 'Your Vision Delivered With Trust';
 const LOGO_PATH = '/favicon-256.png';
 // Social image is the real hero JPEG (1324x783). The old .png of the same

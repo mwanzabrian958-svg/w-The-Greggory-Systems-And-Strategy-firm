@@ -283,7 +283,7 @@ const Home = () => {
               96px clears the button with room to spare. Tablet/desktop never
               render this block, and they do not need it - the FAB sits over
               the image there, not over text. */}
-          <p className="text-[13px] leading-relaxed text-slate-300">We develop, maintain, upgrade and support the platforms your business depends on.</p>
+          <p className="text-[13px] leading-relaxed text-slate-300">We help organizations turn business goals into dependable results through business strategy, systems and software, project delivery, and ongoing support.</p>
           <div className="mt-5 flex flex-col gap-2.5">
             <Link to="/contact" className="inline-flex items-center justify-center gap-2 rounded-lg bg-gold-500 px-5 py-3.5 text-sm font-bold text-slate-950 shadow-lg shadow-gold-500/20 hover:bg-gold-400 transition-all active:scale-95">Start a project<ArrowRight className="w-4 h-4" /></Link>
             <Link to="/services" className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/10 px-5 py-3.5 text-sm font-bold text-white backdrop-blur-sm hover:bg-white/15 transition-all active:scale-95">Explore services</Link>
@@ -306,7 +306,7 @@ const Home = () => {
           1440x900 and 820x1180. */}
       <section className="relative hidden min-[641px]:block bg-[#030712] pb-16 pt-6">
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-300 leading-relaxed">We develop, maintain, upgrade, and support the projects, systems, and platforms our clients depend on — for individuals and organizations, for-profit and non-profit, across every industry.</p>
+          <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-300 leading-relaxed">We help individuals and organizations turn business goals into practical results through systems and software design, business strategy and intelligence, project delivery, and IT infrastructure. From planning and implementation to ongoing maintenance, upgrades, and support, we stand behind the solutions we deliver. Your Vision Delivered With Trust.</p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Link to="/contact" className="inline-flex items-center gap-2 rounded-lg bg-gold-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-lg shadow-gold-500/10 hover:bg-gold-400 transition-all active:scale-95">Start a project<ArrowRight className="w-4 h-4" /></Link>
             <Link to="/services" className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-5 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition-all">Explore services</Link>
@@ -335,7 +335,7 @@ const Home = () => {
       <section className="py-14 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
           <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto mb-6 leading-relaxed text-center">
-            {SITE_NAME} doesn’t hand you a project and disappear. We develop, maintain, upgrade, and stand behind the projects, systems, and platforms our clients depend on — for individuals and organizations alike, for profit and for purpose, across every industry — backed by the business consultancy that turns delivery into enduring success.
+            {SITE_NAME} helps individuals and organizations turn business goals into practical results through systems and software design, business strategy and intelligence, project delivery, and IT infrastructure. From planning and implementation to ongoing maintenance, upgrades, and support, we stand behind the solutions we deliver. Your Vision Delivered With Trust.
           </p>
           <div className="text-center">
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Featured Insight</h2>
@@ -1492,5 +1492,4 @@ const Home = () => {
 }
 
 export default Home
-
 
