@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Mail, Phone, MapPin } from 'lucide-react'
 import SocialMediaIcons from './SocialMediaIcons'
@@ -54,6 +55,22 @@ const Footer = () => {
     setAdminModalOpen(false)
     navigate('/admin')
   }
+
+  const renderAdminTrigger = (className, dotClasses) => (
+    <button
+      type="button"
+      onClick={handleFooterAdminTrigger}
+      className={className}
+      aria-label="Admin console access"
+      title="Command Terminal"
+    >
+      <div className="flex gap-1 px-1.5 py-0.5">
+        {dotClasses.map((dotClassName, index) => (
+          <span key={index} className={dotClassName} />
+        ))}
+      </div>
+    </button>
+  )
 
   return (
     <>
@@ -143,19 +160,16 @@ const Footer = () => {
                 &copy; {currentYear} {SITE_NAME}. Mission Synchronized.
               </p>
 
-              <button
-                type="button"
-                onClick={handleFooterAdminTrigger}
-                className="group p-1.5 rounded-full border border-white/5 hover:border-gold-500/20 hover:bg-gold-500/5 transition-all duration-500 opacity-40 hover:opacity-100"
-                aria-label="Admin console access"
-                title="Command Terminal"
-              >
-                <div className="flex gap-1 px-1.5 py-0.5">
-                  <span className="w-0.5 h-0.5 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors" />
-                  <span className="w-0.5 h-0.5 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors duration-300" />
-                  <span className="w-0.5 h-0.5 bg-slate-600 rounded-full group-hover:bg-gold-500 transition-colors duration-500" />
-                </div>
-              </button>
+              <div className="hidden sm:block">
+                {renderAdminTrigger(
+                  'group p-1.5 rounded-full border border-white/5 hover:border-gold-500/20 hover:bg-gold-500/5 transition-all duration-500 opacity-40 hover:opacity-100',
+                  [
+                    'h-0.5 w-0.5 rounded-full bg-slate-600 transition-colors group-hover:bg-gold-500',
+                    'h-0.5 w-0.5 rounded-full bg-slate-600 transition-colors duration-300 group-hover:bg-gold-500',
+                    'h-0.5 w-0.5 rounded-full bg-slate-600 transition-colors duration-500 group-hover:bg-gold-500',
+                  ]
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-6">
@@ -173,9 +187,16 @@ const Footer = () => {
         onAdminSuccess={handleAdminModalSuccess}
         startOnAdminStep={startOnAdminStep}
       />
+      {typeof document !== 'undefined' &&
+        createPortal(
+          renderAdminTrigger(
+            'group fixed bottom-5 left-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-slate-900 text-white shadow-lg transition-all hover:border-gold-500/50 hover:bg-slate-800 hover:text-gold-400 active:scale-95 sm:hidden',
+            ['h-1 w-1 rounded-full bg-current', 'h-1 w-1 rounded-full bg-current', 'h-1 w-1 rounded-full bg-current']
+          ),
+          document.body
+        )}
     </>
   )
 }
 
 export default Footer
-
