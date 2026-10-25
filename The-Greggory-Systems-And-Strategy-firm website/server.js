@@ -910,6 +910,80 @@ const mainDb = {
 };
 const db = mainDb;
 
+async function ensureTeamTemplateTables() {
+  try {
+    const [tables] = await mainDb.query(
+      `SELECT TABLE_NAME
+       FROM information_schema.TABLES
+       WHERE TABLE_SCHEMA = DATABASE()
+         AND TABLE_NAME IN ('team_templates', 'team_template_members')`
+    );
+    const present = new Set((tables || []).map((row) => row.TABLE_NAME));
+
+    if (!present.has('team_templates')) {
+      await mainDb.query(`
+        CREATE TABLE team_templates (
+          id BIGINT(20) AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          project_id BIGINT(20) DEFAULT NULL,
+          team_leader_id BIGINT(20) DEFAULT NULL,
+          team_leader_image LONGBLOB DEFAULT NULL,
+          team_leader_image_mime VARCHAR(100) DEFAULT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_project_id (project_id),
+          INDEX idx_team_leader_id (team_leader_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+      );
+      console.log('[SCHEMA] created missing team_templates table');
+    }
+
+    if (!present.has('team_template_members')) {
+      await mainDb.query(`
+        CREATE TABLE team_template_members (
+          id BIGINT(20) AUTO_INCREMENT PRIMARY KEY,
+          template_id BIGINT(20) NOT NULL,
+          team_member_id BIGINT(20) NOT NULL,
+          role VARCHAR(100) DEFAULT 'member',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_template_id (template_id),
+          INDEX idx_team_member_id (team_member_id),
+          CONSTRAINT fk_template_members_template FOREIGN KEY (template_id) REFERENCES team_templates(id) ON DELETE CASCADE,
+          CONSTRAINT fk_template_members_member FOREIGN KEY (team_member_id) REFERENCES team_members(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+      );
+      console.log('[SCHEMA] created missing team_template_members table');
+    }
+  } catch (error) {
+    console.error('[SCHEMA] ensureTeamTemplateTables failed:', error.code || error.message);
+    throw error;
+  }
+}
+
+async function ensureNotificationReadAtColumn() {
+  try {
+    const [columns] = await mainDb.query(
+      `SELECT COLUMN_NAME
+       FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'notifications'`
+    );
+    const names = new Set((columns || []).map((row) => row.COLUMN_NAME));
+    if (!names.has('read_at')) {
+      await mainDb.query('ALTER TABLE notifications ADD COLUMN read_at TIMESTAMP NULL DEFAULT NULL AFTER status');
+      console.log('[SCHEMA] added missing notifications.read_at column');
+    }
+  } catch (error) {
+    console.error('[SCHEMA] ensureNotificationReadAtColumn failed:', error.code || error.message);
+    throw error;
+  }
+}
+
+async function ensureSchemaGuards() {
+  await ensureNotificationReadAtColumn();
+  await ensureTeamTemplateTables();
+}
+
 // ── Fallback project resolvers ────────────────────────────────────────────────
 // invoices.project_id → projects.id ; accounting_entries.project_id → either
 // user_projects.id (local XAMPP) or projects.id (cloud Aiven) depending on how
@@ -2272,11 +2346,12 @@ app.put('/api/users/notifications/:id/read', authenticateUser, async (req, res) 
 app.put('/api/users/notifications/read-all/me', authenticateUser, async (req, res) => {
   const userId = req.userId;
   try {
-    await mainDb.query(
-      'UPDATE notifications SET status = "read" WHERE user_id = ? AND status = "unread"',
-      [userId]
+    await ensureNotificationReadAtColumn();
+    const [result] = await mainDb.query(
+      'UPDATE notifications SET status = ?, read_at = NOW() WHERE user_id = ? AND status = ?',
+      ['read', userId, 'unread']
     );
-    res.json({ success: true, message: 'All notifications marked as read' });
+    res.json({ success: true, message: 'All notifications marked as read', updated: result?.affectedRows || 0 });
   } catch (error) {
     console.error('[READ ALL NOTIFICATIONS] Error:', error);
     res.status(500).json({ success: false, message: 'Failed to update notifications' });
@@ -8625,6 +8700,13 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, "0.0.0.0", async () => {
+  try {
+    await ensureSchemaGuards();
+    console.log('[DATABASE] schema guards verified for notifications and team templates');
+  } catch (schemaErr) {
+    console.error('[DATABASE] schema guard bootstrap failed:', schemaErr && schemaErr.message ? schemaErr.message : schemaErr);
+  }
+
   console.log(`Server running on port ${PORT}`);
 
   // Connect to MongoDB Atlas (optional — a Mongo outage must never take the

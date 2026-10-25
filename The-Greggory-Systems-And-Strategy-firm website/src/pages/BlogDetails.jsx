@@ -33,6 +33,8 @@ const BlogDetails = () => {
   
   if (error) return <div className="min-h-screen bg-white pt-40 pb-40"><div className="max-w-xl mx-auto px-6 text-center"><p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Article unavailable</p><h1 className="mt-3 text-3xl font-black tracking-tight">We could not find that article</h1><p className="mt-3 text-sm text-slate-600">{error || 'It may have been moved or deleted.'}</p><Link to="/blog" className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-6 py-3 text-xs font-bold text-white hover:bg-slate-800 transition"><ArrowLeft className="h-4 w-4" />Back to journal</Link></div></div>
 
+  if (!article) return <PageLoader />
+
   const articleBody = article.content
     ? /<\/?[a-z][\s\S]*>/i.test(article.content)
       ? article.content
