@@ -19,20 +19,25 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { verifySessionToken } = require('../utils/sessionToken');
+const { verifyActiveAdminSession } = require('../utils/adminSessionState');
 
-function requireAdminSession(req, res, next) {
+async function requireAdminSession(req, res, next) {
   const authHeader = req.headers.authorization || req.headers.Authorization || '';
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
   if (!m) {
     return res.status(401).json({ success: false, message: 'Admin authentication required' });
   }
-  const payload = verifySessionToken(m[1].trim());
-  if (!payload) {
-    return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
+  try {
+    const payload = await verifyActiveAdminSession(m[1].trim());
+    if (!payload) {
+      return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
+    }
+    req.adminId = payload.uid;
+    return next();
+  } catch (error) {
+    console.error('[POSTS] Admin session check failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Admin authentication check failed' });
   }
-  req.adminId = payload.uid;
-  next();
 }
 
 /** Normalise an outcomes payload into a JSON string. Accepts an array, a raw

@@ -1,17 +1,22 @@
 const express=require('express');const router=express.Router();const db=require('../config/database');
-const { verifySessionToken } = require('../utils/sessionToken');
+const { verifyActiveAdminSession } = require('../utils/adminSessionState');
 // admin_settings has no CREATE TABLE in the schema (see the module doc); the
 // node-settings read below would otherwise die with ER_NO_SUCH_TABLE -> 500.
 const { ensureAdminSettingsTable } = require('../utils/ensureAdminSettings');
 
-function requireAdminSession(req, res, next) {
+async function requireAdminSession(req, res, next) {
   const authHeader = req.headers.authorization || req.headers.Authorization || '';
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
   if (!m) return res.status(401).json({ success: false, message: 'Admin authentication required' });
-  const payload = verifySessionToken(m[1].trim());
-  if (!payload) return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
-  req.adminId = payload.uid;
-  next();
+  try {
+    const payload = await verifyActiveAdminSession(m[1].trim());
+    if (!payload) return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
+    req.adminId = payload.uid;
+    return next();
+  } catch (error) {
+    console.error('[ADMIN] Session check failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Admin authentication check failed' });
+  }
 }
 
 // Same blanket gate as backend/routes/admin.js: /ledger, /mpesa/transactions

@@ -40,17 +40,64 @@ import { Records } from './pages/Records';
 import { PERMISSIONS } from './utils/permissions';
 import { Posts } from './pages/Posts';
 import { PortfolioManager } from './pages/PortfolioManager';
-import { apiCall } from '../services/api';
+import { apiCall, getAdminToken, getApiUrl } from '../services/api';
 import PushNotificationsPage from './pages/PushNotifications';
 
 export function AdminRouter() {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [logoutError, setLogoutError] = useState('');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => { verifySession(); }, []);
+
+  const clearAdminSession = () => {
+    sessionStorage.removeItem('gf_admin_session');
+    localStorage.removeItem('gf_admin_session');
+    localStorage.removeItem('gf_admin_session_token');
+    localStorage.removeItem('gf_admin_user');
+    setUser(null);
+    setIsAuthenticated(false);
+    window.dispatchEvent(new Event('gf-admin-session-changed'));
+  };
+
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key !== 'gf_admin_logout_at' || !event.newValue) return;
+      clearAdminSession();
+      navigate('/', { replace: true });
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    const checkRevokedSession = async () => {
+      const token = getAdminToken();
+      if (!token) {
+        clearAdminSession();
+        navigate('/', { replace: true });
+        return;
+      }
+      try {
+        const response = await fetch(getApiUrl('/admin/session'), {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.status === 401 || response.status === 403) {
+          clearAdminSession();
+          navigate('/', { replace: true });
+        }
+      } catch (error) {
+        console.error('Admin session refresh failed:', error.message);
+      }
+    };
+    const interval = window.setInterval(checkRevokedSession, 30000);
+    return () => window.clearInterval(interval);
+  }, [isAuthenticated, navigate]);
 
   const verifySession = async () => {
     try {
@@ -61,16 +108,38 @@ export function AdminRouter() {
       if (!token) { setIsLoading(false); return; }
       const data = await apiCall("/admin/session", { headers: { 'Authorization': `Bearer ${token}` } });
       if (data.success && data.user) { setUser(data.user); setIsAuthenticated(true); }
-      else { handleLogout('/admin/login'); } // invalid session on load → re-auth screen
-    } catch (e) { console.error("Session sync failure", e); } finally { setIsLoading(false); }
+      else { handleLogout('/', false); }
+    } catch (error) {
+      if (/401|403|session|authentication/i.test(error.message)) {
+        handleLogout('/', false);
+      } else {
+        console.error("Session sync failure", error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Explicit logout (header Logout button) destroys the session and returns the
-  // admin to the PUBLIC WEBSITE HOME PAGE. An expired/invalid session detected
-  // on load passes '/admin/login' instead so the admin can re-authenticate.
-  const handleLogout = (redirectTo = '/') => {
-    sessionStorage.clear(); localStorage.clear(); setUser(null); setIsAuthenticated(false);
-    if (!location.pathname.includes('/login')) navigate(redirectTo, { replace: true });
+  // Explicit and revoked-session logouts return the admin to the public home page.
+  const handleLogout = async (redirectTo = '/', revokeSessions = true) => {
+    if (isLoggingOut) return;
+    setLogoutError('');
+    setIsLoggingOut(true);
+    try {
+      if (revokeSessions) {
+        await apiCall('/admin-verification/logout', { method: 'POST' });
+        localStorage.setItem('gf_admin_logout_at', String(Date.now()));
+      }
+      clearAdminSession();
+      if (redirectTo === '/' || !location.pathname.includes('/login')) {
+        navigate(redirectTo, { replace: true });
+      }
+    } catch (error) {
+      console.error('Admin logout failed:', error.message);
+      setLogoutError('Could not close all admin sessions. Check your connection and try logging out again.');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   if (isLoading) return (
@@ -86,6 +155,12 @@ export function AdminRouter() {
   );
 
   return (
+    <>
+    {logoutError && (
+      <div role="alert" className="fixed top-4 left-1/2 -translate-x-1/2 z-[10000] rounded-lg bg-rose-700 px-5 py-3 text-sm font-semibold text-white shadow-xl">
+        {logoutError}
+      </div>
+    )}
     <Routes>
       <Route path="login" element={isAuthenticated ? <Navigate to="/admin" replace /> : <Login onLoginSuccess={(u) => { setUser(u); setIsAuthenticated(true); }} />} />
 
@@ -141,5 +216,6 @@ export function AdminRouter() {
         )
       } />
     </Routes>
+    </>
   );
 }

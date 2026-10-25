@@ -69,7 +69,16 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     // Attempt to invalidate the token on the backend first
     const token = user?.token
-    if (token) {
+    const isAdminSession = user?.role === 'admin' || user?.role_type === 'admin' || !!user?.admin_level
+    if (isAdminSession && token) {
+      const response = await fetch('/api/admin-verification/logout', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!response.ok) throw new Error('Could not close all admin sessions')
+      localStorage.setItem('gf_admin_logout_at', String(Date.now()))
+    }
+    if (token && !isAdminSession) {
       try {
         const res = await fetch('/api/users/logout', {
           method: 'POST',
@@ -87,7 +96,10 @@ export const AuthProvider = ({ children }) => {
     setUser(null)
     localStorage.removeItem('tgf_user')
     localStorage.removeItem('gf_admin_user')
+    localStorage.removeItem('gf_admin_session')
     localStorage.removeItem('gf_admin_session_token')
+    sessionStorage.removeItem('gf_admin_session')
+    window.dispatchEvent(new Event('gf-admin-session-changed'))
   }
 
   const value = useMemo(() => ({

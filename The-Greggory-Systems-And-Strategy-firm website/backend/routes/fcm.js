@@ -15,7 +15,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { verifySessionToken } = require('../utils/sessionToken');
+const { verifyActiveAdminSession } = require('../utils/adminSessionState');
 // clientAuth.js exports the middleware directly (module.exports = authenticateUser)
 const authenticateUser = require('../middleware/clientAuth');
 const {
@@ -38,7 +38,13 @@ async function requireAdminSession(req, res, next) {
   if (!m) {
     return res.status(401).json({ success: false, message: 'Admin authentication required' });
   }
-  const payload = verifySessionToken(m[1]);
+  let payload;
+  try {
+    payload = await verifyActiveAdminSession(m[1]);
+  } catch (error) {
+    console.error('[FCM] Admin session verification failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Authentication check failed' });
+  }
   if (!payload) {
     return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
   }

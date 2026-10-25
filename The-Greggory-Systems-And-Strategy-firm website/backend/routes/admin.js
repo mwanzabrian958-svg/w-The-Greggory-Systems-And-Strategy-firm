@@ -8,7 +8,7 @@ const bcrypt = require('bcryptjs');
 const PDFDocument = require('pdfkit');
 const { stampLogo, stampWatermark } = require('../../server/lib/documentBrand');
 const { formatActivityLog } = require('../utils/activityLogFormatter');
-const { verifySessionToken } = require('../utils/sessionToken');
+const { verifyActiveAdminSession } = require('../utils/adminSessionState');
 // admin_settings has no CREATE TABLE in the schema (see the module doc); these
 // three routes would otherwise die with ER_NO_SUCH_TABLE -> 500 on every call.
 const { ensureAdminSettingsTable } = require('../utils/ensureAdminSettings');
@@ -18,18 +18,23 @@ const { ensureAdminSettingsTable } = require('../utils/ensureAdminSettings');
  * `authenticateAdmin` middleware). Verifies the signed session token that the
  * login endpoints now issue (see backend/utils/sessionToken.js).
  */
-function requireAdminSession(req, res, next) {
+async function requireAdminSession(req, res, next) {
   const authHeader = req.headers.authorization || req.headers.Authorization || '';
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
   if (!m) {
     return res.status(401).json({ success: false, message: 'Admin authentication required' });
   }
-  const payload = verifySessionToken(m[1].trim());
-  if (!payload) {
-    return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
+  try {
+    const payload = await verifyActiveAdminSession(m[1].trim());
+    if (!payload) {
+      return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
+    }
+    req.adminId = payload.uid;
+    return next();
+  } catch (error) {
+    console.error('[ADMIN] Session check failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Admin authentication check failed' });
   }
-  req.adminId = payload.uid;
-  next();
 }
 
 // Hard gate for the WHOLE router: every /api/admin route serves admin-console

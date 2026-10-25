@@ -57,8 +57,8 @@ const originalLoad = Module._load;
 Module._load = function patchedLoad(request, parent) {
   if (parent && /routes[\\/]admin\.js$/.test(parent.filename)) {
     if (request === '../config/database') return fakeDb;
-    if (request === '../utils/sessionToken') {
-      return { verifySessionToken: () => ({ uid: 7, role: 'admin' }) };
+    if (request === '../utils/adminSessionState') {
+      return { verifyActiveAdminSession: async () => ({ uid: 7, role: 'admin' }) };
     }
   }
   return originalLoad.apply(this, arguments);

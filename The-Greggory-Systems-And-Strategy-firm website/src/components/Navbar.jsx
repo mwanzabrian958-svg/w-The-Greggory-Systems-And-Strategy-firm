@@ -38,6 +38,7 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [companiesDropdownOpen, setCompaniesDropdownOpen] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
+  const [logoutError, setLogoutError] = useState('')
   const scrollTimer = useRef(null)
   const navRef = useRef(null)
 
@@ -124,12 +125,15 @@ const Navbar = () => {
     }] : []),
   ]
 
-  const handleLogout = () => {
-    // Fire the backend invalidation + local cleanup, then navigate.
-    // We don't await so the UI transitions immediately; any backend
-    // failure is ignored and doesn't block the redirect.
-    logout().catch(() => {})
-    navigate('/')
+  const handleLogout = async () => {
+    setLogoutError('')
+    try {
+      await logout()
+      navigate('/')
+    } catch (error) {
+      console.error('Logout failed:', error.message)
+      setLogoutError('Could not close all admin sessions. Please try again.')
+    }
   }
 
   return (
@@ -137,6 +141,11 @@ const Navbar = () => {
       ref={navRef}
       className={`${NAV_BG} z-50 shadow-lg shadow-black/20 transition-all duration-300 ease-out will-change-transform ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}
     >
+      {logoutError && (
+        <div role="alert" className="fixed top-4 left-1/2 -translate-x-1/2 z-[10000] rounded-lg bg-rose-700 px-5 py-3 text-sm font-semibold text-white shadow-xl">
+          {logoutError}
+        </div>
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-24 sm:h-28">
           <div className="flex items-center flex-shrink-0">

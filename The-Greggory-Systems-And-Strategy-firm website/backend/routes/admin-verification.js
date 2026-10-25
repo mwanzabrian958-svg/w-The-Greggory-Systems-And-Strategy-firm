@@ -10,6 +10,11 @@ const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
 const { signSessionToken } = require('../utils/sessionToken');
+const {
+  getAdminSessionVersion,
+  revokeAllAdminSessions,
+  verifyActiveAdminSession,
+} = require('../utils/adminSessionState');
 
 // Apply endpoint validation middleware to admin routes
 router.use(authEndpointValidator('admin', 'admin_users'));
@@ -90,7 +95,7 @@ router.post('/authenticate-enhanced', (req, res) => {
           profilePhotoData = `data:${mimeType};base64,${base64}`;
         }
         
-        res.json({
+        getAdminSessionVersion(user.id).then((sessionVersion) => res.json({
           success: true,
           message: 'Admin authentication successful',
           user: {
@@ -103,11 +108,34 @@ router.post('/authenticate-enhanced', (req, res) => {
             profilePhotoData: profilePhotoData,
             profile_image_id: user.profile_image_id || null,
           },
-          token: signSessionToken(user.id, 'admin')
+          token: signSessionToken(user.id, 'admin', sessionVersion)
+        })).catch((sessionError) => {
+          console.error('[AUTH] Admin session state initialization failed:', sessionError.message);
+          res.status(500).json({ success: false, message: 'Admin session could not be started' });
         });
       });
     }
   );
+});
+
+router.post('/logout', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (!match) {
+    return res.status(401).json({ success: false, message: 'Admin authentication required' });
+  }
+
+  try {
+    const payload = await verifyActiveAdminSession(match[1].trim());
+    if (!payload) {
+      return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
+    }
+    await revokeAllAdminSessions(payload.uid);
+    return res.json({ success: true, message: 'All admin sessions have been logged out' });
+  } catch (error) {
+    console.error('[AUTH] Admin logout failed:', error.message);
+    return res.status(500).json({ success: false, message: 'Could not log out all admin sessions' });
+  }
 });
 
 // Get admin profile

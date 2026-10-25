@@ -69,7 +69,13 @@ function AdminLayout({ user, children, onLogout }) {
   const handleLogoutClick = () => {
     if (onLogout) onLogout();
     // No onLogout wired: still tear down the session and land on the public home page.
-    else { sessionStorage.clear(); localStorage.clear(); navigate("/", { replace: true }); }
+    else {
+      sessionStorage.removeItem("gf_admin_session");
+      localStorage.removeItem("gf_admin_session");
+      localStorage.removeItem("gf_admin_session_token");
+      localStorage.removeItem("gf_admin_user");
+      navigate("/", { replace: true });
+    }
   };
 
   const isActive = (path) => {
@@ -134,7 +140,7 @@ function AdminLayout({ user, children, onLogout }) {
                   <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-[#0f172a] rounded-full shadow-sm"></div>
                </div>
             </div>
-            <button onClick={handleLogoutClick} className="p-2.5 text-slate-400 hover:text-rose-500 transition-colors" title="Logout"><LogOut size={18} /></button>
+            <button onClick={handleLogoutClick} className="p-2.5 text-slate-400 hover:text-rose-500 transition-colors" title="Log out all admin sessions"><LogOut size={18} /></button>
           </div>
         </div>
       </header>

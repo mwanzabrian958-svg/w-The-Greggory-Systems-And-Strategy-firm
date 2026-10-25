@@ -9,12 +9,18 @@ export function useAuth() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async (revokeSessions = true) => {
+    if (revokeSessions) {
+      await apiCall("/admin-verification/logout", { method: "POST" });
+      localStorage.setItem("gf_admin_logout_at", String(Date.now()));
+    }
     sessionStorage.removeItem("gf_admin_session");
     localStorage.removeItem("gf_admin_session");
     localStorage.removeItem("gf_admin_session_token");
+    localStorage.removeItem("gf_admin_user");
     setUser(null);
     setIsAuthenticated(false);
+    window.dispatchEvent(new Event("gf-admin-session-changed"));
   }, []);
 
   const checkAuth = useCallback(async () => {
@@ -29,11 +35,11 @@ export function useAuth() {
         setUser(data.user);
         setIsAuthenticated(true);
       } else {
-        logout();
+        await logout(false);
       }
     } catch (error) {
       console.error("Identity Handshake Failure:", error.message);
-      logout();
+      await logout(false);
     } finally {
       setIsLoading(false);
     }

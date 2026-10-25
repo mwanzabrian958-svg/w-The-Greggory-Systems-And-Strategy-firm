@@ -139,6 +139,7 @@ CREATE TABLE admin_users (
     access_level ENUM('full', 'limited', 'read_only') DEFAULT 'full',
     department VARCHAR(100),
     is_active BOOLEAN DEFAULT TRUE,
+    session_version BIGINT UNSIGNED NOT NULL DEFAULT 0,
     last_login_at TIMESTAMP NULL DEFAULT NULL,
     last_login_ip VARCHAR(45) DEFAULT NULL,
     failed_login_attempts INT DEFAULT 0,
@@ -151,11 +152,16 @@ CREATE TABLE admin_users (
 );
 ```
 
+Admin tokens include this account-level session version. Logging out increments
+it, immediately invalidating tokens from every browser and device; the admin
+must sign in again to receive a token with the new version.
+
 ### API Endpoints
 
 | Endpoint | Method | Purpose | Request Body |
 |----------|--------|---------|--------------|
 | `/api/admin/authenticate` | POST | LEGACY — removed; admin-code login no longer exists | — |
+| `/api/admin-verification/logout` | POST | Increment account session version and close all admin sessions | Header: `Authorization: Bearer <token>` |
 | `/api/admin/session` | GET | Validate admin session | Header: `Authorization: Bearer <token>` |
 | `/api/admin/create` | POST | Create new admin (super admin only) | `{email, password, first_name, last_name, admin_level, ...}` |
 

@@ -1,11 +1,11 @@
 /**
  * SESSION TOKEN UTIL
  * Signs/verifies admin session tokens in the EXACT format that the
- * main server (server.js -> verifyAdminSessionToken) accepts:
+ * main server and admin routes accept:
  * `base64url(JSON payload).base64url(HMAC-SHA256 signature)`.
  * (server.js never SIGNS admin tokens — the old signAdminSessionToken()
  * helper there was dead code and has been deleted; this module is the
- * only minter.)
+ * only minter. Account-wide logout revocation is enforced by adminSessionState.)
  *
  * Before this module existed, the login endpoints returned an UNSIGNED
  * placeholder token (`admin-session-<timestamp>-<id>`), so every subsequent
@@ -36,10 +36,11 @@ function getSessionSecret() {
  * @param {string} [role] - 'admin' (informational only)
  * @returns {string} `${base64url(payload)}.${base64url(hmac)}`
  */
-function signSessionToken(userId, role) {
+function signSessionToken(userId, role, sessionVersion = 0) {
   const payload = {
     uid: Number(userId),
     exp: Date.now() + 8 * 60 * 60 * 1000, // 8h — matches server.js
+    sessionVersion,
   };
   if (role) payload.role = role;
 

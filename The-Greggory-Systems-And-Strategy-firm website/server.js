@@ -26,6 +26,7 @@ const { connectMongoDB } = require("./server/config/mongodb");
 // read/written by five routes below. Guaranteeing it here keeps every one of
 // those call sites to a single `await` instead of repeating the DDL.
 const { ensureAdminSettingsTable } = require("./backend/utils/ensureAdminSettings");
+const { verifyActiveAdminSession } = require("./backend/utils/adminSessionState");
 const models = require("./server/models");
 const {
   User, Project, Document, Message, WebsiteContent,
@@ -40,8 +41,6 @@ const crypto = require("crypto");
 // If a secret is missing we use an ephemeral random value instead: tokens
 // stay unforgable (they just invalidate on restart until the env var is set).
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
-const ADMIN_SESSION_SECRET =
-  process.env.ADMIN_SESSION_SECRET || process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
 if (!process.env.JWT_SECRET) {
   console.error(
     "[SECURITY][CRITICAL] JWT_SECRET is not set — using an ephemeral random secret. " +
@@ -244,59 +243,29 @@ const authenticateUser = async (req, res, next) => {
   }
 };
 
-function getAdminSessionSecret() {
-  return ADMIN_SESSION_SECRET;
-}
-
 // NOTE: the old signAdminSessionToken() helper was deleted — it was dead code
 // (zero call sites; every caller uses backend/utils/sessionToken.js via
 // admin-verification.js). server.js only ever VERIFIES admin session tokens.
 
-function verifyAdminSessionToken(token) {
-  if (!token || typeof token !== "string") return null;
-  const dot = token.lastIndexOf(".");
-  if (dot < 1) return null;
-  const body = token.slice(0, dot);
-  const sig = token.slice(dot + 1);
-  if (!body || !sig) return null;
-  const secret = getAdminSessionSecret();
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(body)
-    .digest("base64url");
-  const sigBuf = Buffer.from(sig, "utf8");
-  const expBuf = Buffer.from(expected, "utf8");
-  if (sigBuf.length !== expBuf.length) return null;
-  try {
-    if (!crypto.timingSafeEqual(sigBuf, expBuf)) return null;
-  } catch {
-    return null;
-  }
-  let payload;
-  try {
-    payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-  } catch {
-    return null;
-  }
-  if (!payload.uid || !payload.exp || Date.now() > payload.exp) return null;
-  return payload;
-}
-
-const authenticateAdmin = (req, res, next) => {
+const authenticateAdmin = async (req, res, next) => {
   const authHeader = req.headers.authorization || "";
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
   if (!m) {
     return res.status(401).json({ success: false, message: "Admin authentication required" });
   }
 
-  const payload = verifyAdminSessionToken(m[1].trim());
-  if (!payload) {
-    return res.status(401).json({ success: false, message: "Invalid or expired admin session" });
+  try {
+    const payload = await verifyActiveAdminSession(m[1].trim());
+    if (!payload) {
+      return res.status(401).json({ success: false, message: "Invalid or expired admin session" });
+    }
+    req.adminId = payload.uid;
+    req.user = { id: payload.uid };
+    return next();
+  } catch (error) {
+    console.error("[AUTH] Admin session check failed:", error.message);
+    return res.status(500).json({ success: false, message: "Admin authentication check failed" });
   }
-
-  req.adminId = payload.uid;
-  req.user = { id: payload.uid };
-  next();
 };
 
 // ── Either-side auth ─────────────────────────────────────────────────
@@ -316,7 +285,13 @@ const authenticateAny = async (req, res, next) => {
   ).trim();
   const m = raw.match(/^Bearer\s+(.+)$/i);
   const token = (m ? m[1] : raw).trim();
-  const adminPayload = token ? verifyAdminSessionToken(token) : null;
+  let adminPayload = null;
+  try {
+    adminPayload = token ? await verifyActiveAdminSession(token) : null;
+  } catch (error) {
+    console.error("[AUTH] Admin session check failed:", error.message);
+    return res.status(500).json({ success: false, message: "Admin authentication check failed" });
+  }
   if (adminPayload) {
     req.adminId = adminPayload.uid;
     req.user = { id: adminPayload.uid };
@@ -720,7 +695,7 @@ app.use(async (req, res, next) => {
 
     if (token) {
       // 1. Check for Admin Session Token (Custom HMAC)
-      const adminPayload = verifyAdminSessionToken(token);
+      const adminPayload = await verifyActiveAdminSession(token);
       if (adminPayload && adminPayload.uid) {
         // Fire and forget the admin activity stamp (the Developer platform was purged)
         mainDb.query("UPDATE admin_users SET last_active_at = NOW() WHERE id = ?", [adminPayload.uid]).catch(() => {});
@@ -5756,7 +5731,7 @@ app.get("/api/admin/session", async (req, res) => {
         .status(401)
         .json({ success: false, message: "No session token" });
     }
-    const payload = verifyAdminSessionToken(m[1].trim());
+    const payload = await verifyActiveAdminSession(m[1].trim());
     if (!payload) {
       return res
         .status(401)

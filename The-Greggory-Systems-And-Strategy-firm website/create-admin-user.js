@@ -64,6 +64,7 @@ async function createAdminUser() {
           access_level ENUM('full', 'limited', 'read_only') DEFAULT 'full',
           department VARCHAR(100),
           is_active BOOLEAN DEFAULT TRUE,
+          session_version BIGINT UNSIGNED NOT NULL DEFAULT 0,
           last_login_at TIMESTAMP NULL DEFAULT NULL,
           last_login_ip VARCHAR(45) DEFAULT NULL,
           failed_login_attempts INT DEFAULT 0,

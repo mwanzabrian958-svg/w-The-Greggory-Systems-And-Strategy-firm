@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
   display_name VARCHAR(100),
   admin_level ENUM('super_admin', 'admin', 'moderator') DEFAULT 'admin',
   access_level INT DEFAULT 1,
+  session_version BIGINT UNSIGNED NOT NULL DEFAULT 0,
   department VARCHAR(100),
   profile_image_id INT,
   is_active BOOLEAN DEFAULT true,
