@@ -37,7 +37,7 @@ const CookieConsentBanner = () => {
       <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <p className="max-w-3xl text-sm leading-relaxed text-slate-200">
           We use essential cookies to operate this site. With your permission, analytics cookies help us understand site usage.
-          You can accept or reject optional analytics cookies. Read our{' '}
+          You can accept all cookies or reject cookies. Read our{' '}
           <Link to="/privacy" className="font-semibold text-white underline underline-offset-2 hover:text-gold-300">
             Privacy Policy
           </Link>.
@@ -48,7 +48,7 @@ const CookieConsentBanner = () => {
             onClick={() => chooseConsent('rejected')}
             className="rounded-lg border border-white/40 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
-            Reject optional cookies
+            Reject cookies
           </button>
           <button
             type="button"

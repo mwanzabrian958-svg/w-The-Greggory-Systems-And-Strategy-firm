@@ -10,7 +10,7 @@ const Privacy = () => {
     { title: 'Sharing', icon: Share2, content: 'We do not sell personal data. We only share information when required to deliver a service, fulfill a legal need, or protect the integrity of our operations.' },
     { title: 'Security', icon: Shield, content: 'We apply strong measures to protect access and limit exposure across our internal systems and workstreams.' },
     { title: 'Rights', icon: User, content: 'You may request access to your information, correct mistakes, or ask us about how your information is managed.' },
-    { title: 'Cookies', icon: Cookie, content: 'Essential cookies support site functions. Optional analytics cookies help us understand site usage and are enabled only if you accept them in the cookie notice. You can reject optional analytics cookies and continue using the site.' }
+    { title: 'Cookies', icon: Cookie, content: 'Essential cookies support site functions. Analytics cookies help us understand site usage and are enabled only if you accept all cookies in the cookie notice. You can reject cookies and continue using the site.' }
   ]
 
   return (
