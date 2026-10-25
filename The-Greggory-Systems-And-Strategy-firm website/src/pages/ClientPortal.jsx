@@ -44,12 +44,10 @@ import { useNavigate } from "react-router-dom";
 import { formatKSH } from "../utils/currencyUtils";
 import { Emblem, Spinner, PageLoader } from "../components/Loading";
 
-// Official Android app — distributed through the client-portal GitHub repo
-// (docs/GSSF-client-portal.apk). GitHub raw serves it with an APK content
-// type, so browsers download the file directly when this link is opened.
+// Hosted portal page provides the Android APK download.
 const MOBILE_APP = {
   name: "GSSF Client Portal",
-  url: "https://github.com/mwanzabrian958-svg/client-portal-The-Greggory-Systems-And-Strategy-firm-company-system/raw/main/docs/GSSF-client-portal.apk",
+  url: "https://client-portal-tgssf.onrender.com",
   size: "36 MB",
   platform: "Android",
 };
@@ -1491,15 +1489,12 @@ const ClientPortal = () => {
 
                 <a
                   href={mobileApp.url}
-                  download
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-gold-500 to-yellow-500 text-slate-950 text-[10px] font-black uppercase tracking-widest transition-colors hover:from-gold-400 hover:to-yellow-400"
                 >
-                  <Download size={14} /> Download APK
+                  <Download size={14} /> Open APK Download Page
                 </a>
                 <p className="text-[8px] text-slate-500 dark:text-slate-400 mt-3 text-center">
-                  Direct download ({mobileApp.size}) — open the file on your phone to install
+                  Opens the hosted portal where you can download the APK
                 </p>
               </div>
 
