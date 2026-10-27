@@ -52,3 +52,26 @@ test('buildClientPortalPayload derives business metrics from project rows', () =
   assert.equal(payload.teamMembers.length, 2);
   assert.equal(payload.teamMembers[0].projectName, 'Digital Operations');
 });
+
+test('preserves authenticated report download paths in the client document vault', () => {
+  const payload = buildClientPortalPayload({
+    user: { id: 7, email: 'client@example.com' },
+    projects: [],
+    tasks: [],
+    activities: [],
+    invoices: [],
+    documents: [
+      {
+        id: 14,
+        document_name: 'Project brief',
+        document_type: 'report',
+        project_name: 'Digital Operations',
+        downloadPath: '/api/users/my-reports/14/download',
+      },
+    ],
+    feedback: [],
+  });
+
+  assert.equal(payload.documents[0].name, 'Project brief');
+  assert.equal(payload.documents[0].downloadPath, '/api/users/my-reports/14/download');
+});

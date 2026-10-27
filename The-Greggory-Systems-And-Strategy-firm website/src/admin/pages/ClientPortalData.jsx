@@ -19,7 +19,7 @@ import { CreateProjectModal, EditProjectModal } from "../components/ProjectModal
  * Payload comes from GET /api/admin/client-portal/:id — built by the SAME
  * builder (server/utils/clientPortalData.js) the client portal consumes, so
  * what staff see here is literally what the client sees. Writes go through the
- * portal-backed endpoints (user-projects, project tasks, project_invoices,
+ * portal-backed endpoints (user-projects, project tasks, both invoice sources,
  * user_feedback, admin client-feedback relay).
  */
 const TABS = [
@@ -71,6 +71,18 @@ const PROJECT_CHIP = {
 
 const toDateInput = (v) => (v ? String(v).slice(0, 10) : "");
 
+const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = String(reader.result || "");
+    const encoded = result.slice(result.indexOf(",") + 1);
+    if (!encoded) reject(new Error("Could not read the selected file"));
+    else resolve(encoded);
+  };
+  reader.onerror = () => reject(new Error("Could not read the selected file"));
+  reader.readAsDataURL(file);
+});
+
 export function ClientPortalData({ user }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -95,8 +107,9 @@ export function ClientPortalData({ user }) {
   const [newTask, setNewTask] = useState({ task_name: "", assigned_to: "", status: "not_started", priority: "medium" });
   const [team, setTeam] = useState([]);
 
-  // Billing (project_invoices — the table the portal Billing tab reads)
+  // Portal invoices (legacy project invoices plus standard invoices)
   const [invoices, setInvoices] = useState([]);
+  const [generalInvoices, setGeneralInvoices] = useState([]);
   const [showAddInvoice, setShowAddInvoice] = useState(false);
   const [invoiceDraftId, setInvoiceDraftId] = useState(null);
   const [invoiceValues, setInvoiceValues] = useState({});
@@ -107,6 +120,8 @@ export function ClientPortalData({ user }) {
   const [newMessage, setNewMessage] = useState({ title: "", message: "", priority: "medium" });
   const [replyText, setReplyText] = useState("");
   const [replyTarget, setReplyTarget] = useState(null);
+  const [documentUpload, setDocumentUpload] = useState({ project_id: "", title: "", summary: "", file: null });
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
 
   const notify = (type, text) => {
     setToast({ type, text });
@@ -120,10 +135,11 @@ export function ClientPortalData({ user }) {
     try {
       setLoading(true);
       setError("");
-      const [dash, proj, inv, thr] = await Promise.all([
+      const [dash, proj, inv, standardInvoices, thr] = await Promise.all([
         apiCall(`/admin/client-portal/${id}`),
         apiCall("/user-projects"),
         apiCall(`/admin/project-invoices?client_id=${id}`),
+        apiCall(`/admin/client-invoices/${id}`),
         apiCall(`/feedback?user_id=${id}&limit=100`),
       ]);
       if (!dash?.success) throw new Error(dash?.message || "Portal payload unavailable");
@@ -131,10 +147,11 @@ export function ClientPortalData({ user }) {
 
       // Same owner filter the UserDetail workstation applies to the relay.
       const mine = Array.isArray(proj)
-        ? proj.filter((p) => String(p.user_id) === String(id) || String(p.client_id) === String(id))
+        ? proj.filter((p) => String(p.user_id) === String(id))
         : [];
       setProjects(mine);
       setInvoices(inv?.invoices || []);
+      setGeneralInvoices(standardInvoices?.invoices || []);
       setThread(thr?.feedback || []);
       setActiveProjectId((prev) => prev || (mine.length ? String(mine[0].id) : ""));
     } catch (e) {
@@ -170,8 +187,12 @@ export function ClientPortalData({ user }) {
   }, [activeProjectId]);
 
   const refreshInvoices = async () => {
-    const inv = await apiCall(`/admin/project-invoices?client_id=${id}`);
+    const [inv, standard] = await Promise.all([
+      apiCall(`/admin/project-invoices?client_id=${id}`),
+      apiCall(`/admin/client-invoices/${id}`),
+    ]);
     setInvoices(inv?.invoices || []);
+    setGeneralInvoices(standard?.invoices || []);
   };
 
   const refreshThread = async () => {
@@ -261,8 +282,44 @@ export function ClientPortalData({ user }) {
     } catch (e) { notify("error", "Task removal failed"); }
   };
 
+  const handleUploadDocument = async (e) => {
+    e.preventDefault();
+    const file = documentUpload.file;
+    if (!file || !documentUpload.project_id || !documentUpload.title.trim()) {
+      notify("error", "Choose a project, document title, and PDF file.");
+      return;
+    }
+    if (file.type !== "application/pdf" || file.size > 5 * 1024 * 1024) {
+      notify("error", "Choose a PDF no larger than 5 MB.");
+      return;
+    }
+    setIsUploadingDocument(true);
+    try {
+      const fileData = await readFileAsBase64(file);
+      const res = await apiCall("/admin/reports", {
+        method: "POST",
+        body: JSON.stringify({
+          project_id: Number(documentUpload.project_id),
+          title: documentUpload.title.trim(),
+          summary: documentUpload.summary.trim(),
+          file_data: fileData,
+          file_type: file.type,
+          file_size: file.size,
+        }),
+      });
+      if (!res?.success) throw new Error(res?.message || "Document upload failed");
+      setDocumentUpload({ project_id: "", title: "", summary: "", file: null });
+      await loadAll();
+      notify("success", "PDF added to this client's document vault and app.");
+    } catch (e) {
+      notify("error", e.message || "Document upload failed");
+    } finally {
+      setIsUploadingDocument(false);
+    }
+  };
+
   // ---------------------------------------------------------------------------
-  // Billing (project_invoices — portal Billing tab)
+  // Billing (legacy portal invoice records)
   // ---------------------------------------------------------------------------
   const handleAddInvoice = async (e) => {
     e.preventDefault();
@@ -598,7 +655,12 @@ export function ClientPortalData({ user }) {
               </div>
             )}
 
-            <CreateProjectModal isOpen={showCreateProject} onClose={() => setShowCreateProject(false)} onCreate={handleCreateProject} />
+            <CreateProjectModal
+              isOpen={showCreateProject}
+              onClose={() => setShowCreateProject(false)}
+              onCreate={handleCreateProject}
+              lockedClientId={id}
+            />
             <EditProjectModal isOpen={!!editProject} onClose={() => setEditProject(null)} onUpdate={handleUpdateProject} project={editProject} />
           </div>
         )}
@@ -707,15 +769,52 @@ export function ClientPortalData({ user }) {
           </div>
         )}
 
-        {/* ── BILLING (project_invoices — the portal Billing tab source) ── */}
+        {/* ── BILLING (legacy portal and standard invoice records) ── */}
         {tab === "billing" && (
           <div className="space-y-5 animate-in fade-in duration-300">
             <div className="flex items-center justify-between">
-              <p className="text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">Portal Billing — {invoices.length} invoice{invoices.length === 1 ? "" : "s"}</p>
+              <p className="text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">Client Billing — {invoices.length + generalInvoices.length} invoice{invoices.length + generalInvoices.length === 1 ? "" : "s"}</p>
               <button onClick={() => setShowAddInvoice((v) => !v)} className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-lg">
                 <Plus size={12} /> New Invoice
               </button>
             </div>
+
+            {generalInvoices.length > 0 && (
+              <section className="space-y-3">
+                <p className="text-[7px] font-black uppercase tracking-[0.25em] text-slate-400">
+                  Standard invoices · created from Billing
+                </p>
+                {generalInvoices.map((inv) => (
+                  <div key={`invoices:${inv.id}`} className="bg-white border border-sky-200 rounded-3xl p-5 shadow-md">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="flex-1 min-w-[180px]">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[11px] font-black uppercase tracking-tight text-slate-900">
+                            {inv.invoice_number || `Invoice #${inv.id}`}
+                          </p>
+                          <span className={`px-2 py-0.5 rounded text-[6px] font-black uppercase border ${INVOICE_CHIP[inv.status] || INVOICE_CHIP.draft}`}>
+                            {inv.status}
+                          </span>
+                        </div>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mt-1">
+                          {inv.project_name || inv.title || `Project #${inv.project_id}`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-slate-900">
+                          {formatKSH(Number(inv.total_amount_kes) > 0
+                            ? Number(inv.total_amount_kes)
+                            : Number(inv.total_amount ?? inv.subtotal ?? 0))}
+                        </p>
+                        <p className="text-[7px] font-black uppercase tracking-widest text-slate-400">
+                          Due {toDateInput(inv.due_date) || "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </section>
+            )}
 
             {showAddInvoice && (
               <form onSubmit={handleAddInvoice} className="bg-white border border-teal-500/30 rounded-3xl p-5 shadow-xl grid grid-cols-1 md:grid-cols-12 gap-3">
@@ -822,12 +921,12 @@ export function ClientPortalData({ user }) {
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : generalInvoices.length === 0 ? (
               <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-slate-200">
                 <Receipt className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">No invoices on this portal yet</p>
               </div>
-            )}
+            ) : null}
           </div>
         )}
 
@@ -990,6 +1089,52 @@ export function ClientPortalData({ user }) {
             <p className="text-[8px] font-black uppercase tracking-[0.25em] text-slate-400">
               Portal Document Vault — {docs.length} file{docs.length === 1 ? "" : "s"}
             </p>
+
+            <form onSubmit={handleUploadDocument} className="bg-white border border-teal-500/30 rounded-3xl p-5 shadow-sm space-y-3">
+              <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-700">Add a client PDF</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <select
+                  required
+                  value={documentUpload.project_id}
+                  onChange={(e) => setDocumentUpload({ ...documentUpload, project_id: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                >
+                  <option value="">Select client project</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id}>{project.project_name}</option>
+                  ))}
+                </select>
+                <input
+                  required
+                  value={documentUpload.title}
+                  onChange={(e) => setDocumentUpload({ ...documentUpload, title: e.target.value })}
+                  placeholder="Document title"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                />
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  required
+                  onChange={(e) => setDocumentUpload({ ...documentUpload, file: e.target.files?.[0] || null })}
+                  className="w-full text-xs"
+                />
+                <input
+                  value={documentUpload.summary}
+                  onChange={(e) => setDocumentUpload({ ...documentUpload, summary: e.target.value })}
+                  placeholder="Optional note for this document"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isUploadingDocument || projects.length === 0}
+                className="inline-flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2 text-[8px] font-black uppercase tracking-widest text-white disabled:opacity-50"
+              >
+                {isUploadingDocument ? <Spinner size={12} /> : <Plus size={12} />}
+                {isUploadingDocument ? "Uploading..." : "Upload to client portal"}
+              </button>
+              {projects.length === 0 && <p className="text-[8px] text-amber-600">Create an active project for this client before uploading a project document.</p>}
+            </form>
 
             {docSummary.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

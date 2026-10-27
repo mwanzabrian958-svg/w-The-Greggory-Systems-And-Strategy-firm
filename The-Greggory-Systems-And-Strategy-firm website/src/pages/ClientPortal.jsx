@@ -189,7 +189,7 @@ const ClientPortal = () => {
     { id: "projects", label: "Projects", icon: Briefcase },
     { id: "team", label: "Team", icon: Users },
     { id: "tasks", label: "Tasks", icon: ListChecks, badge: tasks.filter(t => t.status !== "completed").length },
-    { id: "billing", label: "Billing", icon: DollarSign, badge: invoices.filter(i => i.status !== "paid").length },
+    { id: "billing", label: "Billing", icon: DollarSign, badge: invoices.filter(i => !['paid', 'cancelled', 'draft'].includes(i.status)).length },
     { id: "requests", label: "Requests", icon: ClipboardList, badge: pendingRequestsCount },
     { id: "documents", label: "Docs", icon: Folder, badge: documents.length },
     { id: "messages", label: "Inbox", icon: Mail, badge: unreadMessages },
@@ -204,7 +204,24 @@ const ClientPortal = () => {
       // SECURITY: Server uses authenticated user's ID, not URL param
       const response = await authFetch(getApiUrl('/api/users/client-feedback'));
       const data = await response.json();
-      if (data.success) setFeedbackList(data.feedback || []);
+      if (data.success) {
+        const rows = data.feedback || [];
+        setFeedbackList(rows.filter((item) => item.author === 'client'));
+        const sentMessages = rows
+          .filter((item) => item.author === 'client')
+          .map((item) => ({
+            id: `outbound-feedback-${item.id}`,
+            sender: 'You',
+            subject: item.title || 'Portal message',
+            message: item.message,
+            time: item.created_at,
+            unread: false,
+          }));
+        setMessages((previous) => [
+          ...previous.filter((item) => !String(item.id).startsWith('outbound-feedback-') && !String(item.id).startsWith('outbox-')),
+          ...sentMessages,
+        ].sort((a, b) => new Date(b.time || 0) - new Date(a.time || 0)));
+      }
     } catch (err) {
       console.error(err);
     }
@@ -466,11 +483,24 @@ const ClientPortal = () => {
       if (!response.ok) {
         throw new Error(`Server error (${response.status})`);
       }
-      const data = await response.json();
+      const [data, invoiceResponse] = await Promise.all([
+        response.json(),
+        authFetch(getApiUrl('/api/users/my-invoices')),
+      ]);
+      if (!invoiceResponse.ok) {
+        throw new Error(`Invoice server error (${invoiceResponse.status})`);
+      }
+      const invoiceData = await invoiceResponse.json();
+      if (!invoiceData.success) {
+        throw new Error(invoiceData.message || 'Failed to load invoices');
+      }
       if (data.success) {
         setPortalUser(data.dashboard.user);
         setProjects(data.dashboard.projects || []);
-        setInvoices(data.dashboard.invoices || []);
+        setInvoices((invoiceData.invoices || []).map((invoice) => ({
+          ...invoice,
+          key: `${invoice.source}:${invoice.id}`,
+        })));
         setKpiMetrics(data.dashboard.kpiMetrics || []);
         setTasks(data.dashboard.tasks || []);
         setMessages(data.dashboard.messages || []);
@@ -661,8 +691,8 @@ const ClientPortal = () => {
   };
 
   const handleMpesaPay = async (invoice) => {
-    setMpesaLoading(invoice.id);
-    setPaymentStatus({ id: invoice.id, type: 'info', message: 'Checking phone...' });
+    setMpesaLoading(invoice.key);
+    setPaymentStatus({ id: invoice.key, type: 'info', message: 'Checking phone...' });
     try {
       const response = await mpesaAPI.stkPush({
         phoneNumber: portalUser?.phone_number || '',
@@ -672,11 +702,11 @@ const ClientPortal = () => {
         userId: portalUser?.id
       });
       if (response.success) {
-        setPaymentStatus({ id: invoice.id, type: 'success', message: 'Prompt sent.' });
+        setPaymentStatus({ id: invoice.key, type: 'success', message: 'Prompt sent.' });
         setTimeout(loadClientData, 5000);
       }
     } catch (err) {
-      setPaymentStatus({ id: invoice.id, type: 'error', message: 'Failed.' });
+      setPaymentStatus({ id: invoice.key, type: 'error', message: 'Failed.' });
     } finally {
       setMpesaLoading(null);
     }
@@ -705,7 +735,8 @@ const ClientPortal = () => {
 
   const handleDownloadInvoicePdf = async (inv) => {
     try {
-      const res = await authFetch(getApiUrl(`/api/users/my-invoices/${inv.id}/pdf`));
+      const source = inv.source === "invoices" ? "?source=invoices" : "";
+      const res = await authFetch(getApiUrl(`/api/users/my-invoices/${inv.id}/pdf${source}`));
       if (!res.ok) throw new Error("PDF unavailable");
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -717,7 +748,7 @@ const ClientPortal = () => {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setPaymentStatus({ id: inv.id, type: "error", message: "PDF not available yet." });
+      setPaymentStatus({ id: inv.key, type: "error", message: "PDF not available yet." });
     }
   };
 
@@ -750,7 +781,7 @@ const ClientPortal = () => {
   ];
   const profileCompletion = Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100);
 
-  const outstanding = invoices.filter(i => i.status !== 'paid');
+  const outstanding = invoices.filter(i => !['paid', 'cancelled', 'draft'].includes(i.status));
   const totalOutstanding = outstanding.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + (Number(i.amount) || 0), 0);
 
@@ -995,7 +1026,7 @@ const ClientPortal = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {[
                   { l: 'Projects', v: projects.length, i: Briefcase, c: 'text-blue-400' },
-                  { l: 'Due', v: invoices.filter(i => i.status !== 'paid').length, i: DollarSign, c: 'text-emerald-600 dark:text-emerald-400' },
+                  { l: 'Due', v: outstanding.length, i: DollarSign, c: 'text-emerald-600 dark:text-emerald-400' },
                   { l: 'Unread', v: unreadMessages, i: Mail, c: 'text-gold-600' }
                 ].map((s, i) => (
                   <div key={i} className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
@@ -1130,9 +1161,9 @@ const ClientPortal = () => {
               </div>
 
               {invoices.length > 0 ? invoices.map(inv => {
-                const ps = paymentStatus?.id === inv.id ? paymentStatus : null;
+                const ps = paymentStatus?.id === inv.key ? paymentStatus : null;
                 return (
-                  <div key={inv.id} className={`bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border transition-all ${ps?.type === 'error' ? 'border-rose-500/40' : ps?.type === 'success' ? 'border-emerald-500/40' : 'border-slate-200 dark:border-slate-700'}`}>
+                  <div key={inv.key} className={`bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border transition-all ${ps?.type === 'error' ? 'border-rose-500/40' : ps?.type === 'success' ? 'border-emerald-500/40' : 'border-slate-200 dark:border-slate-700'}`}>
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`p-2 rounded-lg ${inv.status === 'paid' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-gold-500/10 text-gold-600'}`}><DollarSign size={14} /></div>
@@ -1151,10 +1182,10 @@ const ClientPortal = () => {
                           className="p-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 hover:text-teal-600 transition-all">
                           <Download size={11} />
                         </button>
-                        {inv.status !== 'paid' && (
-                          <button onClick={() => handleMpesaPay(inv)} disabled={mpesaLoading === inv.id}
+                        {!['paid', 'cancelled', 'draft'].includes(inv.status) && (
+                          <button onClick={() => handleMpesaPay(inv)} disabled={mpesaLoading === inv.key}
                             className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 rounded-lg text-[8px] font-bold uppercase flex items-center gap-1 transition-all">
-                                                        {mpesaLoading === inv.id ? <Spinner size={9} tone="white" /> : 'M-Pesa'}
+                            {mpesaLoading === inv.key ? <Spinner size={9} tone="white" /> : 'M-Pesa'}
                           </button>
                         )}
                       </div>

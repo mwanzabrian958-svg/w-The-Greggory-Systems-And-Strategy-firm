@@ -27,6 +27,7 @@ const { connectMongoDB } = require("./server/config/mongodb");
 // those call sites to a single `await` instead of repeating the DDL.
 const { ensureAdminSettingsTable } = require("./backend/utils/ensureAdminSettings");
 const { verifyActiveAdminSession } = require("./backend/utils/adminSessionState");
+const { getActiveClientAccount, getClientDisplayName } = require("./backend/utils/clientAssignment");
 const models = require("./server/models");
 const {
   User, Project, Document, Message, WebsiteContent,
@@ -304,19 +305,19 @@ const authenticateAny = async (req, res, next) => {
   });
 };
 
-// Client scoping for the invoices table: a row is theirs when they are
-// stamped on it (created_by / client_email) or it sits on one of their
-// projects. Admins bypass this entirely. Never throws — denies on doubt.
+// Client scoping for invoices relies on the recipient address or project
+// ownership. Admin-created invoices may have a users-table fallback in
+// created_by, so that column is not a safe client ownership signal.
 const invoiceBelongsToUser = async (row, userId) => {
   try {
     if (!row || !userId) return false;
-    if (Number(row.created_by) === Number(userId)) return true;
     const [me] = await mainDb.query(
       "SELECT email FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1",
       [userId]
     );
     const email = me.length ? String(me[0].email || "").toLowerCase() : "";
     if (email && String(row.client_email || "").toLowerCase() === email) return true;
+    if (Number(row.client_id) === Number(userId)) return true;
     const [links] = await mainDb.query(
       "SELECT 1 FROM user_projects WHERE id = ? AND user_id = ? AND deleted_at IS NULL LIMIT 1",
       [row.project_id, userId]
@@ -1778,6 +1779,24 @@ const handleClientFeedbackCreate = async (req, res) => {
 
 
 app.get("/api/users/client-feedback/:userId", authenticateUser, handleClientFeedbackList);
+app.get("/api/users/client-feedback", authenticateUser, async (req, res) => {
+  try {
+    const [feedbackRows] = await mainDb.query(
+      `SELECT id, title, message, feedback_type, status, priority, rating, author, created_at,
+              admin_response, responded_at
+       FROM user_feedback
+       WHERE user_id = ? AND deleted_at IS NULL AND status != 'closed'
+         AND author IN ('admin', 'client')
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [req.userId],
+    );
+    res.json({ success: true, feedback: feedbackRows });
+  } catch (error) {
+    console.error("[CLIENT INBOX] List error:", error);
+    res.status(500).json({ success: false, message: "Failed to load client inbox" });
+  }
+});
 // CLIENT-ONLY: feedback is attributed to the authenticated user (author='client')
 app.post("/api/users/client-feedback", authenticateUser, handleClientFeedbackCreate);
 
@@ -2153,10 +2172,31 @@ const loadClientPortalPayload = async (id) => {
       `SELECT pi.id, pi.invoice_number, pi.amount, pi.status, pi.due_date, up.project_name
        FROM project_invoices pi
        JOIN user_projects up ON up.id = pi.project_id
-       WHERE up.user_id = ? AND pi.status != 'cancelled'
+       WHERE up.user_id = ? AND pi.deleted_at IS NULL AND pi.status != 'cancelled'
        ORDER BY pi.issue_date DESC
        LIMIT 15`,
       [id],
+    );
+    const [standardInvoiceRows] = await safeQuery(
+      "standard invoices",
+      `SELECT i.id, i.invoice_number,
+              COALESCE(NULLIF(i.total_amount_kes, 0), i.total_amount) AS amount,
+              CASE WHEN i.payment_status = 'paid' THEN 'paid' ELSE i.status END AS status,
+              i.due_date, COALESCE(p.name, i.title) AS project_name, 'invoices' AS source
+       FROM invoices i
+       LEFT JOIN projects p ON p.id = i.project_id
+       WHERE i.deleted_at IS NULL AND LOWER(COALESCE(i.status, '')) <> 'draft'
+         AND (
+           i.client_id = ?
+           OR LOWER(COALESCE(i.client_email, '')) = LOWER(?)
+           OR EXISTS (
+             SELECT 1 FROM user_projects up
+             WHERE up.id = i.project_id AND up.user_id = ? AND up.deleted_at IS NULL
+           )
+         )
+       ORDER BY i.issue_date DESC
+       LIMIT 15`,
+      [id, user.email, id],
     );
 
     const [documentRows] = await safeQuery(
@@ -2177,6 +2217,19 @@ const loadClientPortalPayload = async (id) => {
        LEFT JOIN user_projects up ON up.id = cd.project_id
        WHERE cd.client_id = ?
        ORDER BY cd.created_at DESC
+       LIMIT 15`,
+      [id],
+    );
+
+    const [projectReportRows] = await safeQuery(
+      "project reports",
+      `SELECT pr.id, pr.project_id, pr.title AS document_name, 'report' AS document_type,
+              'deliverable' AS category, pr.file_size, pr.created_at, up.project_name,
+              CONCAT('/api/users/my-reports/', pr.id, '/download') AS downloadPath
+       FROM project_reports pr
+       JOIN user_projects up ON up.id = pr.project_id
+       WHERE up.user_id = ? AND pr.status = 'final' AND pr.deleted_at IS NULL
+       ORDER BY pr.created_at DESC
        LIMIT 15`,
       [id],
     );
@@ -2251,8 +2304,11 @@ const loadClientPortalPayload = async (id) => {
       projects: projectRows,
       tasks: taskRows,
       activities: activityRows,
-      invoices: invoiceRows,
-      documents: [...systemDocumentRows, ...documentRows, ...clientDocumentRows],
+      invoices: [
+        ...invoiceRows.map((invoice) => ({ ...invoice, source: "project_invoices" })),
+        ...standardInvoiceRows,
+      ],
+      documents: [...systemDocumentRows, ...documentRows, ...clientDocumentRows, ...projectReportRows],
       feedback: feedbackRows,
       summary,
       teamMembers,
@@ -3912,11 +3968,11 @@ app.get("/api/invoices", authenticateAny, async (req, res) => {
       if (!me.length) {
         return res.status(401).json({ success: false, message: "Authentication required" });
       }
-      query += ` AND (i.created_by = ? OR i.client_email = ? OR EXISTS (
+      query += ` AND (i.client_email = ? OR EXISTS (
         SELECT 1 FROM user_projects up
         WHERE up.id = i.project_id AND up.user_id = ? AND up.deleted_at IS NULL
-      ))`;
-      params.push(req.userId, me[0].email, req.userId);
+      ) OR i.client_id = ?)`;
+      params.push(me[0].email, req.userId, req.userId);
     }
 
     if (project_id) {
@@ -4884,6 +4940,22 @@ app.get("/api/documents/:type/:id/pdf", authenticateAny, async (req, res) => {
 app.get("/api/users/my-invoices/:id/pdf", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
+    if (req.query.source === "invoices") {
+      const [invoiceRows] = await mainDb.query(
+        "SELECT * FROM invoices WHERE id = ? AND deleted_at IS NULL LIMIT 1",
+        [id],
+      );
+      const invoice = invoiceRows[0];
+      if (!invoice || !(await invoiceBelongsToUser(invoice, req.userId))) {
+        return res.status(404).json({ success: false, message: "Invoice not found" });
+      }
+      const pdfBuffer = await generatePDFContent("invoices", invoice);
+      const invoiceNumber = String(invoice.invoice_number || id).replace(/[^a-zA-Z0-9_-]/g, "_");
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="invoice-${invoiceNumber}.pdf"`);
+      return res.send(pdfBuffer);
+    }
+
     const [rows] = await mainDb.query(
       `SELECT pi.*, up.project_name,
               CONCAT(u.first_name, ' ', u.last_name) AS client_name,
@@ -4891,7 +4963,7 @@ app.get("/api/users/my-invoices/:id/pdf", authenticateUser, async (req, res) => 
        FROM project_invoices pi
        JOIN user_projects up ON up.id = pi.project_id
        LEFT JOIN users u ON u.id = up.user_id
-       WHERE pi.id = ? AND up.user_id = ?
+       WHERE pi.id = ? AND pi.deleted_at IS NULL AND up.user_id = ? AND up.deleted_at IS NULL
        LIMIT 1`,
       [id, req.userId],
     );
@@ -7569,7 +7641,10 @@ app.get("/api/user-projects", authenticateAny, async (req, res) => {
   try {
     if (req.authRole === "user") {
       const [rows] = await mainDb.query(`
-      SELECT up.*, u.display_name as client_name
+      SELECT up.*, u.display_name as client_name,
+             COALESCE(NULLIF(u.display_name, ''), CONCAT_WS(' ', u.first_name, u.last_name)) as linked_client_name,
+             u.email as linked_client_email,
+             u.phone_number as linked_client_phone, u.id_number as linked_client_id_number
       FROM user_projects up
       LEFT JOIN users u ON up.user_id = u.id
       WHERE up.deleted_at IS NULL AND up.user_id = ?
@@ -7578,7 +7653,10 @@ app.get("/api/user-projects", authenticateAny, async (req, res) => {
       return res.json(rows);
     }
     const [rows] = await mainDb.query(`
-      SELECT up.*, u.display_name as client_name
+      SELECT up.*, u.display_name as client_name,
+             COALESCE(NULLIF(u.display_name, ''), CONCAT_WS(' ', u.first_name, u.last_name)) as linked_client_name,
+             u.email as linked_client_email,
+             u.phone_number as linked_client_phone, u.id_number as linked_client_id_number
       FROM user_projects up
       LEFT JOIN users u ON up.user_id = u.id
       WHERE up.deleted_at IS NULL
@@ -7611,10 +7689,15 @@ app.post("/api/user-projects", authenticateAny, async (req, res) => {
     // A client session can only create under its own account — a spoofed
     // user_id in the body is overwritten. Admins pass through untouched.
     if (req.authRole === "user") req.body = { ...(req.body || {}), user_id: req.userId };
+    const user_id = req.body?.user_id;
+    const clientAccount = await getActiveClientAccount(mainDb, user_id);
+    if (!clientAccount) {
+      return res.status(400).json({ error: 'Select an active client account for this project' });
+    }
     const {
-      user_id, project_name, project_description, project_type, status,
+      project_name, project_description, project_type, status,
       priority, start_date, end_date, estimated_budget, actual_budget,
-      client_id, client_name, client_email, client_phone, client_id_number,
+      client_id,
       project_manager_id, team_members, deliverables, milestones, documents,
       progress_percentage, notes, created_by
     } = req.body;
@@ -7634,8 +7717,8 @@ app.post("/api/user-projects", authenticateAny, async (req, res) => {
       [
         user_id, project_name, project_description || null, project_type || 'consulting',
         status || 'planning', priority || 'medium', start_date || null, end_date || null,
-        estimated_budget || 0, actual_budget || 0, client_id || null, client_name || null,
-        client_email || null, client_phone || null, client_id_number || null,
+        estimated_budget || 0, actual_budget || 0, client_id || null, getClientDisplayName(clientAccount),
+        clientAccount.email || null, clientAccount.phone_number || null, clientAccount.id_number || null,
         project_manager_id || null, team_members ? JSON.stringify(team_members) : null,
         deliverables ? JSON.stringify(deliverables) : null, milestones ? JSON.stringify(milestones) : null,
         documents ? JSON.stringify(documents) : null, progress_percentage || 0,
@@ -7653,19 +7736,35 @@ app.post("/api/user-projects", authenticateAny, async (req, res) => {
 app.put("/api/user-projects/:id", authenticateAny, async (req, res) => {
   try {
     const { id } = req.params;
+    const [existingProjects] = await mainDb.query(
+      "SELECT user_id FROM user_projects WHERE id = ? AND deleted_at IS NULL LIMIT 1",
+      [id]
+    );
+    if (!existingProjects.length) return res.status(404).json({ error: 'Project not found' });
+
+    let requestedUserId = req.body?.user_id || existingProjects[0].user_id;
     if (req.authRole === "user") {
       // Clients may touch only their own projects, and may never reassign
       // ownership via the body.
-      const [own] = await mainDb.query(
-        "SELECT user_id FROM user_projects WHERE id = ? AND deleted_at IS NULL",
-        [id]
-      );
-      if (!own.length || Number(own[0].user_id) !== Number(req.userId)) {
+      if (Number(existingProjects[0].user_id) !== Number(req.userId)) {
         return res.status(403).json({ error: "Not your project" });
       }
       req.body = { ...(req.body || {}) };
       delete req.body.user_id;
+      requestedUserId = existingProjects[0].user_id;
     }
+    const clientAccount = await getActiveClientAccount(mainDb, requestedUserId);
+    if (!clientAccount) {
+      return res.status(400).json({ error: 'Select an active client account for this project' });
+    }
+    req.body = {
+      ...(req.body || {}),
+      user_id: requestedUserId,
+      client_name: getClientDisplayName(clientAccount),
+      client_email: clientAccount.email || null,
+      client_phone: clientAccount.phone_number || null,
+      client_id_number: clientAccount.id_number || null,
+    };
     const {
       user_id, project_name, project_description, project_type, status,
       priority, start_date, end_date, estimated_budget, actual_budget,
@@ -7778,8 +7877,37 @@ app.post("/api/company-personnel", async (req, res) => {
 // the DB from subtotal/tax_rate) — it must NEVER appear in the INSERT list.
 app.post("/api/invoices", authenticateAdmin, async (req, res) => {
   try {
-    const { title, description, client_name, client_email, due_date } = req.body;
+    const { title, description, due_date } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
+    const requestedProjectId = Number(req.body.project_id);
+    if (!Number.isSafeInteger(requestedProjectId) || requestedProjectId <= 0) {
+      return res.status(400).json({ error: 'A project linked to a client account is required' });
+    }
+    const [linkedProjects] = await mainDb.query(
+      `SELECT up.id, up.user_id, u.email, u.display_name, u.first_name, u.last_name,
+              u.phone_number
+       FROM user_projects up
+       INNER JOIN users u ON u.id = up.user_id AND u.is_active = 1 AND u.deleted_at IS NULL
+       WHERE up.id = ? AND up.deleted_at IS NULL
+       LIMIT 1`,
+      [requestedProjectId]
+    );
+    if (!linkedProjects.length) {
+      return res.status(400).json({ error: 'The selected project is not linked to an active client account' });
+    }
+    const linkedClient = linkedProjects[0];
+    if (!linkedClient.email) {
+      return res.status(400).json({ error: 'The linked client account must have an email address before invoicing' });
+    }
+    if (
+      req.body.client_email &&
+      String(req.body.client_email).trim().toLowerCase() !== String(linkedClient.email).trim().toLowerCase()
+    ) {
+      return res.status(400).json({ error: 'Invoice recipient must match the selected project client' });
+    }
+    const clientName = getClientDisplayName(linkedClient);
+    const clientEmail = linkedClient.email;
+    const clientPhone = linkedClient.phone_number || null;
     // invoices.created_by is NOT NULL with a hard FK to users(id), but an admin
     // session carries an id from admin_users — a DIFFERENT table with its own id
     // sequence. Feeding that straight in 500s with ER_NO_REFERENCED_ROW_2
@@ -7788,11 +7916,17 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
     const userId = await resolveAccountingUserId(
       req.userId || req.adminId || req.body.created_by || null
     );
-    const project_id = await resolveInvoiceProjectId(req.body.project_id);
+    const project_id = await resolveInvoiceProjectId(requestedProjectId);
     const invoice_number = req.body.invoice_number || 'INV-' + Date.now();
+    const [existingPortalInvoice] = await mainDb.query(
+      "SELECT id FROM project_invoices WHERE invoice_number = ? AND deleted_at IS NULL LIMIT 1",
+      [invoice_number],
+    );
+    if (existingPortalInvoice.length) {
+      return res.status(409).json({ error: 'Invoice number is already used by a portal invoice' });
+    }
     const issue_date = req.body.issue_date || new Date().toISOString().split('T')[0];
     const due = due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const clientName = client_name || 'Walk-in Client';
     const subtotal =
       req.body.subtotal != null ? parseFloat(req.body.subtotal)
       : req.body.total_amount_kes != null ? parseFloat(req.body.total_amount_kes)
@@ -7821,7 +7955,7 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
       [project_id, invoice_number, req.body.invoice_type || 'project_fee', title, description || null,
        subtotal, tax_rate, req.body.currency || 'KES',
        req.body.exchange_rate != null ? parseFloat(req.body.exchange_rate) : 1,
-       issue_date, due, clientName, client_email || null, req.body.client_phone || null,
+       issue_date, due, clientName, clientEmail, clientPhone,
        items, req.body.notes || null, req.body.payment_terms || null,
        paymentMethod, req.body.payment_phone || '+254115525854', req.body.payment_reference || null,
        userId]
@@ -7829,9 +7963,9 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
      // Notify the client: look up the user by client_email (the address that
      // belongs to the invoice) and create an in-portal notification. Fire-and-
      // forget — a notification failure must never fail the invoice creation.
-     if (client_email) {
+     if (clientEmail) {
        try {
-         const [clients] = await mainDb.query("SELECT id FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1", [client_email]);
+         const [clients] = await mainDb.query("SELECT id FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1", [clientEmail]);
          if (clients.length) {
            await mainDb.query(
              `INSERT INTO notifications (user_id, notification_type, title, message, status, related_entity_type, related_entity_id, created_at)
@@ -7844,7 +7978,7 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
         try {
           const { invoiceSentPush } = require("./backend/utils/notificationHelper");
           invoiceSentPush(mainDb, {
-            clientEmail: client_email, invoiceId: result.insertId,
+            clientEmail, invoiceId: result.insertId,
             invoiceNumber: invoice_number, title, clientName,
             amount: subtotal, dueDate: due,
           }).catch(() => {});
@@ -7867,7 +8001,7 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
            issue_date, invoice_number, null, 'pending',
            title, req.body.notes || null,
            tax_rate, 'KE', project_id, result.insertId,
-           client_email || null, userId,
+           clientEmail, userId,
          ]
        );
      } catch (ledgerErr) {
@@ -7908,12 +8042,33 @@ app.get("/api/data-access-logs", async (req, res) => {
 });
 
 // Project Team Add
-app.post("/api/admin/project-team/:projectId", async (req, res) => {
+app.post("/api/admin/project-team/:projectId", authenticateAdmin, async (req, res) => {
   try {
     const { projectId } = req.params;
     const { user_id, role } = req.body;
-    if (!user_id) return res.status(400).json({ error: 'user_id required' });
-    const [result] = await mainDb.query('INSERT INTO project_team_members (project_id, user_id, role, created_at) VALUES (?, ?, ?, NOW())', [projectId, user_id, role || 'member']);
+    if (!Number.isSafeInteger(Number(projectId)) || Number(projectId) <= 0) {
+      return res.status(400).json({ error: 'Valid project id required' });
+    }
+    if (!Number.isSafeInteger(Number(user_id)) || Number(user_id) <= 0) {
+      return res.status(400).json({ error: 'Valid team member user_id required' });
+    }
+    const [projects] = await mainDb.query(
+      'SELECT id FROM user_projects WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+      [projectId]
+    );
+    if (!projects.length) return res.status(404).json({ error: 'Project not found' });
+    const [teamMembers] = await mainDb.query(
+      'SELECT id FROM users WHERE id = ? AND is_active = 1 AND deleted_at IS NULL LIMIT 1',
+      [user_id]
+    );
+    if (!teamMembers.length) {
+      return res.status(400).json({ error: 'Select an active client account for the project team' });
+    }
+    const assignedBy = await resolveAccountingUserId(req.adminId || req.user?.id || null);
+    const [result] = await mainDb.query(
+      'INSERT INTO project_team_members (project_id, user_id, role, assigned_by) VALUES (?, ?, ?, ?)',
+      [projectId, user_id, role || 'team_member', assignedBy]
+    );
     res.status(201).json({ success: true, id: result.insertId });
   } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -8157,11 +8312,10 @@ app.post("/api/invoices/:id/record-payment", authenticateAdmin, async (req, res)
   }
 });
 
-// ── PROJECT INVOICES (client-portal Billing tab) ────────────────────────────
-// The portal's Billing section reads project_invoices (NOT the `invoices`
-// table above), so these admin routes are what actually change what a client
-// sees when they open Billing. Column whitelists keep raw SQL interpolation
-// impossible; all routes require a valid admin session.
+// ── PROJECT INVOICES (legacy portal invoice records) ─────────────────────────
+// The website portal combines these legacy rows with standard `invoices`
+// records. Column whitelists keep raw SQL interpolation impossible; all routes
+// require a valid admin session.
 const PORTAL_INVOICE_STATUSES = ["draft", "sent", "pending", "paid", "overdue", "cancelled"];
 
 app.get("/api/admin/project-invoices", authenticateAdmin, async (req, res) => {
@@ -8170,7 +8324,7 @@ app.get("/api/admin/project-invoices", authenticateAdmin, async (req, res) => {
     let sql = `SELECT pi.*, up.project_name, up.user_id AS client_id
                FROM project_invoices pi
                JOIN user_projects up ON up.id = pi.project_id
-               WHERE pi.deleted_at IS NULL`;
+               WHERE pi.deleted_at IS NULL AND up.deleted_at IS NULL`;
     const params = [];
     if (client_id) { sql += " AND up.user_id = ?"; params.push(client_id); }
     if (project_id) { sql += " AND pi.project_id = ?"; params.push(project_id); }
@@ -8180,6 +8334,42 @@ app.get("/api/admin/project-invoices", authenticateAdmin, async (req, res) => {
   } catch (error) {
     console.error("[ADMIN PROJECT INVOICES] List error:", error);
     res.status(500).json({ success: false, message: "Failed to list portal invoices" });
+  }
+});
+
+app.get("/api/admin/client-invoices/:clientId", authenticateAdmin, async (req, res) => {
+  try {
+    const clientId = Number(req.params.clientId);
+    if (!Number.isSafeInteger(clientId) || clientId <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid client id" });
+    }
+    const [clients] = await mainDb.query(
+      "SELECT id, email FROM users WHERE id = ? AND is_active = 1 AND deleted_at IS NULL LIMIT 1",
+      [clientId],
+    );
+    if (!clients.length) return res.status(404).json({ success: false, message: "Client not found" });
+
+    const [invoices] = await mainDb.query(
+      `SELECT i.*, p.name AS project_name
+       FROM invoices i
+       LEFT JOIN projects p ON p.id = i.project_id
+       WHERE i.deleted_at IS NULL
+         AND (
+           i.client_id = ?
+           OR LOWER(COALESCE(i.client_email, '')) = LOWER(?)
+           OR EXISTS (
+             SELECT 1 FROM user_projects up
+             WHERE up.id = i.project_id AND up.user_id = ? AND up.deleted_at IS NULL
+           )
+         )
+       ORDER BY i.issue_date DESC, i.id DESC
+       LIMIT 200`,
+      [clientId, clients[0].email, clientId],
+    );
+    res.json({ success: true, invoices });
+  } catch (error) {
+    console.error("[ADMIN CLIENT INVOICES] List error:", error);
+    res.status(500).json({ success: false, message: "Failed to list client invoices" });
   }
 });
 
@@ -8205,6 +8395,13 @@ app.post("/api/admin/project-invoices", authenticateAdmin, async (req, res) => {
       return res.status(404).json({ success: false, message: "Project not found" });
     }
     const number = invoice_number || `INV-${Date.now().toString(36).toUpperCase()}`;
+    const [existingStandardInvoice] = await mainDb.query(
+      "SELECT id FROM invoices WHERE invoice_number = ? AND deleted_at IS NULL LIMIT 1",
+      [number],
+    );
+    if (existingStandardInvoice.length) {
+      return res.status(409).json({ success: false, message: "Invoice number is already used by a standard invoice" });
+    }
     const [result] = await mainDb.query(
       `INSERT INTO project_invoices (project_id, invoice_number, amount, status, due_date, issue_date)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -8222,6 +8419,15 @@ app.put("/api/admin/project-invoices/:id", authenticateAdmin, async (req, res) =
     const id = parseInt(req.params.id, 10);
     if (!Number.isInteger(id) || id <= 0) {
       return res.status(400).json({ success: false, message: "Invalid invoice id" });
+    }
+    if (req.body.invoice_number !== undefined) {
+      const [conflicts] = await mainDb.query(
+        "SELECT id FROM invoices WHERE invoice_number = ? AND deleted_at IS NULL LIMIT 1",
+        [req.body.invoice_number],
+      );
+      if (conflicts.length) {
+        return res.status(409).json({ success: false, message: "Invoice number is already used by a standard invoice" });
+      }
     }
     const allowed = ["invoice_number", "amount", "status", "due_date", "issue_date"];
     const sets = [];
@@ -8618,11 +8824,35 @@ app.get("/api/admin/reports", authenticateAdmin, async (req, res) => {
 
 app.post("/api/admin/reports", authenticateAdmin, async (req, res) => {
   try {
-    const { project_id, title, summary, file_data, file_type, file_size, admin_id } = req.body || {};
-    if (!project_id || !title) return res.status(400).json({ error: "Project ID and title required" });
-    const [r] = await mainDb.query("INSERT INTO project_reports (project_id,title,summary,file_data,file_type,file_size,admin_id,created_at) VALUES (?,?,?,?,?,?,?,NOW())", [project_id, title, summary||null, file_data||null, file_type||null, file_size||0, admin_id||null]);
+    const { project_id, title, summary, file_data, file_type, file_size } = req.body || {};
+    const projectId = Number(project_id);
+    if (!Number.isSafeInteger(projectId) || projectId <= 0 || !String(title || "").trim()) {
+      return res.status(400).json({ success: false, message: "Project and document title are required" });
+    }
+    if (file_type !== "application/pdf" || typeof file_data !== "string") {
+      return res.status(400).json({ success: false, message: "Upload a PDF document" });
+    }
+    const pdf = Buffer.from(file_data, "base64");
+    if (!pdf.length || pdf.length > 5 * 1024 * 1024 || pdf.subarray(0, 5).toString() !== "%PDF-") {
+      return res.status(400).json({ success: false, message: "The PDF must be valid and no larger than 5 MB" });
+    }
+    const [projects] = await mainDb.query(
+      "SELECT id FROM user_projects WHERE id = ? AND user_id IS NOT NULL AND deleted_at IS NULL LIMIT 1",
+      [projectId],
+    );
+    if (!projects.length) return res.status(404).json({ success: false, message: "Client project not found" });
+    const adminId = await resolveAccountingUserId(req.adminId || req.userId || null);
+    const [r] = await mainDb.query(
+      `INSERT INTO project_reports
+        (project_id, title, summary, file_data, file_type, file_size, report_date, status, admin_id, created_at)
+       VALUES (?, ?, ?, ?, 'application/pdf', ?, CURDATE(), 'final', ?, NOW())`,
+      [projectId, String(title).trim(), summary || null, pdf, pdf.length, adminId],
+    );
     res.status(201).json({ success: true, id: r.insertId });
-  } catch (e) { res.status(500).json({ error: "Failed" }); }
+  } catch (e) {
+    console.error("[ADMIN REPORTS] Upload error:", e.code || e.message);
+    res.status(500).json({ success: false, message: "Failed to upload document" });
+  }
 });
 
 // ── Backup endpoints ─────────────────────────────────────────────────────────

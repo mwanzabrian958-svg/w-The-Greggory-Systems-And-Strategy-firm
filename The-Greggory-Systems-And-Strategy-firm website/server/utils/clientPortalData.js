@@ -115,6 +115,7 @@ function buildClientPortalPayload({
 
   const normalizedInvoices = invoices.map((invoice) => ({
     id: invoice.id,
+    source: invoice.source || "project_invoices",
     project: invoice.project_name || invoice.project || "Engagement",
     amount: toNumber(invoice.amount || invoice.total_amount || invoice.totalAmount, 0),
     status: mapInvoiceStatus(invoice.status),
@@ -230,11 +231,12 @@ function buildClientPortalPayload({
       // agreement) and are streamed by the client reports endpoint — expose the
       // path so the portal can render a working browser download.
       downloadPath:
-        Number(doc.id) < 0
+        doc.downloadPath ||
+        (Number(doc.id) < 0
           ? `/api/users/my-reports/${doc.id}/download`
           : doc.file_path || doc.file_data
             ? `/api/documents/client_documents/${doc.id}/pdf`
-            : null,
+            : null),
     })),
     budgetOverview: {
       planned: plannedBudget,

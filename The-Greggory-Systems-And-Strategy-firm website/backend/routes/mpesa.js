@@ -213,6 +213,15 @@ router.post(['/callback', '/callback/:urlToken'], async (req, res) => {
           }
           if (!projectId) {
             try {
+              const [portalInvRows] = await db.promise().query(
+                "SELECT project_id FROM project_invoices WHERE invoice_number = ? AND deleted_at IS NULL LIMIT 1",
+                [tx.account_reference]
+              );
+              if (portalInvRows.length) projectId = portalInvRows[0].project_id;
+            } catch (_) { /* ignore */ }
+          }
+          if (!projectId) {
+            try {
               const [anyProjects] = await db.promise().query(
                 "SELECT id FROM user_projects WHERE deleted_at IS NULL AND id > 0 ORDER BY id DESC LIMIT 1"
               );
@@ -259,23 +268,40 @@ router.post(['/callback', '/callback/:urlToken'], async (req, res) => {
           );
           console.log(`[MPESA] Ledger Entry Created for transaction ${checkoutRequestId}`);
 
-          // Mark the invoice PAID. The client portal sends the invoice number as
-          // the STK Push accountReference, so we match it back here. Also notify
-          // the client that their payment landed.
+          // Resolve by invoice number across both website invoice sources.
           try {
-            const [invRows] = await db.promise().query(
-              `SELECT id, project_id, client_email, client_name, title FROM invoices
-               WHERE invoice_number = ? AND status <> 'paid' LIMIT 1`,
+            const [standardRows] = await db.promise().query(
+              `SELECT id, project_id, client_email, client_name, title, status
+               FROM invoices
+               WHERE invoice_number = ? AND deleted_at IS NULL
+               LIMIT 1`,
               [tx.account_reference]
             );
-            if (invRows.length) {
-              const inv = invRows[0];
-              await db.promise().query(
-                `UPDATE invoices SET status = 'paid', updated_at = NOW() WHERE id = ?`,
-                [inv.id]
-              );
-              // Notify the client by email-linked user id (best-effort)
-              if (inv.client_email) {
+            const [portalRows] = await db.promise().query(
+              `SELECT pi.id, pi.project_id, pi.status, COALESCE(pi.client_id, up.user_id) AS client_id,
+                      pi.client_name, pi.invoice_number, up.project_name, u.email AS client_email
+               FROM project_invoices pi
+               LEFT JOIN user_projects up ON up.id = pi.project_id
+               LEFT JOIN users u ON u.id = COALESCE(pi.client_id, up.user_id)
+               WHERE pi.invoice_number = ? AND pi.deleted_at IS NULL
+               LIMIT 1`,
+              [tx.account_reference]
+            );
+
+            if (standardRows.length && portalRows.length) {
+              console.error(`[MPESA] Invoice reference ${tx.account_reference} is ambiguous across invoice tables; status was not changed`);
+            } else if (standardRows.length) {
+              const inv = standardRows[0];
+              const newlyPaid = !['paid', 'cancelled', 'draft'].includes(String(inv.status || '').toLowerCase());
+              if (newlyPaid) {
+                await db.promise().query(
+                  `UPDATE invoices
+                   SET status = 'paid', payment_status = 'paid', paid_date = CURDATE(), updated_at = NOW()
+                   WHERE id = ?`,
+                  [inv.id]
+                );
+              }
+              if (newlyPaid && inv.client_email) {
                 const [clients] = await db.promise().query(
                   "SELECT id FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1",
                   [inv.client_email]
@@ -297,7 +323,37 @@ router.post(['/callback', '/callback/:urlToken'], async (req, res) => {
                   } catch (pushErr) { console.warn('[MPESA] receipt push skipped:', pushErr.message); }
                 }
               }
-              console.log(`[MPESA] Invoice ${tx.account_reference} marked PAID`);
+              console.log(newlyPaid
+                ? `[MPESA] Invoice ${tx.account_reference} marked PAID`
+                : `[MPESA] Invoice ${tx.account_reference} was already closed; status unchanged`);
+            } else if (portalRows.length) {
+              const inv = portalRows[0];
+              const newlyPaid = !['paid', 'cancelled', 'draft'].includes(String(inv.status || '').toLowerCase());
+              if (newlyPaid) {
+                await db.promise().query(
+                  `UPDATE project_invoices
+                   SET status = 'paid', paid_amount = amount, paid_amount_kes = GREATEST(COALESCE(paid_amount_kes, 0), ?),
+                       paid_date = CURDATE(), updated_at = NOW()
+                   WHERE id = ?`,
+                  [tx.amount, inv.id]
+                );
+              }
+              if (newlyPaid && inv.client_id) {
+                await db.promise().query(
+                  `INSERT INTO notifications
+                   (user_id, notification_type, title, message, status, related_entity_type, related_entity_id, created_at)
+                   VALUES (?, 'payment_received', ?, ?, 'unread', 'project_invoices', ?, NOW())`,
+                  [
+                    inv.client_id,
+                    `Payment received — ${inv.invoice_number}`,
+                    `Your M-Pesa payment of KSH ${Number(tx.amount).toLocaleString()} for invoice ${inv.invoice_number} has been received. Receipt: ${mpesaReceiptNumber || checkoutRequestId}.`,
+                    inv.id,
+                  ]
+                );
+              }
+              console.log(newlyPaid
+                ? `[MPESA] Portal invoice ${tx.account_reference} marked PAID`
+                : `[MPESA] Portal invoice ${tx.account_reference} was already closed; status unchanged`);
             }
           } catch (invErr) {
             console.warn('[MPESA] Invoice mark-paid skipped:', invErr.message);

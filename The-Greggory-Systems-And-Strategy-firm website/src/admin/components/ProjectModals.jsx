@@ -4,10 +4,13 @@ import { FormInput, Select, Textarea } from './FormInput';
 import { FolderKanban, Calendar, DollarSign, Users, Building2, MapPin, Clock, Plus, Trash2 } from 'lucide-react';
 import { apiCall } from '../../services/api';
 
+const getClientName = (client) =>
+  client.display_name || [client.first_name, client.last_name].filter(Boolean).join(' ') || client.email || '';
+
 /**
  * Create Project Modal
  */
-export function CreateProjectModal({ isOpen, onClose, onCreate }) {
+export function CreateProjectModal({ isOpen, onClose, onCreate, lockedClientId }) {
   const [formData, setFormData] = useState({
     project_name: '',
     project_description: '',
@@ -25,35 +28,69 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
     notes: ''
   });
   const [users, setUsers] = useState([]);
+  const clientUsers = users.filter(u => u.source_table === 'client' && Number(u.is_active) === 1);
+  const [loadingClients, setLoadingClients] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   React.useEffect(() => {
-    if (isOpen) fetchUsers();
-  }, [isOpen]);
+    if (isOpen) {
+      setError('');
+      fetchUsers();
+    }
+  }, [isOpen, lockedClientId]);
 
   const fetchUsers = async () => {
+    setLoadingClients(true);
     try {
       const data = await apiCall('/users');
-      if (data.success) setUsers(data.users || []);
-    } catch (e) { console.error(e); }
+      if (!data.success) throw new Error(data.message || 'Client accounts could not be loaded');
+      const accounts = data.users || [];
+      setUsers(accounts);
+      if (lockedClientId) {
+        const selectedClient = accounts.find(
+          user => user.source_table === 'client' && String(user.id) === String(lockedClientId)
+        );
+        if (!selectedClient) throw new Error('This client account is unavailable. Select an active client account before creating a project.');
+        setFormData(current => ({
+          ...current,
+          user_id: String(selectedClient.id),
+          client_name: getClientName(selectedClient),
+          client_email: selectedClient.email || '',
+          client_phone: selectedClient.phone_number || '',
+          client_id_number: selectedClient.id_number || ''
+        }));
+      }
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Failed to load client accounts');
+    } finally {
+      setLoadingClients(false);
+    }
   };
 
   const handleClientChange = (e) => {
     const selectedUserId = e.target.value;
-    const selectedUser = users.find(u => String(u.id) === String(selectedUserId));
+    const selectedUser = clientUsers.find(u => String(u.id) === String(selectedUserId));
 
     if (selectedUser) {
       setFormData({
         ...formData,
         user_id: selectedUserId,
-        client_name: selectedUser.display_name || `${selectedUser.first_name} ${selectedUser.last_name}`,
+        client_name: getClientName(selectedUser),
         client_email: selectedUser.email || '',
         client_phone: selectedUser.phone_number || '',
         client_id_number: selectedUser.id_number || ''
       });
     } else {
-      setFormData({ ...formData, user_id: selectedUserId });
+      setFormData({
+        ...formData,
+        user_id: selectedUserId,
+        client_name: '',
+        client_email: '',
+        client_phone: '',
+        client_id_number: ''
+      });
     }
   };
 
@@ -71,6 +108,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
         client_name: '',
         client_email: '',
         client_phone: '',
+        client_id_number: '',
         project_type: 'consulting',
         status: 'planning',
         priority: 'medium',
@@ -91,7 +129,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
     <Modal isOpen={isOpen} onClose={onClose} title="Initialize Mission Node" size="screen">
       <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
         {error && (
-          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+          <div role="alert" className="bg-rose-50 border border-rose-100 rounded-xl p-4 text-[10px] font-black uppercase tracking-widest text-rose-600">
             {error}
           </div>
         )}
@@ -133,39 +171,37 @@ export function CreateProjectModal({ isOpen, onClose, onCreate }) {
               label="Linked Client Account"
               value={formData.user_id}
               onChange={handleClientChange}
-              options={users.map(u => ({ value: u.id, label: u.display_name || u.email }))}
+              options={[{ value: '', label: loadingClients ? 'Loading clients...' : '— Select client...' }, ...clientUsers.map(u => ({ value: u.id, label: getClientName(u) }))]}
+              disabled={loadingClients || Boolean(lockedClientId)}
+              helperText={lockedClientId ? 'This project is assigned to the client currently being viewed.' : undefined}
               required
             />
             <FormInput
               label="Client Name"
               value={formData.client_name}
-              onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+              disabled
               placeholder="Full Name"
-              required
             />
           </div>
           <div className="grid grid-cols-3 gap-4">
             <FormInput
               label="Client ID Number"
               value={formData.client_id_number}
-              onChange={(e) => setFormData({ ...formData, client_id_number: e.target.value })}
+              disabled
               placeholder="ID/Passport"
-              required
             />
             <FormInput
               label="Client Email"
               type="email"
               value={formData.client_email}
-              onChange={(e) => setFormData({ ...formData, client_email: e.target.value })}
+              disabled
               placeholder="Email Relay"
-              required
             />
             <FormInput
               label="Client Phone"
               value={formData.client_phone}
-              onChange={(e) => setFormData({ ...formData, client_phone: e.target.value })}
+              disabled
               placeholder="Contact Line"
-              required
             />
           </div>
         </div>
@@ -237,6 +273,8 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [users, setUsers] = useState([]);
+  const clientUsers = users.filter(u => u.source_table === 'client' && Number(u.is_active) === 1);
+  const [loadingClients, setLoadingClients] = useState(false);
   const [team, setTeam] = useState([]);
   const [crewTemplates, setCrewTemplates] = useState([]);
   const [assigneeId, setAssigneeId] = useState('');
@@ -249,6 +287,20 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
       if (project?.id) fetchTeam(project.id);
     }
   }, [isOpen, project]);
+
+  const fetchUsers = async () => {
+    setLoadingClients(true);
+    try {
+      const data = await apiCall('/users');
+      if (!data.success) throw new Error(data.message || 'Client accounts could not be loaded');
+      setUsers(data.users || []);
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Failed to load client accounts');
+    } finally {
+      setLoadingClients(false);
+    }
+  };
 
   const fetchCrewTemplates = async () => {
     try {
@@ -304,11 +356,11 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
       });
       // Also update client fields from the linked user if user_id exists
       if (project.user_id) {
-        const linkedUser = users.find(u => String(u.id) === String(project.user_id));
+        const linkedUser = clientUsers.find(u => String(u.id) === String(project.user_id));
         if (linkedUser) {
           setFormData(f => ({
             ...f,
-            client_name: linkedUser.display_name || `${linkedUser.first_name} ${linkedUser.last_name}`,
+            client_name: getClientName(linkedUser),
             client_email: linkedUser.email || '',
             client_phone: linkedUser.phone_number || '',
             client_id_number: linkedUser.id_number || ''
@@ -320,19 +372,26 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
 
   const handleClientChange = (e) => {
     const selectedUserId = e.target.value;
-    const selectedUser = users.find(u => String(u.id) === String(selectedUserId));
+    const selectedUser = clientUsers.find(u => String(u.id) === String(selectedUserId));
 
     if (selectedUser) {
       setFormData({
         ...formData,
         user_id: selectedUserId,
-        client_name: selectedUser.display_name || `${selectedUser.first_name} ${selectedUser.last_name}`,
+        client_name: getClientName(selectedUser),
         client_email: selectedUser.email || '',
         client_phone: selectedUser.phone_number || '',
         client_id_number: selectedUser.id_number || ''
       });
     } else {
-      setFormData({ ...formData, user_id: selectedUserId });
+      setFormData({
+        ...formData,
+        user_id: selectedUserId,
+        client_name: '',
+        client_email: '',
+        client_phone: '',
+        client_id_number: ''
+      });
     }
   };
 
@@ -354,6 +413,11 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Recalibrate Node: ${project?.project_name}`} size="xl">
       <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto pr-2 custom-scrollbar">
+        {error && (
+          <div role="alert" className="bg-rose-50 border border-rose-100 rounded-xl p-4 text-[10px] font-black uppercase tracking-widest text-rose-600">
+            {error}
+          </div>
+        )}
         <div className="grid gap-4">
            <FormInput label="Project Name" value={formData.project_name} onChange={(e) => setFormData({...formData, project_name: e.target.value})} required />
            <Textarea label="Briefing" value={formData.project_description} onChange={(e) => setFormData({...formData, project_description: e.target.value})} rows={3} />
@@ -366,7 +430,11 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
                  label="Linked Client Account"
                  value={formData.user_id}
                  onChange={handleClientChange}
-                 options={[{ value: '', label: '— Select client...' }, ...users.map(u => ({ value: u.id, label: u.display_name || u.email }))]}
+                 options={[{ value: '', label: loadingClients ? 'Loading clients...' : '— Select client...' }, ...clientUsers.map(u => ({ value: u.id, label: getClientName(u) }))]}
+                 disabled={loadingClients}
+                 helperText={formData.user_id && !clientUsers.some(user => String(user.id) === String(formData.user_id))
+                   ? 'The currently linked account is unavailable. Select an active client account before saving.'
+                   : undefined}
               />
               <Select
                  label="Assigned Crew"
@@ -376,12 +444,12 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
               />
            </div>
            <div className="grid grid-cols-2 gap-4">
-              <FormInput label="Client Name" value={formData.client_name} onChange={(e) => setFormData({...formData, client_name: e.target.value})} required />
-              <FormInput label="ID Number" value={formData.client_id_number} onChange={(e) => setFormData({...formData, client_id_number: e.target.value})} required />
+              <FormInput label="Client Name" value={formData.client_name} disabled />
+              <FormInput label="ID Number" value={formData.client_id_number} disabled />
            </div>
            <div className="grid grid-cols-2 gap-4">
-              <FormInput label="Email" type="email" value={formData.client_email} onChange={(e) => setFormData({...formData, client_email: e.target.value})} required />
-              <FormInput label="Phone" value={formData.client_phone} onChange={(e) => setFormData({...formData, client_phone: e.target.value})} required />
+              <FormInput label="Email" type="email" value={formData.client_email} disabled />
+              <FormInput label="Phone" value={formData.client_phone} disabled />
            </div>
         </div>
 
@@ -436,7 +504,7 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
               label=""
               value={assigneeId}
               onChange={(e) => setAssigneeId(e.target.value)}
-              options={[{ value: '', label: 'Select member...' }, ...users.filter(u => !team.find(t => t.user_id === u.id)).map(u => ({ value: u.id, label: u.display_name || u.email }))]}
+              options={[{ value: '', label: 'Select member...' }, ...clientUsers.filter(u => !team.find(t => t.user_id === u.id)).map(u => ({ value: u.id, label: getClientName(u) }))]}
             />
             <Select
               label=""

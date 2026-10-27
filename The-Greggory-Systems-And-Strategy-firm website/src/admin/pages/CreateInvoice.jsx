@@ -11,6 +11,7 @@ export function CreateInvoice() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [projects, setProjects] = useState([]);
+  const [projectsError, setProjectsError] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
   const [showProjectSuggestions, setShowProjectSuggestions] = useState(false);
 
@@ -26,9 +27,13 @@ export function CreateInvoice() {
     const fetchProjects = async () => {
       try {
         // Gated (valid session only); returns [] until signed in.
-        const data = await apiCall("/user-projects").catch(() => []);
+        const data = await apiCall("/user-projects");
         setProjects(Array.isArray(data) ? data : []);
-      } catch (error) { console.error(error); }
+        setProjectsError('');
+      } catch (error) {
+        console.error(error);
+        setProjectsError(error.message || 'Could not load projects. Check your admin session and try again.');
+      }
     };
     fetchProjects();
   }, []);
@@ -45,8 +50,10 @@ export function CreateInvoice() {
 
   // DB-backed project suggestions — filters as the admin types
   const filteredProjects = projects.filter((p) =>
+    p.linked_client_email &&
     (p.project_name || p.name || '').toLowerCase().includes(projectSearch.toLowerCase())
   );
+  const selectedProject = projects.find((project) => String(project.id) === invoiceForm.project_id);
 
   const pickTaxPreset = (pct) => {
     const preset = TAX_PRESETS.find(p => p.pct === Number(pct)) || TAX_PRESETS[0];
@@ -191,6 +198,13 @@ export function CreateInvoice() {
                       placeholder="Type to search projects…"
                       onChange={(e) => {
                         setProjectSearch(e.target.value);
+                        setInvoiceForm((f) => ({
+                          ...f,
+                          project_id: '',
+                          client_name: '',
+                          client_email: '',
+                          client_phone: '',
+                        }));
                         setShowProjectSuggestions(true);
                       }}
                       onFocus={() => setShowProjectSuggestions(true)}
@@ -204,20 +218,33 @@ export function CreateInvoice() {
                           <div
                             key={p.id}
                             onClick={() => {
-                              const name = p.project_name || p.name || '';
-                              setProjectSearch(name);
-                              setInvoiceForm({ ...invoiceForm, project_id: String(p.id) });
+                              setProjectSearch(p.project_name || p.name || '');
+                              setInvoiceForm((f) => ({
+                                ...f,
+                                project_id: String(p.id),
+                                client_name: p.linked_client_name || p.client_name || '',
+                                client_email: p.linked_client_email || '',
+                                client_phone: p.linked_client_phone || '',
+                              }));
                               setShowProjectSuggestions(false);
                             }}
                             className="px-3 py-2 text-[9px] text-white hover:bg-teal-600 cursor-pointer border-b border-white/5 last:border-0"
                           >
-                            {name}
+                            {p.project_name || p.name || 'Unnamed project'}
                           </div>
                         ))}
                       </div>
                     )}
                     {!invoiceForm.project_id && !projectSearch && (
                       <p className="text-[6px] font-bold text-slate-500 mt-1 px-1">Select a mission from the list</p>
+                    )}
+                    {projectsError && (
+                      <p role="alert" className="text-[7px] font-bold text-rose-400 mt-1 px-1">{projectsError}</p>
+                    )}
+                    {selectedProject && (
+                      <p className="text-[7px] font-bold text-teal-400 mt-1 px-1">
+                        Client: {selectedProject.linked_client_name || selectedProject.client_name} · {selectedProject.linked_client_email}
+                      </p>
                     )}
                   </div>
                   <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Objective</label><input type="text" placeholder="Description..." value={invoiceForm.title} onChange={(e) => setInvoiceForm({...invoiceForm, title: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all" required /></div>
@@ -235,10 +262,10 @@ export function CreateInvoice() {
               <section className="space-y-3">
                 <div className="flex items-center gap-2 text-blue-500 border-b border-white/5 pb-1.5"><User size={10} /><h4 className="text-[7px] font-black uppercase tracking-widest">Telemetry</h4></div>
                 <div className="grid gap-3">
-                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Entity Name</label><input type="text" placeholder="Legal Name..." value={invoiceForm.client_name} onChange={(e) => setInvoiceForm({...invoiceForm, client_name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" required /></div>
-                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Entity Email</label><input type="email" placeholder="client@example.com" value={invoiceForm.client_email} onChange={(e) => setInvoiceForm({...invoiceForm, client_email: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" required /></div>
+                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Entity Name</label><input type="text" placeholder="Legal Name..." value={invoiceForm.client_name} readOnly className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none transition-all" required /></div>
+                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Entity Email</label><input type="email" placeholder="client@example.com" value={invoiceForm.client_email} readOnly className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none transition-all" required /></div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">M-Pesa Node</label><input type="text" placeholder="254..." value={invoiceForm.client_phone} onChange={(e) => setInvoiceForm({...invoiceForm, client_phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" required /></div>
+                    <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">M-Pesa Node</label><input type="text" placeholder="254..." value={invoiceForm.client_phone} readOnly className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none transition-all" /></div>
                     <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Deadline</label><input type="date" value={invoiceForm.due_date} onChange={(e) => setInvoiceForm({...invoiceForm, due_date: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" required /></div>
                   </div>
                 </div>

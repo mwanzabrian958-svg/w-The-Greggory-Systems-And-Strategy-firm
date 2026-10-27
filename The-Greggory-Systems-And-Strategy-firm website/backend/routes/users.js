@@ -8,6 +8,8 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const { buildClientInvoices } = require('../utils/clientInvoices');
+const { generatePDFContent } = require('../../server/lib/invoiceRenderer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const requireAdminSession = require('../middleware/adminSession');
@@ -801,7 +803,8 @@ let projectReportsHasDeletedAt = null; // null = unknown, true/false = probed
 
 async function fetchClientProjectReports(userId) {
   const base = `
-      SELECT pr.id, pr.title, pr.summary, pr.file_type, pr.file_size, pr.report_date, pr.status, up.project_name
+      SELECT pr.id, pr.title, pr.summary, pr.file_type, pr.file_size, pr.report_date, pr.status,
+             up.project_name, up.user_id
       FROM project_reports pr
       JOIN user_projects up ON pr.project_id = up.id
       WHERE up.user_id = ? AND pr.status = 'final'`;
@@ -877,7 +880,7 @@ router.get('/my-reports/:id/download', authenticateUser, async (req, res) => {
       SELECT pr.file_data, pr.file_type, pr.title
       FROM project_reports pr
       JOIN user_projects up ON pr.project_id = up.id
-      WHERE pr.id = ? AND up.user_id = ?
+      WHERE pr.id = ? AND up.user_id = ? AND pr.status = 'final' AND pr.deleted_at IS NULL
     `, [reportId, userId]);
     if (reports.length === 0) return res.status(403).json({ success: false });
     const report = reports[0];
@@ -903,34 +906,97 @@ router.get('/my-reports/:id/download', authenticateUser, async (req, res) => {
 });
 
 // Client Invoices
+router.get('/my-invoices', authenticateUser, async (req, res) => {
+  try {
+    const [users] = await db.promise().query(
+      'SELECT id, email FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+      [req.userId]
+    );
+    if (!users.length) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const [projectInvoices] = await db.promise().query(
+      `SELECT pi.*, up.project_name
+       FROM project_invoices pi
+       INNER JOIN user_projects up ON up.id = pi.project_id
+       WHERE up.user_id = ? AND up.deleted_at IS NULL AND pi.deleted_at IS NULL`,
+      [req.userId]
+    );
+    const [generalInvoices] = await db.promise().query(
+      `SELECT i.*, p.name AS project_name
+       FROM invoices i
+       LEFT JOIN projects p ON p.id = i.project_id
+       WHERE i.deleted_at IS NULL
+         AND LOWER(COALESCE(i.status, '')) <> 'draft'
+         AND (
+           LOWER(COALESCE(i.client_email, '')) = LOWER(?)
+           OR i.client_id = ?
+           OR EXISTS (
+             SELECT 1 FROM user_projects up
+             WHERE up.id = i.project_id AND up.user_id = ? AND up.deleted_at IS NULL
+           )
+         )`,
+      [users[0].email, req.userId, req.userId]
+    );
+
+    return res.json({
+      success: true,
+      invoices: buildClientInvoices(projectInvoices, generalInvoices),
+    });
+  } catch (error) {
+    console.error('[CLIENT INVOICES] list error:', error.code || '', error.message);
+    return res.status(500).json({ success: false, message: 'Failed to load invoices' });
+  }
+});
+
 router.get('/my-invoices/:id/pdf', authenticateUser, async (req, res) => {
   const userId = req.userId;
   const invoiceId = req.params.id;
 
   try {
-    const [rows] = await db.promise().query(
-      'SELECT pdf_data, pdf_file_path, invoice_number, total_amount FROM invoices WHERE id = ? AND client_id = ?',
-      [invoiceId, userId]
-    );
-
-    if (rows.length === 0) return res.status(404).json({ success: false, message: 'Invoice not found' });
-
-    const invoice = rows[0];
-
-    // If we have BLOB data, send it
-    if (invoice.pdf_data) {
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="Invoice_${invoice.invoice_number}.pdf"`);
-      return res.send(invoice.pdf_data);
+    let invoice;
+    if (req.query.source === 'invoices') {
+      const [rows] = await db.promise().query(
+        `SELECT i.*
+         FROM invoices i
+         WHERE i.id = ? AND i.deleted_at IS NULL
+           AND (
+             LOWER(COALESCE(i.client_email, '')) = (
+               SELECT LOWER(email) FROM users WHERE id = ? AND deleted_at IS NULL LIMIT 1
+             )
+             OR i.client_id = ?
+             OR EXISTS (
+               SELECT 1 FROM user_projects up
+               WHERE up.id = i.project_id AND up.user_id = ? AND up.deleted_at IS NULL
+             )
+           )
+         LIMIT 1`,
+        [invoiceId, userId, userId, userId]
+      );
+      if (!rows.length) return res.status(404).json({ success: false, message: 'Invoice not found' });
+      invoice = rows[0];
+    } else {
+      const [rows] = await db.promise().query(
+        `SELECT pi.*, up.project_name,
+                CONCAT(u.first_name, ' ', u.last_name) AS client_name,
+                u.email AS client_email, u.phone_number AS client_phone
+         FROM project_invoices pi
+         INNER JOIN user_projects up ON up.id = pi.project_id AND up.user_id = ?
+         LEFT JOIN users u ON u.id = up.user_id
+         WHERE pi.id = ? AND pi.deleted_at IS NULL
+         LIMIT 1`,
+        [userId, invoiceId]
+      );
+      if (!rows.length) return res.status(404).json({ success: false, message: 'Invoice not found' });
+      invoice = rows[0];
     }
 
-    // Fallback to file system if path exists
-    if (invoice.pdf_file_path) {
-        return res.download(invoice.pdf_file_path, `Invoice_${invoice.invoice_number}.pdf`);
-    }
-
-    res.status(404).json({ success: false, message: 'PDF document not generated yet' });
+    const pdf = await generatePDFContent('invoices', invoice);
+    const safeInvoiceNumber = String(invoice.invoice_number || invoice.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Invoice_${safeInvoiceNumber}.pdf"`);
+    return res.send(pdf);
   } catch (error) {
+    console.error('[CLIENT INVOICES] PDF error:', error.code || '', error.message);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 });

@@ -190,8 +190,8 @@ const Footer = () => {
       {typeof document !== 'undefined' &&
         createPortal(
           renderAdminTrigger(
-            'group fixed bottom-5 left-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-slate-900 text-white shadow-lg transition-all hover:border-gold-500/50 hover:bg-slate-800 hover:text-gold-400 active:scale-95 sm:hidden',
-            ['h-1 w-1 rounded-full bg-current', 'h-1 w-1 rounded-full bg-current', 'h-1 w-1 rounded-full bg-current']
+            'group fixed bottom-5 left-5 z-[70] flex h-11 w-11 items-center justify-center rounded-full border border-transparent bg-transparent text-white opacity-20 transition-all hover:border-white/10 hover:bg-slate-900/40 hover:text-gold-400 hover:opacity-80 focus-visible:border-gold-500/40 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-500 active:scale-95 sm:hidden',
+            ['h-0.5 w-0.5 rounded-full bg-current', 'h-0.5 w-0.5 rounded-full bg-current', 'h-0.5 w-0.5 rounded-full bg-current']
           ),
           document.body
         )}
