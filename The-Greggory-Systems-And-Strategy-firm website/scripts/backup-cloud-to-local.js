@@ -29,8 +29,10 @@ const path = require("path");
 // resolve .env relative to this script so Task Scheduler can start it from any cwd
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const mysql = require("mysql2/promise");
+const { resolveBackupDatabaseNames } = require("./backupDatabaseNames");
 
-const DB = process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main";
+const { cloudDatabase: CLOUD_DB, localDatabase: LOCAL_DB } =
+  resolveBackupDatabaseNames();
 const SNAPSHOT_KEEP = 10;
 
 // ---- status file (read by the admin API and monitoring) ----
@@ -70,7 +72,7 @@ const CLOUD = {
     process.env.DB_CLOUD_PASSWORD !== undefined
       ? process.env.DB_CLOUD_PASSWORD
       : process.env.DB_PASSWORD,
-  database: DB,
+  database: CLOUD_DB,
   connectTimeout: 20000,
   ssl: { minVersion: "TLSv1.2", rejectUnauthorized: false },
 };
@@ -85,7 +87,6 @@ const LOCAL = {
   port: Number(process.env.DB_PORT_2 || 3306),
   user: process.env.DB_USER_2 || "root",
   password: process.env.DB_PASSWORD_2 !== undefined ? process.env.DB_PASSWORD_2 : "",
-  database: DB,
   connectTimeout: 8000,
 };
 
@@ -111,12 +112,12 @@ function ddlForLocal(ddl) {
 async function cloudSnapshot(conn) {
   const [tabs] = await conn.query(
     "SELECT TABLE_NAME name FROM information_schema.tables WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE' ORDER BY TABLE_NAME",
-    [DB],
+    [CLOUD_DB],
   );
   const snapshot = {
     generatedAt: new Date().toISOString(),
     source: `cloud backup target ${CLOUD.host}`,
-    database: DB,
+    database: CLOUD_DB,
     tables: {},
   };
   let total = 0;
@@ -128,15 +129,18 @@ async function cloudSnapshot(conn) {
   return { snapshot, total, count: tabs.length };
 }
 
-function saveSnapshot(snapshot) {
+function saveSnapshot(snapshot, type = "cloud") {
   const dir = path.join(__dirname, "..", "backups");
   fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `cloud-snapshot-${Date.now()}.json`);
+  const file = path.join(dir, `${type}-snapshot-${Date.now()}.json`);
   fs.writeFileSync(file, JSON.stringify(snapshot));
-  console.log(`[backup] snapshot saved: ${path.basename(file)} (${(fs.statSync(file).size / 1024).toFixed(1)} KB)`);
+  console.log(
+    `[backup] ${type} snapshot saved: ${path.basename(file)} ` +
+      `(${(fs.statSync(file).size / 1024).toFixed(1)} KB)`
+  );
   const old = fs
     .readdirSync(dir)
-    .filter((f) => /^cloud-snapshot-\d+\.json$/.test(f))
+    .filter((f) => new RegExp(`^${type}-snapshot-\\d+\\.json$`).test(f))
     .sort()
     .reverse()
     .slice(SNAPSHOT_KEEP);
@@ -144,11 +148,30 @@ function saveSnapshot(snapshot) {
   if (old.length) console.log(`[backup] pruned ${old.length} old snapshot(s)`);
 }
 
+async function localSnapshot(conn, tables) {
+  const snapshot = {
+    generatedAt: new Date().toISOString(),
+    source: `local backup target ${LOCAL.host}`,
+    database: LOCAL_DB,
+    tables: {},
+  };
+  let total = 0;
+  for (const table of tables) {
+    const name = table.name || table.TABLE_NAME;
+    const [rows] = await conn.query(`SELECT * FROM \`${name}\``);
+    snapshot.tables[name] = rows;
+    total += rows.length;
+  }
+  return { snapshot, total, count: tables.length };
+}
+
 (async () => {
   const force = process.argv.includes("--force");
   requireCloudEnv();
 
-  console.log(`[backup] ${new Date().toISOString()} — cloud -> local (${DB})`);
+  console.log(
+    `[backup] ${new Date().toISOString()} — cloud (${CLOUD_DB}) -> local (${LOCAL_DB})`
+  );
   const C = await mysql.createConnection(CLOUD).catch((e) => {
     console.error(`[backup] CLOUD UNREACHABLE (${e.code || e.message}) — local DB left untouched. Aborting.`);
     STATUS.error = `cloud unreachable: ${e.code || e.message}`;
@@ -181,7 +204,45 @@ function saveSnapshot(snapshot) {
     saveStatus();
     process.exit(1);
   });
-  await L.query(`CREATE DATABASE IF NOT EXISTS \`${DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  const [existingLocalTables] = await L.query(
+    "SELECT TABLE_NAME name FROM information_schema.tables WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'",
+    [LOCAL_DB],
+  );
+  if (existingLocalTables.length > 0 && !process.argv.includes("--overwrite-local")) {
+    console.error(
+      `[backup] XAMPP database ${LOCAL_DB} already contains ${existingLocalTables.length} tables — ` +
+        "refusing to overwrite it without --overwrite-local."
+    );
+    STATUS.error = `local database ${LOCAL_DB} already contains tables; overwrite not confirmed`;
+    STATUS.finishedAt = new Date().toISOString();
+    STATUS.durationMs = Date.now() - Date.parse(STATUS.startedAt);
+    STATUS.local = {
+      host: LOCAL.host,
+      database: LOCAL_DB,
+      tables: existingLocalTables.length,
+      overwritten: false,
+    };
+    saveStatus();
+    await C.end();
+    await L.end();
+    process.exitCode = 1;
+    return;
+  }
+
+  await L.query(
+    `CREATE DATABASE IF NOT EXISTS \`${LOCAL_DB}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+  );
+  await L.query(`USE \`${LOCAL_DB}\``);
+  if (existingLocalTables.length > 0) {
+    const { snapshot: localBackup, total: localRows } = await localSnapshot(
+      L,
+      existingLocalTables,
+    );
+    saveSnapshot(localBackup, "local");
+    console.log(
+      `[backup] XAMPP pre-overwrite snapshot: ${existingLocalTables.length} tables, ${localRows} rows`
+    );
+  }
   await L.query("SET FOREIGN_KEY_CHECKS = 0");
   // Cloud (MySQL 8) DDL quotes identifiers with double quotes — enable
   // ANSI_QUOTES locally so "table"/"column" parse as identifiers.
@@ -192,7 +253,7 @@ function saveSnapshot(snapshot) {
 
   const [ltabs] = await L.query(
     "SELECT TABLE_NAME name FROM information_schema.tables WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE'",
-    [DB],
+    [LOCAL_DB],
   );
   const localTables = new Set(ltabs.map((r) => r.name || r.TABLE_NAME));
 
@@ -208,7 +269,7 @@ function saveSnapshot(snapshot) {
       }
       const [lcols] = await L.query(
         "SELECT COLUMN_NAME name, EXTRA extra FROM information_schema.columns WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?",
-        [DB, t],
+        [LOCAL_DB, t],
       );
       // never insert into computed columns — values regenerate themselves
       const targets = lcols
@@ -240,7 +301,7 @@ function saveSnapshot(snapshot) {
       // auto-increment: continue from the cloud's high-water mark
       const [aiCol] = await C.query(
         "SELECT COLUMN_NAME name FROM information_schema.columns WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND EXTRA LIKE '%auto_increment%'",
-        [DB, t],
+        [CLOUD_DB, t],
       );
       if (aiCol.length) {
         const [mx] = await C.query(`SELECT MAX(\`${aiCol[0].name}\`) m FROM \`${t}\``);
@@ -289,9 +350,15 @@ function saveSnapshot(snapshot) {
   STATUS.ok = mismatches === 0 && failed === 0;
   STATUS.finishedAt = new Date().toISOString();
   STATUS.durationMs = Date.now() - Date.parse(STATUS.startedAt);
-  STATUS.cloud = { host: CLOUD.host, tables: count, rows: total };
+  STATUS.cloud = {
+    host: CLOUD.host,
+    database: CLOUD_DB,
+    tables: count,
+    rows: total,
+  };
   STATUS.local = {
     host: LOCAL.host,
+    database: LOCAL_DB,
     tablesCreated: created,
     rowsCopied: copiedRows,
     failures: failed,
