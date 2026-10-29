@@ -13,23 +13,19 @@ export const API_BASE_URL =
   String(RAW_BASE).trim().replace(/\/+$/, "") || "/api";
 
 /** Resolve the admin session token from every known storage location. */
-export const getAdminToken = () => {
-  try {
-    const sessionStr =
-      localStorage.getItem("gf_admin_session") ||
-      sessionStorage.getItem("gf_admin_session");
-    if (sessionStr && sessionStr !== "undefined") {
-      const session = JSON.parse(sessionStr);
-      if (session?.token) return session.token;
-    }
-  } catch {
-    /* corrupted session JSON — fall through to the alternates */
-  }
-  return localStorage.getItem("gf_admin_session_token") || null;
-};
+export const getAdminToken = () => null;
 
 /** Resolve any usable token (admin first, then the client-portal fallback). */
 export const getAuthToken = () => {
+  const isAdminPage =
+    typeof window !== "undefined" &&
+    (window.location.pathname === "/admin" ||
+      window.location.pathname.startsWith("/admin/"));
+  if (
+    isAdminPage ||
+    (typeof sessionStorage !== "undefined" &&
+      sessionStorage.getItem("gf_admin_authenticated_hint") === "true")
+  ) return null;
   const adminToken = getAdminToken();
   if (adminToken) return adminToken;
   try {
@@ -75,6 +71,7 @@ export const apiCall = async (endpoint, options = {}) => {
     // 4. Execute Secure Handshake
     const response = await fetch(url, {
       headers: authHeaders,
+      credentials: "same-origin",
       ...restOptions,
     });
 

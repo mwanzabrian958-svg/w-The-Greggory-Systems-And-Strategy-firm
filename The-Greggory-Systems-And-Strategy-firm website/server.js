@@ -27,6 +27,7 @@ const { connectMongoDB } = require("./server/config/mongodb");
 // those call sites to a single `await` instead of repeating the DDL.
 const { ensureAdminSettingsTable } = require("./backend/utils/ensureAdminSettings");
 const { verifyActiveAdminSession } = require("./backend/utils/adminSessionState");
+const { ADMIN_SESSION_COOKIE, getCookie } = require("./backend/utils/sessionCookies");
 const { getActiveClientAccount, getClientDisplayName } = require("./backend/utils/clientAssignment");
 const models = require("./server/models");
 const {
@@ -251,12 +252,13 @@ const authenticateUser = async (req, res, next) => {
 const authenticateAdmin = async (req, res, next) => {
   const authHeader = req.headers.authorization || "";
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
-  if (!m) {
+  const token = m ? m[1].trim() : getCookie(req, ADMIN_SESSION_COOKIE);
+  if (!token) {
     return res.status(401).json({ success: false, message: "Admin authentication required" });
   }
 
   try {
-    const payload = await verifyActiveAdminSession(m[1].trim());
+    const payload = await verifyActiveAdminSession(token);
     if (!payload) {
       return res.status(401).json({ success: false, message: "Invalid or expired admin session" });
     }
@@ -279,6 +281,7 @@ const authenticateAny = async (req, res, next) => {
     req.headers.authorization ||
       req.header("x-auth-token") ||
       req.body?.token ||
+      getCookie(req, ADMIN_SESSION_COOKIE) ||
       // OWASP A07: query-string tokens (authenticated PDF <a href> links)
       // leak into logs/history — accepted on GET/HEAD only, never mutations.
       (req.method === "GET" || req.method === "HEAD" ? req.query.token : "") ||
@@ -5873,12 +5876,13 @@ app.get("/api/admin/session", async (req, res) => {
   try {
     const auth = req.headers.authorization || "";
     const m = auth.match(/^Bearer\s+(.+)$/i);
-    if (!m) {
+    const token = m ? m[1].trim() : getCookie(req, ADMIN_SESSION_COOKIE);
+    if (!token) {
       return res
         .status(401)
         .json({ success: false, message: "No session token" });
     }
-    const payload = await verifyActiveAdminSession(m[1].trim());
+    const payload = await verifyActiveAdminSession(token);
     if (!payload) {
       return res
         .status(401)

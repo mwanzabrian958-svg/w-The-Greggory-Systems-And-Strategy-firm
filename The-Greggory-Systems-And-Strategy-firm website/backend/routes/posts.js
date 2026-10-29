@@ -20,15 +20,17 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { verifyActiveAdminSession } = require('../utils/adminSessionState');
+const { ADMIN_SESSION_COOKIE, getCookie } = require('../utils/sessionCookies');
 
 async function requireAdminSession(req, res, next) {
   const authHeader = req.headers.authorization || req.headers.Authorization || '';
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
-  if (!m) {
+  const token = m ? m[1].trim() : getCookie(req, ADMIN_SESSION_COOKIE);
+  if (!token) {
     return res.status(401).json({ success: false, message: 'Admin authentication required' });
   }
   try {
-    const payload = await verifyActiveAdminSession(m[1].trim());
+    const payload = await verifyActiveAdminSession(token);
     if (!payload) {
       return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
     }

@@ -74,6 +74,10 @@ function AdminLayout({ user, children, onLogout }) {
       localStorage.removeItem("gf_admin_session");
       localStorage.removeItem("gf_admin_session_token");
       localStorage.removeItem("gf_admin_user");
+      localStorage.removeItem("gf_admin_authenticated_hint");
+      localStorage.removeItem("gf_role_permissions");
+      sessionStorage.removeItem("gf_admin_user");
+      sessionStorage.removeItem("gf_admin_authenticated_hint");
       navigate("/", { replace: true });
     }
   };

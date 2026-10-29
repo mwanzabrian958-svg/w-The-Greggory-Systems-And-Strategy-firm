@@ -1,5 +1,6 @@
 const express=require('express');const router=express.Router();const db=require('../config/database');
 const { verifyActiveAdminSession } = require('../utils/adminSessionState');
+const { ADMIN_SESSION_COOKIE, getCookie } = require('../utils/sessionCookies');
 // admin_settings has no CREATE TABLE in the schema (see the module doc); the
 // node-settings read below would otherwise die with ER_NO_SUCH_TABLE -> 500.
 const { ensureAdminSettingsTable } = require('../utils/ensureAdminSettings');
@@ -7,9 +8,10 @@ const { ensureAdminSettingsTable } = require('../utils/ensureAdminSettings');
 async function requireAdminSession(req, res, next) {
   const authHeader = req.headers.authorization || req.headers.Authorization || '';
   const m = authHeader.match(/^Bearer\s+(.+)$/i);
-  if (!m) return res.status(401).json({ success: false, message: 'Admin authentication required' });
+  const token = m ? m[1].trim() : getCookie(req, ADMIN_SESSION_COOKIE);
+  if (!token) return res.status(401).json({ success: false, message: 'Admin authentication required' });
   try {
-    const payload = await verifyActiveAdminSession(m[1].trim());
+    const payload = await verifyActiveAdminSession(token);
     if (!payload) return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
     req.adminId = payload.uid;
     return next();

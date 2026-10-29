@@ -43,12 +43,12 @@ export function Login({ onLoginSuccess }) {
 
       const session = {
         user: data.user,
-        token: data.token,
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
       };
 
-      localStorage.setItem("gf_admin_session", JSON.stringify(session));
-      localStorage.setItem("gf_admin_session_token", data.token);
+      sessionStorage.setItem("gf_admin_session", JSON.stringify(session));
+      sessionStorage.setItem("gf_admin_user", JSON.stringify(data.user));
+      sessionStorage.setItem("gf_admin_authenticated_hint", "true");
 
       if (onLoginSuccess) onLoginSuccess(data.user);
       window.dispatchEvent(new Event("gf-admin-session-changed"));

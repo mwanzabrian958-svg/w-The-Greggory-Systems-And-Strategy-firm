@@ -9,12 +9,11 @@ const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const { authEndpointValidator } = require('../middleware/authEndpointValidator');
-const { signSessionToken } = require('../utils/sessionToken');
 const {
-  getAdminSessionVersion,
-  revokeAllAdminSessions,
-  verifyActiveAdminSession,
+  createAdminSession,
+  revokeAdminSession,
 } = require('../utils/adminSessionState');
+const { ADMIN_SESSION_COOKIE, getCookie, setSessionCookie, clearSessionCookie } = require('../utils/sessionCookies');
 
 // Apply endpoint validation middleware to admin routes
 router.use(authEndpointValidator('admin', 'admin_users'));
@@ -95,21 +94,24 @@ router.post('/authenticate-enhanced', (req, res) => {
           profilePhotoData = `data:${mimeType};base64,${base64}`;
         }
         
-        getAdminSessionVersion(user.id).then((sessionVersion) => res.json({
-          success: true,
-          message: 'Admin authentication successful',
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.display_name || `${user.first_name} ${user.last_name}`,
-            admin_level: user.admin_level,
-            role_type: 'admin',
-            has_photo: !!(user.direct_blob || user.img_data),
-            profilePhotoData: profilePhotoData,
-            profile_image_id: user.profile_image_id || null,
-          },
-          token: signSessionToken(user.id, 'admin', sessionVersion)
-        })).catch((sessionError) => {
+        createAdminSession(user.id, 'admin').then((token) => {
+          setSessionCookie(res, req, ADMIN_SESSION_COOKIE, token);
+          res.json({
+            success: true,
+            message: 'Admin authentication successful',
+            user: {
+              id: user.id,
+              email: user.email,
+              name: user.display_name || `${user.first_name} ${user.last_name}`,
+              admin_level: user.admin_level,
+              role_type: 'admin',
+              has_photo: !!(user.direct_blob || user.img_data),
+              profilePhotoData: profilePhotoData,
+              profile_image_id: user.profile_image_id || null,
+            },
+            token,
+          });
+        }).catch((sessionError) => {
           console.error('[AUTH] Admin session state initialization failed:', sessionError.message);
           res.status(500).json({ success: false, message: 'Admin session could not be started' });
         });
@@ -121,20 +123,15 @@ router.post('/authenticate-enhanced', (req, res) => {
 router.post('/logout', async (req, res) => {
   const authHeader = req.headers.authorization || '';
   const match = authHeader.match(/^Bearer\s+(.+)$/i);
-  if (!match) {
-    return res.status(401).json({ success: false, message: 'Admin authentication required' });
-  }
+  const token = match ? match[1].trim() : getCookie(req, ADMIN_SESSION_COOKIE);
 
   try {
-    const payload = await verifyActiveAdminSession(match[1].trim());
-    if (!payload) {
-      return res.status(401).json({ success: false, message: 'Invalid or expired admin session' });
-    }
-    await revokeAllAdminSessions(payload.uid);
-    return res.json({ success: true, message: 'All admin sessions have been logged out' });
+    if (token) await revokeAdminSession(token);
+    clearSessionCookie(res, req, ADMIN_SESSION_COOKIE);
+    return res.json({ success: true, message: 'This admin session has been logged out' });
   } catch (error) {
     console.error('[AUTH] Admin logout failed:', error.message);
-    return res.status(500).json({ success: false, message: 'Could not log out all admin sessions' });
+    return res.status(500).json({ success: false, message: 'Could not log out this admin session' });
   }
 });
 

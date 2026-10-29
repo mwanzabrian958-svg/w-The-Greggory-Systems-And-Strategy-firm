@@ -36,13 +36,14 @@ function getSessionSecret() {
  * @param {string} [role] - 'admin' (informational only)
  * @returns {string} `${base64url(payload)}.${base64url(hmac)}`
  */
-function signSessionToken(userId, role, sessionVersion = 0) {
+function signSessionToken(userId, role, sessionVersion = 0, sessionId) {
   const payload = {
     uid: Number(userId),
     exp: Date.now() + 8 * 60 * 60 * 1000, // 8h — matches server.js
     sessionVersion,
   };
   if (role) payload.role = role;
+  if (sessionId) payload.sid = sessionId;
 
   const body = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
   const sig = crypto

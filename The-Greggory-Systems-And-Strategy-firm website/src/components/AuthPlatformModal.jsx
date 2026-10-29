@@ -25,7 +25,7 @@ export default function AuthPlatformModal({
   startOnAdminStep = false,
 }) {
   const navigate = useNavigate();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [view, setView] = useState("platform");
   const [hasAdminSessionToken, setHasAdminSessionToken] = useState(() =>
     hasAdminToken(),
@@ -189,19 +189,12 @@ export default function AuthPlatformModal({
       });
 
       const session = {
-        token: data.token,
         user: data.user,
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
       };
-      localStorage.setItem("gf_admin_session", JSON.stringify(session));
-      localStorage.setItem("gf_admin_session_token", data.token);
-      localStorage.setItem("gf_admin_user", JSON.stringify(data.user));
-
-      login({
-        ...data.user,
-        role: "admin",
-        token: data.token
-      });
+      sessionStorage.setItem("gf_admin_session", JSON.stringify(session));
+      sessionStorage.setItem("gf_admin_user", JSON.stringify(data.user));
+      sessionStorage.setItem("gf_admin_authenticated_hint", "true");
 
       window.dispatchEvent(new Event("gf-admin-session-changed"));
       handleCredentialsSuccess();

@@ -4,10 +4,35 @@ const test = require('node:test');
 
 function loadSessionState() {
   const versions = new Map();
+  const sessions = new Map();
   let hasSessionVersionColumn = false;
   const database = {
     promise: () => ({
       query: async (sql, values = []) => {
+        if (sql.startsWith('CREATE TABLE IF NOT EXISTS admin_sessions')) {
+          return [{ affectedRows: 0 }];
+        }
+        if (sql.startsWith('DELETE FROM admin_sessions')) {
+          return [{ affectedRows: 0 }];
+        }
+        if (sql.startsWith('INSERT INTO admin_sessions')) {
+          sessions.set(values[0], { adminId: Number(values[1]), revoked: false });
+          return [{ affectedRows: 1 }];
+        }
+        if (sql.startsWith('SELECT session_id')) {
+          const session = sessions.get(values[0]);
+          return [[session && session.adminId === Number(values[1]) && !session.revoked
+            ? { session_id: values[0] }
+            : null].filter(Boolean)];
+        }
+        if (sql.startsWith('UPDATE admin_sessions')) {
+          const session = sessions.get(values[0]);
+          if (!session || session.adminId !== Number(values[1]) || session.revoked) {
+            return [{ affectedRows: 0 }];
+          }
+          session.revoked = true;
+          return [{ affectedRows: 1 }];
+        }
         if (sql.startsWith('SHOW COLUMNS')) {
           return [hasSessionVersionColumn ? [{ Field: 'session_version' }] : []];
         }
@@ -45,6 +70,7 @@ function loadSessionState() {
       ...require('../utils/adminSessionState'),
       signSessionToken: require('../utils/sessionToken').signSessionToken,
       versions,
+      sessions,
       isColumnReady: () => hasSessionVersionColumn,
     };
   } finally {
@@ -65,4 +91,16 @@ test('admin logout revokes tokens across sessions and a subsequent login uses th
 
   const nextToken = state.signSessionToken(17, 'admin', 1);
   assert.equal((await state.verifyActiveAdminSession(nextToken)).uid, 17);
+});
+
+test('admin logout revokes only the session presented by this browser', async () => {
+  const state = loadSessionState();
+  const firstToken = await state.createAdminSession(29);
+  const secondToken = await state.createAdminSession(29);
+
+  assert.ok(await state.verifyActiveAdminSession(firstToken));
+  assert.ok(await state.verifyActiveAdminSession(secondToken));
+  assert.equal(await state.revokeAdminSession(firstToken), 1);
+  assert.equal(await state.verifyActiveAdminSession(firstToken), null);
+  assert.ok(await state.verifyActiveAdminSession(secondToken));
 });

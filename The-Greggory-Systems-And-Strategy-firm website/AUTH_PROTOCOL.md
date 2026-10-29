@@ -31,8 +31,18 @@ Each authentication platform MUST only reference its designated table. **NO CROS
 
 4. **SEPARATE SESSIONS**
    - `gf_user_session` → Regular users
-   - `gf_admin_session` → Admins
+   - `gf_admin_session` → Admin website browser sessions
    - `gf_developer_session` → Developers
+
+5. **ADMIN WEBSITE SESSION LIFETIME**
+   - Admin website login uses a per-login server-side session and an HttpOnly,
+     browser-session cookie. The raw admin token is not persisted in browser
+     local storage.
+   - Logging out or closing the admin page revokes only that browser session.
+     Closing one admin tab also ends the session shared by other admin tabs in
+     that browser; other devices remain signed in.
+   - This behavior applies only to the admin website. Regular-user sessions
+     and the Android APK authentication flow are unchanged.
 
 ### Implementation
 

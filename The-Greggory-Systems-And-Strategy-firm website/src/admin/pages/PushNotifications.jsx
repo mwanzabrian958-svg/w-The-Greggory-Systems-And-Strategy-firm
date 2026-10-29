@@ -16,20 +16,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { apiCall } from '../../services/api';
 import { InlineLoader } from '../../components/Loading';
 
-/* ── helpers ─────────────────────────────────────────────────────────────── */
-
-function getAdminToken() {
-  return (
-    localStorage.getItem('gf_admin_session_token') ||
-    (()=>{
-      try {
-        const s = sessionStorage.getItem('gf_admin_session');
-        return s ? JSON.parse(s).token : null;
-      } catch { return null; }
-    })()
-  );
-}
-
 function useFcmData() {
   const [status, setStatus] = useState(null);
   const [devices, setDevices] = useState([]);

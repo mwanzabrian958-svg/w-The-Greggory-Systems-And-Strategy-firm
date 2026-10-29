@@ -1,7 +1,5 @@
 import { apiCall } from '../services/api'
 
-const TOKEN_KEY = 'gf_admin_session_token'
-
 const LEGACY_KEYS = ['admin_authenticated', 'admin_code_validated', 'admin_user', 'admin_session']
 
 export function clearLegacyAdminStorage() {
@@ -23,25 +21,26 @@ function emitAdminSessionChanged() {
 }
 
 export function getAdminToken() {
-  try {
-    return localStorage.getItem(TOKEN_KEY)
-  } catch {
-    return null
-  }
+  return null
 }
 
 export function setAdminToken(token) {
   clearLegacyAdminStorage()
-  localStorage.setItem(TOKEN_KEY, token)
+  localStorage.removeItem('gf_admin_session_token')
+  if (token) sessionStorage.setItem('gf_admin_authenticated_hint', 'true')
   emitAdminSessionChanged()
 }
 
 export function clearAdminSession() {
   clearLegacyAdminStorage()
   try {
-    localStorage.removeItem(TOKEN_KEY)
+    sessionStorage.removeItem('gf_admin_authenticated_hint')
+    localStorage.removeItem('gf_admin_session_token')
     localStorage.removeItem('gf_admin_session')
     localStorage.removeItem('gf_admin_user')
+    localStorage.removeItem('gf_role_permissions')
+    sessionStorage.removeItem('gf_admin_session')
+    sessionStorage.removeItem('gf_admin_user')
   } catch {
     /* ignore */
   }
@@ -49,15 +48,10 @@ export function clearAdminSession() {
 }
 
 export function hasAdminToken() {
-  return !!getAdminToken()
+  return sessionStorage.getItem('gf_admin_authenticated_hint') === 'true'
 }
 
 export async function verifyAdminSession() {
-  const token = getAdminToken()
-  if (!token) {
-    clearLegacyAdminStorage()
-    return { ok: false, user: null }
-  }
   try {
     // Use apiCall for built-in error handling and consistency
     const data = await apiCall('/admin/session')
@@ -80,4 +74,3 @@ export async function verifyAdminSession() {
 // /api/admin/authenticate fails closed 401 via admin.js's blanket session gate).
 // The real login flow uses /admin-verification/authenticate-enhanced
 // (AuthPlatformModal, admin/hooks/useAuth). See AUTH-PLATFORMS-LINKING.md.
-

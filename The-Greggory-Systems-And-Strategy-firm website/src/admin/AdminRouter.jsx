@@ -40,7 +40,7 @@ import { Records } from './pages/Records';
 import { PERMISSIONS } from './utils/permissions';
 import { Posts } from './pages/Posts';
 import { PortfolioManager } from './pages/PortfolioManager';
-import { apiCall, getAdminToken, getApiUrl } from '../services/api';
+import { apiCall, getApiUrl } from '../services/api';
 import PushNotificationsPage from './pages/PushNotifications';
 
 export function AdminRouter() {
@@ -52,13 +52,24 @@ export function AdminRouter() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => { verifySession(); }, []);
-
-  const clearAdminSession = () => {
-    sessionStorage.removeItem('gf_admin_session');
+  useEffect(() => {
     localStorage.removeItem('gf_admin_session');
     localStorage.removeItem('gf_admin_session_token');
     localStorage.removeItem('gf_admin_user');
+    localStorage.removeItem('gf_admin_authenticated_hint');
+    localStorage.removeItem('gf_role_permissions');
+    verifySession();
+  }, []);
+
+  const clearAdminSession = () => {
+    sessionStorage.removeItem('gf_admin_session');
+    sessionStorage.removeItem('gf_admin_user');
+    sessionStorage.removeItem('gf_admin_authenticated_hint');
+    localStorage.removeItem('gf_admin_session');
+    localStorage.removeItem('gf_admin_session_token');
+    localStorage.removeItem('gf_admin_user');
+    localStorage.removeItem('gf_admin_authenticated_hint');
+    localStorage.removeItem('gf_role_permissions');
     setUser(null);
     setIsAuthenticated(false);
     window.dispatchEvent(new Event('gf-admin-session-changed'));
@@ -77,36 +88,52 @@ export function AdminRouter() {
   useEffect(() => {
     if (!isAuthenticated) return undefined;
     const checkRevokedSession = async () => {
-      const token = getAdminToken();
-      if (!token) {
-        clearAdminSession();
-        navigate('/', { replace: true });
-        return;
-      }
       try {
-        const response = await fetch(getApiUrl('/admin/session'), {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.status === 401 || response.status === 403) {
+        await apiCall('/admin/session');
+      } catch (error) {
+        if (/401|403|session|authentication/i.test(error.message)) {
           clearAdminSession();
           navigate('/', { replace: true });
+        } else {
+          console.error('Admin session refresh failed:', error.message);
         }
-      } catch (error) {
-        console.error('Admin session refresh failed:', error.message);
       }
     };
     const interval = window.setInterval(checkRevokedSession, 30000);
     return () => window.clearInterval(interval);
   }, [isAuthenticated, navigate]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    const handlePageHide = (event) => {
+      if (event.persisted) return;
+      try {
+        localStorage.setItem('gf_admin_logout_at', String(Date.now()));
+        const queued = navigator.sendBeacon(
+          getApiUrl('/admin-verification/logout'),
+          new Blob(['{}'], { type: 'application/json' }),
+        );
+        if (!queued) {
+          fetch(getApiUrl('/admin-verification/logout'), {
+            method: 'POST',
+            credentials: 'same-origin',
+            keepalive: true,
+          }).catch((error) => {
+            console.warn('Admin session close could not reach the server:', error.message);
+          });
+        }
+      } catch (error) {
+        console.warn('Admin session close could not be queued:', error.message);
+      }
+      clearAdminSession();
+    };
+    window.addEventListener('pagehide', handlePageHide);
+    return () => window.removeEventListener('pagehide', handlePageHide);
+  }, [isAuthenticated]);
+
   const verifySession = async () => {
     try {
-      const sessionStr = sessionStorage.getItem('gf_admin_session') || localStorage.getItem('gf_admin_session');
-      if (!sessionStr || sessionStr === "undefined") { setIsLoading(false); return; }
-      const session = JSON.parse(sessionStr);
-      const token = session?.token || localStorage.getItem('gf_admin_session_token');
-      if (!token) { setIsLoading(false); return; }
-      const data = await apiCall("/admin/session", { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await apiCall("/admin/session");
       if (data.success && data.user) { setUser(data.user); setIsAuthenticated(true); }
       else { handleLogout('/', false); }
     } catch (error) {
@@ -129,6 +156,7 @@ export function AdminRouter() {
       if (revokeSessions) {
         await apiCall('/admin-verification/logout', { method: 'POST' });
         localStorage.setItem('gf_admin_logout_at', String(Date.now()));
+        localStorage.removeItem('gf_admin_authenticated_hint');
       }
       clearAdminSession();
       if (redirectTo === '/' || !location.pathname.includes('/login')) {
@@ -136,7 +164,7 @@ export function AdminRouter() {
       }
     } catch (error) {
       console.error('Admin logout failed:', error.message);
-      setLogoutError('Could not close all admin sessions. Check your connection and try logging out again.');
+      setLogoutError('Could not close this admin session. Check your connection and try again.');
     } finally {
       setIsLoggingOut(false);
     }
