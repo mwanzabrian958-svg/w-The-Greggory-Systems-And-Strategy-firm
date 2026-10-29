@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { InlineLoader, Spinner } from "../../components/Loading";
 import { useNavigate } from "react-router-dom";
-import { apiCall, getPdfUrl } from "../../services/api";
+import { apiCall, downloadFile, getPdfUrl } from "../../services/api";
 import { formatKSH } from "../../utils/currencyUtils";
 import {
   TrendingUp, Banknote, RefreshCw, FilePlus2,
@@ -75,6 +75,23 @@ export function Billing() {
     }
     setSendingId(null);
     setTimeout(() => setNotice(null), 6000);
+  };
+
+  const handleDownloadInvoicePdf = async (inv) => {
+    try {
+      const pdf = await downloadFile(`/admin/invoices/${inv.id}/pdf`);
+      const url = window.URL.createObjectURL(pdf);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `INVOICE_${String(inv.invoice_number || inv.id).replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('[BILLING] Invoice PDF download failed:', error);
+      setNotice({ ok: false, text: error.message || 'Failed to download invoice PDF.' });
+    }
   };
 
   // Download a professional "Completion" PDF for any record type
@@ -260,6 +277,7 @@ export function Billing() {
                             </button>
                           )}
                           <button onClick={() => handleDeleteInvoice(inv.id)} title="Delete invoice" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={11} /></button>
+                          <button onClick={() => handleDownloadInvoicePdf(inv)} title="Download invoice PDF" className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-teal-600 hover:text-white transition-all"><FileDown size={11} /></button>
                         </div>
                       </td>
                     </tr>

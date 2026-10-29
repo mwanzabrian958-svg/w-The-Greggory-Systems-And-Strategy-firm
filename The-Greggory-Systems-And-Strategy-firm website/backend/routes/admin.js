@@ -431,10 +431,61 @@ router.get('/users/:id/export-pdf', requireAdminSession, async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="PROFILE_${String(name).replace(/\s+/g, '_')}.pdf"`);
     res.setHeader('Content-Length', pdfBuffer.length);
     res.send(pdfBuffer);
-
   } catch (error) {
     console.error('Export Error:', error);
     res.status(500).send('Export synchronization failed');
+  }
+});
+
+router.get('/invoices/:id/pdf', requireAdminSession, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!/^\d+$/.test(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid invoice ID' });
+    }
+
+    let invoice;
+    if (req.query.source === 'project_invoices') {
+      const [rows] = await db.promise().query(
+        `SELECT pi.*, up.project_name,
+                CONCAT(u.first_name, ' ', u.last_name) AS client_name,
+                u.email AS client_email, u.phone_number AS client_phone
+           FROM project_invoices pi
+           INNER JOIN user_projects up ON up.id = pi.project_id
+           LEFT JOIN users u ON u.id = up.user_id
+          WHERE pi.id = ? AND pi.deleted_at IS NULL
+          LIMIT 1`,
+        [id],
+      );
+      if (!rows.length) {
+        return res.status(404).json({ success: false, message: 'Invoice not found' });
+      }
+      const row = rows[0];
+      invoice = {
+        ...row,
+        description: row.description || `Project: ${row.project_name}`,
+        total_amount: row.amount,
+      };
+    } else {
+      const [rows] = await db.promise().query(
+        'SELECT * FROM invoices WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+        [id],
+      );
+      if (!rows.length) {
+        return res.status(404).json({ success: false, message: 'Invoice not found' });
+      }
+      invoice = rows[0];
+    }
+
+    const { generatePDFContent } = require('../../server/lib/invoiceRenderer');
+    const pdf = await generatePDFContent('invoices', invoice);
+    const safeInvoiceNumber = String(invoice.invoice_number || id).replace(/[^a-zA-Z0-9_-]/g, '_');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="INVOICE_${safeInvoiceNumber}.pdf"`);
+    return res.send(pdf);
+  } catch (error) {
+    console.error('[ADMIN] Invoice PDF export failed:', error.code || error.message);
+    return res.status(500).json({ success: false, message: 'Failed to generate invoice PDF' });
   }
 });
 
