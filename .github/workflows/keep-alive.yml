@@ -21,19 +21,32 @@ on:
   workflow_dispatch:
 
 jobs:
-  ping:
+  keep_alive:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping health endpoint
-        shell: bash
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Keep Alive Action
+        uses: gautamkrishnar/keepalive-workflow@v2
+        with:
+          url: "${{ vars.SITE_URL || 'https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com' }}/api/health"
+          # Never hard-fail: a cold, waking service must not redden the log
+          # but we now print the status code so stale hosts are visible
+          continue-on-error: true
+      - name: Report ping result
         run: |
-          URL="${{ vars.SITE_URL }}"
-          if [ -z "$URL" ]; then URL="https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com"; fi
-          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$URL/api/health" || echo "000")
-          echo "pinged $URL/api/health -> HTTP $CODE"
-          # Still never hard-fails (a cold, waking service must not redden the
-          # log), but the status code is now printed: the old `curl -fsS || echo
-          # ignoring` hid the fact that this had been pinging a deleted host.
+          URL="${{ vars.SITE_URL || 'https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com' }}/api/health"
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$URL" || echo "000")
+          echo "pinged $URL -> HTTP $CODE"
+          # Warn on 404 - service no longer exists
           if [ "$CODE" = "404" ]; then
             echo "::warning::HTTP 404 from $URL - that service no longer exists. Update the fallback URL or the SITE_URL repository variable."
+          fi
+          # Warn on 5xx server errors
+          if [ "$CODE" -ge 500 ] && [ "$CODE" -lt 600 ]; then
+            echo "::warning::HTTP $CODE from $URL - server returned an error. Check server logs."
+          fi
+          # Warn on connection refused / curl failures (000)
+          if [ "$CODE" = "000" ]; then
+            echo "::warning::No response from $URL - connection failed or host unreachable. Check network connectivity."
           fi
