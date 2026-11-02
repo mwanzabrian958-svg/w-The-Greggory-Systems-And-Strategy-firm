@@ -56,7 +56,7 @@ const Home = () => {
         sector: p.sector,
         desc: p.summary,
         outcomes: Array.isArray(p.outcomes) ? p.outcomes : [],
-        image: p.image_url,
+        image: p.media?.find((media) => media.media_type === 'image')?.url || p.image_url,
         icon: <Briefcase size={20} strokeWidth={2.5} className="text-gold-600" />,
       })),
     [portfolio]
@@ -446,29 +446,40 @@ const Home = () => {
                       zIndex: 20 - distance,
                     }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-t from-white/30 via-transparent to-transparent" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20" />
+                    {item.image ? (
+                      <img
+                        src={item.image}
+                        alt=""
+                        aria-hidden="true"
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : null}
+                    <div className={`absolute inset-0 ${item.image
+                      ? 'bg-gradient-to-t from-black/85 via-black/35 to-black/20'
+                      : 'bg-gradient-to-t from-white/30 via-transparent to-transparent'}`} />
+                    <div className={`absolute inset-0 ${item.image ? 'bg-black/10' : 'bg-gradient-to-b from-transparent to-black/20'}`} />
                     <div className="relative p-8 sm:p-10 h-full flex flex-col items-center justify-center text-center">
                       {isBlank ? null : (
                         <>
-                          <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-gold-500/20 to-teal-500/20 flex items-center justify-center mb-6 sm:mb-8 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <div className={`w-14 h-14 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mb-6 sm:mb-8 shadow-lg group-hover:scale-110 transition-transform duration-300 ${item.image ? 'bg-white/20 backdrop-blur-sm' : 'bg-gradient-to-br from-gold-500/20 to-teal-500/20'}`}>
                             {item.icon}
                           </div>
                           {item.sector ? (
-                            <span className="text-[7px] font-black uppercase tracking-[0.3em] text-gold-600 mb-2">
+                            <span className={`text-[7px] font-black uppercase tracking-[0.3em] mb-2 ${item.image ? 'text-gold-300' : 'text-gold-600'}`}>
                               {item.sector}
                             </span>
                           ) : null}
-                          <h3 className="text-sm sm:text-base font-bold text-slate-900 mb-2 leading-tight group-hover:text-teal-600 transition-colors">
+                          <h3 className={`text-sm sm:text-base font-bold mb-2 leading-tight transition-colors ${item.image ? 'text-white group-hover:text-gold-200' : 'text-slate-900 group-hover:text-teal-600'}`}>
                             {item.title}
                           </h3>
                           {item.client ? (
-                            <p className="text-[8px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-3">
+                            <p className={`text-[8px] font-bold uppercase tracking-[0.2em] mb-3 ${item.image ? 'text-white/80' : 'text-slate-400'}`}>
                               {item.client}
                             </p>
                           ) : null}
                           {item.desc ? (
-                            <p className="text-[10px] sm:text-xs text-slate-500 leading-relaxed px-2 max-w-[200px]">
+                            <p className={`text-[10px] sm:text-xs leading-relaxed px-2 max-w-[200px] ${item.image ? 'text-white/90' : 'text-slate-500'}`}>
                               {item.desc}
                             </p>
                           ) : null}
@@ -477,7 +488,7 @@ const Home = () => {
                               {item.outcomes.map((o, oi) => (
                                 <span
                                   key={oi}
-                                  className="px-2 py-1 rounded-md bg-white/60 border border-white/70 text-[7px] font-black uppercase tracking-widest text-slate-600 backdrop-blur-sm"
+                                  className={`px-2 py-1 rounded-md border text-[7px] font-black uppercase tracking-widest backdrop-blur-sm ${item.image ? 'bg-black/30 border-white/30 text-white' : 'bg-white/60 border-white/70 text-slate-600'}`}
                                 >
                                   {o.metric}{o.label ? ` · ${o.label}` : ''}
                                 </span>
