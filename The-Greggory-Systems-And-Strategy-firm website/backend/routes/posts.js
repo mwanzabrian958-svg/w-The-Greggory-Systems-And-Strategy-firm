@@ -26,6 +26,7 @@ const { ADMIN_SESSION_COOKIE, getCookie } = require('../utils/sessionCookies');
 const {
   MAX_PORTFOLIO_MEDIA_FILE_SIZE,
   MAX_PORTFOLIO_MEDIA_FILES,
+  MAX_PORTFOLIO_MEDIA_TOTAL_SIZE,
   mediaTypeForMime,
   validatePortfolioFiles,
 } = require('../utils/portfolioMedia');
@@ -93,6 +94,20 @@ function attachPortfolioMedia(rows, mediaByPortfolio) {
     outcomes: decodeOutcomes(row.outcomes),
     media: mediaByPortfolio.get(String(row.id)) || [],
   }));
+}
+
+function parseRemovedMediaIds(value) {
+  if (value === undefined || value === null || value === '') return [];
+  let ids;
+  try {
+    ids = typeof value === 'string' ? JSON.parse(value) : value;
+  } catch {
+    throw Object.assign(new Error('Invalid media removal list.'), { status: 400 });
+  }
+  if (!Array.isArray(ids) || ids.some((id) => !/^\d+$/.test(String(id)) || Number(id) < 1)) {
+    throw Object.assign(new Error('Invalid media removal list.'), { status: 400 });
+  }
+  return [...new Set(ids.map(Number))];
 }
 
 async function requireAdminSession(req, res, next) {
@@ -456,13 +471,17 @@ router.post('/admin/portfolio', requireAdminSession, parsePortfolioMedia, async 
   }
 });
 
-router.put('/admin/portfolio/:id', requireAdminSession, async (req, res) => {
+router.put('/admin/portfolio/:id', requireAdminSession, parsePortfolioMedia, async (req, res) => {
+  let connection;
+  let transaction;
   try {
     const { id } = req.params;
     const {
       title, client_name, sector, summary, body, image_url,
       outcomes, status, sort_order, is_featured, is_active,
     } = req.body || {};
+    const files = req.files || [];
+    const removedMediaIds = parseRemovedMediaIds(req.body?.remove_media_ids);
     if (title !== undefined && !String(title).trim()) {
       return res.status(400).json({ success: false, message: 'Title cannot be empty' });
     }
@@ -491,18 +510,130 @@ router.put('/admin/portfolio/:id', requireAdminSession, async (req, res) => {
     if (is_active !== undefined) set('is_active', toBool(is_active));
     set('updated_by', req.adminId == null ? null : req.adminId);
 
-    const [result] = await db.promise().query(
-      `UPDATE portfolio_items SET ${sets.join(', ')}
-        WHERE id = ? AND deleted_at IS NULL`,
-      [...params, id]
-    );
+    let result;
+    if (files.length || removedMediaIds.length) {
+      connection = await db.promise().getConnection();
+      transaction = connection.promise();
+      await transaction.beginTransaction();
+
+      const [items] = await transaction.query(
+        'SELECT image_url FROM portfolio_items WHERE id = ? AND deleted_at IS NULL FOR UPDATE',
+        [id]
+      );
+      if (!items.length) {
+        await transaction.rollback();
+        return res.status(404).json({ success: false, message: 'Portfolio item not found' });
+      }
+
+      const [currentMedia] = await transaction.query(
+        'SELECT id, file_size FROM portfolio_media WHERE portfolio_id = ? FOR UPDATE',
+        [id]
+      );
+      const currentMediaIds = new Set(currentMedia.map((media) => Number(media.id)));
+      if (removedMediaIds.some((mediaId) => !currentMediaIds.has(mediaId))) {
+        await transaction.rollback();
+        return res.status(400).json({ success: false, message: 'One or more selected media files do not belong to this portfolio item' });
+      }
+      const retainedMedia = currentMedia.filter((media) => !removedMediaIds.includes(Number(media.id)));
+      const combinedFileSize = retainedMedia.reduce((total, media) => total + Number(media.file_size || 0), 0)
+        + files.reduce((total, file) => total + file.size, 0);
+      if (retainedMedia.length + files.length > MAX_PORTFOLIO_MEDIA_FILES) {
+        throw Object.assign(new Error(`A portfolio album cannot contain more than ${MAX_PORTFOLIO_MEDIA_FILES} files.`), { status: 413 });
+      }
+      if (combinedFileSize > MAX_PORTFOLIO_MEDIA_TOTAL_SIZE) {
+        throw Object.assign(new Error('The combined portfolio album must be 25 MB or smaller.'), { status: 413 });
+      }
+
+      if (removedMediaIds.length) {
+        await transaction.query(
+          'DELETE FROM portfolio_media WHERE portfolio_id = ? AND id IN (?)',
+          [id, removedMediaIds]
+        );
+      }
+
+      let nextMediaOrder = 0;
+      if (files.length) {
+        const [orderRows] = await transaction.query(
+          'SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_order FROM portfolio_media WHERE portfolio_id = ?',
+          [id]
+        );
+        nextMediaOrder = Number(orderRows[0]?.next_order) || 0;
+        for (const [index, file] of files.entries()) {
+          await transaction.query(
+            `INSERT INTO portfolio_media
+               (portfolio_id, media_type, file_name, mime_type, file_size, file_data, sort_order)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+              id,
+              mediaTypeForMime(file.mimetype),
+              path.basename(String(file.originalname || 'upload').replace(/\\/g, '/')).slice(0, 255),
+              file.mimetype,
+              file.size,
+              file.buffer,
+              nextMediaOrder + index,
+            ]
+          );
+        }
+      }
+
+      const [remainingMedia] = await transaction.query(
+        `SELECT id, media_type FROM portfolio_media
+          WHERE portfolio_id = ? ORDER BY sort_order ASC, id ASC`,
+        [id]
+      );
+      const oldCoverId = /^\/api\/posts\/portfolio\/media\/(\d+)$/.exec(items[0].image_url || '')?.[1];
+      const oldCoverWasRemoved = oldCoverId && removedMediaIds.includes(Number(oldCoverId));
+      const submittedCoverIsBlank = image_url !== undefined && !String(image_url).trim();
+      if (oldCoverWasRemoved || submittedCoverIsBlank) {
+        const firstImage = remainingMedia.find((media) => media.media_type === 'image');
+        const coverUrl = firstImage ? `/api/posts/portfolio/media/${firstImage.id}` : null;
+        const imageUrlIndex = sets.findIndex((column) => column.startsWith('image_url ='));
+        if (imageUrlIndex === -1) {
+          sets.push('image_url = ?');
+          params.push(coverUrl);
+        } else {
+          params[imageUrlIndex] = coverUrl;
+        }
+      } else if (image_url === undefined && !items[0].image_url) {
+        const firstImage = remainingMedia.find((media) => media.media_type === 'image');
+        if (firstImage) {
+          sets.push('image_url = ?');
+          params.push(`/api/posts/portfolio/media/${firstImage.id}`);
+        }
+      }
+
+      [result] = await transaction.query(
+        `UPDATE portfolio_items SET ${sets.join(', ')}
+          WHERE id = ? AND deleted_at IS NULL`,
+        [...params, id]
+      );
+      await transaction.commit();
+    } else {
+      [result] = await db.promise().query(
+        `UPDATE portfolio_items SET ${sets.join(', ')}
+          WHERE id = ? AND deleted_at IS NULL`,
+        [...params, id]
+      );
+    }
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Portfolio item not found' });
     }
     res.json({ success: true, message: 'Portfolio item updated' });
   } catch (error) {
+    if (transaction) {
+      try {
+        await transaction.rollback();
+      } catch (rollbackError) {
+        console.error('[posts] portfolio update rollback failed:', rollbackError.message);
+      }
+    }
     console.error('[posts] update portfolio item failed:', error.message);
-    res.status(500).json({ success: false, message: 'Failed to update portfolio item' });
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.status ? error.message : 'Failed to update portfolio item',
+    });
+  } finally {
+    if (connection) connection.release();
   }
 });
 

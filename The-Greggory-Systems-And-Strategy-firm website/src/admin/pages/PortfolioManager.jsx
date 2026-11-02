@@ -141,6 +141,8 @@ export function PortfolioManager() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_ITEM);
   const [mediaFiles, setMediaFiles] = useState([]);
+  const [existingMedia, setExistingMedia] = useState([]);
+  const [removedMediaIds, setRemovedMediaIds] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -172,11 +174,15 @@ export function PortfolioManager() {
     setEditingId(null);
     setForm(EMPTY_ITEM);
     setMediaFiles([]);
+    setExistingMedia([]);
+    setRemovedMediaIds([]);
     setError('');
   };
 
   const startEdit = (item) => {
     setMediaFiles([]);
+    setExistingMedia(item.media || []);
+    setRemovedMediaIds([]);
     setForm({
       title: item.title || '',
       client_name: item.client_name || '',
@@ -201,9 +207,11 @@ export function PortfolioManager() {
     const selected = Array.from(event.target.files || []);
     event.target.value = '';
     const nextFiles = [...mediaFiles, ...selected];
-    const totalSize = nextFiles.reduce((sum, file) => sum + file.size, 0);
+    const retainedMedia = existingMedia.filter((media) => !removedMediaIds.includes(media.id));
+    const totalSize = nextFiles.reduce((sum, file) => sum + file.size, 0)
+      + retainedMedia.reduce((sum, media) => sum + Number(media.file_size || 0), 0);
 
-    if (nextFiles.length > MAX_MEDIA_FILES) {
+    if (nextFiles.length + retainedMedia.length > MAX_MEDIA_FILES) {
       setError(`Choose no more than ${MAX_MEDIA_FILES} files.`);
       return;
     }
@@ -219,6 +227,12 @@ export function PortfolioManager() {
     setMediaFiles(nextFiles);
   };
 
+  const toggleExistingMediaRemoval = (mediaId) => {
+    setRemovedMediaIds((ids) => (
+      ids.includes(mediaId) ? ids.filter((id) => id !== mediaId) : [...ids, mediaId]
+    ));
+  };
+
   const removeSelectedMedia = (indexToRemove) => {
     setMediaFiles((files) => files.filter((_, index) => index !== indexToRemove));
   };
@@ -232,9 +246,20 @@ export function PortfolioManager() {
       const payload = { ...form };
       payload.sort_order = parseInt(payload.sort_order, 10) || 0;
       if (editingId) {
+        const hasMediaChanges = mediaFiles.length > 0 || removedMediaIds.length > 0;
+        let body = JSON.stringify(payload);
+        if (hasMediaChanges) {
+          const multipartPayload = new FormData();
+          Object.entries(payload).forEach(([key, value]) => {
+            multipartPayload.append(key, value === null || value === undefined ? '' : String(value));
+          });
+          multipartPayload.append('remove_media_ids', JSON.stringify(removedMediaIds));
+          mediaFiles.forEach((file) => multipartPayload.append('media', file));
+          body = multipartPayload;
+        }
         await apiCall(`/posts/admin/portfolio/${editingId}`, {
           method: 'PUT',
-          body: JSON.stringify(payload),
+          body,
         });
         setNotice('Portfolio entry saved.');
       } else {
@@ -373,50 +398,81 @@ export function PortfolioManager() {
         <Field label="Image URL" hint="Optional. Uploaded images will be used as the cover when this is blank.">
           <input className={inputCls} value={form.image_url} onChange={set('image_url')} />
         </Field>
-        {!editingId ? (
-          <Field
-            label="Upload images and videos"
-            hint="Choose multiple files. JPG, PNG, GIF, WebP, AVIF, MP4, MOV, or WebM; up to 10 files, 8 MB each and 25 MB total. Files are stored in MySQL."
-          >
-            <div className="space-y-3">
-              <input
-                type="file"
-                accept="image/avif,image/gif,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
-                multiple
-                onChange={selectMediaFiles}
-                className={`${inputCls} file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-[9px] file:font-bold file:text-teal-700`}
-              />
-              {mediaFiles.length ? (
-                <ul className="space-y-2">
-                  {mediaFiles.map((file, index) => (
-                    <li
-                      key={`${file.name}-${file.lastModified}-${index}`}
-                      className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2"
-                    >
+        {editingId && existingMedia.length ? (
+          <Field label="Current project album" hint="Remove files you no longer want, then save changes.">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {existingMedia.map((media) => {
+                const isRemoved = removedMediaIds.includes(media.id);
+                return (
+                  <div
+                    key={media.id}
+                    className={`overflow-hidden rounded-xl border ${isRemoved ? 'border-rose-300 opacity-50' : 'border-slate-200'}`}
+                  >
+                    {media.media_type === 'video' ? (
+                      <video src={media.url} controls preload="metadata" className="aspect-video w-full bg-slate-950 object-contain" />
+                    ) : (
+                      <img src={media.url} alt={media.file_name} className="aspect-video w-full bg-slate-950 object-contain" />
+                    )}
+                    <div className="flex items-center justify-between gap-2 px-3 py-2">
                       <span className="min-w-0 truncate text-[9px] font-semibold text-slate-700">
-                        {file.name}{' '}
-                        <span className="text-slate-400">
-                          ({(file.size / (1024 * 1024)).toFixed(1)} MB)
-                        </span>
+                        {media.file_name}
                       </span>
                       <button
                         type="button"
-                        onClick={() => removeSelectedMedia(index)}
-                        className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                        aria-label={`Remove ${file.name}`}
+                        onClick={() => toggleExistingMediaRemoval(media.id)}
+                        className={`flex-shrink-0 rounded-lg px-2 py-1 text-[8px] font-bold ${isRemoved ? 'bg-slate-100 text-slate-600' : 'bg-rose-50 text-rose-600'}`}
                       >
-                        <X size={13} />
+                        {isRemoved ? 'Keep' : 'Remove'}
                       </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <p className="flex items-center gap-1 text-[8px] text-slate-400">
-                <Upload size={11} /> {mediaFiles.length} file{mediaFiles.length === 1 ? '' : 's'} selected
-              </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </Field>
         ) : null}
+        <Field
+          label={editingId ? 'Add images or videos' : 'Upload images and videos'}
+          hint="Choose multiple files. JPG, PNG, GIF, WebP, AVIF, MP4, MOV, or WebM; up to 10 files, 8 MB each and 25 MB total. Files are stored in MySQL."
+        >
+          <div className="space-y-3">
+            <input
+              type="file"
+              accept="image/avif,image/gif,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
+              multiple
+              onChange={selectMediaFiles}
+              className={`${inputCls} file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-[9px] file:font-bold file:text-teal-700`}
+            />
+            {mediaFiles.length ? (
+              <ul className="space-y-2">
+                {mediaFiles.map((file, index) => (
+                  <li
+                    key={`${file.name}-${file.lastModified}-${index}`}
+                    className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2"
+                  >
+                    <span className="min-w-0 truncate text-[9px] font-semibold text-slate-700">
+                      {file.name}{' '}
+                      <span className="text-slate-400">
+                        ({(file.size / (1024 * 1024)).toFixed(1)} MB)
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeSelectedMedia(index)}
+                      className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                      aria-label={`Remove ${file.name}`}
+                    >
+                      <X size={13} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <p className="flex items-center gap-1 text-[8px] text-slate-400">
+              <Upload size={11} /> {mediaFiles.length} new file{mediaFiles.length === 1 ? '' : 's'} selected
+            </p>
+          </div>
+        </Field>
         <Field label="Outcomes" hint='One per line, "metric | label" — e.g. "35% | Faster delivery".'>
           <textarea rows={3} className={inputCls} value={form.outcomes} onChange={set('outcomes')} />
         </Field>
