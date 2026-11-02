@@ -14,10 +14,14 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Briefcase, Plus, Pencil, Trash2, Save, X,
+  Briefcase, Plus, Pencil, Trash2, Save, X, Upload,
   RefreshCw, Star, CheckCircle, AlertCircle, LayoutGrid, Database,
 } from 'lucide-react';
 import { apiCall } from '../../services/api';
+
+const MAX_MEDIA_FILES = 10;
+const MAX_MEDIA_FILE_SIZE = 8 * 1024 * 1024;
+const MAX_MEDIA_TOTAL_SIZE = 25 * 1024 * 1024;
 
 const EMPTY_ITEM = {
   title: '', client_name: '', sector: '', summary: '', body: '', image_url: '',
@@ -136,6 +140,7 @@ export function PortfolioManager() {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_ITEM);
+  const [mediaFiles, setMediaFiles] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -166,10 +171,12 @@ export function PortfolioManager() {
   const resetForm = () => {
     setEditingId(null);
     setForm(EMPTY_ITEM);
+    setMediaFiles([]);
     setError('');
   };
 
   const startEdit = (item) => {
+    setMediaFiles([]);
     setForm({
       title: item.title || '',
       client_name: item.client_name || '',
@@ -190,6 +197,32 @@ export function PortfolioManager() {
     setError('');
   };
 
+  const selectMediaFiles = (event) => {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = '';
+    const nextFiles = [...mediaFiles, ...selected];
+    const totalSize = nextFiles.reduce((sum, file) => sum + file.size, 0);
+
+    if (nextFiles.length > MAX_MEDIA_FILES) {
+      setError(`Choose no more than ${MAX_MEDIA_FILES} files.`);
+      return;
+    }
+    if (nextFiles.some((file) => file.size > MAX_MEDIA_FILE_SIZE)) {
+      setError('Each media file must be 8 MB or smaller.');
+      return;
+    }
+    if (totalSize > MAX_MEDIA_TOTAL_SIZE) {
+      setError('The combined media upload must be 25 MB or smaller.');
+      return;
+    }
+    setError('');
+    setMediaFiles(nextFiles);
+  };
+
+  const removeSelectedMedia = (indexToRemove) => {
+    setMediaFiles((files) => files.filter((_, index) => index !== indexToRemove));
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -205,9 +238,14 @@ export function PortfolioManager() {
         });
         setNotice('Portfolio entry saved.');
       } else {
+        const multipartPayload = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          multipartPayload.append(key, value === null || value === undefined ? '' : String(value));
+        });
+        mediaFiles.forEach((file) => multipartPayload.append('media', file));
         await apiCall('/posts/admin/portfolio', {
           method: 'POST',
-          body: JSON.stringify(payload),
+          body: multipartPayload,
         });
         setNotice('Portfolio entry created.');
       }
@@ -271,7 +309,7 @@ export function PortfolioManager() {
           </div>
           <div>
             <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">Source of truth</p>
-            <p className="text-[10px] font-bold text-slate-800">MySQL — portfolio_items</p>
+            <p className="text-[10px] font-bold text-slate-800">MySQL — portfolio_items + portfolio_media</p>
           </div>
         </div>
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex items-start gap-3">
@@ -332,9 +370,53 @@ export function PortfolioManager() {
         <Field label="Details">
           <textarea rows={4} className={inputCls} value={form.body} onChange={set('body')} />
         </Field>
-        <Field label="Image URL" hint="Absolute URL or a path under /images.">
+        <Field label="Image URL" hint="Optional. Uploaded images will be used as the cover when this is blank.">
           <input className={inputCls} value={form.image_url} onChange={set('image_url')} />
         </Field>
+        {!editingId ? (
+          <Field
+            label="Upload images and videos"
+            hint="Choose multiple files. JPG, PNG, GIF, WebP, AVIF, MP4, MOV, or WebM; up to 10 files, 8 MB each and 25 MB total. Files are stored in MySQL."
+          >
+            <div className="space-y-3">
+              <input
+                type="file"
+                accept="image/avif,image/gif,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
+                multiple
+                onChange={selectMediaFiles}
+                className={`${inputCls} file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-[9px] file:font-bold file:text-teal-700`}
+              />
+              {mediaFiles.length ? (
+                <ul className="space-y-2">
+                  {mediaFiles.map((file, index) => (
+                    <li
+                      key={`${file.name}-${file.lastModified}-${index}`}
+                      className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2"
+                    >
+                      <span className="min-w-0 truncate text-[9px] font-semibold text-slate-700">
+                        {file.name}{' '}
+                        <span className="text-slate-400">
+                          ({(file.size / (1024 * 1024)).toFixed(1)} MB)
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeSelectedMedia(index)}
+                        className="shrink-0 rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <X size={13} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <p className="flex items-center gap-1 text-[8px] text-slate-400">
+                <Upload size={11} /> {mediaFiles.length} file{mediaFiles.length === 1 ? '' : 's'} selected
+              </p>
+            </div>
+          </Field>
+        ) : null}
         <Field label="Outcomes" hint='One per line, "metric | label" — e.g. "35% | Faster delivery".'>
           <textarea rows={3} className={inputCls} value={form.outcomes} onChange={set('outcomes')} />
         </Field>
@@ -400,6 +482,7 @@ export function PortfolioManager() {
             <Th>Client</Th>
             <Th>Sector</Th>
             <Th className="min-w-[220px]">Summary</Th>
+            <Th>Media</Th>
             <Th>Outcomes</Th>
             <Th>Featured</Th>
             <Th>Status</Th>
@@ -410,7 +493,7 @@ export function PortfolioManager() {
         <tbody>
           {items.length === 0 && !loading ? (
             <tr>
-              <td colSpan={10} className="px-4 py-12 text-center">
+              <td colSpan={11} className="px-4 py-12 text-center">
                 <div className="flex flex-col items-center gap-2">
                   <Briefcase size={22} className="text-slate-300" />
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
@@ -437,6 +520,19 @@ export function PortfolioManager() {
               <Td><Cell value={item.sector} /></Td>
               <Td>
                 <span className="line-clamp-2">{item.summary}</span>
+              </Td>
+              <Td>
+                {item.media?.length ? (
+                  <div className="space-y-1">
+                    {item.media.map((media) => (
+                      <div key={media.id} className="text-[8px] font-semibold text-slate-600">
+                        {media.media_type} · {media.file_name}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-slate-300">—</span>
+                )}
               </Td>
               <Td>
                 {Array.isArray(item.outcomes) && item.outcomes.length ? (

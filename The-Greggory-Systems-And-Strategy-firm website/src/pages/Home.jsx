@@ -1,7 +1,8 @@
 
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, ChevronLeft, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, ChevronRight, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { ArrowRight, ChevronLeft, X, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, ChevronRight, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
 import { SITE_NAME } from '../constants/siteBrand'
 import { useSeo, SEO } from '../hooks/useSeo'
 import { apiCall } from '../services/api'
@@ -12,6 +13,7 @@ const Home = () => {
   const videoRef = useRef(null)
   const carouselRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [selectedProject, setSelectedProject] = useState(null)
   const navigate = useNavigate()
 // Search filter for portfolio items
   const [searchTerm, setSearchTerm] = useState('')
@@ -76,6 +78,22 @@ const Home = () => {
   const BLANK_TILES = [{ id: '__blank-1' }, { id: '__blank-2' }, { id: '__blank-3' }];
 
   const tiles = carouselItems.length ? carouselItems : BLANK_TILES;
+
+  useEffect(() => {
+    if (!selectedProject) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setSelectedProject(null)
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [selectedProject])
 
   // Keep the focused tile inside the bounds when the number of tiles changes.
   useEffect(() => {
@@ -376,7 +394,7 @@ const Home = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Project Portfolio</h2>
             <div className="h-px w-8 bg-gold-500 mx-auto mb-4" />
             <p className="text-[11px] text-slate-500 max-w-lg mx-auto">
-              Selected engagements delivered across strategy, systems, and transformation.
+              Selected engagements delivered across strategy, systems, and transformation. Select a project to explore its details and media.
             </p>
           </div>
 
@@ -403,19 +421,19 @@ const Home = () => {
                 const isBlank = !item.title
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={item.id}
                     onClick={() => {
                       if (isBlank) {
                         navigate('/projects')
                       } else {
                         setActiveIndex(index)
-                        if (carouselRef.current) {
-                          carouselRef.current.children[index]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-                        }
+                        setSelectedProject(portfolio.find((project) => String(project.id) === String(item.id)) || null)
                       }
                     }}
-                    className={`flex-shrink-0 w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 rounded-[28px] bg-white/35 backdrop-blur-md border border-white/40 shadow-xl transition-all duration-500 ease-out snap-center cursor-pointer group relative overflow-hidden ${isCenter ? 'ring-2 ring-gold-500 ring-offset-2 ring-offset-white/20' : ''}`}
+                    aria-label={isBlank ? 'View projects' : `View project: ${item.title}`}
+                    className={`flex-shrink-0 w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 rounded-[28px] bg-white/35 backdrop-blur-md border border-white/40 shadow-xl transition-all duration-500 ease-out snap-center cursor-pointer group relative overflow-hidden text-left ${isCenter ? 'ring-2 ring-gold-500 ring-offset-2 ring-offset-white/20' : ''}`}
                     style={{
                       // These four values are computed per tile, so they are applied
                       // inline. Building them as Tailwind class strings (e.g.
@@ -469,7 +487,7 @@ const Home = () => {
                         </>
                       )}
                     </div>
-                  </div>
+                  </button>
                 )
               })}
             </div>
@@ -1461,6 +1479,123 @@ const Home = () => {
       </div>
 
 
+      {selectedProject ? createPortal(
+        <div
+          className="fixed inset-0 z-[1200] flex h-[100dvh] w-screen flex-col overflow-hidden bg-white"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="portfolio-project-title"
+        >
+          <header className="flex flex-shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-8">
+            <div className="min-w-0">
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-teal-600">
+                Project portfolio
+              </p>
+              <h2 id="portfolio-project-title" className="truncate text-lg font-black text-slate-900 sm:text-2xl">
+                {selectedProject.title}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedProject(null)}
+              aria-label="Close project details"
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+            >
+              <X size={22} />
+            </button>
+          </header>
+          <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50">
+            <div className="mx-auto max-w-6xl space-y-8 px-5 py-8 sm:px-8 sm:py-12">
+              <section aria-label={`${selectedProject.title} media album`}>
+                <h3 className="mb-4 text-xs font-black uppercase tracking-[0.25em] text-slate-500">
+                  Project album
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {Array.isArray(selectedProject.media) && selectedProject.media.length ? (
+                    selectedProject.media.map((media) => (
+                      <figure key={media.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
+                        {media.media_type === 'video' ? (
+                          <video
+                            src={media.url}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            aria-label={media.file_name || `${selectedProject.title} project video`}
+                            className="aspect-video w-full object-contain"
+                          />
+                        ) : (
+                          <img
+                            src={media.url}
+                            alt={media.file_name || `${selectedProject.title} project image`}
+                            loading="lazy"
+                            className="aspect-video w-full object-contain"
+                          />
+                        )}
+                        {media.file_name ? (
+                          <figcaption className="px-4 py-2 text-xs text-slate-300">{media.file_name}</figcaption>
+                        ) : null}
+                      </figure>
+                    ))
+                  ) : selectedProject.image_url ? (
+                    <img
+                      src={selectedProject.image_url}
+                      alt={`${selectedProject.title} project`}
+                      className="max-h-[70vh] w-full rounded-2xl border border-slate-200 bg-slate-950 object-contain"
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-500">No project media has been added.</p>
+                  )}
+                </div>
+              </section>
+
+              <hr className="border-slate-200" />
+
+              <section aria-label={`${selectedProject.title} project information`} className="space-y-5">
+                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
+                  Project information
+                </h3>
+                {selectedProject.sector ? (
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-amber-600">
+                    {selectedProject.sector}
+                  </p>
+                ) : null}
+                {selectedProject.client_name ? (
+                  <p className="mt-2 text-sm font-bold text-slate-500">
+                    Client: {selectedProject.client_name}
+                  </p>
+                ) : null}
+                {selectedProject.summary ? (
+                  <p className="mt-5 max-w-4xl text-lg font-semibold leading-relaxed text-slate-800">
+                    {selectedProject.summary}
+                  </p>
+                ) : null}
+                {selectedProject.body ? (
+                  <p className="mt-4 max-w-4xl whitespace-pre-line text-sm leading-7 text-slate-600">
+                    {selectedProject.body}
+                  </p>
+                ) : null}
+
+                {Array.isArray(selectedProject.outcomes) && selectedProject.outcomes.length ? (
+                  <div className="flex flex-wrap gap-3">
+                    {selectedProject.outcomes.map((outcome, index) => (
+                      <div
+                        key={`${outcome.metric}-${index}`}
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-3"
+                      >
+                        <p className="text-sm font-black text-teal-700">{outcome.metric}</p>
+                        {outcome.label ? (
+                          <p className="mt-1 text-xs text-slate-500">{outcome.label}</p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+            </div>
+          </div>
+        </div>,
+        document.body
+      ) : null}
     </>
   )
 }

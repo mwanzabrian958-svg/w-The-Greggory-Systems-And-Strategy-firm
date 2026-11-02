@@ -18,6 +18,7 @@
     "indexnow": "node scripts/indexnow.js",
     "preview": "vite preview",
     "db:init": "node scripts/initialize-db.js",
+    "db:posts": "node scripts/sync-posts-tables.js",
     "backup:cloud-to-local": "node scripts/backup-cloud-to-local.js",
     "backup:schedule": "node scripts/setup-backup-schedule.js",
     "db:whatsapp": "node scripts/setup-whatsapp-verification.js",

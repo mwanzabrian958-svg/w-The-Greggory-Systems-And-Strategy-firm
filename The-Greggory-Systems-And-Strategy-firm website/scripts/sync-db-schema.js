@@ -323,11 +323,10 @@ async function apply() {
   } catch (e) {
     errors.push(`users: ${e.message}`);
   }
-  // Code-required TABLES for the admin "Posts" area (testimonials + work
-  // portfolio). Declared here for the same reason as MPESA_REQUIRED and
-  // USERS_CODE_COLUMNS above: the committed manifest is captured by hand on the
-  // dev machine and a fresh cloud DB is seeded from the SQL dump, and neither
-  // carries these tables. Without this block every /api/posts query answers
+  // Code-required tables for the admin Posts area (testimonials, portfolio
+  // entries, and their uploaded media). The committed schema manifest and
+  // fresh cloud DB seed dump do not carry these tables. Without this block,
+  // every /api/posts query answers
   // ER_NO_SUCH_TABLE and the whole Posts area is dead on a fresh deploy.
   // CREATE TABLE IF NOT EXISTS is idempotent and never touches existing data,
   // so this is safe to run on every boot.
@@ -379,6 +378,24 @@ async function apply() {
   KEY idx_posts_sort (sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     },
+    {
+      name: 'portfolio_media',
+      create: `CREATE TABLE IF NOT EXISTS portfolio_media (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  portfolio_id BIGINT NOT NULL,
+  media_type ENUM('image','video') NOT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(100) NOT NULL,
+  file_size INT UNSIGNED NOT NULL,
+  file_data MEDIUMBLOB NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_portfolio_media_parent (portfolio_id, sort_order),
+  CONSTRAINT fk_portfolio_media_parent FOREIGN KEY (portfolio_id)
+    REFERENCES portfolio_items (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    },
   ];
   for (const t of POSTS_REQUIRED_TABLES) {
     try {
@@ -410,4 +427,3 @@ async function apply() {
     process.exit(0); // boot must proceed; problems stay visible in the logs
   }
 })();
-

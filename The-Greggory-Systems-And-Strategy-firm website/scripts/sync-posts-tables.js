@@ -1,8 +1,7 @@
-// Creates ONLY the two Posts-area tables (testimonials, portfolio_items).
-// The committed schema-sync.json manifest predates the Posts feature
-// (generatedAt 2026-08-31, 76 tables, neither table present), so the
-// boot-time sync never creates them — every /api/posts query answers
-// ER_NO_SUCH_TABLE and the whole Posts area is dead on a fresh deploy.
+// Creates the Posts-area tables (testimonials, portfolio_items, portfolio_media).
+// The committed schema manifest predates the Posts feature. This idempotent
+// script applies its tables to a local database; cloud startup applies the
+// same definitions from scripts/sync-db-schema.js.
 // CREATE TABLE IF NOT EXISTS is idempotent and never touches existing
 // data, so this is safe to run any number of times, on any database.
 // Run: node scripts/sync-posts-tables.js
@@ -57,6 +56,24 @@ const TABLES = [
   PRIMARY KEY (id),
   KEY idx_posts_public (status, is_active, deleted_at),
   KEY idx_posts_sort (sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+  },
+  {
+    name: "portfolio_media",
+    create: `CREATE TABLE IF NOT EXISTS portfolio_media (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  portfolio_id BIGINT NOT NULL,
+  media_type ENUM('image','video') NOT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  mime_type VARCHAR(100) NOT NULL,
+  file_size INT UNSIGNED NOT NULL,
+  file_data MEDIUMBLOB NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_portfolio_media_parent (portfolio_id, sort_order),
+  CONSTRAINT fk_portfolio_media_parent FOREIGN KEY (portfolio_id)
+    REFERENCES portfolio_items (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
   },
 ];

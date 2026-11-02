@@ -18,9 +18,82 @@
  */
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
 const db = require('../config/database');
 const { verifyActiveAdminSession } = require('../utils/adminSessionState');
 const { ADMIN_SESSION_COOKIE, getCookie } = require('../utils/sessionCookies');
+const {
+  MAX_PORTFOLIO_MEDIA_FILE_SIZE,
+  MAX_PORTFOLIO_MEDIA_FILES,
+  mediaTypeForMime,
+  validatePortfolioFiles,
+} = require('../utils/portfolioMedia');
+
+const uploadPortfolioMedia = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    files: MAX_PORTFOLIO_MEDIA_FILES,
+    fileSize: MAX_PORTFOLIO_MEDIA_FILE_SIZE,
+  },
+  fileFilter(req, file, callback) {
+    if (!mediaTypeForMime(file.mimetype)) {
+      return callback(new Error('Use JPG, PNG, GIF, WebP, AVIF, MP4, MOV, or WebM files.'));
+    }
+    callback(null, true);
+  },
+});
+
+function parsePortfolioMedia(req, res, next) {
+  uploadPortfolioMedia.array('media', MAX_PORTFOLIO_MEDIA_FILES)(req, res, (error) => {
+    if (error) {
+      const tooLarge = error.code === 'LIMIT_FILE_SIZE' || error.code === 'LIMIT_FILE_COUNT';
+      return res.status(tooLarge ? 413 : 400).json({
+        success: false,
+        message: error.message || 'Could not read the uploaded media.',
+      });
+    }
+    try {
+      validatePortfolioFiles(req.files || []);
+      next();
+    } catch (validationError) {
+      res.status(validationError.status || 400).json({
+        success: false,
+        message: validationError.message,
+      });
+    }
+  });
+}
+
+async function loadPortfolioMedia(portfolioIds) {
+  if (!portfolioIds.length) return new Map();
+  const [mediaRows] = await db.promise().query(
+    `SELECT id, portfolio_id, media_type, file_name, mime_type, file_size, sort_order
+       FROM portfolio_media
+      WHERE portfolio_id IN (?)
+      ORDER BY sort_order ASC, id ASC`,
+    [portfolioIds]
+  );
+  const mediaByPortfolio = new Map();
+  for (const media of mediaRows) {
+    const key = String(media.portfolio_id);
+    const entries = mediaByPortfolio.get(key) || [];
+    entries.push({
+      ...media,
+      url: `/api/posts/portfolio/media/${media.id}`,
+    });
+    mediaByPortfolio.set(key, entries);
+  }
+  return mediaByPortfolio;
+}
+
+function attachPortfolioMedia(rows, mediaByPortfolio) {
+  return rows.map((row) => ({
+    ...row,
+    outcomes: decodeOutcomes(row.outcomes),
+    media: mediaByPortfolio.get(String(row.id)) || [],
+  }));
+}
 
 async function requireAdminSession(req, res, next) {
   const authHeader = req.headers.authorization || req.headers.Authorization || '';
@@ -121,9 +194,10 @@ router.get('/portfolio', async (req, res) => {
         WHERE status = 'published' AND is_active = TRUE AND deleted_at IS NULL
         ORDER BY sort_order ASC, id ASC`
     );
+    const mediaByPortfolio = await loadPortfolioMedia(rows.map((row) => row.id));
     res.json({
       success: true,
-      portfolio: rows.map((r) => ({ ...r, outcomes: decodeOutcomes(r.outcomes) })),
+      portfolio: attachPortfolioMedia(rows, mediaByPortfolio),
     });
   } catch (error) {
     console.error('[posts] GET /portfolio failed:', error.message);
@@ -255,9 +329,10 @@ router.get('/admin/portfolio', requireAdminSession, async (req, res) => {
     const [rows] = await db.promise().query(
       'SELECT * FROM portfolio_items WHERE deleted_at IS NULL ORDER BY sort_order ASC, id ASC'
     );
+    const mediaByPortfolio = await loadPortfolioMedia(rows.map((row) => row.id));
     res.json({
       success: true,
-      portfolio: rows.map((r) => ({ ...r, outcomes: decodeOutcomes(r.outcomes) })),
+      portfolio: attachPortfolioMedia(rows, mediaByPortfolio),
     });
   } catch (error) {
     console.error('[posts] admin list portfolio failed:', error.message);
@@ -265,7 +340,46 @@ router.get('/admin/portfolio', requireAdminSession, async (req, res) => {
   }
 });
 
-router.post('/admin/portfolio', requireAdminSession, async (req, res) => {
+router.get('/portfolio/media/:id', async (req, res) => {
+  try {
+    const [rows] = await db.promise().query(
+      `SELECT media.file_data, media.mime_type, item.status, item.is_active, item.deleted_at
+         FROM portfolio_media AS media
+         JOIN portfolio_items AS item ON item.id = media.portfolio_id
+        WHERE media.id = ?
+        LIMIT 1`,
+      [req.params.id]
+    );
+    const media = rows[0];
+    if (!media) {
+      return res.status(404).json({ success: false, message: 'Portfolio media not found' });
+    }
+
+    const isPublic = media.status === 'published' && Boolean(media.is_active) && !media.deleted_at;
+    if (!isPublic) {
+      const authHeader = req.headers.authorization || req.headers.Authorization || '';
+      const match = authHeader.match(/^Bearer\s+(.+)$/i);
+      const token = match ? match[1].trim() : getCookie(req, ADMIN_SESSION_COOKIE);
+      if (!token || !(await verifyActiveAdminSession(token))) {
+        return res.status(404).json({ success: false, message: 'Portfolio media not found' });
+      }
+    }
+
+    res.set({
+      'Cache-Control': isPublic ? 'public, max-age=3600' : 'private, no-store',
+      'Content-Length': media.file_data.length,
+      'Content-Type': media.mime_type,
+      'X-Content-Type-Options': 'nosniff',
+    });
+    res.send(media.file_data);
+  } catch (error) {
+    console.error('[posts] portfolio media fetch failed:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to load portfolio media' });
+  }
+});
+
+router.post('/admin/portfolio', requireAdminSession, parsePortfolioMedia, async (req, res) => {
+  let connection;
   try {
     const {
       title, client_name, sector, summary, body, image_url,
@@ -274,7 +388,11 @@ router.post('/admin/portfolio', requireAdminSession, async (req, res) => {
     if (!title || !String(title).trim()) {
       return res.status(400).json({ success: false, message: 'Title is required' });
     }
-    const [result] = await db.promise().query(
+    const files = req.files || [];
+    connection = await db.promise().getConnection();
+    const transaction = connection.promise();
+    await transaction.beginTransaction();
+    const [result] = await transaction.query(
       `INSERT INTO portfolio_items
          (title, client_name, sector, summary, body, image_url, outcomes,
           status, sort_order, is_featured, is_active, created_by, updated_by)
@@ -295,10 +413,46 @@ router.post('/admin/portfolio', requireAdminSession, async (req, res) => {
         req.adminId == null ? null : req.adminId,
       ]
     );
+    let firstImageId = null;
+    for (const [index, file] of files.entries()) {
+      const [mediaResult] = await transaction.query(
+        `INSERT INTO portfolio_media
+           (portfolio_id, media_type, file_name, mime_type, file_size, file_data, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          result.insertId,
+          mediaTypeForMime(file.mimetype),
+          path.basename(String(file.originalname || 'upload').replace(/\\/g, '/')).slice(0, 255),
+          file.mimetype,
+          file.size,
+          file.buffer,
+          index,
+        ]
+      );
+      if (firstImageId === null && mediaTypeForMime(file.mimetype) === 'image') {
+        firstImageId = mediaResult.insertId;
+      }
+    }
+    if (!(image_url && String(image_url).trim()) && firstImageId !== null) {
+      await transaction.query(
+        'UPDATE portfolio_items SET image_url = ? WHERE id = ?',
+        [`/api/posts/portfolio/media/${firstImageId}`, result.insertId]
+      );
+    }
+    await transaction.commit();
     res.status(201).json({ success: true, message: 'Portfolio item created', id: result.insertId });
   } catch (error) {
+    if (connection) {
+      try {
+        await connection.promise().rollback();
+      } catch (rollbackError) {
+        console.error('[posts] create portfolio rollback failed:', rollbackError.message);
+      }
+    }
     console.error('[posts] create portfolio item failed:', error.message);
     res.status(500).json({ success: false, message: 'Failed to create portfolio item' });
+  } finally {
+    if (connection) connection.release();
   }
 });
 
