@@ -47,7 +47,7 @@ export function Projects({ user }) {
         method: 'POST',
         body: JSON.stringify({ ...formData, created_by: user?.id })
       });
-      if (res.id) fetchProjects();
+      if (res.success && res.id) await fetchProjects();
     } catch (e) {
       console.error(e);
       throw e;
@@ -136,7 +136,7 @@ export function Projects({ user }) {
                 setFocusedCategory(category);
               }
             }}
-            className="bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest outline-none shadow-sm cursor-pointer hover:border-teal-500 transition-colors"
+            className="bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-gray-900 outline-none shadow-sm cursor-pointer hover:border-teal-500 transition-colors"
           >
             <option value="all">Select Sector to Monitor...</option>
             {columns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
@@ -163,8 +163,15 @@ export function Projects({ user }) {
                 <p className="text-[8px] text-teal-500 font-black uppercase tracking-[0.4em] mt-1">Full-Screen Strategic View</p>
               </div>
             </div>
-            <div className="flex items-center gap-6">
-               <div className="hidden md:flex gap-8">
+            <div className="flex items-center gap-3">
+                 <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-3 text-[9px] font-black uppercase tracking-widest text-white transition-colors hover:bg-teal-700"
+                 >
+                   <Plus size={14} /> New Project
+                 </button>
+                 <div className="hidden md:flex gap-8">
                   <div className="text-right">
                     <p className="text-[7px] text-slate-500 font-black uppercase tracking-widest">Active Assets</p>
                     <p className="text-lg font-black">{filteredProjects.filter(p => (p.status || 'planning') === focusedCategory.id).length}</p>
@@ -244,4 +251,3 @@ export function Projects({ user }) {
     </div>
   );
 }
-

@@ -127,7 +127,7 @@ export function CreateProjectModal({ isOpen, onClose, onCreate, lockedClientId }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Initialize Mission Node" size="screen">
-      <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+      <form onSubmit={handleSubmit} className="space-y-6 pr-2 custom-scrollbar">
         {error && (
           <div role="alert" className="bg-rose-50 border border-rose-100 rounded-xl p-4 text-[10px] font-black uppercase tracking-widest text-rose-600">
             {error}
@@ -411,8 +411,8 @@ export function EditProjectModal({ isOpen, onClose, onUpdate, project }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Recalibrate Node: ${project?.project_name}`} size="xl">
-      <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto pr-2 custom-scrollbar">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Recalibrate Node: ${project?.project_name}`} size="screen">
+      <form onSubmit={handleSubmit} className="space-y-6 pr-2 custom-scrollbar">
         {error && (
           <div role="alert" className="bg-rose-50 border border-rose-100 rounded-xl p-4 text-[10px] font-black uppercase tracking-widest text-rose-600">
             {error}

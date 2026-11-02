@@ -52,7 +52,7 @@ export function FormInput({
             error 
               ? 'border-emerald-300 focus:ring-emerald-500 focus:border-emerald-500 bg-emerald-50' 
               : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-white'
-          } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+          } text-gray-900 placeholder:text-gray-500 ${disabled ? 'bg-gray-100 cursor-not-allowed text-gray-700' : ''}`}
         />
         
         {showClearButton && value && (
@@ -145,11 +145,11 @@ export function Textarea({
         required={required}
         placeholder={placeholder}
         rows={rows}
-        className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 transition-all resize-none ${
+        className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 transition-all resize-none text-gray-900 placeholder:text-gray-500 ${
           error 
             ? 'border-emerald-300 focus:ring-emerald-500 focus:border-emerald-500 bg-emerald-50' 
             : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-white'
-        } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+        } ${disabled ? 'bg-gray-100 cursor-not-allowed text-gray-700' : ''}`}
       />
       
       {error && (
@@ -195,11 +195,11 @@ export function Select({
         onChange={onChange}
         disabled={disabled}
         required={required}
-        className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
+        className={`w-full px-4 py-2.5 border rounded-xl focus:outline-none focus:ring-2 transition-all text-gray-900 ${
           error 
             ? 'border-emerald-300 focus:ring-emerald-500 focus:border-emerald-500 bg-emerald-50' 
             : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 bg-white'
-        } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+        } ${disabled ? 'bg-gray-100 cursor-not-allowed text-gray-700' : ''}`}
       >
         <option value="">{placeholder}</option>
         {options.map((option) => (
@@ -235,7 +235,7 @@ export function SearchInput({ value, onChange, placeholder = 'Search...', onClea
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       />
       {value && (
         <button

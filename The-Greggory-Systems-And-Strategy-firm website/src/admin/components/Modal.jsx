@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 /**
@@ -8,9 +9,8 @@ import { X } from 'lucide-react';
 export function Modal({ 
   isOpen, 
   onClose, 
-  title, 
+  title,
   children, 
-  size = 'md',
   showCloseButton = true,
   closeOnBackdrop = true,
   closeOnEscape = true
@@ -18,15 +18,6 @@ export function Modal({
   const modalRef = useRef(null);
   
   // Size classes — all full-screen occupation, no centered popups
-  const sizeClasses = {
-    sm: 'w-full max-h-[95vh]',
-    md: 'w-full max-h-[95vh]',
-    lg: 'w-full max-h-[95vh]',
-    xl: 'w-full max-h-[95vh]',
-    full: 'w-full h-[95vh]',
-    screen: 'w-screen h-screen'
-  };
-
   useEffect(() => {
     const handleEscape = (e) => {
       if (closeOnEscape && e.key === 'Escape' && isOpen) {
@@ -36,12 +27,16 @@ export function Modal({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
+      const previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
+      return () => {
+        document.removeEventListener('keydown', handleEscape);
+        document.body.style.overflow = previousOverflow;
+      };
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose, closeOnEscape]);
 
@@ -53,42 +48,36 @@ export function Modal({
 
   if (!isOpen) return null;
 
-  const isScreen = size === 'screen';
-
-  return (
-    <div 
-      className={`fixed inset-0 z-50 bg-[#0f172a]/95 backdrop-blur-md p-0`}
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[1100] h-[100dvh] w-screen bg-white"
       onClick={handleBackdropClick}
     >
-      {/* Backdrop */}
-      <div className={`absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-300`} />
-      
-      {/* Modal Content */}
-      <div 
+      <div
         ref={modalRef}
-        className={`relative w-full ${sizeClasses[size]} bg-[#0f172a]/95 backdrop-blur-md ${isScreen ? 'h-screen rounded-none' : 'rounded-none'} overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col`}
+        className="flex h-full w-full flex-col overflow-hidden bg-white"
       >
-        {/* Header */}
         {title && (
-          <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight">{title}</h2>
+          <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-200 bg-white p-6">
+            <h2 className="text-2xl font-black tracking-tight text-slate-900">{title}</h2>
             {showCloseButton && (
               <button
+                type="button"
                 onClick={onClose}
-                className="p-2 hover:bg-slate-100 rounded-xl transition-all group"
+                aria-label="Close"
+                className="group rounded-xl p-2 transition-all hover:bg-slate-100"
               >
-                <X className="w-6 h-6 text-slate-400 group-hover:text-rose-500 transition-colors" />
+                <X className="h-6 w-6 text-slate-500 transition-colors group-hover:text-rose-500" />
               </button>
             )}
           </div>
         )}
-        
-        {/* Body */}
-        <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white p-6 text-slate-900 custom-scrollbar">
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+import os
+
+path = r'c:\Users\Lydia mwanza\OneDrive\Desktop\personal projects\w-The-Greggory-Systems-And-Strategy-firm\.github\workflows\keep-alive.yml'
+
+content = r"""# Keep-alive pinger: the free Render tier sleeps after 15 min idle, and a wake-up
+# takes 30-60s (feels like a crash). Pinging /api/health every ~14 min keeps it
+# warm. Public repo = free GitHub Actions minutes. Never hard-fails on purpose.
+# After the first deploy, set the SITE_URL repository variable in GitHub, or the
+# fallback URL below is used.
+# LIVE service (verified 2026-09-30, /api/health 200 + database "connected"):
+#   https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com
+# Older hosts are gone and must NOT come back here — each was left as a silent
+# no-op ping:
+#   greggory-firm-rtl3.onrender.com  -> SUSPENDED (503)
+#   the-greggory-systems-and-strategy-firm-jz7i.onrender.com -> 404, deleted
+# Because the step below never hard-fails, a stale URL keeps the workflow green
+# while warming nothing, so re-verify the host here whenever the service moves.
+# Setting the SITE_URL repository variable in GitHub overrides this fallback and
+# survives a rename without a code change.
+name: keep-alive
+
+on:
+  schedule:
+    - cron: "*/14 * * * *"
+  workflow_dispatch:
+
+jobs:
+  keep_alive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Keep Alive Action
+        uses: gautamkrishnar/keepalive-workflow@v2
+        with:
+          url: "${{ vars.SITE_URL || 'https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com' }}/api/health"
+          # Never hard-fail: a cold, waking service must not redden the log
+          # but we now print the status code so stale hosts are visible
+          continue-on-error: true
+      - name: Report ping result
+        run: |
+          URL="${{ vars.SITE_URL || 'https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com' }}/api/health"
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$URL" || echo "000")
+          echo "pinged $URL -> HTTP $CODE"
+          # Warn on 404 - service no longer exists
+          if [ "$CODE" = "404" ]; then
+            echo "::warning::HTTP 404 from $URL - that service no longer exists. Update the fallback URL or the SITE_URL repository variable."
+          fi
+          # Warn on 5xx server errors
+          if [ "$CODE" -ge 500 ] && [ "$CODE" -lt 600 ]; then
+            echo "::warning::HTTP $CODE from $URL - server returned an error. Check server logs."
+          fi
+          # Warn on connection refused / curl failures (000)
+          if [ "$CODE" = "000" ]; then
+            echo "::warning::No response from $URL - connection failed or host unreachable. Check network connectivity."
+          fi
+"""
+
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(content)
+
+print("File written successfully")
