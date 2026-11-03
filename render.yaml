@@ -105,12 +105,9 @@ services:
       # the sitemap name that domain instead of the onrender.com host.
       - key: SITE_URL
         sync: false
-      # Google Analytics 4 + search-engine ownership tokens. All optional.
-      # Google verification is also injected at runtime so the Docker build
-      # does not need access to the Search Console token.
+      # Google Analytics 4 + Bing ownership token. Both are optional; unset
+      # values omit the corresponding tags.
       - key: VITE_GA_MEASUREMENT_ID
-        sync: false
-      - key: VITE_GOOGLE_SITE_VERIFICATION
         sync: false
       - key: VITE_BING_SITE_VERIFICATION
         sync: false

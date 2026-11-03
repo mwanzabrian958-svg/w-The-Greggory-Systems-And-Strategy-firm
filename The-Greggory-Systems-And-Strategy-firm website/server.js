@@ -670,31 +670,16 @@ const distDir = path.join(__dirname, "dist");
 const prerenderedSeoPaths = require("./seo.config.json").routes
   .map(({ path: routePath }) => routePath)
   .filter((routePath) => routePath !== "/");
-const googleSiteVerificationToken = String(
-  process.env.GOOGLE_SITE_VERIFICATION ||
-    process.env.VITE_GOOGLE_SITE_VERIFICATION ||
-    ""
-).trim();
-const { injectGoogleSiteVerification } = require("./server/utils/googleSiteVerification");
 app.get(["/", ...prerenderedSeoPaths], (req, res, next) => {
   const pageFile = path.join(
     distDir,
     ...req.path.split("/").filter(Boolean),
     "index.html"
   );
-  fs.readFile(pageFile, "utf8", (error, html) => {
-    if (error) {
-      if (error.code === "ENOENT") return next();
-      return next(error);
-    }
-
-    let responseHtml = html;
-    try {
-      responseHtml = injectGoogleSiteVerification(html, googleSiteVerificationToken);
-    } catch (verificationError) {
-      return next(verificationError);
-    }
-    res.set("Cache-Control", "no-store").type("html").send(responseHtml);
+  if (!fs.existsSync(pageFile)) return next();
+  res.set("Cache-Control", "no-store");
+  res.sendFile(pageFile, (error) => {
+    if (error && !res.headersSent) next(error);
   });
 });
 // Cache policy that makes deploys safe for open tabs:

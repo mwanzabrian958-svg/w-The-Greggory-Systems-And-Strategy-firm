@@ -16,7 +16,6 @@ import { COOKIE_CONSENT_EVENT, COOKIE_CONSENT_STORAGE_KEY } from './src/constant
  * Emitted only when the matching env var is present and non-empty, so an unset
  * variable never leaves a literal %VITE_…% token in the served HTML:
  *   VITE_GA_MEASUREMENT_ID        -> Google Analytics 4 (gtag.js)
- *   VITE_GOOGLE_SITE_VERIFICATION -> Google Search Console token
  *   VITE_BING_SITE_VERIFICATION   -> Bing Webmaster Tools token
  *
  * Env vars are read from vite's loadEnv() result first (see vite.config.js,
@@ -219,15 +218,6 @@ export default function vitePluginSeo(env = {}) {
       tags.push('  <meta property="og:image:alt" content="' + escapeHtml(HERO_IMAGE_ALT) + '">');
       tags.push('  <meta name="twitter:image" content="' + escapeHtml(heroImage) + '">');
       tags.push('  <meta name="twitter:image:alt" content="' + escapeHtml(HERO_IMAGE_ALT) + '">');
-
-      // Google Search Console ownership verification.
-      const gscTokens = new Set([
-        envOf(env, 'VITE_GOOGLE_SITE_VERIFICATION'),
-        envOf(env, 'GOOGLE_SITE_VERIFICATION'),
-      ].filter(Boolean));
-      for (const token of gscTokens) {
-        tags.push('  <meta name="google-site-verification" content="' + escapeHtml(token) + '">');
-      }
 
       // Bing Webmaster Tools ownership verification.
       const bing =

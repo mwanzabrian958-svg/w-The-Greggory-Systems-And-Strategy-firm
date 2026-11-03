@@ -1,38 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const path = require('node:path');
 const { normalizeRoutePath, outputPathForRoute, renderSeoHtml } = require('../../scripts/prerender-seo');
-const { injectGoogleSiteVerification } = require('./googleSiteVerification');
-
-test('Google Search Console verification file retains its exact required contents', () => {
-  const verificationFile = path.join(
-    __dirname,
-    '..',
-    '..',
-    'public',
-    'google094331f0615c2ec2.html'
-  );
-  assert.equal(
-    fs.readFileSync(verificationFile, 'utf8').trim(),
-    'google-site-verification: google094331f0615c2ec2.html'
-  );
-});
-
-test('Google Search Console HTML-tag token is inserted at runtime without duplicating stale tags', () => {
-  const html = '<html><head><meta name="google-site-verification" content="old-token"></head></html>';
-  const verifiedHtml = injectGoogleSiteVerification(html, 'new-token&value');
-
-  assert.equal(
-    verifiedHtml,
-    '<html><head><meta name="google-site-verification" content="new-token&amp;value">\n</head></html>'
-  );
-  assert.equal(injectGoogleSiteVerification(html, ''), html);
-  assert.throws(
-    () => injectGoogleSiteVerification('<html><body></body></html>', 'token'),
-    /HTML head is missing/
-  );
-});
 
 const template = [
   '<html><head>',

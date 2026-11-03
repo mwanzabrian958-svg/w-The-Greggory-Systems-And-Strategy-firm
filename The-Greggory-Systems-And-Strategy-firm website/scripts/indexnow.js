@@ -4,8 +4,7 @@
  * Pings the IndexNow API (https://www.indexnow.org) so supporting search
  * engines re-crawl the site right after a deploy. IndexNow is consumed by
  * **Bing, Yandex, Seznam, Naver** and other participating engines — it is NOT
- * used by Google (Google is covered separately via Search Console + the
- * google094331f0615c2ec2.html verification file).
+ * used by Google.
  *
  * How IndexNow works (all three parts must line up):
  *   1. A KEY FILE is published at the site root:
