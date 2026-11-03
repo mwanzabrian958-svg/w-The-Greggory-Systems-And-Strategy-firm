@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Briefcase, User, X, Send, MailCheck } from "lucide-react";
+import { Briefcase, User, X, Send } from "lucide-react";
 import { apiCall } from "../../services/api";
 import { Spinner } from "../../components/Loading";
 import { formatKSH } from "../../utils/currencyUtils";
@@ -70,16 +70,9 @@ export function CreateInvoice() {
   const removeLineItem = (idx) =>
     setInvoiceForm((f) => ({ ...f, items: f.items.length > 1 ? f.items.filter((_, i) => i !== idx) : f.items }));
 
-  const [sendStatus, setSendStatus] = useState(null); // { stage: 'creating' | 'sending' | 'done', message }
-// Full-page composer state - shown overlay covering entire screen
-const [showCompose, setShowCompose] = useState(false);
-  const [composeForm, setComposeForm] = useState({ to: '', subject: '', body: '' });
-  const [pendingInvoiceId, setPendingInvoiceId] = useState(null);
-
   const handleInvoiceSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setSendStatus(null);
     setSubmitError('');
     try {
       // ── 1) Create the invoice ──
@@ -113,69 +106,13 @@ const [showCompose, setShowCompose] = useState(false);
         throw new Error('Invoice created but no id returned');
       }
 
-      // ── 2) Open full-screen compose area (PDF + email) ──
-      setPendingInvoiceId(invoiceId);
-      setComposeForm({
-        to: invoiceForm.client_email || '',
-        subject: `Invoice ${created.invoice_number || 'INV-' + invoiceId} from Greggory Systems`,
-        body: `Dear ${invoiceForm.client_name},\n\nPlease find attached your invoice ${created.invoice_number || 'INV-' + invoiceId} for KES ${formatKSH(grandTotal)}.\n\nPDF attached.\n\nRegards,\nGreggory Systems`,
-      });
-      setShowCompose(true);
+      navigate(`/admin/billing/pdf/${invoiceId}`);
     } catch (error) {
       console.error(error);
       setSubmitError(error.message || 'Invoice failed. Check you are signed in as admin.');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleComposeSend = async () => {
-    if (!pendingInvoiceId || isSubmitting) return;
-    setIsSubmitting(true);
-    setSendStatus({ stage: 'sending', ok: null, message: 'Generating PDF & sending email…' });
-    try {
-      const sent = await apiCall(`/invoices/${pendingInvoiceId}/send`, {
-        method: 'POST',
-        body: JSON.stringify({
-          to: composeForm.to,
-          subject: composeForm.subject,
-          body: composeForm.body,
-        }),
-      });
-      if (sent?.success) {
-        // Keep the compose area open so the success banner can render; the
-        // admin dismisses it with "View Billing" (a stale window.alert here
-        // would read the pre-request status, not this result).
-        setPendingInvoiceId(null);
-        setSendStatus({
-          stage: 'done',
-          ok: true,
-          message: sent.message || `Invoice sent to ${composeForm.to}.`,
-        });
-      } else {
-        setSendStatus({
-          stage: 'done',
-          ok: false,
-          message: sent?.message || 'Email delivery failed.',
-        });
-      }
-    } catch (error) {
-      console.error(error);
-      setSendStatus({
-        stage: 'done',
-        ok: false,
-        message: String(error.message || error) || 'Failed to send invoice email.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const finishCompose = () => {
-    setShowCompose(false);
-    setPendingInvoiceId(null);
-    setSendStatus(null);
-    navigate('/admin/billing');
   };
 
   return (
@@ -342,101 +279,6 @@ const [showCompose, setShowCompose] = useState(false);
            </button>
         </div>
       </div>
-        {/* ── Full-screen email compose area (not a popup) ── */}
-        {showCompose && (
-          <div className="fixed inset-0 z-[600] bg-[#0f172a] flex flex-col font-sans overflow-hidden">
-            <div className="bg-[#0f172a] w-full h-full flex flex-col overflow-y-auto">
-              <div className="px-6 py-4 flex items-center justify-between border-b border-white/5 bg-[#1e293b]/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white font-black text-sm">GS</div>
-                  <div>
-                    <h3 className="text-sm font-black text-white uppercase tracking-tight">Deploy to Ledger</h3>
-                    <p className="text-[6px] text-teal-500 font-black uppercase tracking-[0.4em]">Email composition — full screen</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setShowCompose(false)}
-                  className="p-2 hover:bg-rose-600/20 text-slate-400 hover:text-rose-500 rounded-lg transition-all"
-                  title="Close compose"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-5">
-                <div>
-                  <label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">To</label>
-                  <input
-                    type="email"
-                    value={composeForm.to}
-                    onChange={(e) => setComposeForm({ ...composeForm, to: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Subject</label>
-                  <input
-                    type="text"
-                    value={composeForm.subject}
-                    onChange={(e) => setComposeForm({ ...composeForm, subject: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Message</label>
-                  <textarea
-                    value={composeForm.body}
-                    onChange={(e) => setComposeForm({ ...composeForm, body: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[9px] font-medium text-slate-300 outline-none focus:border-teal-500 transition-all h-40 resize-none"
-                    placeholder="Type your email message…"
-                  />
-                </div>
-
-                {sendStatus && sendStatus.stage === 'done' && (
-                  <div className={`p-3 rounded-lg text-[8px] font-black text-center ${
-                    sendStatus.ok
-                      ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
-                      : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                  }`}>
-                    {sendStatus.message}
-                  </div>
-                )}
-              </div>
-
-              <div className="p-6 border-t border-white/5 flex justify-end gap-3">
-                {sendStatus?.stage === 'done' && sendStatus.ok ? (
-                  <button
-                    onClick={finishCompose}
-                    className="px-8 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-[8px] font-black uppercase tracking-widest transition-all shadow-lg"
-                  >
-                    <MailCheck size={14} /> View Billing
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => setShowCompose(false)}
-                      disabled={isSubmitting}
-                      className="px-6 py-2 rounded-lg text-[8px] font-black text-slate-400 hover:text-white hover:bg-white/5 transition-all"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleComposeSend}
-                      disabled={isSubmitting || !composeForm.to || !pendingInvoiceId}
-                      className="px-8 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-[8px] font-black uppercase tracking-widest transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? <Spinner size={14} tone="white" /> : <Send size={14} />} Send Invoice Email
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
     </div>
   );
 }

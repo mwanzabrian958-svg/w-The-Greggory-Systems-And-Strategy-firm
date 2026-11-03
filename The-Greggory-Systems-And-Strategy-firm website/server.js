@@ -4936,10 +4936,9 @@ app.get("/api/documents/:type/:id/pdf", authenticateAny, async (req, res) => {
     const pdfContent = await generatePDFContent(type, document);
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${type}-${document.invoice_number || document.quote_number || document.transaction_id}.pdf"`,
-    );
+    const fileName = `${type}-${document.invoice_number || document.quote_number || document.transaction_id}.pdf`;
+    const disposition = req.query.inline === "true" ? "inline" : "attachment";
+    res.setHeader("Content-Disposition", `${disposition}; filename="${fileName}"`);
     res.send(pdfContent);
   } catch (error) {
     console.error("Error generating PDF:", error);
