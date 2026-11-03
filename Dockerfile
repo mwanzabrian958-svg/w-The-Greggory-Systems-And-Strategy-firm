@@ -55,6 +55,7 @@ COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
 COPY --from=build /app/index.html ./index.html
+COPY --from=build /app/seo.config.json ./seo.config.json
 
 RUN npm install --no-audit --no-fund --omit=dev \
  && mkdir -p backups uploads public
