@@ -18,7 +18,9 @@ export function CreateInvoice() {
   const [invoiceForm, setInvoiceForm] = useState({
     project_id: '', title: '', invoice_type: 'project_fee', tax_type: 'vat', tax_rate: '16',
     issue_date: new Date().toISOString().split('T')[0], due_date: '',
-    client_name: '', client_email: '', client_phone: '', notes: '',
+    client_name: '', client_email: '', client_phone: '', client_company: '',
+    client_address: '', client_city: '', client_postal_code: '', client_country: 'Kenya',
+    notes: '',
     payment_method: 'bank_transfer',
     items: [{ description: '', quantity: '1', unit_price: '' }]
   });
@@ -68,11 +70,18 @@ export function CreateInvoice() {
     setInvoiceForm((f) => ({ ...f, items: f.items.length > 1 ? f.items.filter((_, i) => i !== idx) : f.items }));
 
   const [sendStatus, setSendStatus] = useState(null); // { stage: 'creating' | 'sending' | 'done', message }
-  const [showCompose, setShowCompose] = useState(false);
-  const [composeForm, setComposeForm] = useState({
-    to: '',
-    subject: '',
-    body: '',
+// Full-page composer state - shown overlay covering entire screen
+const [showCompose, setShowCompose] = useState(false);
+// Client personal details for the invoice composer
+const [clientDetails, setClientDetails] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    country: 'Kenya',
   });
   const [pendingInvoiceId, setPendingInvoiceId] = useState(null);
 
