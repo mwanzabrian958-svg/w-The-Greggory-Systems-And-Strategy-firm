@@ -13,15 +13,18 @@
  *   3. SECONDARY CLOUD -> DB_SECONDARY_HOST / DB_SECONDARY_PORT / DB_SECONDARY_USER / DB_SECONDARY_PASSWORD
  *        (Aiven secondary, for high availability / failover)
  *
+ * IMPORTANT: Endpoints are tried in ORDER (local -> cloud -> secondary cloud).
+ * The defaultSelector 'ORDER' in database.js ensures local is preferred first,
+ * then cloud, then secondary cloud when the previous is unreachable.
+ *
  * IMPORTANT: the *_2 values are used EXACTLY as given when the variables are
  * defined — an intentionally EMPTY DB_PASSWORD_2 must NOT fall through to the
  * cloud DB_PASSWORD (the `||` chain used to do exactly that and produced
  * "root + cloud password" -> ER_ACCESS_DENIED on localhost).
  *
- * mysql2's `createPoolCluster` uses these as two nodes: if endpoint #1 is
- * down it fails over to endpoint #2 automatically (and back again once it
- * recovers). Endpoints build the ready-to-pass connection option objects that
- * every DB config module + boot script consumes.
+ * mysql2's `createPoolCluster` uses configured endpoints in this order and
+ * fails over to the next available node. Endpoints build the ready-to-pass
+ * connection option objects that every DB config module + boot script consumes.
  */
 "use strict";
 
@@ -87,49 +90,6 @@ function buildEndpoint({ host, port, user, password, database, ssl, label }) {
 }
 
 function endpoints() {
-  const result = [];
-  
-  // Endpoint 1: LOCAL (XAMPP)
-  if (process.env.DB_HOST_2 && process.env.DB_USER_2) {
-    result.push({
-      label: 'LOCAL',
-      host: process.env.DB_HOST_2,
-      port: Number(process.env.DB_PORT_2) || 3306,
-      user: process.env.DB_USER_2,
-      password: process.env.DB_PASSWORD_2 || '',
-      database: process.env.DB_NAME_2 || DB_NAME,
-      ssl: process.env.DB_SSL_2 === 'true',
-    });
-  }
-  
-  // Endpoint 2: CLOUD (primary Aiven)
-  if (process.env.DB_HOST && process.env.DB_USER) {
-    result.push({
-      label: 'CLOUD',
-      host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT) || 27059,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || DB_NAME,
-      ssl: process.env.DB_SSL !== undefined ? process.env.DB_SSL === 'true' : true,
-    });
-  }
-  
-  // Endpoint 3: SECONDARY CLOUD (failover Aiven)
-  if (process.env.DB_SECONDARY_HOST && process.env.DB_SECONDARY_USER) {
-    result.push({
-      label: 'SECONDARY_CLOUD',
-      host: process.env.DB_SECONDARY_HOST,
-      port: Number(process.env.DB_SECONDARY_PORT) || 27809,
-      user: process.env.DB_SECONDARY_USER,
-      password: process.env.DB_SECONDARY_PASSWORD || '',
-      database: process.env.DB_SECONDARY_NAME || DB_NAME,
-      ssl: process.env.DB_SECONDARY_SSL !== undefined ? process.env.DB_SECONDARY_SSL === 'true' : true,
-    });
-  }
-  
-  return result;
-}
   const list = [];
 
   // 1) LOCAL endpoint (XAMPP/MariaDB on 127.0.0.1:3306) — preferred when set.
@@ -154,13 +114,12 @@ function endpoints() {
   }
 
   // 2) CLOUD endpoint (Aiven) — primary in production (Render), fallback in
-  //    dev. Legacy DB_CLOUD_* vars still win if the main DB_* ones are unset
-  //    so older .env files (backup scripts) keep working.
-  const h1 = process.env.DB_HOST || process.env.DB_CLOUD_HOST;
-  if (h1) {
+  //    dev. Legacy DB_CLOUD_* vars still win if the main DB_* ones are unset.
+  const primaryHost = process.env.DB_HOST || process.env.DB_CLOUD_HOST;
+  if (primaryHost) {
     list.push(
       buildEndpoint({
-        host: h1,
+        host: primaryHost,
         port: process.env.DB_PORT || process.env.DB_CLOUD_PORT,
         user: process.env.DB_USER || process.env.DB_CLOUD_USER || "avnadmin",
         password:
@@ -169,7 +128,29 @@ function endpoints() {
             : process.env.DB_CLOUD_PASSWORD,
         database: process.env.DB_NAME,
         ssl: cloudSslEnabled(),
-        label: IS_LOCAL_HOST(h1) ? "local" : "claude",
+        label: IS_LOCAL_HOST(primaryHost) ? "local" : "claude",
+      })
+    );
+  }
+
+  // 3) SECONDARY CLOUD endpoint — used after the primary in pool order.
+  const secondaryHost = process.env.DB_SECONDARY_HOST;
+  if (secondaryHost && process.env.DB_SECONDARY_USER) {
+    list.push(
+      buildEndpoint({
+        host: secondaryHost,
+        port: process.env.DB_SECONDARY_PORT,
+        user: process.env.DB_SECONDARY_USER,
+        password:
+          process.env.DB_SECONDARY_PASSWORD !== undefined
+            ? process.env.DB_SECONDARY_PASSWORD
+            : "",
+        database: process.env.DB_SECONDARY_NAME,
+        ssl:
+          process.env.DB_SECONDARY_SSL !== undefined
+            ? process.env.DB_SECONDARY_SSL === "true"
+            : !IS_LOCAL_HOST(secondaryHost),
+        label: "secondary",
       })
     );
   }
