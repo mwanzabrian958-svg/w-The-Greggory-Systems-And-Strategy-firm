@@ -6,11 +6,12 @@ import { COOKIE_CONSENT_EVENT, COOKIE_CONSENT_STORAGE_KEY } from './src/constant
  * Injects environment-driven SEO <head> tags into index.html during BOTH
  * `vite build` and `vite dev`.
  *
- * Always emitted (the SPA serves one HTML shell, so these describe the site
- * root): <link rel="canonical">, <meta property="og:url"> and the schema.org
- * JSON-LD block. The origin resolves as SITE_URL -> VITE_SITE_URL ->
- * RENDER_EXTERNAL_URL -> `seo.config.json` `siteUrl`, so a build never ships a
- * relative URL, a placeholder, or a host that is not this deployment.
+ * The initial HTML shell gets root metadata, absolute canonical/social URLs,
+ * and schema.org JSON-LD. The post-build prerender-seo script creates one HTML
+ * snapshot per configured public route and replaces its title, description,
+ * and canonical/social URLs. The origin resolves as SITE_URL -> VITE_SITE_URL
+ * -> RENDER_EXTERNAL_URL -> `seo.config.json` `siteUrl`, so a build never ships
+ * a relative URL, a placeholder, or a host that is not this deployment.
  *
  * Emitted only when the matching env var is present and non-empty, so an unset
  * variable never leaves a literal %VITE_…% token in the served HTML:
@@ -26,7 +27,7 @@ import { COOKIE_CONSENT_EVENT, COOKIE_CONSENT_STORAGE_KEY } from './src/constant
 // <head> tags in index.html.
 const SITE_NAME = 'The Greggory Systems And Strategy Firm';
 const SITE_DESCRIPTION =
-  'The Greggory Systems And Strategy Firm helps individuals and organizations turn business goals into practical results through systems and software design, business strategy and intelligence, project delivery, and IT infrastructure. From planning and implementation to ongoing maintenance, upgrades, and support, we stand behind the solutions we deliver.';
+  'The Greggory Systems And Strategy Firm in Kabarak, Kenya helps organizations across Kenya and East Africa turn business goals into practical results through systems and software design, business strategy and intelligence, project delivery, and IT infrastructure. From planning and implementation to ongoing maintenance, upgrades, and support, we stand behind the solutions we deliver.';
 const SITE_TAGLINE = 'Your Vision Delivered With Trust';
 const LOGO_PATH = '/favicon-256.png';
 // Social image is the real hero JPEG (1324x783). The old .png of the same
@@ -199,9 +200,8 @@ export default function vitePluginSeo(env = {}) {
         console.warn('[seo] vite-plugin-seo: publishing dev origin ' + cleanUrl + ' in canonical/og:url — set SITE_URL or fix seo.config.json "siteUrl".');
       }
 
-      // Canonical + og:url. The SPA renders one HTML shell for every route, so
-      // both point at the site root: crawlers still learn the canonical origin
-      // instead of indexing nothing (or a relative, per-route duplicate).
+      // The app shell is the root page; prerender-seo creates route-specific
+      // copies with their canonical URLs after the Vite build.
       if (cleanUrl) {
         tags.push('  <link rel="canonical" href="' + escapeHtml(cleanUrl) + '/">');
         tags.push('  <meta property="og:url" content="' + escapeHtml(cleanUrl) + '/">');
@@ -221,11 +221,12 @@ export default function vitePluginSeo(env = {}) {
       tags.push('  <meta name="twitter:image:alt" content="' + escapeHtml(HERO_IMAGE_ALT) + '">');
 
       // Google Search Console ownership verification.
-      const gsc =
-        envOf(env, 'VITE_GOOGLE_SITE_VERIFICATION') ||
-        envOf(env, 'GOOGLE_SITE_VERIFICATION');
-      if (gsc) {
-        tags.push('  <meta name="google-site-verification" content="' + escapeHtml(gsc) + '">');
+      const gscTokens = new Set([
+        envOf(env, 'VITE_GOOGLE_SITE_VERIFICATION'),
+        envOf(env, 'GOOGLE_SITE_VERIFICATION'),
+      ].filter(Boolean));
+      for (const token of gscTokens) {
+        tags.push('  <meta name="google-site-verification" content="' + escapeHtml(token) + '">');
       }
 
       // Bing Webmaster Tools ownership verification.

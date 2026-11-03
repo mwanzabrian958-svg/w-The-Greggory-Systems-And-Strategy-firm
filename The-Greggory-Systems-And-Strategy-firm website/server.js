@@ -667,6 +667,36 @@ app.use(express.static(path.join(__dirname, "public")));
 // same server, exactly like the Vite dev proxy does on localhost. One origin
 // means no CORS issues, no separate static host, no API URL mismatch.
 const distDir = path.join(__dirname, "dist");
+const prerenderedSeoPaths = require("./seo.config.json").routes
+  .map(({ path: routePath }) => routePath)
+  .filter((routePath) => routePath !== "/");
+const googleSiteVerificationToken = String(
+  process.env.GOOGLE_SITE_VERIFICATION ||
+    process.env.VITE_GOOGLE_SITE_VERIFICATION ||
+    ""
+).trim();
+const { injectGoogleSiteVerification } = require("./server/utils/googleSiteVerification");
+app.get(["/", ...prerenderedSeoPaths], (req, res, next) => {
+  const pageFile = path.join(
+    distDir,
+    ...req.path.split("/").filter(Boolean),
+    "index.html"
+  );
+  fs.readFile(pageFile, "utf8", (error, html) => {
+    if (error) {
+      if (error.code === "ENOENT") return next();
+      return next(error);
+    }
+
+    let responseHtml = html;
+    try {
+      responseHtml = injectGoogleSiteVerification(html, googleSiteVerificationToken);
+    } catch (verificationError) {
+      return next(verificationError);
+    }
+    res.set("Cache-Control", "no-store").type("html").send(responseHtml);
+  });
+});
 // Cache policy that makes deploys safe for open tabs:
 //  - index.html is NEVER cached: it points at content-hashed chunks that only
 //    exist in the current deploy, so a stale shell would import filenames the

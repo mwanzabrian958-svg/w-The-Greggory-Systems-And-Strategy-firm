@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import seoConfig from '../../seo.config.json'
 
 // The public origin, resolved where it is actually knowable. Order:
 //   1. VITE_SITE_URL — explicit override (set it to name a custom domain as the
@@ -44,6 +45,13 @@ if (import.meta.env?.PROD && SITE_URL_SOURCE === 'last-resort') {
 }
 const DEFAULT_IMAGE = `${SITE_URL}/hero-phoenix.jpg`
 const SITE_NAME = 'The Greggory Systems And Strategy Firm'
+const SEO_ROUTES = new Map(seoConfig.routes.map((route) => [route.path, route]))
+
+function seoForRoute(path) {
+  const route = SEO_ROUTES.get(path)
+  if (!route) throw new Error(`Missing SEO metadata for public route ${path}`)
+  return { title: route.title, description: route.description, path: route.path }
+}
 
 function upsertTag(selector, create) {
   let el = document.head.querySelector(selector)
@@ -113,61 +121,21 @@ export function useSeo({ title, description, path = '/', image, type = 'website'
 }
 
 export const SEO = {
-  home: {
-    title: 'Business Strategy & Systems',
-    description: 'Your Vision Delivered With Trust. The Greggory Systems And Strategy Firm delivers business strategy, systems and software, project delivery, and ongoing IT support.',
-    path: '/',
-  },
-  about: {
-    title: 'About Us — Leadership, Personnel & Philosophy',
-    description: 'Meet the leadership and personnel behind The Greggory Systems And Strategy Firm and the ecosystem-thinking philosophy that guides every engagement.',
-    path: '/about',
-  },
-  services: {
-    title: 'Services — Operations Architecture, Strategy & Delivery',
-    description: 'Project development, maintenance, upgrades, web & desktop applications, network build-out, and the business consultancy that turns delivery into lasting success.',
-    path: '/services',
-  },
+  home: seoForRoute('/'),
+  about: seoForRoute('/about'),
+  services: seoForRoute('/services'),
   projects: {
     title: 'Client Portal — Projects, Billing & Documents',
     description: 'Track your projects, invoices, documents, and support conversations in the secure Greggory client portal.',
     path: '/projects',
   },
-  caseStudies: {
-    title: 'Case Studies — Delivery Results',
-    description: 'Real engagements, real outcomes: faster delivery, lower waste, and measurable returns from Greggory systems work.',
-    path: '/case-studies',
-  },
-  blog: {
-    title: 'Strategic Journal — Insights & Analysis',
-    description: 'Notes on systems design, strategy, and execution from The Greggory Systems And Strategy Firm.',
-    path: '/blog',
-  },
-  contact: {
-    title: 'Contact — Start the Conversation',
-    description: 'Tell us about your project. Reach the firm by form, email, or WhatsApp — we respond to every serious inquiry.',
-    path: '/contact',
-  },
-  pricing: {
-    title: 'Pricing — Flexible Support Plans',
-    description: 'Flexible support plans for organizations at different stages — from focused advisory to full delivery partnerships.',
-    path: '/pricing',
-  },
-  companies: {
-    title: 'Our Companies — The Greggory Network',
-    description: 'The companies and practices operating under The Greggory Systems And Strategy Firm umbrella.',
-    path: '/companies',
-  },
-  terms: {
-    title: 'Terms of Use',
-    description: 'A clear framework for working with The Greggory Systems And Strategy Firm.',
-    path: '/terms',
-  },
-  privacy: {
-    title: 'Privacy Policy',
-    description: 'How The Greggory Systems And Strategy Firm handles information across the site and service delivery.',
-    path: '/privacy',
-  },
+  caseStudies: seoForRoute('/case-studies'),
+  blog: seoForRoute('/blog'),
+  contact: seoForRoute('/contact'),
+  pricing: seoForRoute('/pricing'),
+  companies: seoForRoute('/companies'),
+  terms: seoForRoute('/terms'),
+  privacy: seoForRoute('/privacy'),
   login: {
     title: 'Client Access — Sign In',
     description: 'Sign in to the secure Greggory client portal to track projects, invoices, and support.',
