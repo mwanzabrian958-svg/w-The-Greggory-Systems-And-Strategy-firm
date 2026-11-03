@@ -15,6 +15,26 @@ const DEFAULT_FROM =
   process.env.SMTP_FROM ||
   '"The Greggory Systems & Strategy Firm" <thegreggorysystemsandstrategyf@gmail.com>';
 
+const describeMailFailure = (error) => {
+  const code = error?.code || "SMTP_ERROR";
+  if (code === "EAUTH" || error?.responseCode === 535) {
+    return {
+      code: "SMTP_AUTH_FAILED",
+      message: "SMTP authentication failed. Verify SMTP_USER and SMTP_PASS; Gmail requires an App Password.",
+    };
+  }
+  if (code === "ENOTFOUND" || code === "ECONNECTION" || code === "ECONNREFUSED" || code === "ETIMEDOUT") {
+    return {
+      code: "SMTP_CONNECTION_FAILED",
+      message: "Could not connect to the configured SMTP server. Verify SMTP_HOST, SMTP_PORT, and SMTP_SECURE.",
+    };
+  }
+  return {
+    code: "SMTP_SEND_FAILED",
+    message: "The SMTP server rejected or could not deliver the message. Check the server logs for details.",
+  };
+};
+
 /**
  * Low-level send — the ONLY place the transport is touched.
  * When SMTP_PASS is not configured (local/dev/test) it simulates the send so
@@ -52,7 +72,7 @@ const sendMail = async ({
     return { success: true, simulated: false };
   } catch (error) {
     console.error(`[EMAIL FAILURE] Failed to send to ${to}:`, error.message);
-    return { success: false, simulated: false, error: 'Email delivery failed' };
+    return { success: false, simulated: false, ...describeMailFailure(error) };
   }
 };
 
@@ -97,4 +117,4 @@ const verifySmtp = async () => {
   }
 };
 
-module.exports = { sendMail, sendInvoiceEmail, verifySmtp };
+module.exports = { sendMail, sendInvoiceEmail, verifySmtp, describeMailFailure };

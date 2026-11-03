@@ -5149,26 +5149,36 @@ app.post("/api/invoices/:id/send", authenticateAdmin, async (req, res) => {
     if (!sendResult.success) {
       return res.status(502).json({
         success: false,
-        message: "Email failed to send",
-        error: sendResult.error,
+        message: sendResult.message || "Email failed to send",
+        error: sendResult.code || "SMTP_SEND_FAILED",
       });
     }
 
-    await db.execute(
-      "UPDATE invoices SET email_sent = TRUE, email_sent_at = NOW(), status = ? WHERE id = ?",
-      ["sent", id],
-    );
-    await db.execute(
-      "INSERT INTO activity_logs (user_id, action_type, action_description, created_at) VALUES (?, ?, ?, NOW())",
-      [req.user?.id || 1, "send_document", `Sent invoice ${invoiceRef} to ${to}`],
-    );
+    let statusWarning = "";
+    try {
+      await db.execute(
+        "UPDATE invoices SET email_sent = TRUE, email_sent_at = NOW(), status = ? WHERE id = ?",
+        ["sent", id],
+      );
+    } catch (statusError) {
+      console.error("[INVOICE SEND] Email delivered but invoice status update failed:", statusError.code || statusError.message);
+      statusWarning = " Email was delivered, but the invoice status could not be updated.";
+    }
+    try {
+      await db.execute(
+        "INSERT INTO activity_logs (user_id, action_type, action_description, created_at) VALUES (?, ?, ?, NOW())",
+        [req.user?.id || 1, "send_document", `Sent invoice ${invoiceRef} to ${to}`],
+      );
+    } catch (activityError) {
+      console.warn("[INVOICE SEND] Email delivered but activity logging failed:", activityError.code || activityError.message);
+    }
 
     res.json({
       success: true,
       simulated: !!sendResult.simulated,
       message: sendResult.simulated
         ? `Email simulated (SMTP not configured) — invoice ${invoiceRef} marked as sent.`
-        : `Invoice ${invoiceRef} sent to ${to}`,
+        : `Invoice ${invoiceRef} sent to ${to}.${statusWarning}`,
     });
   } catch (error) {
     console.error("[INVOICE SEND] Error:", error);
