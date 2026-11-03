@@ -7898,35 +7898,42 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
   try {
     const { title, description, due_date } = req.body;
     if (!title) return res.status(400).json({ error: 'Title is required' });
-    const requestedProjectId = Number(req.body.project_id);
-    if (!Number.isSafeInteger(requestedProjectId) || requestedProjectId <= 0) {
-      return res.status(400).json({ error: 'A project linked to a client account is required' });
+    const rawProjectId = req.body.project_id;
+    const requestedProjectId =
+      rawProjectId === undefined || rawProjectId === null || rawProjectId === ''
+        ? null
+        : Number(rawProjectId);
+    if (requestedProjectId !== null && (!Number.isSafeInteger(requestedProjectId) || requestedProjectId <= 0)) {
+      return res.status(400).json({ error: 'The selected project is invalid' });
     }
-    const [linkedProjects] = await mainDb.query(
-      `SELECT up.id, up.user_id, u.email, u.display_name, u.first_name, u.last_name,
-              u.phone_number
-       FROM user_projects up
-       INNER JOIN users u ON u.id = up.user_id AND u.is_active = 1 AND u.deleted_at IS NULL
-       WHERE up.id = ? AND up.deleted_at IS NULL
-       LIMIT 1`,
-      [requestedProjectId]
-    );
-    if (!linkedProjects.length) {
-      return res.status(400).json({ error: 'The selected project is not linked to an active client account' });
+    let linkedClient = null;
+    if (requestedProjectId !== null) {
+      const [linkedProjects] = await mainDb.query(
+        `SELECT up.id, up.user_id, u.email, u.display_name, u.first_name, u.last_name,
+                u.phone_number
+         FROM user_projects up
+         INNER JOIN users u ON u.id = up.user_id AND u.is_active = 1 AND u.deleted_at IS NULL
+         WHERE up.id = ? AND up.deleted_at IS NULL
+         LIMIT 1`,
+        [requestedProjectId]
+      );
+      if (!linkedProjects.length) {
+        return res.status(400).json({ error: 'The selected project is not linked to an active client account' });
+      }
+      linkedClient = linkedProjects[0];
     }
-    const linkedClient = linkedProjects[0];
-    if (!linkedClient.email) {
-      return res.status(400).json({ error: 'The linked client account must have an email address before invoicing' });
+    const clientName = String(req.body.client_name || (linkedClient ? getClientDisplayName(linkedClient) : '')).trim();
+    const clientEmail = String(req.body.client_email || linkedClient?.email || '').trim();
+    const clientPhone = req.body.client_phone != null
+      ? String(req.body.client_phone).trim() || null
+      : linkedClient?.phone_number || null;
+    const clientAddress = String(req.body.client_address || '').trim() || null;
+    if (!clientName) {
+      return res.status(400).json({ error: 'Client name is required' });
     }
-    if (
-      req.body.client_email &&
-      String(req.body.client_email).trim().toLowerCase() !== String(linkedClient.email).trim().toLowerCase()
-    ) {
-      return res.status(400).json({ error: 'Invoice recipient must match the selected project client' });
+    if (!clientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) {
+      return res.status(400).json({ error: 'A valid client email is required' });
     }
-    const clientName = getClientDisplayName(linkedClient);
-    const clientEmail = linkedClient.email;
-    const clientPhone = linkedClient.phone_number || null;
     // invoices.created_by is NOT NULL with a hard FK to users(id), but an admin
     // session carries an id from admin_users — a DIFFERENT table with its own id
     // sequence. Feeding that straight in 500s with ER_NO_REFERENCED_ROW_2
@@ -7969,12 +7976,12 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
       `INSERT INTO invoices
         (project_id, invoice_number, invoice_type, title, description, subtotal, tax_rate,
          currency, exchange_rate, issue_date, due_date, status, client_name, client_email,
-         client_phone, items, notes, payment_terms, payment_method, payment_phone, payment_reference, created_by, created_at)
+         client_phone, client_address, items, notes, payment_terms, payment_method, payment_phone, payment_reference, created_by, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [project_id, invoice_number, req.body.invoice_type || 'project_fee', title, description || null,
        subtotal, tax_rate, req.body.currency || 'KES',
        req.body.exchange_rate != null ? parseFloat(req.body.exchange_rate) : 1,
-       issue_date, due, clientName, clientEmail, clientPhone,
+       issue_date, due, clientName, clientEmail, clientPhone, clientAddress,
        items, req.body.notes || null, req.body.payment_terms || null,
        paymentMethod, req.body.payment_phone || '+254115525854', req.body.payment_reference || null,
        userId]

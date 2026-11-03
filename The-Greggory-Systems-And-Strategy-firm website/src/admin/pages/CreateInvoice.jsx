@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Briefcase, User, X, Save, RefreshCw, Send, MailCheck } from "lucide-react";
+import { Briefcase, User, X, Send, MailCheck } from "lucide-react";
 import { apiCall } from "../../services/api";
 import { Spinner } from "../../components/Loading";
 import { formatKSH } from "../../utils/currencyUtils";
@@ -14,6 +14,7 @@ export function CreateInvoice() {
   const [projectsError, setProjectsError] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
   const [showProjectSuggestions, setShowProjectSuggestions] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const [invoiceForm, setInvoiceForm] = useState({
     project_id: '', title: '', invoice_type: 'project_fee', tax_type: 'vat', tax_rate: '16',
@@ -72,29 +73,30 @@ export function CreateInvoice() {
   const [sendStatus, setSendStatus] = useState(null); // { stage: 'creating' | 'sending' | 'done', message }
 // Full-page composer state - shown overlay covering entire screen
 const [showCompose, setShowCompose] = useState(false);
-// Client personal details for the invoice composer
-const [clientDetails, setClientDetails] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    company: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    country: 'Kenya',
-  });
+  const [composeForm, setComposeForm] = useState({ to: '', subject: '', body: '' });
   const [pendingInvoiceId, setPendingInvoiceId] = useState(null);
 
   const handleInvoiceSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSendStatus(null);
+    setSubmitError('');
     try {
       // ── 1) Create the invoice ──
+      const clientAddress = [
+        invoiceForm.client_company && `Company: ${invoiceForm.client_company}`,
+        invoiceForm.client_address,
+        [
+          invoiceForm.client_postal_code,
+          invoiceForm.client_city,
+          invoiceForm.client_country,
+        ].filter(Boolean).join(', '),
+      ].filter(Boolean).join('\n');
       const created = await apiCall('/invoices', {
         method: 'POST',
         body: JSON.stringify({
           ...invoiceForm,
+          client_address: clientAddress,
           subtotal: itemsSubtotal,
           items: invoiceForm.items.map((it) => ({
             description: it.description || invoiceForm.title,
@@ -121,7 +123,7 @@ const [clientDetails, setClientDetails] = useState({
       setShowCompose(true);
     } catch (error) {
       console.error(error);
-      window.alert(error.message || 'Invoice failed. Check you are signed in as admin.');
+      setSubmitError(error.message || 'Invoice failed. Check you are signed in as admin.');
     } finally {
       setIsSubmitting(false);
     }
@@ -177,8 +179,8 @@ const [clientDetails, setClientDetails] = useState({
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0f172a]/95 backdrop-blur-md z-[500] flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
-      <div className="bg-[#0f172a] w-full max-w-4xl rounded-2xl border border-white/10 shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 bg-[#0f172a] z-[500] flex flex-col font-sans overflow-hidden">
+      <div className="bg-[#0f172a] w-full h-full flex flex-col">
         <div className="px-6 py-3 flex items-center justify-between border-b border-white/5 bg-[#1e293b]/20">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white font-black text-sm">GS</div>
@@ -196,6 +198,11 @@ const [clientDetails, setClientDetails] = useState({
 
         <form onSubmit={handleInvoiceSubmit} className="flex-1 overflow-y-auto p-6 bg-slate-950">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {submitError && (
+              <div role="alert" className="md:col-span-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-semibold text-rose-300">
+                {submitError}
+              </div>
+            )}
             <div className="space-y-6">
               <section className="space-y-3">
                 <div className="flex items-center gap-2 text-teal-500 border-b border-white/5 pb-1.5"><Briefcase size={10} /><h4 className="text-[7px] font-black uppercase tracking-widest">Alignment</h4></div>
@@ -207,19 +214,12 @@ const [clientDetails, setClientDetails] = useState({
                       placeholder="Type to search projects…"
                       onChange={(e) => {
                         setProjectSearch(e.target.value);
-                        setInvoiceForm((f) => ({
-                          ...f,
-                          project_id: '',
-                          client_name: '',
-                          client_email: '',
-                          client_phone: '',
-                        }));
+                        setInvoiceForm((f) => ({ ...f, project_id: '' }));
                         setShowProjectSuggestions(true);
                       }}
                       onFocus={() => setShowProjectSuggestions(true)}
                       onBlur={() => setTimeout(() => setShowProjectSuggestions(false), 150)}
                       className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-teal-500 transition-all"
-                      required
                     />
                     {showProjectSuggestions && projectSearch.trim() && filteredProjects.length > 0 && (
                       <div className="absolute z-50 w-full bg-[#0f172a] border border-white/10 rounded-lg shadow-xl mt-1 max-h-48 overflow-y-auto">
@@ -245,7 +245,7 @@ const [clientDetails, setClientDetails] = useState({
                       </div>
                     )}
                     {!invoiceForm.project_id && !projectSearch && (
-                      <p className="text-[6px] font-bold text-slate-500 mt-1 px-1">Select a mission from the list</p>
+                      <p className="text-[6px] font-bold text-slate-500 mt-1 px-1">Optional: link a project, or leave blank for a standalone invoice.</p>
                     )}
                     {projectsError && (
                       <p role="alert" className="text-[7px] font-bold text-rose-400 mt-1 px-1">{projectsError}</p>
@@ -269,14 +269,19 @@ const [clientDetails, setClientDetails] = useState({
 
             <div className="space-y-6">
               <section className="space-y-3">
-                <div className="flex items-center gap-2 text-blue-500 border-b border-white/5 pb-1.5"><User size={10} /><h4 className="text-[7px] font-black uppercase tracking-widest">Telemetry</h4></div>
-                <div className="grid gap-3">
-                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Entity Name</label><input type="text" placeholder="Legal Name..." value={invoiceForm.client_name} readOnly className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none transition-all" required /></div>
-                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Entity Email</label><input type="email" placeholder="client@example.com" value={invoiceForm.client_email} readOnly className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none transition-all" required /></div>
+                <div className="flex items-center gap-2 text-blue-500 border-b border-white/5 pb-1.5"><User size={10} /><h4 className="text-[7px] font-black uppercase tracking-widest">Client Details</h4></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Client Name</label><input type="text" placeholder="Full name or legal name" value={invoiceForm.client_name} onChange={(e) => setInvoiceForm({ ...invoiceForm, client_name: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" required /></div>
+                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Client Email</label><input type="email" placeholder="client@example.com" value={invoiceForm.client_email} onChange={(e) => setInvoiceForm({ ...invoiceForm, client_email: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" required /></div>
+                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Client Phone</label><input type="tel" placeholder="+254..." value={invoiceForm.client_phone} onChange={(e) => setInvoiceForm({ ...invoiceForm, client_phone: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" /></div>
+                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Company (optional)</label><input type="text" placeholder="Company or organization" value={invoiceForm.client_company} onChange={(e) => setInvoiceForm({ ...invoiceForm, client_company: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" /></div>
+                  <div className="sm:col-span-2"><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Billing Address</label><input type="text" placeholder="Street address" value={invoiceForm.client_address} onChange={(e) => setInvoiceForm({ ...invoiceForm, client_address: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" /></div>
+                  <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">City</label><input type="text" placeholder="City" value={invoiceForm.client_city} onChange={(e) => setInvoiceForm({ ...invoiceForm, client_city: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" /></div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">M-Pesa Node</label><input type="text" placeholder="254..." value={invoiceForm.client_phone} readOnly className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none transition-all" /></div>
-                    <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Deadline</label><input type="date" value={invoiceForm.due_date} onChange={(e) => setInvoiceForm({...invoiceForm, due_date: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" required /></div>
+                    <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Postal Code</label><input type="text" placeholder="Postal code" value={invoiceForm.client_postal_code} onChange={(e) => setInvoiceForm({ ...invoiceForm, client_postal_code: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" /></div>
+                    <div><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Country</label><input type="text" value={invoiceForm.client_country} onChange={(e) => setInvoiceForm({ ...invoiceForm, client_country: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" /></div>
                   </div>
+                  <div className="sm:col-span-2"><label className="block text-[6px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">Deadline</label><input type="date" value={invoiceForm.due_date} onChange={(e) => setInvoiceForm({...invoiceForm, due_date: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-bold text-white outline-none focus:border-blue-500 transition-all" required /></div>
                 </div>
               </section>
             </div>
@@ -339,8 +344,8 @@ const [clientDetails, setClientDetails] = useState({
       </div>
         {/* ── Full-screen email compose area (not a popup) ── */}
         {showCompose && (
-          <div className="fixed inset-0 z-[600] bg-[#0f172a]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 font-sans overflow-hidden">
-            <div className="bg-[#0f172a] w-full max-w-xl rounded-2xl border border-white/10 shadow-2xl flex flex-col max-h-[95vh] overflow-y-auto">
+          <div className="fixed inset-0 z-[600] bg-[#0f172a] flex flex-col font-sans overflow-hidden">
+            <div className="bg-[#0f172a] w-full h-full flex flex-col overflow-y-auto">
               <div className="px-6 py-4 flex items-center justify-between border-b border-white/5 bg-[#1e293b]/20">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white font-black text-sm">GS</div>
