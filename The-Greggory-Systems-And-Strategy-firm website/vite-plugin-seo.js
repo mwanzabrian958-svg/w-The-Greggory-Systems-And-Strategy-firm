@@ -17,6 +17,7 @@ import { COOKIE_CONSENT_EVENT, COOKIE_CONSENT_STORAGE_KEY } from './src/constant
  * variable never leaves a literal %VITE_…% token in the served HTML:
  *   VITE_GA_MEASUREMENT_ID        -> Google Analytics 4 (gtag.js)
  *   VITE_BING_SITE_VERIFICATION   -> Bing Webmaster Tools token
+ * The current Google Search Console HTML-tag token comes from seo.config.json.
  *
  * Env vars are read from vite's loadEnv() result first (see vite.config.js,
  * which loads ALL vars, not just VITE_*), then from process.env, so production
@@ -225,6 +226,15 @@ export default function vitePluginSeo(env = {}) {
         envOf(env, 'BING_SITE_VERIFICATION');
       if (bing) {
         tags.push('  <meta name="msvalidate.1" content="' + escapeHtml(bing) + '">');
+      }
+
+      const googleSiteVerification = String(seoConfig.googleSiteVerification || '').trim();
+      if (googleSiteVerification) {
+        tags.push(
+          '  <meta name="google-site-verification" content="' +
+            escapeHtml(googleSiteVerification) +
+            '">'
+        );
       }
 
       // Google Analytics 4.
