@@ -577,7 +577,7 @@ app.use(
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         imgSrc: ["'self'", "data:", "https:"],
         connectSrc: ["'self'", "https://accounts.google.com"],
-        frameSrc: ["https://accounts.google.com"],
+        frameSrc: ["'self'", "https://accounts.google.com"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
         formAction: ["'self'"],
