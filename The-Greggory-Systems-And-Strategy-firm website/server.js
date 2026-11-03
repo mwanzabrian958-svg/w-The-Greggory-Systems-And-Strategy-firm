@@ -7986,7 +7986,7 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
         (project_id, invoice_number, invoice_type, title, description, subtotal, tax_rate,
          currency, exchange_rate, issue_date, due_date, status, client_name, client_email,
          client_phone, client_address, items, notes, payment_terms, payment_method, payment_phone, payment_reference, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [project_id, invoice_number, req.body.invoice_type || 'project_fee', title, description || null,
        subtotal, tax_rate, req.body.currency || 'KES',
        req.body.exchange_rate != null ? parseFloat(req.body.exchange_rate) : 1,
