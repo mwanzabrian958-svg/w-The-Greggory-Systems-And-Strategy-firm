@@ -37,6 +37,9 @@ export const getAuthToken = () => {
   return null;
 };
 
+const createHttpError = (message, status) =>
+  Object.assign(new Error(message), { status });
+
 /**
  * Hardened API Relay
  * Automatically injects authentication tokens and handles malformed JSON.
@@ -89,12 +92,20 @@ export const apiCall = async (endpoint, options = {}) => {
       data = JSON.parse(text);
     } catch (e) {
       // If it's not JSON, it might be an error page or raw text
-      if (!response.ok) throw new Error(`Server Error (${response.status}): ${text.substring(0, 100)}`);
+      if (!response.ok) {
+        throw createHttpError(
+          `Server Error (${response.status}): ${text.substring(0, 100)}`,
+          response.status,
+        );
+      }
       data = { message: text, success: response.ok };
     }
 
     if (!response.ok) {
-      throw new Error(data?.message || data?.error || `Request failed: ${response.status}`);
+      throw createHttpError(
+        data?.message || data?.error || `Request failed: ${response.status}`,
+        response.status,
+      );
     }
 
     return data;

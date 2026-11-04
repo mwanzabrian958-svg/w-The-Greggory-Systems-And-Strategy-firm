@@ -212,6 +212,7 @@ export function getNavigationItems(user) {
   ];
 
   if (!isAdmin(user)) return [{ path: '/admin', label: 'Dashboard', icon: 'Home' }];
+  if (hasFullAdminAccess(user)) return allItems;
 
   const rolePerms = getRolePermissions(user);
   if (!rolePerms) return allItems; // no saved matrix yet — full access

@@ -24,6 +24,13 @@ const FIRM_ADDRESS = process.env.COMPANY_ADDRESS || "Nairobi, Kenya";
 const KCB_PAYBILL = process.env.KCB_PAYBILL || "522533";
 const KCB_ACCOUNT_NUMBER = process.env.KCB_ACCOUNT_NUMBER || "129064383";
 
+// PDF design colors (matched from reference invoice PDF):
+const PRIMARY_DARK = "#0f172a";       // RGB(0.043, 0.071, 0.125) - main brand dark
+const ACCENT_TEAL = "#14b8a6";       // RGB(0.078, 0.722, 0.651) - primary accent
+const ACCENT_GOLD = "#eab308";       // RGB(0.961, 0.702, 0.004) - highlight accent
+const LIGHT_TEAL = "#ccfbf1";        // RGB(0.8, 0.984, 0.945) - light background
+const TEXT_COLOR = "#f1f5f9";        // RGB(0.945, 0.961, 0.976) - on dark
+
 /** Escape a value for safe interpolation into email HTML. */
 const escHtml = (v) =>
   String(v ?? "").replace(
@@ -140,8 +147,353 @@ function paymentInstructions(document) {
     `…or pay via KCB: Paybill ${KCB_PAYBILL}, Account ${KCB_ACCOUNT_NUMBER}, Amount ${fmtTotal}, Reference ${reference}`,
   ];
 }
+
+function formatInvoiceDate(value) {
+  if (!value) return "—";
+  const raw = String(value);
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T00:00:00Z` : raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function generateInvoicePDFContent(document) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 36, size: "A4" });
+    const chunks = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const PAGE_W = doc.page.width;
+    const PAGE_H = doc.page.height;
+    const M = 36;
+    const CW = PAGE_W - 2 * M;
+    const INK = PRIMARY_DARK;
+    const SLATE = "#64748b";
+    const TEAL = ACCENT_TEAL;
+    const PALE = LIGHT_TEAL;
+    const LIGHT = "#e2e8f0";
+    const ref = String(document.invoice_number || `INV-${document.id || "DRAFT"}`);
+    const items = parseDocumentItems(document);
+    const { subtotal, taxAmount, ratePct, total } = documentTotals(document, items);
+    const currency = document.currency || "KES";
+    const status = String(document.status || "DRAFT").toUpperCase();
+    const completed = ["COMPLETED", "PAID"].includes(status);
+    const issueDate = formatInvoiceDate(
+      document.issue_date || document.created_at
+    );
+    const dueDate = formatInvoiceDate(document.due_date);
+    const completedDate = formatInvoiceDate(
+      document.completed_at || document.completion_date
+    );
+    const accountName =
+      document.payment_account_name ||
+      process.env.PAYMENT_ACCOUNT_NAME ||
+      "Brian Mwanza";
+    const paymentPhone = document.payment_phone || FIRM_PHONE;
+    const logoSize = 46;
+
+    stampWatermark(doc);
+    doc.on("pageAdded", () => stampWatermark(doc));
+
+    let y = 34;
+    doc.rect(M, y, CW, 70).fill(INK);
+    stampLogo(doc, M + 12, y + 12, logoSize);
+    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(13);
+    doc.text("THE GREGGORY SYSTEMS", M + 68, y + 15, { width: 215 });
+    doc.fontSize(9).text("AND STRATEGY FIRM", M + 68, y + 32, { width: 215 });
+    doc.font("Helvetica").fontSize(7).fillColor("#5eead4");
+    doc.text(FIRM_EMAIL, M + 68, y + 50, { width: 215 });
+    doc.fillColor("#5eead4").font("Helvetica-Bold").fontSize(25);
+    doc.text("INVOICE", M + CW - 185, y + 12, { width: 170, align: "right" });
+    doc.fillColor("#ffffff").font("Helvetica").fontSize(8);
+    doc.text(ref, M + CW - 185, y + 45, { width: 170, align: "right" });
+    y += 82;
+
+    doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(8);
+    doc.text("COMPLETION CERTIFICATE", M, y);
+    y += 14;
+    const amountBoxY = y;
+    doc.roundedRect(M, amountBoxY, CW, 62, 5).fill(PALE);
+    doc.rect(M, amountBoxY, 4, 62).fill(TEAL);
+    doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(7);
+    doc.text("AMOUNT DUE", M + 16, amountBoxY + 10);
+    doc.fillColor(INK).font("Helvetica-Bold").fontSize(19);
+    doc.text(fmtMoney(total, currency), M + 16, amountBoxY + 24);
+    doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(7);
+    doc.text("PLEASE PAY BY", M + CW - 150, amountBoxY + 10, {
+      width: 132,
+      align: "right",
+    });
+    doc.fillColor(INK).font("Helvetica-Bold").fontSize(10);
+    doc.text(dueDate, M + CW - 150, amountBoxY + 28, {
+      width: 132,
+      align: "right",
+    });
+    y = amountBoxY + 78;
+
+    const detailsTop = y;
+    doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(7);
+    doc.text("BILLED TO", M, detailsTop);
+    doc.fillColor(INK).font("Helvetica-Bold").fontSize(11);
+    doc.text(document.client_name || "Client", M, detailsTop + 12, {
+      width: 220,
+    });
+    doc.fillColor(SLATE).font("Helvetica").fontSize(8);
+    const clientDetails = [
+      document.client_company,
+      document.client_email,
+      document.client_phone,
+      document.client_address,
+    ].filter(Boolean);
+    let clientY = detailsTop + 28;
+    for (const detail of clientDetails) {
+      doc.text(String(detail), M, clientY, { width: 230 });
+      clientY += doc.heightOfString(String(detail), { width: 230 }) + 3;
+    }
+
+    const metaX = M + CW - 190;
+    const metaRows = [
+      ["Invoice number", ref],
+      ["Issue date", issueDate],
+      ["Due date", dueDate],
+      ["Status", status],
+    ];
+    if (document.completed_at || document.completion_date) {
+      metaRows.push(["Completed", completedDate]);
+    }
+    metaRows.forEach(([label, value], index) => {
+      const metaY = detailsTop + index * 17;
+      doc.fillColor(SLATE).font("Helvetica").fontSize(7);
+      doc.text(label, metaX, metaY, { width: 84 });
+      doc.fillColor(INK).font("Helvetica-Bold").fontSize(7.5);
+      doc.text(String(value), metaX + 84, metaY, {
+        width: 106,
+        align: "right",
+      });
+    });
+    y = Math.max(clientY, detailsTop + metaRows.length * 17) + 18;
+
+    doc.fillColor(INK).font("Helvetica-Bold").fontSize(8);
+    doc.text("SERVICE ITEMS", M, y);
+    y += 13;
+
+    const xIdx = M + 8;
+    const xDesc = M + 34;
+    const xQty = M + CW - 220;
+    const xRate = M + CW - 140;
+    const xAmount = M + CW - 76;
+    const drawTableHeader = (label) => {
+      doc.rect(M, y, CW, 22).fill(INK);
+      doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(7);
+      doc.text(label || "#", xIdx, y + 7);
+      doc.text("DESCRIPTION", xDesc, y + 7);
+      doc.text("QTY", xQty, y + 7, { width: 48, align: "right" });
+      doc.text("RATE", xRate, y + 7, { width: 60, align: "right" });
+      doc.text("AMOUNT", xAmount, y + 7, { width: 68, align: "right" });
+      y += 22;
+    };
+    drawTableHeader();
+
+    for (const [index, item] of items.entries()) {
+      const descWidth = xQty - xDesc - 10;
+      const descHeight = doc.heightOfString(item.description, {
+        width: descWidth,
+        font: "Helvetica",
+        fontSize: 8,
+      });
+      const rowHeight = Math.max(24, descHeight + 10);
+      if (y + rowHeight > PAGE_H - 44) {
+        doc.addPage({ margin: M, size: "A4" });
+        y = M;
+        doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(7);
+        doc.text("SERVICE ITEMS (CONTINUED)", M, y);
+        y += 14;
+        drawTableHeader();
+      }
+
+      if (index % 2 === 1) doc.rect(M, y, CW, rowHeight).fill(LIGHT_TEAL);
+      doc.fillColor(SLATE).font("Helvetica").fontSize(7);
+      doc.text(String(index + 1), xIdx, y + 8);
+      doc.fillColor(INK).font("Helvetica").fontSize(8);
+      doc.text(item.description, xDesc, y + 6, { width: descWidth });
+      doc.fillColor(SLATE).font("Helvetica").fontSize(7);
+      doc.text(String(item.quantity), xQty, y + 8, {
+        width: 48,
+        align: "right",
+      });
+      doc.text(fmtMoney(item.unit_price, currency), xRate, y + 8, {
+        width: 60,
+        align: "right",
+      });
+      doc.fillColor(INK).font("Helvetica-Bold").fontSize(7);
+      doc.text(fmtMoney(item.line_total, currency), xAmount, y + 8, {
+        width: 68,
+        align: "right",
+      });
+      doc
+        .moveTo(M, y + rowHeight)
+        .lineTo(M + CW, y + rowHeight)
+        .lineWidth(0.5)
+        .strokeColor(ACCENT_TEAL)
+        .stroke();
+      y += rowHeight;
+    }
+
+    y += 10;
+    const totalX = M + CW - 180;
+    const totalW = 180;
+
+    // Certification text (from reference PDF)
+    const certificationText = "This is to certify that the above invoice record has been marked as completed within the THE GREGGORY SYSTEMS AND STRATEGY FIRM system.";
+
+    // VERIFIED stamp details
+    const completionId = "invoices-16-" + (document.id || Date.now());
+    const verificationDate = new Date().toLocaleDateString();
+    const drawTotal = (label, amount, emphasis) => {
+      doc
+        .font(emphasis ? "Helvetica-Bold" : "Helvetica")
+        .fontSize(emphasis ? 10 : 8)
+        .fillColor(emphasis ? INK : SLATE);
+      doc.text(label, totalX, y);
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(emphasis ? 11 : 8)
+        .fillColor(emphasis ? TEAL : INK);
+      doc.text(fmtMoney(amount, currency), totalX, y, {
+        width: totalW,
+        align: "right",
+      });
+      y += emphasis ? 20 : 15;
+    };
+    drawTotal("Subtotal", subtotal, false);
+    if (ratePct > 0) {
+      drawTotal(taxLabel(ratePct) || `Tax (${ratePct}%)`, taxAmount, false);
+    }
+    doc.moveTo(totalX, y).lineTo(M + CW, y).lineWidth(1).strokeColor(INK).stroke();
+    y += 8;
+    drawTotal("Total", total, true);
+
+    const certificationText = completed
+      ? `This is to certify that the above invoice record has been marked as completed within the ${FIRM_LEGAL_NAME} system.`
+      : `This document certifies the invoice details and service items recorded above. The amount due is ${fmtMoney(total, currency)}.`;
+    const certificationHeight =
+      doc.heightOfString(certificationText, { width: CW - 28, fontSize: 8 }) +
+      32;
+    if (y + certificationHeight > PAGE_H - 170) {
+      doc.addPage({ margin: M, size: "A4" });
+      y = M;
+    }
+    y += 5;
+    doc.roundedRect(M, y, CW, certificationHeight, 4).fill("#f8fafc");
+    doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(7);
+    doc.text("CERTIFICATION", M + 12, y + 9);
+    doc.fillColor(SLATE).font("Helvetica").fontSize(8);
+    doc.text(certificationText, M + 12, y + 21, {
+      width: CW - 24,
+      lineGap: 2,
+    });
+    y += certificationHeight + 12;
+
+    if (y + 136 > PAGE_H - 92) {
+      doc.addPage({ margin: M, size: "A4" });
+      y = M;
+    }
+    doc.fillColor(INK).font("Helvetica-Bold").fontSize(8);
+    doc.text("PAYMENT OPTIONS", M, y);
+    doc.fillColor(SLATE).font("Helvetica").fontSize(7);
+    doc.text(`Use ${ref} as your payment reference`, M, y + 12);
+    y += 28;
+
+    const cardGap = 12;
+    const cardWidth = (CW - cardGap) / 2;
+    const cardHeight = 91;
+    const drawPaymentCard = (x, title, subtitle, lines) => {
+      doc.roundedRect(x, y, cardWidth, cardHeight, 4).fill("#f8fafc");
+      doc.rect(x, y, 3, cardHeight).fill(TEAL);
+      doc.fillColor(INK).font("Helvetica-Bold").fontSize(8);
+      doc.text(title, x + 10, y + 8, { width: cardWidth - 20 });
+      doc.fillColor(SLATE).font("Helvetica").fontSize(7);
+      doc.text(subtitle, x + 10, y + 19, { width: cardWidth - 20 });
+      let lineY = y + 33;
+      for (const [label, value] of lines) {
+        doc.fillColor(SLATE).font("Helvetica").fontSize(6.5);
+        doc.text(label, x + 10, lineY, { width: 74 });
+        doc.fillColor(INK).font("Helvetica-Bold").fontSize(6.5);
+        doc.text(value, x + 84, lineY, {
+          width: cardWidth - 94,
+          align: "right",
+        });
+        lineY += 11;
+      }
+    };
+    drawPaymentCard(M, "1  Send Money", "Mobile money transfer", [
+      ["Send to (number)", paymentPhone],
+      ["Account name", accountName],
+      ["Amount", fmtMoney(total, currency)],
+      ["Reference", ref],
+    ]);
+    drawPaymentCard(M + cardWidth + cardGap, "2  Bank Transfer", "KCB paybill deposit", [
+      ["Bank", "KCB"],
+      ["Paybill number", KCB_PAYBILL],
+      ["Account number", KCB_ACCOUNT_NUMBER],
+      ["Reference", ref],
+    ]);
+    y += cardHeight + 15;
+
+    if (y + 45 > PAGE_H - 42) {
+      doc.addPage({ margin: M, size: "A4" });
+      y = M;
+    }
+    doc.fillColor(SLATE).font("Helvetica").fontSize(7);
+    doc.text("Completed & Recorded by,", M, y);
+    doc.fillColor(INK).font("Helvetica-Bold").fontSize(8);
+    doc.text(FIRM_LEGAL_NAME, M, y + 11);
+    const verification = document.verified === true ? "VERIFIED" : status;
+    doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(7);
+    doc.text(verification, M + CW - 110, y, { width: 110, align: "right" });
+    doc.fillColor(SLATE).font("Helvetica").fontSize(7);
+    const recordId = document.completion_id || document.id || ref;
+    doc.text(`Date: ${completed ? completedDate : issueDate}  |  Invoice ID: ${recordId}`, M + CW - 230, y + 12, {
+      width: 230,
+      align: "right",
+    });
+
+    const footerY = PAGE_H - 54;
+    doc
+      .moveTo(M, footerY - 8)
+      .lineTo(M + CW, footerY - 8)
+      .lineWidth(0.5)
+      .strokeColor(LIGHT)
+      .stroke();
+    doc.fillColor(INK).font("Helvetica-Bold").fontSize(7);
+    doc.text(FIRM_LEGAL_NAME, M, footerY, { width: CW, align: "center" });
+    doc.fillColor(SLATE).font("Helvetica").fontSize(7);
+    doc.text(`${FIRM_ADDRESS}  ·  ${FIRM_EMAIL}  ·  ${FIRM_PHONE}`, M, footerY + 10, {
+      width: CW,
+      align: "center",
+    });
+    doc.fillColor(SLATE).font("Helvetica-Oblique").fontSize(7);
+    doc.text("Thank you for your business", M, footerY + 20, {
+      width: CW,
+      align: "center",
+    });
+    doc.end();
+  });
+}
+
 /** Professional document PDF (A4 single page) — invoices / quotes / receipts. */
 function generatePDFContent(type, document) {
+  const normalizedType = String(type).toLowerCase();
+  if (normalizedType.indexOf("invoice") === 0 || normalizedType === "invoices") {
+    return generateInvoicePDFContent(document);
+  }
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 42, size: "A4" });
     const chunks = [];
@@ -153,8 +505,8 @@ function generatePDFContent(type, document) {
     const PAGE_H = doc.page.height; // 841.89
     const M = 42;
     const CW = PAGE_W - 2 * M;
-    const TEAL = "#0d9488";
-    const INK = "#0f172a";
+    const TEAL = ACCENT_TEAL;
+    const INK = PRIMARY_DARK;
     const SLATE = "#64748b";
     const LIGHT = "#e2e8f0";
 
@@ -205,7 +557,7 @@ function generatePDFContent(type, document) {
     doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(15);
     doc.text("THE GREGGORY SYSTEMS", M + 68, y + 14, { width: 200 });
     doc.fontSize(10).text("AND STRATEGY FIRM", M + 68, y + 32, { width: 200 });
-    doc.font("Helvetica").fontSize(7).fillColor("#5eead4");
+    doc.font("Helvetica").fontSize(7).fillColor(ACCENT_TEAL);
     doc.text(FIRM_TAGLINE.toUpperCase(), M + 68, y + 49, { width: 200 });
 
     doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(36);
@@ -274,11 +626,11 @@ let rowIdx = 1;
       const descH = doc.heightOfString(it.description, { width: descW });
       const rowH = Math.max(20, descH + 8);
 
-      if ((rowIdx - 1) % 2 === 1) doc.rect(M, y, CW, rowH).fill("#f8fafc");
+      if ((rowIdx - 1) % 2 === 1) doc.rect(M, y, CW, rowH).fill(LIGHT_TEAL);
 
       doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(6.5);
       doc.text(String(rowIdx), xIdx, y + 7);
-      doc.font("Helvetica").fontSize(7).fillColor("#1e293b");
+      doc.font("Helvetica").fontSize(7).fillColor(PRIMARY_DARK);
       doc.text(it.description, xDesc, y + 7, { width: descW });
       doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(6.5);
       doc.text(String(it.quantity), xQty, y + 7, { width: 60, align: "right" });
@@ -326,7 +678,7 @@ let rowIdx = 1;
 // ---- Payment instructions ----
     const lines = paymentInstructions(document);
     const boxH = 58;
-    doc.rect(M, y, CW, boxH).fill("#f0fdfa");
+    doc.rect(M, y, CW, boxH).fill(LIGHT_TEAL);
     doc.rect(M, y, 3, boxH).fill(TEAL);
     doc.font("Helvetica-Bold").fontSize(6.5).fillColor(TEAL);
     doc.text("PAYMENT", M + 14, y + 10);
@@ -346,7 +698,7 @@ let rowIdx = 1;
       doc.font("Helvetica-Bold").fontSize(6.5).fillColor(SLATE);
       doc.text("NOTES & TERMS", M, y);
       y += 11;
-      doc.font("Helvetica").fontSize(8).fillColor("#475569");
+      doc.font("Helvetica").fontSize(8).fillColor(SLATE);
       doc.text(noteText, M, y, { width: CW });
       y += 30;
     }
@@ -363,7 +715,7 @@ let rowIdx = 1;
       .moveTo(M, PAGE_H - 78)
       .lineTo(PAGE_W - M, PAGE_H - 78)
       .lineWidth(0.5)
-      .strokeColor(LIGHT)
+      .strokeColor(ACCENT_TEAL)
       .stroke();
     // Footer lines sit high enough that y + lineHeight stays inside the
     // bottom margin — at PAGE_H - 48 pdfkit spilled the © line to page 2.
@@ -460,8 +812,8 @@ const totalsRows = `
   return `<!doctype html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#eef2f7;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f7;padding:24px 8px;">
+<body style="margin:0;padding:0;background:#ccfbf1;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#ccfbf1;padding:24px 8px;">
     <tr><td align="center">
       <table width="620" cellpadding="0" cellspacing="0" style="width:620px;max-width:100%;background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
         <tr><td colspan="2" style="height:6px;background:linear-gradient(90deg,#0f172a,#0d9488);font-size:0;line-height:0;">&nbsp;</td></tr>
@@ -564,4 +916,5 @@ module.exports = {
   FIRM_EMAIL,
   FIRM_PHONE,
   FIRM_ADDRESS,
+  formatInvoiceDate,
 };

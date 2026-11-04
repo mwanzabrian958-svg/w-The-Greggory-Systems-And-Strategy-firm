@@ -41,8 +41,29 @@ import { Records } from './pages/Records';
 import { PERMISSIONS } from './utils/permissions';
 import { Posts } from './pages/Posts';
 import { PortfolioManager } from './pages/PortfolioManager';
-import { apiCall, getApiUrl } from '../services/api';
+import { apiCall } from '../services/api';
 import PushNotificationsPage from './pages/PushNotifications';
+
+const isRejectedAdminSession = (error) =>
+  error?.status === 401 || error?.status === 403;
+
+const restoreCachedAdminSession = () => {
+  try {
+    const cached = JSON.parse(sessionStorage.getItem('gf_admin_session') || 'null');
+    if (
+      cached?.user?.id &&
+      Number(cached.expiresAt) > Date.now() &&
+      ['admin', 'super_admin', 'moderator'].includes(
+        cached.user.admin_level || cached.user.role,
+      )
+    ) {
+      return cached.user;
+    }
+  } catch (error) {
+    console.warn('Cached admin session could not be restored:', error.message);
+  }
+  return null;
+};
 
 export function AdminRouter() {
   const [user, setUser] = useState(null);
@@ -92,9 +113,9 @@ export function AdminRouter() {
       try {
         await apiCall('/admin/session');
       } catch (error) {
-        if (/401|403|session|authentication/i.test(error.message)) {
+        if (isRejectedAdminSession(error)) {
           clearAdminSession();
-          navigate('/', { replace: true });
+          navigate('/admin/login', { replace: true });
         } else {
           console.error('Admin session refresh failed:', error.message);
         }
@@ -104,44 +125,21 @@ export function AdminRouter() {
     return () => window.clearInterval(interval);
   }, [isAuthenticated, navigate]);
 
-  useEffect(() => {
-    if (!isAuthenticated) return undefined;
-    const handlePageHide = (event) => {
-      if (event.persisted) return;
-      try {
-        localStorage.setItem('gf_admin_logout_at', String(Date.now()));
-        const queued = navigator.sendBeacon(
-          getApiUrl('/admin-verification/logout'),
-          new Blob(['{}'], { type: 'application/json' }),
-        );
-        if (!queued) {
-          fetch(getApiUrl('/admin-verification/logout'), {
-            method: 'POST',
-            credentials: 'same-origin',
-            keepalive: true,
-          }).catch((error) => {
-            console.warn('Admin session close could not reach the server:', error.message);
-          });
-        }
-      } catch (error) {
-        console.warn('Admin session close could not be queued:', error.message);
-      }
-      clearAdminSession();
-    };
-    window.addEventListener('pagehide', handlePageHide);
-    return () => window.removeEventListener('pagehide', handlePageHide);
-  }, [isAuthenticated]);
-
   const verifySession = async () => {
     try {
       const data = await apiCall("/admin/session");
       if (data.success && data.user) { setUser(data.user); setIsAuthenticated(true); }
-      else { handleLogout('/', false); }
+      else { handleLogout('/admin/login', false); }
     } catch (error) {
-      if (/401|403|session|authentication/i.test(error.message)) {
-        handleLogout('/', false);
+      if (isRejectedAdminSession(error)) {
+        handleLogout('/admin/login', false);
       } else {
         console.error("Session sync failure", error);
+        const cachedUser = restoreCachedAdminSession();
+        if (cachedUser) {
+          setUser(cachedUser);
+          setIsAuthenticated(true);
+        }
       }
     } finally {
       setIsLoading(false);
