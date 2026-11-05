@@ -21,8 +21,8 @@ const SITE =
   process.env.SITE_URL ||
   'https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com';
 const DB_HOST =
-  process.env.DB_HOST || 'mysql-2277f171-brianmwanza651-0b75.g.aivencloud.com';
-const DB_PORT = Number(process.env.DB_PORT || 27059);
+  process.env.DB_HOST || 'mysql-57dd84d-the-greggory-systems-and-strategy-firm.i.aivencloud.com';
+const DB_PORT = Number(process.env.DB_PORT || 27809);
 
 let failures = 0;
 const ok = (m) => console.log(`OK  ${m}`);

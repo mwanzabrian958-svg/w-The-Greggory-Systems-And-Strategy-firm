@@ -379,11 +379,11 @@ function generateInvoicePDFContent(document) {
     y += 8;
     drawTotal("Total", total, true);
 
-    const certificationText = completed
+    const certificationPhrase = completed
       ? `This is to certify that the above invoice record has been marked as completed within the ${FIRM_LEGAL_NAME} system.`
       : `This document certifies the invoice details and service items recorded above. The amount due is ${fmtMoney(total, currency)}.`;
     const certificationHeight =
-      doc.heightOfString(certificationText, { width: CW - 28, fontSize: 8 }) +
+      doc.heightOfString(certificationPhrase, { width: CW - 28, fontSize: 8 }) +
       32;
     if (y + certificationHeight > PAGE_H - 170) {
       doc.addPage({ margin: M, size: "A4" });
