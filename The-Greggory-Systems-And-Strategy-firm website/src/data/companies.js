@@ -1,8 +1,8 @@
-// Local list of subsidiaries / companies used by the navbar and other components
+import { SITE_NAME } from '../constants/siteBrand'
 
 const companies = [
   { name: 'All Companies', path: '/companies' },
-  { name: 'About the Firm', path: '/about' },
+  { name: SITE_NAME, path: '/about' },
 ];
 
 export default companies;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getApiUrl } from '../services/api'
-import { X } from 'lucide-react'
+import { X, RefreshCw, WifiOff } from 'lucide-react'
 import DOMPurify from 'dompurify'
 import { PageLoader } from '../components/Loading'
 import { useSeo, SEO } from '../hooks/useSeo'
@@ -12,25 +12,39 @@ const PersonnelProfile = () => {
   const [person, setPerson] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
     let mounted = true
     const load = async () => {
+      setLoading(true)
+      setError(null)
+      setPerson(null)
       try {
         const res = await fetch(getApiUrl('/api/company-personnel/' + id))
+        if (!res.ok) {
+          if (mounted) {
+            setError({ type: res.status === 404 ? 'not-found' : 'server' })
+          }
+          return
+        }
         const json = await res.json()
         if (!mounted) return
         if (json && json.success) setPerson(json.personnel)
-        else setError(json && json.message ? json.message : 'Personnel not found')
+        else setError({ type: 'not-found' })
       } catch (e) {
-        if (mounted) setError(e.message)
+        if (mounted) {
+          setError({
+            type: !navigator.onLine || e instanceof TypeError ? 'connection' : 'server',
+          })
+        }
       } finally {
         if (mounted) setLoading(false)
       }
     }
     load()
     return () => { mounted = false }
-  }, [id])
+  }, [id, retryCount])
 
   if (loading) {
     return (
@@ -41,12 +55,36 @@ const PersonnelProfile = () => {
   }
 
   if (error || !person) {
+    const isConnectionError = error?.type === 'connection'
+    const isNotFound = error?.type === 'not-found'
+
     return (
       <div className="min-h-screen bg-[#fdfaf6] text-[#111] pt-32">
         <div className="max-w-3xl mx-auto px-6 lg:px-20">
-          <h1 className="text-3xl font-bold">Person not found</h1>
-          <p className="mt-4 text-slate-500">{error || 'This team member could not be located.'}</p>
-          <Link to="/about" className="inline-flex items-center gap-2 mt-8 text-[#8fb28a] font-bold hover:underline">
+          {isConnectionError ? (
+            <WifiOff size={32} className="mb-4 text-[#8fb28a]" aria-hidden="true" />
+          ) : null}
+          <h1 className="text-3xl font-bold">
+            {isNotFound ? 'Profile not found' : isConnectionError ? 'Unable to connect' : 'Profile temporarily unavailable'}
+          </h1>
+          <p className="mt-4 leading-relaxed text-slate-600">
+            {isNotFound
+              ? 'This team member profile may have been removed or the link may be incorrect.'
+              : isConnectionError
+                ? 'We couldn’t connect to load this profile. Check your internet connection, then try again.'
+                : 'We couldn’t load this profile right now. Please try again in a moment.'}
+          </p>
+          {!isNotFound && (
+            <button
+              type="button"
+              onClick={() => setRetryCount((count) => count + 1)}
+              className="inline-flex items-center gap-2 mt-8 rounded-lg bg-[#0f172a] px-5 py-3 font-bold text-white transition-colors hover:bg-slate-700"
+            >
+              <RefreshCw size={16} aria-hidden="true" />
+              Try again
+            </button>
+          )}
+          <Link to="/about" className="inline-flex items-center gap-2 mt-8 ml-4 text-[#8fb28a] font-bold hover:underline">
             Back to About
           </Link>
         </div>
