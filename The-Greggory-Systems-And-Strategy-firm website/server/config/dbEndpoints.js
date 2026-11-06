@@ -28,22 +28,64 @@
  */
 "use strict";
 
-// DB_NAME has no local XAMPP fallback on purpose. The old default was
-// "the_greggory_systems_and_strategy_firm_db_main", which is a LOCAL database
-// name; a managed host (Aiven) owns only `defaultdb`, so an unset DB_NAME would
-// silently connect every consumer to a database that does not exist there —
-// ER_BAD_DB_ERROR on every request, with the real cause hidden behind a
-// plausible-looking name. Failing at require() time is far easier to diagnose.
-const DB_NAME = process.env.DB_NAME;
-if (!DB_NAME) {
-  throw new Error(
-    "DB_NAME is not set. Set it in the environment: `defaultdb` on the Aiven " +
-    "service, or the local XAMPP database name for local dev."
-  );
-}
-
 const IS_LOCAL_HOST = (h) =>
   ["localhost", "127.0.0.1", "::1"].includes((h || "").toLowerCase());
+
+function parseDatabaseUrl(connectionString) {
+  if (!connectionString) return null;
+
+  let url;
+  try {
+    url = new URL(connectionString);
+  } catch {
+    throw new Error("DATABASE_URL must be a valid mysql:// connection URI.");
+  }
+  if (url.protocol !== "mysql:" && url.protocol !== "mysql2:") {
+    throw new Error("DATABASE_URL must use the mysql:// or mysql2:// scheme.");
+  }
+
+  const host = url.hostname;
+  const database = decodeURIComponent(url.pathname.replace(/^\/+/, ""));
+  const user = decodeURIComponent(url.username || "");
+  const password = decodeURIComponent(url.password || "");
+  if (!host || !user || !database) {
+    throw new Error("DATABASE_URL must include a hostname, username, and database name.");
+  }
+
+  const sslMode = (url.searchParams.get("ssl-mode") || url.searchParams.get("sslmode") || "")
+    .trim()
+    .toLowerCase();
+  const sslDisabled = ["disable", "disabled", "false", "0", "off"].includes(sslMode);
+  const ssl = sslMode
+    ? !sslDisabled
+    : process.env.DB_SSL !== undefined
+      ? process.env.DB_SSL === "true"
+      : !IS_LOCAL_HOST(host);
+
+  return {
+    host,
+    port: Number(url.port || 3306),
+    user,
+    password,
+    database,
+    ssl,
+  };
+}
+
+const DATABASE_URL_ENDPOINT = parseDatabaseUrl(
+  process.env.DATABASE_URL || process.env.AIVEN_DATABASE_URL
+);
+
+// DB_NAME has no local XAMPP fallback on purpose. A managed host such as Aiven
+// owns `defaultdb`, not the old local database name. A URI can supply the DB
+// name via its path; otherwise require DB_NAME explicitly.
+const DB_NAME = process.env.DB_NAME || DATABASE_URL_ENDPOINT?.database;
+if (!DB_NAME) {
+  throw new Error(
+    "DB_NAME is not set. Set it explicitly or include the database name in DATABASE_URL. " +
+    "Use `defaultdb` for Aiven or the local XAMPP database name for local dev."
+  );
+}
 
 // TLS policy: DB_SSL wins when explicitly set; otherwise we INFER it — any
 // non-local (managed/remote) MySQL such as Aiven REQUIRES TLS, local XAMPP
@@ -69,7 +111,9 @@ function cloudCa() {
 }
 function cloudSslEnabled() {
   if (process.env.DB_SSL !== undefined) return process.env.DB_SSL === "true";
-  return !IS_LOCAL_HOST(process.env.DB_HOST || process.env.DB_CLOUD_HOST || "");
+  return !IS_LOCAL_HOST(
+    process.env.DB_HOST || process.env.DB_CLOUD_HOST || DATABASE_URL_ENDPOINT?.host || ""
+  );
 }
 const DEFAULT_SSL = cloudSslEnabled();
 
@@ -131,6 +175,14 @@ function endpoints() {
         label: IS_LOCAL_HOST(primaryHost) ? "local" : "claude",
       })
     );
+  } else if (DATABASE_URL_ENDPOINT) {
+    list.push(
+      buildEndpoint({
+        ...DATABASE_URL_ENDPOINT,
+        database: process.env.DB_NAME || DATABASE_URL_ENDPOINT.database,
+        label: "aiven-uri",
+      })
+    );
   }
 
   // 3) SECONDARY CLOUD endpoint — used after the primary in pool order.
@@ -160,8 +212,8 @@ function endpoints() {
 
 function noMySqlEndpointError() {
   const message = process.env.NODE_ENV === "production"
-    ? "No MySQL endpoint configured. Set DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, and DB_NAME in Render; for Aiven set DB_NAME=defaultdb and DB_SSL=true."
-    : "No MySQL endpoint configured. Set DB_HOST_2/DB_PORT_2 for local XAMPP or DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME for Aiven.";
+    ? "No MySQL endpoint configured. Set DATABASE_URL (Aiven MySQL URI) or DB_HOST/DB_PORT/DB_USER/DB_PASSWORD in Render; set DB_NAME separately if it is not included in the URI."
+    : "No MySQL endpoint configured. Set DB_HOST_2/DB_PORT_2 for local XAMPP or DATABASE_URL / DB_HOST/DB_PORT/DB_USER/DB_PASSWORD for Aiven.";
   return Object.assign(new Error(message), { code: "DB_ENDPOINTS_NOT_CONFIGURED" });
 }
 
@@ -329,6 +381,7 @@ function clean(cfg) {
 
 module.exports = {
   endpoints,
+  parseDatabaseUrl,
   noMySqlEndpointError,
   clean,
   DB_NAME,

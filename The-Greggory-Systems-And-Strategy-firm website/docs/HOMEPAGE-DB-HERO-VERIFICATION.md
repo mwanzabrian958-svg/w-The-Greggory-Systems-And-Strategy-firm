@@ -7,7 +7,8 @@
 
 - The reported `[sync] ERROR: No MySQL endpoint reachable` occurs when `dbEndpoints()` returns no configured endpoints. In the shown Render boot, `DB_NAME` is present (otherwise endpoint loading fails earlier), but no `DB_HOST`, `DB_CLOUD_HOST`, local `DB_HOST_2`, or secondary host was configured. The app did not reach Aiven TLS or issue a SQL query in this failure.
 - Startup now reports the required DB variable names when the endpoint list is empty. Schema-sync errors now exit nonzero, so Render's `&&` start chain will stop instead of marking an API with an unavailable database as live. The server failover path also throws a real error instead of `undefined`, preventing the `Cannot read properties of undefined (reading 'code')` crash.
-- Render still needs its Aiven connection values set: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME=defaultdb`, and `DB_SSL=true`. The password must be entered directly in Render's environment settings; no secret values were copied into the repo.
+- Render still needs an Aiven endpoint set: either `DATABASE_URL` with the Aiven `mysql://` Service URI (including `/defaultdb?ssl-mode=REQUIRED`), or the split `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME=defaultdb`, and `DB_SSL=true` values. The password/URI must be entered directly in Render's environment settings; no secret values were copied into the repo.
+- `server/config/dbEndpoints.js` now parses `DATABASE_URL`/`AIVEN_DATABASE_URL`, derives the database name from the URI path, and applies the pinned CA when SSL is required. A regression test covers this path.
 
 ## Hero image
 

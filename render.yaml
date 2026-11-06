@@ -47,6 +47,11 @@ services:
       - key: NODE_OPTIONS
         value: --max-old-space-size=460
       # ---- Cloud MySQL (Aiven free tier) ----
+      # Use DATABASE_URL with Aiven's mysql:// service URI, OR the split DB_*
+      # variables below. The URI's path supplies DB_NAME and ssl-mode=REQUIRED
+      # is honored by server/config/dbEndpoints.js.
+      - key: DATABASE_URL
+        sync: false
       - key: DB_SSL
         value: "true"
       - key: DB_HOST
