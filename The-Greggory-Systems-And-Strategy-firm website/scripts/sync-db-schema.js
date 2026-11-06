@@ -31,7 +31,10 @@ if (envIdx > -1 && process.argv[envIdx + 1]) {
   require("dotenv").config();
 }
 
-const { endpoints: dbEndpoints } = require("../server/config/dbEndpoints");
+const {
+  endpoints: dbEndpoints,
+  noMySqlEndpointError,
+} = require("../server/config/dbEndpoints");
 
 const DB = process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main";
 const MANIFEST = path.join(__dirname, "..", "database", "schema-sync.json");
@@ -109,8 +112,10 @@ const USERS_CODE_COLUMNS = {
 let _resolved;
 async function resolveEndpoint() {
   if (_resolved) return _resolved;
+  const configuredEndpoints = dbEndpoints();
+  if (configuredEndpoints.length === 0) throw noMySqlEndpointError();
   let lastErr;
-  for (const cfg of dbEndpoints()) {
+  for (const cfg of configuredEndpoints) {
     const { label, ...opts } = cfg;
     try {
       const probe = await mysql.createConnection({ ...opts, database: DB, connectTimeout: 4000 });
@@ -452,6 +457,6 @@ async function apply() {
     process.exit(0);
   } catch (e) {
     console.error("[sync] ERROR:", e.message);
-    process.exit(0); // boot must proceed; problems stay visible in the logs
+    process.exitCode = 1;
   }
 })();
