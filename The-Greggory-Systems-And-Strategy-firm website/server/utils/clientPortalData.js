@@ -63,19 +63,14 @@ function buildClientPortalPayload({
     status: mapProjectStatus(project.status),
     priority: getPriorityLabel(project.priority),
     progress: toNumber(project.progress_percentage || project.progress, 0),
-    // NEW: Link client display info
-    clientName: project.client_name || null,
-    clientEmail: project.client_email || null,
-    clientPhone: project.client_phone || null,
-  }));\n\n  // FILTER: Only show projects linked to this specific client user\n  const clientProjectIds = user\n    ? projects\n        .filter((project) => \\
-          String(project.user_id) === String(user.id) ||\\
-          String(project.client_id) === String(user.id)\n        )\n      .map((project) => project.id)\n    : [];\n\n  // If no user (admin view), show all projects\n  const filteredProjects = user\n    ? projects.filter((project) => clientProjectIds.includes(project.id))\\
-    : projects;\n\n  const normalizedTasks = tasks.map((task) => ({
     deadline: project.end_date || project.deadline || null,
     plannedBudget: toNumber(project.estimated_budget || project.plannedBudget || project.budget, 0),
     actualBudget: toNumber(project.actual_budget || project.actualBudget || project.spent, 0),
     manager: project.manager_name || project.manager || "Assigned team lead",
     createdAt: project.created_at || project.createdAt || null,
+    clientName: project.client_name || null,
+    clientEmail: project.client_email || null,
+    clientPhone: project.client_phone || null,
   }));
 
   const normalizedTasks = tasks.map((task) => ({

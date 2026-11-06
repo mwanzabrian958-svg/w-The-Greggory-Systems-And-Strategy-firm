@@ -1,3 +1,3 @@
-});;
-  
-  // FILTER: Only show projects linked to this specific client user
+"use strict";
+
+module.exports = require("../utils/clientPortalData");
