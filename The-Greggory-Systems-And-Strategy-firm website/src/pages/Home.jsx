@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { createPortal } from 'react-dom'
-import { ArrowRight, ChevronLeft, X, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, ChevronRight, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, Play, X, Target, Lightbulb, CheckCircle, TrendingUp, Users, Award, Clock, ShieldCheck, UserCheck, Phone, BarChart3, Server, LineChart, Network, GitBranch, Zap, Globe, Monitor, Smartphone, Wrench, Cpu, Briefcase, FileText, Lock, Shield, AlertCircle } from 'lucide-react'
 import { SITE_NAME } from '../constants/siteBrand'
 import { useSeo, SEO } from '../hooks/useSeo'
 import { apiCall } from '../services/api'
@@ -14,6 +14,7 @@ const Home = () => {
   const carouselRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [selectedProject, setSelectedProject] = useState(null)
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0)
   const navigate = useNavigate()
   // Search filter for portfolio items
   const [searchTerm, setSearchTerm] = useState('')
@@ -229,6 +230,18 @@ const Home = () => {
     { icon: <Clock className="w-4 h-4" />, value: getYearsActiveLabel(), label: 'Years Active' }
   ]
 
+  const selectedProjectMedia = selectedProject
+    ? Array.isArray(selectedProject.media) && selectedProject.media.length
+      ? selectedProject.media
+      : selectedProject.image_url
+        ? [{ id: 'project-cover', media_type: 'image', url: selectedProject.image_url, file_name: selectedProject.title }]
+        : []
+    : []
+  const activeProjectMedia = selectedProjectMedia[selectedMediaIndex] || selectedProjectMedia[0]
+  const moveProjectMedia = (direction) => {
+    if (selectedProjectMedia.length < 2) return
+    setSelectedMediaIndex((index) => (index + direction + selectedProjectMedia.length) % selectedProjectMedia.length)
+  }
 
 
   return (
@@ -447,6 +460,7 @@ const Home = () => {
                           navigate('/projects')
                         } else {
                           setActiveIndex(index)
+                          setSelectedMediaIndex(0)
                           setSelectedProject(portfolio.find((project) => String(project.id) === String(item.id)) || null)
                         }
                       }}
@@ -1510,115 +1524,180 @@ const Home = () => {
 
       {selectedProject ? createPortal(
         <div
-          className="fixed inset-0 z-[1200] flex h-[100dvh] w-screen flex-col overflow-hidden bg-white"
+          className="fixed inset-0 z-[1200] flex h-[100dvh] w-screen flex-col overflow-hidden bg-[#07110f] text-white"
           role="dialog"
           aria-modal="true"
           aria-labelledby="portfolio-project-title"
         >
-          <header className="flex flex-shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-8">
+          <header className="flex flex-shrink-0 items-center justify-between gap-4 border-b border-white/10 bg-[#07110f] px-5 py-4 sm:px-8">
             <div className="min-w-0">
-              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-teal-600">
-                Project portfolio
+              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-amber-400">
+                Selected project{selectedProject.sector ? ` / ${selectedProject.sector}` : ''}
               </p>
-              <h2 id="portfolio-project-title" className="truncate text-lg font-black text-slate-900 sm:text-2xl">
+              <h2 id="portfolio-project-title" className="truncate text-lg font-black text-white sm:text-2xl">
                 {selectedProject.title}
               </h2>
             </div>
-            <button
-              type="button"
-              onClick={() => setSelectedProject(null)}
-              aria-label="Close project details"
-              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-            >
-              <X size={22} />
-            </button>
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <Link
+                to="/contact"
+                onClick={() => setSelectedProject(null)}
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-amber-300 px-3 text-xs font-black text-slate-950 transition hover:bg-amber-200 sm:px-4"
+              >
+                <span className="sm:hidden">Contact</span>
+                <span className="hidden sm:inline">Start a conversation</span>
+                <ArrowRight size={14} />
+              </Link>
+              <button
+                type="button"
+                onClick={() => setSelectedProject(null)}
+                aria-label="Close project details"
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-white/15 text-slate-300 transition-colors hover:border-rose-300/50 hover:bg-rose-500/10 hover:text-rose-200"
+              >
+                <X size={22} />
+              </button>
+            </div>
           </header>
-          <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50">
-            <div className="mx-auto max-w-6xl space-y-8 px-5 py-8 sm:px-8 sm:py-12">
-              <section aria-label={`${selectedProject.title} media album`}>
-                <h3 className="mb-4 text-xs font-black uppercase tracking-[0.25em] text-slate-500">
-                  Project album
-                </h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {Array.isArray(selectedProject.media) && selectedProject.media.length ? (
-                    selectedProject.media.map((media) => (
-                      <figure key={media.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950">
-                        {media.media_type === 'video' ? (
-                          <video
-                            src={media.url}
-                            controls
-                            playsInline
-                            preload="metadata"
-                            aria-label={media.file_name || `${selectedProject.title} project video`}
-                            className="aspect-video w-full object-contain"
-                          />
-                        ) : (
-                          <img
-                            src={media.url}
-                            alt={media.file_name || `${selectedProject.title} project image`}
-                            loading="lazy"
-                            className="aspect-video w-full object-contain"
-                          />
-                        )}
-                        {media.file_name ? (
-                          <figcaption className="px-4 py-2 text-xs text-slate-300">{media.file_name}</figcaption>
-                        ) : null}
-                      </figure>
-                    ))
-                  ) : selectedProject.image_url ? (
-                    <img
-                      src={selectedProject.image_url}
-                      alt={`${selectedProject.title} project`}
-                      className="max-h-[70vh] w-full rounded-2xl border border-slate-200 bg-slate-950 object-contain"
-                    />
-                  ) : (
-                    <p className="text-sm text-slate-500">No project media has been added.</p>
-                  )}
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(ellipse_at_50%_0%,rgba(20,184,166,0.12),transparent_58%),#07110f]">
+            <div className="mx-auto max-w-7xl px-4 py-5 sm:px-8 sm:py-8">
+              <section aria-label={`${selectedProject.title} media gallery`}>
+                <div className="mb-3 flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.28em] text-teal-300">Selected work</p>
+                    <h3 className="mt-1 text-sm font-bold text-white sm:text-base">Inside the project</h3>
+                  </div>
+                  {selectedProjectMedia.length > 0 ? (
+                    <p className="text-xs font-semibold tabular-nums text-slate-400">
+                      {String(selectedMediaIndex + 1).padStart(2, '0')} <span className="text-slate-600">/</span> {String(selectedProjectMedia.length).padStart(2, '0')}
+                    </p>
+                  ) : null}
                 </div>
-              </section>
 
-              <hr className="border-slate-200" />
-
-              <section aria-label={`${selectedProject.title} project information`} className="space-y-5">
-                <h3 className="text-xs font-black uppercase tracking-[0.25em] text-slate-500">
-                  Project information
-                </h3>
-                {selectedProject.sector ? (
-                  <p className="text-xs font-black uppercase tracking-[0.25em] text-amber-600">
-                    {selectedProject.sector}
-                  </p>
-                ) : null}
-                {selectedProject.client_name ? (
-                  <p className="mt-2 text-sm font-bold text-slate-500">
-                    Client: {selectedProject.client_name}
-                  </p>
-                ) : null}
-                {selectedProject.summary ? (
-                  <p className="mt-5 max-w-4xl text-lg font-semibold leading-relaxed text-slate-800">
-                    {selectedProject.summary}
-                  </p>
-                ) : null}
-                {selectedProject.body ? (
-                  <p className="mt-4 max-w-4xl whitespace-pre-line text-sm leading-7 text-slate-600">
-                    {selectedProject.body}
-                  </p>
-                ) : null}
-
-                {Array.isArray(selectedProject.outcomes) && selectedProject.outcomes.length ? (
-                  <div className="flex flex-wrap gap-3">
-                    {selectedProject.outcomes.map((outcome, index) => (
-                      <div
-                        key={`${outcome.metric}-${index}`}
-                        className="rounded-xl border border-slate-200 bg-white px-4 py-3"
-                      >
-                        <p className="text-sm font-black text-teal-700">{outcome.metric}</p>
-                        {outcome.label ? (
-                          <p className="mt-1 text-xs text-slate-500">{outcome.label}</p>
-                        ) : null}
+                <div className="relative overflow-hidden rounded-xl border border-white/10 bg-[#030807] shadow-[0_24px_80px_-36px_rgba(0,0,0,0.9)]">
+                  <div className="relative mx-auto flex aspect-[16/10] min-h-[260px] max-h-[70vh] items-center justify-center sm:aspect-[16/9]">
+                    {activeProjectMedia ? (
+                      activeProjectMedia.media_type === 'video' ? (
+                        <video
+                          key={activeProjectMedia.id || activeProjectMedia.url}
+                          src={activeProjectMedia.url}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          aria-label={activeProjectMedia.file_name || `${selectedProject.title} project video`}
+                          className="h-full w-full object-contain"
+                        />
+                      ) : (
+                        <img
+                          key={activeProjectMedia.id || activeProjectMedia.url}
+                          src={activeProjectMedia.url}
+                          alt={activeProjectMedia.file_name || `${selectedProject.title} project image`}
+                          className="h-full w-full object-contain"
+                        />
+                      )
+                    ) : (
+                      <div className="px-6 text-center">
+                        <p className="text-[9px] font-black uppercase tracking-[0.28em] text-teal-300">Project gallery</p>
+                        <p className="mt-2 text-sm text-slate-400">Project media will appear here.</p>
                       </div>
+                    )}
+
+                    {selectedProjectMedia.length > 1 ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => moveProjectMedia(-1)}
+                          aria-label="Previous project image or video"
+                          className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white backdrop-blur transition hover:bg-black/80"
+                        >
+                          <ChevronLeft size={20} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveProjectMedia(1)}
+                          aria-label="Next project image or video"
+                          className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white backdrop-blur transition hover:bg-black/80"
+                        >
+                          <ChevronRight size={20} />
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+
+                {selectedProjectMedia.length > 1 ? (
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-2" aria-label="Choose gallery media">
+                    {selectedProjectMedia.map((media, index) => (
+                      <button
+                        key={media.id || media.url || index}
+                        type="button"
+                        onClick={() => setSelectedMediaIndex(index)}
+                        aria-label={`Show ${media.media_type === 'video' ? 'video' : 'image'} ${index + 1}`}
+                        aria-pressed={selectedMediaIndex === index}
+                        className={`group relative h-[72px] w-[112px] flex-shrink-0 overflow-hidden rounded-lg border transition ${selectedMediaIndex === index ? 'border-amber-300 ring-1 ring-amber-300/70' : 'border-white/10 opacity-65 hover:opacity-100'}`}
+                      >
+                        {media.media_type === 'video' ? (
+                          <video src={media.url} muted preload="metadata" className="h-full w-full object-cover" />
+                        ) : (
+                          <img src={media.url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                        )}
+                        {media.media_type === 'video' ? (
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-white">
+                            <Play size={18} fill="currentColor" />
+                          </span>
+                        ) : null}
+                      </button>
                     ))}
                   </div>
                 ) : null}
+              </section>
+
+              <section aria-label={`${selectedProject.title} project information`} className="mt-8 grid gap-6 border-t border-white/10 pt-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <div className="space-y-4">
+                  {selectedProject.sector ? (
+                    <p className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-300">
+                      {selectedProject.sector}
+                    </p>
+                  ) : null}
+                  {selectedProject.client_name ? (
+                    <p className="text-xs font-bold text-slate-400">
+                      Client: {selectedProject.client_name}
+                    </p>
+                  ) : null}
+                  {selectedProject.summary ? (
+                    <p className="max-w-4xl text-base font-semibold leading-relaxed text-white sm:text-lg">
+                      {selectedProject.summary}
+                    </p>
+                  ) : null}
+                  {selectedProject.body ? (
+                    <p className="max-w-4xl whitespace-pre-line text-sm leading-7 text-slate-300">
+                      {selectedProject.body}
+                    </p>
+                  ) : null}
+
+                  {Array.isArray(selectedProject.outcomes) && selectedProject.outcomes.length ? (
+                    <div className="flex flex-wrap gap-3">
+                      {selectedProject.outcomes.map((outcome, index) => (
+                        <div
+                          key={`${outcome.metric}-${index}`}
+                          className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-3"
+                        >
+                          <p className="text-sm font-black text-teal-300">{outcome.metric}</p>
+                          {outcome.label ? (
+                            <p className="mt-1 text-xs text-slate-400">{outcome.label}</p>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+                <Link
+                  to="/contact"
+                  onClick={() => setSelectedProject(null)}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-amber-300 px-5 py-3 text-xs font-black text-slate-950 transition hover:bg-amber-200"
+                >
+                  Discuss a similar project
+                  <ArrowRight size={15} />
+                </Link>
               </section>
             </div>
           </div>
