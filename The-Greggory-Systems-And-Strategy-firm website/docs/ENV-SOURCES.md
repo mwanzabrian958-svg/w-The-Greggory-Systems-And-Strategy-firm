@@ -45,7 +45,7 @@ exact page to grab the value from and the page to paste it into.
 
 | Keys | Why local only |
 |---|---|
-| `DB_HOST_2` … `DB_SSL_2` | Your XAMPP fallback node. On Render it would make the cluster knock on localhost first. |
+| `DB_HOST_2` … `DB_SSL_2` | Local XAMPP connection for explicit database synchronization/maintenance scripts only. The running application ignores these variables and uses cloud endpoints configured with `DB_HOST` or `DATABASE_URL`. |
 | `DB_CLOUD_HOST/PORT/USER/PASSWORD` | Read only by local cron backup scripts (`backup-cloud-to-local.js`); on Render the plain `DB_*` ARE the cloud. |
 | `REDIS_URL` | Intentionally omitted — server falls back to in-memory stores (see render.yaml note). |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to a service-account JSON **on your PC** → [IAM service accounts](https://console.cloud.google.com/iam-admin/serviceaccounts). File is never deployed. |

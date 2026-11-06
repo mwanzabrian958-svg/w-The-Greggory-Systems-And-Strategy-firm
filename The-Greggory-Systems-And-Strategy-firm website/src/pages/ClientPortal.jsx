@@ -461,6 +461,7 @@ const ClientPortal = () => {
       if (d.success) {
         setSettingsMessage({ type: 'success', text: 'Profile photo updated' });
         setPhotoVersion(v => v + 1);
+        window.dispatchEvent(new Event('gf-profile-photo-changed'));
         loadClientData();
       } else {
         setSettingsMessage({ type: 'error', text: d.message || 'Upload failed' });
@@ -595,6 +596,12 @@ const ClientPortal = () => {
     probe.onerror = () => setPhotoAvailable(false);
     probe.src = getApiUrl(`/api/users/profile-photo/${portalUser.id}?probe=1`);
   }, [portalUser?.id, photoVersion]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
 
   const handleSaveSettings = async (e) => {
     e.preventDefault();
@@ -770,7 +777,7 @@ const ClientPortal = () => {
   const closePortal = () => { window.location.href = '/'; };
 
   const photoUrl = portalUser?.id ? getApiUrl(`/api/users/profile-photo/${portalUser.id}${photoVersion ? `?v=${photoVersion}` : ''}`) : null;
-  const profilePhotoSrc = photoPreview || (photoAvailable && photoUrl ? photoUrl : (portalUser?.profilePhotoData || user?.profilePhotoData || null));
+  const profilePhotoSrc = photoPreview || (photoAvailable && photoUrl ? photoUrl : null);
 
   // â”€â”€ Real computed metrics (no more hardcoded placeholders) â”€â”€
   const profileFields = [
@@ -1782,7 +1789,7 @@ const ClientPortal = () => {
                 <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0">
                   <span className="absolute text-[12px] font-black text-slate-500 dark:text-slate-300">{(portalUser?.display_name || 'C').charAt(0).toUpperCase()}</span>
                   {(photoPreview || (photoAvailable !== false && portalUser?.id)) && (
-                    <img key={photoVersion} src={photoPreview || getApiUrl(`/api/users/profile-photo/${portalUser.id}?v=${photoVersion}`)} alt="Profile preview" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    <img key={photoPreview || photoVersion} src={photoPreview || getApiUrl(`/api/users/profile-photo/${portalUser.id}?v=${photoVersion}`)} alt="Profile preview" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

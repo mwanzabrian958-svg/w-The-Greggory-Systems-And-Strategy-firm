@@ -39,12 +39,19 @@ const Navbar = () => {
   const [companiesDropdownOpen, setCompaniesDropdownOpen] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
   const [logoutError, setLogoutError] = useState('')
+  const [profilePhotoVersion, setProfilePhotoVersion] = useState(0)
   const scrollTimer = useRef(null)
   const navRef = useRef(null)
 
   const location = useLocation()
   const navigate = useNavigate()
   const { isAuthenticated, logout, user } = useAuth()
+
+  useEffect(() => {
+    const refreshProfilePhoto = () => setProfilePhotoVersion((version) => version + 1)
+    window.addEventListener('gf-profile-photo-changed', refreshProfilePhoto)
+    return () => window.removeEventListener('gf-profile-photo-changed', refreshProfilePhoto)
+  }, [])
 
   useEffect(() => {
     let lastY = window.scrollY
@@ -106,7 +113,7 @@ const Navbar = () => {
   // This avoids depending solely on has_photo (which may be stale in localStorage for sessions
   // created before the photo flag was added to the login response).
   const userId = user?.id || user?.userId
-  const profilePhotoUrl = userId ? `/api/users/profile-photo/${userId}` : null
+  const profilePhotoUrl = userId ? `/api/users/profile-photo/${userId}?v=${profilePhotoVersion}` : null
 
   const navigation = [
     { name: 'Home', path: '/' },
@@ -315,4 +322,3 @@ const Navbar = () => {
 }
 
 export default Navbar
-

@@ -7,6 +7,13 @@ const AuthContext = createContext({
   logout: () => {},
 })
 
+const withoutInlineProfilePhoto = (userData) => {
+  if (!userData || typeof userData !== 'object') return userData
+  if (!Object.prototype.hasOwnProperty.call(userData, 'profilePhotoData')) return userData
+  const { profilePhotoData, ...sessionUser } = userData
+  return sessionUser
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('tgf_user')
@@ -14,7 +21,13 @@ export const AuthProvider = ({ children }) => {
       try {
         const parsed = JSON.parse(saved)
         // Only hydrate a real session — a profile without a token is stale
-        if (parsed?.token) return parsed
+        if (parsed?.token) {
+          const sessionUser = withoutInlineProfilePhoto(parsed)
+          if (sessionUser !== parsed) {
+            localStorage.setItem('tgf_user', JSON.stringify(sessionUser))
+          }
+          return sessionUser
+        }
       } catch (e) {
         console.error('Auth parse error:', e)
       }
@@ -23,7 +36,7 @@ export const AuthProvider = ({ children }) => {
     if (adminSaved) {
       try {
         const adminData = JSON.parse(adminSaved)
-        if (adminData?.token) return { ...adminData, role: adminData.role || 'admin' }
+        if (adminData?.token) return withoutInlineProfilePhoto({ ...adminData, role: adminData.role || 'admin' })
       } catch (e) {}
     }
     return null
@@ -36,7 +49,11 @@ export const AuthProvider = ({ children }) => {
         try {
           const parsed = JSON.parse(saved)
           if (parsed?.token) {
-            setUser(parsed)
+            const sessionUser = withoutInlineProfilePhoto(parsed)
+            if (sessionUser !== parsed) {
+              localStorage.setItem('tgf_user', JSON.stringify(sessionUser))
+            }
+            setUser(sessionUser)
             return
           }
         } catch (e) {}
@@ -46,7 +63,7 @@ export const AuthProvider = ({ children }) => {
         try {
           const adminData = JSON.parse(adminSaved)
           if (adminData?.token) {
-            setUser({ ...adminData, role: adminData.role || 'admin' })
+            setUser(withoutInlineProfilePhoto({ ...adminData, role: adminData.role || 'admin' }))
             return
           }
         } catch (e) {}
@@ -62,8 +79,9 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   const login = (userData) => {
-    setUser(userData)
-    localStorage.setItem('tgf_user', JSON.stringify(userData))
+    const sessionUser = withoutInlineProfilePhoto(userData)
+    setUser(sessionUser)
+    localStorage.setItem('tgf_user', JSON.stringify(sessionUser))
   }
 
   const logout = async () => {

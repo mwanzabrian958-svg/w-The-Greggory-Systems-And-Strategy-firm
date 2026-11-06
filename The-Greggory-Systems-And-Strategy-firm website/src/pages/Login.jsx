@@ -75,7 +75,7 @@ const Login = () => {
 
       // --- Normalize the login response into a stable shape ---
       // The backend /users/login endpoint MUST return `{ token, id, email,
-      // display_name, first_name, last_name, has_photo, profilePhotoData }`.
+      // display_name, first_name, last_name, and has_photo }`.
       // Older or alternative backends may nest those fields under
       // `response.user`, embed `id` as `userId`, or omit optional fields —
       // this block tolerates all of those shapes so a successful login
@@ -110,7 +110,6 @@ const Login = () => {
         display_name: userData.display_name,
         token,
         has_photo: !!userData.has_photo,
-        profilePhotoData: userData.profilePhotoData || null,
         profile_image_id: userData.profile_image_id || null,
         whatsapp_verified: true,
       };

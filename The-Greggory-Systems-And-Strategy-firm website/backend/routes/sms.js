@@ -3,8 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { sendSMS, sendBulkSMS, COMPANY_PHONE_NUMBER } = require('../services/smsService');
 
-// Two-MySQL failover pool (local:3306 + claude:28067) — same as the rest of
-// the API, via the shared cluster in backend/config/database.js.
+// Cloud-only MySQL pool shared with the rest of the application.
 const db = require('../config/database');
 
 const authenticateUser = (req, res, next) => {

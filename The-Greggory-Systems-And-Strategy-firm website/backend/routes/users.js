@@ -555,7 +555,10 @@ router.post('/login', loginLimiter, authEndpointValidator('user', 'users'), asyn
 
   try {
     const [userResults] = await db.promise().query(
-      `SELECT u.*, 'user' as role_type, tm.name as job_title, tm.role as job_role
+      `SELECT u.id, u.email, u.first_name, u.last_name, u.display_name,
+              u.phone_number, u.primary_role, u.password_hash,
+              (u.profile_photo_blob IS NOT NULL) AS has_photo,
+              'user' as role_type, tm.name as job_title, tm.role as job_role
        FROM users u
        LEFT JOIN team_members tm ON u.job_id = tm.id
        WHERE u.email = ? AND u.is_active = true AND u.deleted_at IS NULL`,
@@ -579,24 +582,14 @@ router.post('/login', loginLimiter, authEndpointValidator('user', 'users'), asyn
     });
     await db.promise().query('UPDATE users SET auth_token = ?, last_login_at = NOW(), last_login_ip = ? WHERE id = ?', [personalAuthToken, req.ip, user.id]);
 
-    // Profile photo is stored directly on the users table (set at registration).
-    let profilePhotoData = null;
-    if (user.profile_photo_blob) {
-      const mimeType = user.profile_photo_mime_type && /^image\/(jpeg|jpg|png|gif|webp|avif|bmp)$/.test(user.profile_photo_mime_type.toLowerCase())
-        ? (user.profile_photo_mime_type.toLowerCase() === 'image/jpg' ? 'image/jpeg' : user.profile_photo_mime_type.toLowerCase())
-        : 'image/jpeg';
-      const base64 = Buffer.from(user.profile_photo_blob).toString('base64');
-      profilePhotoData = `data:${mimeType};base64,${base64}`;
-    }
-
     // Return the persistent DB token as the primary authentication token
-    // This sets the routing in stone for this terminal/device
+    // Keep the BLOB out of the auth payload; the profile-photo endpoint serves it.
     return res.json({
       id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name,
       display_name: user.display_name || `${user.first_name} ${user.last_name}`,
       phone_number: user.phone_number,
-      primary_role: user.primary_role, role_type: 'user', has_photo: !!user.profile_photo_blob,
-      profilePhotoData, token: personalAuthToken
+      primary_role: user.primary_role, role_type: 'user', has_photo: !!user.has_photo,
+      token: personalAuthToken
     });
   } catch (error) {
     return res.status(500).json({ error: 'Login failed' });
@@ -607,25 +600,20 @@ router.post('/login', loginLimiter, authEndpointValidator('user', 'users'), asyn
 router.get('/client-dashboard', authenticateUser, async (req, res) => {
   const id = req.userId;
   try {
-    const [users] = await db.promise().query(`SELECT * FROM users WHERE id = ? AND deleted_at IS NULL`, [id]);
+    const [users] = await db.promise().query(
+      `SELECT id, email, display_name, phone_number, primary_role,
+              (profile_photo_blob IS NOT NULL) AS has_photo
+       FROM users WHERE id = ? AND deleted_at IS NULL`,
+      [id]
+    );
     if (users.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
 
     const user = users[0];
     const [projects] = await db.promise().query(`SELECT * FROM user_projects WHERE user_id = ? AND deleted_at IS NULL`, [id]);
     const [invoiceRows] = await db.promise().query(`SELECT pi.*, up.project_name FROM project_invoices pi JOIN user_projects up ON up.id = pi.project_id WHERE up.user_id = ?`, [id]);
 
-    // Build profile photo data URI from DB blob for the dashboard user object
-    let dashboardPhotoData = null;
-    if (user.profile_photo_blob) {
-      const mimeType = user.profile_photo_mime_type && /^image\/(jpeg|jpg|png|gif|webp|avif|bmp)$/.test(user.profile_photo_mime_type.toLowerCase())
-        ? (user.profile_photo_mime_type.toLowerCase() === 'image/jpg' ? 'image/jpeg' : user.profile_photo_mime_type.toLowerCase())
-        : 'image/jpeg';
-      const b64 = Buffer.from(user.profile_photo_blob).toString('base64');
-      dashboardPhotoData = `data:${mimeType};base64,${b64}`;
-    }
-
     const dashboard = {
-      user: { id: user.id, email: user.email, display_name: user.display_name, phone_number: user.phone_number, role: user.primary_role || 'user', has_photo: !!user.profile_photo_blob, profilePhotoData: dashboardPhotoData },
+      user: { id: user.id, email: user.email, display_name: user.display_name, phone_number: user.phone_number, role: user.primary_role || 'user', has_photo: !!user.has_photo },
       projects: projects.map(p => ({ id: p.id, name: p.project_name, status: p.status, progress: p.progress_percentage || 0 })),
       invoices: invoiceRows.map(i => ({ id: i.id, invoiceNumber: i.invoice_number, project: i.project_name, amount: Number(i.amount || 0), status: i.status })),
       kpiMetrics: [

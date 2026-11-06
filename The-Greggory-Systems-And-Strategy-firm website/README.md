@@ -23,7 +23,8 @@ The digital interface of **The Greggory Systems And Strategy Firm**, a global co
 
 ### Tactical Prerequisites
 - Node.js (v16 or higher)
-- XAMPP (Local MySQL Node)
+- Aiven MySQL (application database)
+- XAMPP (optional; local database synchronization/maintenance only)
 - MongoDB Atlas (Strategic Data Node)
 
 ### Initialization (Windows)

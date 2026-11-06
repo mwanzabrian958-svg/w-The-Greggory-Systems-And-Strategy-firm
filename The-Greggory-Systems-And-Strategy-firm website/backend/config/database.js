@@ -1,12 +1,10 @@
 const mysql = require('mysql2');
-const { endpoints, clean, DB_NAME, pruneUnreachableNodes } = require('../../server/config/dbEndpoints');
+const { cloudEndpoints, clean, DB_NAME, pruneUnreachableNodes } = require('../../server/config/dbEndpoints');
 
 // ============================================================================
-// Shared DB "connection" with two-MySQL failover (local:3306 + claude:28067).
+// Shared application DB connection to the configured cloud MySQL endpoints.
 //
-// mysql2's createPoolCluster holds BOTH endpoints as nodes. When the first
-// port is unreachable it automatically uses the second one (and vice-versa),
-// exactly like "looks at both SQL ports and uses whichever is up".
+// XAMPP/local endpoints are only used by explicit maintenance scripts.
 //
 // This module keeps the SAME interface the modular routes already use:
 //   - callback:   db.query(sql, values, cb)         / db.execute(...)
@@ -17,7 +15,7 @@ const cluster = mysql.createPoolCluster({
   canRetry: true,           // retry on the next available node
   removeNodeErrorCount: 1,  // take a node out of rotation after 1 failed conn
   restoreNodeTimeout: 5000, // ...and try it again after 5s
-  defaultSelector: 'ORDER', // always prefer endpoint #1 (local), then #2 (claude)
+  defaultSelector: 'ORDER',
 });
 
 // Guard: skip endpoints with missing required credentials so the cluster
@@ -25,7 +23,7 @@ const cluster = mysql.createPoolCluster({
 // This replaces the old approach of re-exporting server.js's mainDb (which
 // created a circular dependency: server.js → users.js → database.js → server.js
 // and returned an empty module object, breaking db.promise() for all consumers).
-endpoints().forEach((cfg, i) => {
+cloudEndpoints().forEach((cfg, i) => {
   const { label, ...opts } = cfg;
   const missing = ['host', 'user', 'password'].filter(k => !opts[k] && !(k in opts));
   if (missing.length > 0) {

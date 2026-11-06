@@ -1,30 +1,26 @@
 /**
- * MySQL endpoint list — the app tries these in ORDER and automatically uses
- * whichever one answers first. This is how it "looks at both SQL ports":
+ * Configured MySQL endpoints. Application pools must use cloudEndpoints();
+ * endpoints() also includes the local node for explicit sync/maintenance tools.
  *
  *   1. LOCAL endpoint  -> DB_HOST_2 / DB_PORT_2 / DB_USER_2 / DB_PASSWORD_2
  *        (XAMPP/MariaDB on 127.0.0.1:3306, root with an EMPTY password).
- *        Used first when configured so a dead cloud endpoint can never slow
- *        local dev down. NOTE: use 127.0.0.1, NOT "localhost" — MariaDB's
+ *        Used by explicit local sync/maintenance tools only. NOTE: use 127.0.0.1,
+ *        NOT "localhost" — MariaDB's
  *        root@localhost is socket-auth only, which mysql2 cannot complete.
  *   2. CLOUD endpoint  -> DB_HOST / DB_PORT / DB_USER / DB_PASSWORD
- *        (Aiven, requires DB_SSL=true). On Render only this one exists, so
- *        production behaviour is unchanged.
+ *        (Aiven, requires DB_SSL=true). This is the application primary.
  *   3. SECONDARY CLOUD -> DB_SECONDARY_HOST / DB_SECONDARY_PORT / DB_SECONDARY_USER / DB_SECONDARY_PASSWORD
  *        (Aiven secondary, for high availability / failover)
  *
- * IMPORTANT: Endpoints are tried in ORDER (local -> cloud -> secondary cloud).
- * The defaultSelector 'ORDER' in database.js ensures local is preferred first,
- * then cloud, then secondary cloud when the previous is unreachable.
+ * Application endpoints are tried in ORDER (cloud -> secondary cloud).
+ * Local credentials never participate in application database pools.
  *
  * IMPORTANT: the *_2 values are used EXACTLY as given when the variables are
  * defined — an intentionally EMPTY DB_PASSWORD_2 must NOT fall through to the
  * cloud DB_PASSWORD (the `||` chain used to do exactly that and produced
  * "root + cloud password" -> ER_ACCESS_DENIED on localhost).
  *
- * mysql2's `createPoolCluster` uses configured endpoints in this order and
- * fails over to the next available node. Endpoints build the ready-to-pass
- * connection option objects that every DB config module + boot script consumes.
+ * `cloudEndpoints()` is the only endpoint list used by application pools.
  */
 "use strict";
 
@@ -136,7 +132,7 @@ function buildEndpoint({ host, port, user, password, database, ssl, label }) {
 function endpoints() {
   const list = [];
 
-  // 1) LOCAL endpoint (XAMPP/MariaDB on 127.0.0.1:3306) — preferred when set.
+  // Local endpoint for explicit synchronization/maintenance scripts only.
   const hasExplicitSecond =
     process.env.DB_HOST_2 || process.env.DB_PORT_2 || process.env.DB_USER_2;
   if (hasExplicitSecond) {
@@ -157,8 +153,7 @@ function endpoints() {
     );
   }
 
-  // 2) CLOUD endpoint (Aiven) — primary in production (Render), fallback in
-  //    dev. Legacy DB_CLOUD_* vars still win if the main DB_* ones are unset.
+  // Cloud primary (Aiven). Legacy DB_CLOUD_* vars still work when DB_* is unset.
   const primaryHost = process.env.DB_HOST || process.env.DB_CLOUD_HOST;
   if (primaryHost) {
     list.push(
@@ -210,10 +205,14 @@ function endpoints() {
   return list;
 }
 
+function cloudEndpoints() {
+  return endpoints().filter((cfg) => !IS_LOCAL_HOST(cfg.host));
+}
+
 function noMySqlEndpointError() {
   const message = process.env.NODE_ENV === "production"
     ? "No MySQL endpoint configured. Set DATABASE_URL (Aiven MySQL URI) or DB_HOST/DB_PORT/DB_USER/DB_PASSWORD in Render; set DB_NAME separately if it is not included in the URI."
-    : "No MySQL endpoint configured. Set DB_HOST_2/DB_PORT_2 for local XAMPP or DATABASE_URL / DB_HOST/DB_PORT/DB_USER/DB_PASSWORD for Aiven.";
+    : "No cloud MySQL endpoint configured. Set DATABASE_URL or DB_HOST/DB_PORT/DB_USER/DB_PASSWORD for Aiven.";
   return Object.assign(new Error(message), { code: "DB_ENDPOINTS_NOT_CONFIGURED" });
 }
 
@@ -223,12 +222,9 @@ function noMySqlEndpointError() {
  *
  * WHY THIS EXISTS
  * ---------------
- * `endpoints()` returns every endpoint that is merely *configured*, which on a
- * dev machine normally means two: a local XAMPP/MariaDB node and the cloud node.
- * The cluster was built with both, and mysql2's `defaultSelector: 'ORDER'`
- * always prefers #1 — so with local XAMPP stopped, every query first burned a
- * connection attempt against a refused port, was removed after one failure, then
- * put BACK in rotation by `restoreNodeTimeout: 5000` and tried again.
+ * `cloudEndpoints()` returns configured cloud endpoints only. Local XAMPP
+ * settings are retained for explicit maintenance/synchronization scripts but
+ * are never eligible for application database traffic.
  *
  * The visible damage was mid-flight connection loss:
  *
@@ -295,7 +291,7 @@ function tcpReachable(host, port, timeoutMs = 0) {
 let livePromise = null;
 
 /**
- * Reachable subset of `endpoints()`.
+ * Reachable subset of `cloudEndpoints()`.
  *
  * Memoised so the ~one probe round happens once per process and every later
  * caller (both config modules) shares the answer. A failed probe run is NOT
@@ -305,7 +301,7 @@ let livePromise = null;
 function liveEndpoints() {
   if (!livePromise) {
     livePromise = (async () => {
-      const all = endpoints();
+      const all = cloudEndpoints();
       // One endpoint means there is nothing to choose between — probing would
       // only add boot latency (Render/production), so hand it straight back.
       if (all.length < 2) return all;
@@ -362,7 +358,7 @@ function resetLiveEndpointsCache() {
 async function pruneUnreachableNodes(cluster) {
   const live = await liveEndpoints();
   const liveLabels = new Set(live.map((cfg) => cfg.label));
-  for (const cfg of endpoints()) {
+  for (const cfg of cloudEndpoints()) {
     if (liveLabels.has(cfg.label)) continue;
     try {
       cluster.remove(`db-${cfg.label}`);
@@ -381,6 +377,7 @@ function clean(cfg) {
 
 module.exports = {
   endpoints,
+  cloudEndpoints,
   parseDatabaseUrl,
   noMySqlEndpointError,
   clean,

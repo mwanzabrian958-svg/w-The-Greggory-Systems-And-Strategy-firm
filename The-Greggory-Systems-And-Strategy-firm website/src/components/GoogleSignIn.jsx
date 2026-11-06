@@ -96,7 +96,6 @@ const GoogleSignIn = ({ buttonText = 'Sign up with Google', isSignUp = true }) =
         display_name: userData.display_name,
         token,
         has_photo: !!userData.has_photo,
-        profilePhotoData: userData.profilePhotoData || null,
         whatsapp_verified: true
       });
 

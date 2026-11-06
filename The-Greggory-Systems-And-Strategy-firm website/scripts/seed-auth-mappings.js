@@ -12,11 +12,10 @@
 
 require("dotenv").config();
 const mysql = require("mysql2");
-const { endpoints, clean, DB_NAME } = require("../server/config/dbEndpoints");
+const { cloudEndpoints, clean, DB_NAME } = require("../server/config/dbEndpoints");
 
-// Default: use the shared cluster (prefers local XAMPP, fails over to cloud).
-// With --cloud: seed the CLOUD (Aiven) endpoint explicitly so production is
-// unblocked too, regardless of whether local XAMPP is running.
+// Both modes target application cloud endpoints. With --cloud, target the
+// primary cloud endpoint directly instead of using the shared cloud pool.
 //
 // Lazy on purpose: the connection is only created on the first real query, so
 // `require("./seed-auth-mappings")` (e.g. from scripts/preflight-db.js to reuse
@@ -26,7 +25,7 @@ function query(sql, values) {
   if (!_query) {
     if (process.argv.includes("--cloud")) {
       const mysql = require("mysql2");
-      const cloud = endpoints().find((e) => e.label === "claude");
+      const cloud = cloudEndpoints()[0];
       if (!cloud) {
         console.error("No cloud endpoint configured (DB_HOST unset)");
         process.exit(1);
@@ -37,7 +36,7 @@ function query(sql, values) {
     } else {
       const db = require("../backend/config/database");
       _query = (s, v) => db.promise().query(s, v);
-      console.log("[SEED] targeting cluster (local-first, cloud failover)");
+      console.log("[SEED] targeting cloud endpoint pool");
     }
   }
   return _query(sql, values);

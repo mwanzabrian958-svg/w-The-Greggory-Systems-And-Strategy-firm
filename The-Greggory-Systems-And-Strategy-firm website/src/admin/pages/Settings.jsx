@@ -51,9 +51,10 @@ export function Settings({ user }) {
   const [calibrating, setCalibrating] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [locking, setLocking] = useState(false);
-    const [feedback, setFeedback] = useState(null);
+  const [feedback, setFeedback] = useState(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoKey, setPhotoKey] = useState(Date.now());
+  const [photoPreview, setPhotoPreview] = useState(null);
   const flashTimer = useRef(null);
 
   const flash = useCallback((type, text) => {
@@ -90,6 +91,12 @@ export function Settings({ user }) {
     load();
     return () => { if (flashTimer.current) window.clearTimeout(flashTimer.current); };
   }, [load]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const toggleKey = (k) => setForm((f) => ({ ...f, [k]: boolStr(f[k]) === "true" ? "false" : "true" }));
@@ -172,50 +179,53 @@ export function Settings({ user }) {
     };
 
   const handlePhotoUpload = async (e) => {
+    const input = e.currentTarget;
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
+      input.value = "";
       flash("err", "Only image files are allowed");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
+      input.value = "";
       flash("err", "Image must be under 5MB");
       return;
     }
     setPhotoUploading(true);
+    setPhotoPreview(URL.createObjectURL(file));
     try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result;
-        try {
-          const data = await apiCall("/api/admin/profile-photo", {
-            method: "POST",
-            body: JSON.stringify({
-              userId: user?.id,
-              role: user?.role || "admin",
-              profile_photo_base64: base64,
-              profile_photo_mime_type: file.type,
-              profile_photo_file_name: file.name,
-            }),
-          });
-          if (data?.success) {
-            flash("ok", "Profile photo uploaded");
-            setPhotoKey(Date.now());
-            window.dispatchEvent(new Event("gf-admin-session-changed"));
-          } else {
-            throw new Error(data?.message || "Upload failed");
-          }
-        } catch (err) {
-          flash("err", err.message || "Upload failed");
-        } finally {
-          setPhotoUploading(false);
-        }
-      };
-      reader.onerror = () => { setPhotoUploading(false); flash("err", "Failed to read file"); };
-      reader.readAsDataURL(file);
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => typeof reader.result === "string"
+          ? resolve(reader.result)
+          : reject(new Error("Failed to read file"));
+        reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+      const data = await apiCall("/api/admin/profile-photo", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: user?.id,
+          role: user?.role || "admin",
+          profile_photo_base64: base64,
+          profile_photo_mime_type: file.type,
+          profile_photo_file_name: file.name,
+        }),
+      });
+      if (data?.success) {
+        flash("ok", "Profile photo uploaded");
+        setPhotoPreview(null);
+        setPhotoKey(Date.now());
+        window.dispatchEvent(new Event("gf-admin-session-changed"));
+      } else {
+        throw new Error(data?.message || "Upload failed");
+      }
     } catch (err) {
-      setPhotoUploading(false);
       flash("err", err.message || "Upload failed");
+    } finally {
+      setPhotoUploading(false);
+      input.value = "";
     }
   };
 
@@ -232,6 +242,7 @@ export function Settings({ user }) {
       });
       if (data?.success) {
         flash("ok", "Profile photo removed");
+        setPhotoPreview(null);
         setPhotoKey(Date.now());
         window.dispatchEvent(new Event("gf-admin-session-changed"));
       } else {
@@ -330,10 +341,10 @@ export function Settings({ user }) {
                   <label className="block text-[6px] font-black text-slate-400 uppercase tracking-widest mb-1 px-1">Admin Profile Photo</label>
                   <div className="flex items-center gap-3">
                      <div className="relative">
-                        {user?.has_photo ? (
+                        {photoPreview || user?.has_photo ? (
                           <img
-                            key={photoKey}
-                            src={`/api/admin/profile-photo/${user?.role || "admin"}/${user?.id}?t=${photoKey}`}
+                            key={photoPreview || photoKey}
+                            src={photoPreview || `/api/admin/profile-photo/${user?.role || "admin"}/${user?.id}?t=${photoKey}`}
                             alt={user?.display_name || "Admin"}
                             className="w-12 h-12 rounded-xl object-cover border-2 border-slate-200 shadow"
                             onError={(e) => { e.currentTarget.style.display = "none"; }}

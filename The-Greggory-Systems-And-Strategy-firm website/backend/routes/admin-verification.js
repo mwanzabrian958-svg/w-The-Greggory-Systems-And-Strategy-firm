@@ -31,8 +31,9 @@ router.post('/authenticate-enhanced', (req, res) => {
   }
   
   db.query(
-    `SELECT au.*, au.profile_photo_blob as direct_blob, au.profile_photo_mime_type as direct_mime, au.profile_photo_file_name as direct_file,
-            i.data as img_data, i.content_type as img_type, i.file_name as img_name
+    `SELECT au.id, au.email, au.first_name, au.last_name, au.display_name,
+            au.password_hash, au.admin_level, au.profile_image_id,
+            (au.profile_photo_blob IS NOT NULL OR i.id IS NOT NULL) AS has_photo
      FROM admin_users au
      LEFT JOIN images i ON i.id = au.profile_image_id
      WHERE au.email = ? AND au.is_active = true AND au.deleted_at IS NULL`,
@@ -83,17 +84,6 @@ router.post('/authenticate-enhanced', (req, res) => {
         
         console.log('[AUTH] SUCCESS:', email);
         
-        // Convert blob to base64 data URI — check BOTH storage locations
-        // (direct blob on admin_users.table from POST /api/admin/profile-photo,
-        //  OR images table via profile_image_id from POST /profile/:id/photo)
-        const rawBlob = user.direct_blob || user.img_data;
-        let profilePhotoData = null;
-        if (rawBlob) {
-          const base64 = Buffer.from(rawBlob).toString('base64');
-          const mimeType = user.direct_mime || user.img_type || 'image/jpeg';
-          profilePhotoData = `data:${mimeType};base64,${base64}`;
-        }
-        
         createAdminSession(user.id, 'admin').then((token) => {
           setSessionCookie(res, req, ADMIN_SESSION_COOKIE, token);
           res.json({
@@ -105,8 +95,7 @@ router.post('/authenticate-enhanced', (req, res) => {
               name: user.display_name || `${user.first_name} ${user.last_name}`,
               admin_level: user.admin_level,
               role_type: 'admin',
-              has_photo: !!(user.direct_blob || user.img_data),
-              profilePhotoData: profilePhotoData,
+              has_photo: !!user.has_photo,
               profile_image_id: user.profile_image_id || null,
             },
             token,

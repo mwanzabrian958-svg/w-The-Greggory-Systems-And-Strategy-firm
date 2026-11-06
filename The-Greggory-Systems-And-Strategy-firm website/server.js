@@ -761,17 +761,16 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ============================================================================
-// DATABASE — two-MySQL failover (explicit pools, no PoolCluster).
-// The app "looks at both SQL ports" and uses whichever one answers:
-//   1. local XAMPP   -> DB_HOST_2 / DB_PORT_2  (127.0.0.1:3306)
-//   2. claude / cloud-> DB_HOST / DB_PORT      (e.g. Aiven :28067)
+// DATABASE — cloud-only MySQL failover (explicit pools, no PoolCluster).
+// Local XAMPP settings are reserved for maintenance/synchronization scripts;
+// application requests and writes use cloud endpoints only.
 // Why not mysql2 PoolCluster: its Pool.getConnection has NO acquire timeout —
 // if a handshake wedges, every query queues FOREVER with no error (observed).
 // Explicit pools + a hard per-query timeout guarantee requests always get an
 // answer (from the other endpoint, or a fast error the routes can render).
 // ============================================================================
 const {
-  endpoints: dbEndpoints,
+  cloudEndpoints: dbEndpoints,
   noMySqlEndpointError,
   cloudSslEnabled,
   liveEndpoints,
@@ -780,11 +779,11 @@ const {
 const DB_NAME = process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main";
 const MAIN_DB_TIMEOUT_MS = 12000; // hard cap per query attempt (failover budget)
 
-const _dbPools = []; // [ { label, pool } ] in priority order (local first)
+const _dbPools = []; // [ { label, pool } ] in cloud endpoint priority order
 dbEndpoints().forEach((cfg, i) => {
   const { label, ...opts } = cfg;
   const pool = mysql.createPool({
-    ...opts, // keeps each endpoint's OWN database (local DB_NAME_2 vs cloud DB_NAME)
+    ...opts,
     waitForConnections: true,
     connectionLimit: 10,
     maxIdle: 5,
@@ -799,7 +798,7 @@ dbEndpoints().forEach((cfg, i) => {
 // Drop endpoints with nothing listening BEFORE the first query runs.
 //
 // _dbRun() below fails over in a plain sequential loop, so a configured-but-dead
-// endpoint (local XAMPP stopped) was attempted on EVERY query: one wasted
+// cloud endpoint was attempted on EVERY query: one wasted
 // ECONNREFUSED round trip first, on every request. Under the verification suite
 // that churn alone made reads time out, and the constant reconnect cycle resets
 // connections on the endpoint that IS alive — surfacing as `read ECONNRESET` on
@@ -1297,19 +1296,19 @@ app.get("/api/test-db", async (req, res) => {
     // Keep the { success: false } contract — clients only probe it for health.
     //
     // BUT a bare "connection failed" is unactionable on a live deploy. The usual
-    // cause is a missing/blank DB_* env var in the host environment: buildEndpoint()
-    // silently falls back to host:"localhost", and a Render container has no local
-    // MySQL, so every query fails. We therefore attach NON-SECRET diagnostics —
+    // cause is a missing/blank cloud DB env var in the host environment, leaving
+    // the application without a remote database endpoint. We attach NON-SECRET diagnostics —
     // only whether each required var is present, never the values, host, or the
     // driver error — so a misconfigured deploy names the culprit without leaking it.
+    const databaseUrlConfigured = Boolean(process.env.DATABASE_URL || process.env.AIVEN_DATABASE_URL);
     const diag = {
-      DB_HOST_set: Boolean(process.env.DB_HOST),
-      DB_PORT_set: Boolean(process.env.DB_PORT),
-      DB_USER_set: Boolean(process.env.DB_USER),
-      DB_PASSWORD_set: Boolean((process.env.DB_PASSWORD || "").trim()),
-      DB_NAME_set: Boolean(process.env.DB_NAME),
+      DB_HOST_set: Boolean(process.env.DB_HOST || process.env.DB_CLOUD_HOST || databaseUrlConfigured),
+      DB_PORT_set: Boolean(process.env.DB_PORT || process.env.DB_CLOUD_PORT || databaseUrlConfigured),
+      DB_USER_set: Boolean(process.env.DB_USER || process.env.DB_CLOUD_USER || databaseUrlConfigured),
+      DB_PASSWORD_set: Boolean((process.env.DB_PASSWORD || process.env.DB_CLOUD_PASSWORD || "").trim() || databaseUrlConfigured),
+      DB_NAME_set: Boolean(process.env.DB_NAME || databaseUrlConfigured),
       DB_SSL: process.env.DB_SSL === undefined ? "(unset)" : process.env.DB_SSL,
-      hostIsLocalhostFallback: !process.env.DB_HOST,
+      hostIsLocalhostFallback: !process.env.DB_HOST && !process.env.DB_CLOUD_HOST && !databaseUrlConfigured,
     };
     console.error("[DATABASE] connection test failed:", (error && (error.code || error.name)) || "UNKNOWN_ERROR", diag);
     const missingEnv = !diag.DB_HOST_set || !diag.DB_USER_set || !diag.DB_PASSWORD_set || !diag.DB_NAME_set || diag.hostIsLocalhostFallback;
@@ -1318,7 +1317,7 @@ app.get("/api/test-db", async (req, res) => {
       message: "Database connection failed",
       diagnostics: diag,
       hint: missingEnv
-        ? "A required DB_* env var is missing/blank (or the host fell back to localhost). Set DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME and DB_SSL=true in the Render service Environment, then redeploy."
+        ? "A cloud database setting is missing. Set DATABASE_URL (Aiven) or DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME and DB_SSL=true in the service environment, then redeploy."
         : "All DB_* env vars are present; check the server logs for the driver error code (timeout / TLS / auth).",
     });
   }
@@ -1541,7 +1540,7 @@ app.use("/api/db/:database", authenticateAdmin, async (req, res, next) => {
     return res.status(400).json({ success: false, message: "Invalid database name" });
   }
   const allowedDatabases = new Set(
-    [process.env.DB_NAME, process.env.DB_NAME_2, process.env.DB_CLOUD_NAME].filter(Boolean)
+    [process.env.DB_NAME, process.env.DB_CLOUD_NAME].filter(Boolean)
   );
   if (allowedDatabases.size > 0 && !allowedDatabases.has(database)) {
     return res.status(403).json({ success: false, message: "Database not allowed" });
@@ -1551,8 +1550,7 @@ app.use("/api/db/:database", authenticateAdmin, async (req, res, next) => {
   if (req.path.includes("/databases")) return next();
 
   try {
-    // Create a connection to the requested database, trying each configured
-    // MySQL endpoint (local:3306, then claude) until one answers.
+    // Create a connection using configured cloud endpoints only.
     let lastErr;
     let connection = null;
     for (const cfg of dbEndpoints()) {
@@ -2088,7 +2086,8 @@ const loadClientPortalPayload = async (id) => {
     const [users] = await mainDb.query(
       `SELECT id, email, first_name, last_name, display_name, phone_number, primary_role,
               mission_briefing, last_login_at, last_login_ip, created_at, updated_at,
-              email_verified, timezone, locale, profile_photo_blob, profile_photo_mime_type, profile_photo_file_name
+              email_verified, timezone, locale,
+              (profile_photo_blob IS NOT NULL) AS has_photo
        FROM users
        WHERE id = ? AND deleted_at IS NULL`,
       [id],
@@ -2327,8 +2326,7 @@ const loadClientPortalPayload = async (id) => {
         timezone: user.timezone,
         locale: user.locale,
         role: user.primary_role || "user",
-        has_photo: !!user.profile_photo_blob,
-        profilePhotoData: buildImageDataUri(user.profile_photo_blob, user.profile_photo_mime_type),
+        has_photo: !!user.has_photo,
       },
       projects: projectRows,
       tasks: taskRows,
@@ -2670,7 +2668,7 @@ app.post("/api/users/google-auth", async (req, res) => {
     // ── 3. Resolve the client node: Google id first, then email ─────────────
     const hasGoogleIdColumn = await googleIdColumnAvailable();
     const userColumns =
-      "id, email, first_name, last_name, display_name, primary_role, is_active, profile_photo_blob, profile_photo_mime_type";
+      "id, email, first_name, last_name, display_name, primary_role, is_active, (profile_photo_blob IS NOT NULL) AS has_photo";
     let user = null;
 
     if (hasGoogleIdColumn) {
@@ -2738,8 +2736,7 @@ app.post("/api/users/google-auth", async (req, res) => {
         display_name: displayName,
         primary_role: "user",
         is_active: 1,
-        profile_photo_blob: null,
-        profile_photo_mime_type: null,
+        has_photo: false,
       };
       isNewUser = true;
       console.log(`[GOOGLE AUTH] registered client node #${user.id} (${email})`);
@@ -2786,11 +2783,6 @@ app.post("/api/users/google-auth", async (req, res) => {
       console.warn("[GOOGLE AUTH] last-login stamp skipped:", touchError.message);
     }
 
-    let profilePhotoData = null;
-    if (user.profile_photo_blob) {
-      profilePhotoData = buildImageDataUri(user.profile_photo_blob, user.profile_photo_mime_type);
-    }
-
     const clientUser = {
       id: user.id,
       email: user.email || email,
@@ -2800,8 +2792,7 @@ app.post("/api/users/google-auth", async (req, res) => {
       primary_role: user.primary_role || "user",
       role: user.primary_role || "user",
       role_type: "user",
-      has_photo: !!user.profile_photo_blob,
-      profilePhotoData,
+      has_photo: !!user.has_photo,
       whatsapp_verified: true,
     };
 
@@ -7182,61 +7173,6 @@ app.delete("/api/images/:id", authenticateAdmin, async (req, res) => {
   }
 });
 
-// Profile photo upload endpoint
-app.post(
-  "/api/users/upload-profile-photo",
-  upload.single("profilePhoto"),
-  async (req, res) => {
-    try {
-      const { userId } = req.body;
-
-      if (!userId) {
-        return res.status(400).json({
-          success: false,
-          message: "User ID is required",
-        });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "Profile photo is required",
-        });
-      }
-
-      // Update user's profile photo in database
-      const [result] = await mainDb.query(
-        "UPDATE users SET profile_photo_blob = ?, profile_photo_mime_type = ?, profile_photo_file_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [req.file.buffer, req.file.mimetype, req.file.originalname, userId],
-      );
-
-      if (result.affectedRows === 0) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found",
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "Profile photo uploaded successfully",
-        profilePhoto: {
-          mimeType: req.file.mimetype,
-          fileName: req.file.originalname,
-          size: req.file.size,
-        },
-      });
-    } catch (error) {
-      console.error("Profile photo upload error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to upload profile photo",
-        error: "Internal server error",
-      });
-    }
-  },
-);
-
 // Profile photo retrieval endpoint
 app.get("/api/users/profile-photo/:userId", async (req, res) => {
   try {
@@ -7257,6 +7193,7 @@ app.get("/api/users/profile-photo/:userId", async (req, res) => {
     const user = users[0];
 
     res.set({
+      "Cache-Control": "no-store",
       // Some rows store a wildcard MIME ("image/*") — resolve the real type so
       // <img> tags render instead of showing a broken-image icon.
       "Content-Type": resolveImageMimeType(user.profile_photo_blob, user.profile_photo_mime_type),
@@ -7386,12 +7323,6 @@ function resolveImageMimeType(blob, storedMime) {
   if (blob[0] === 0x42 && blob[1] === 0x4d) return "image/bmp";
   return "image/jpeg";
 }
-function buildImageDataUri(blob, storedMime) {
-  if (!blob) return null;
-  const mimeType = resolveImageMimeType(blob, storedMime);
-  return `data:${mimeType};base64,${Buffer.from(blob).toString("base64")}`;
-}
-
 /**
  * Single source of truth for photo storage: one identity = one table.
  *
@@ -9034,7 +8965,7 @@ app.listen(PORT, "0.0.0.0", async () => {
     // from below the catch, which printed this unconditionally and falsely
     // reported success even when the CREATE TABLE had just failed).
     console.log(
-      `Connected to MySQL server at ${process.env.DB_HOST || "localhost"} (fails over to claude if it goes down)`,
+      `Connected to cloud MySQL endpoint ${process.env.DB_HOST || process.env.DB_CLOUD_HOST || "configured cloud URI"}`,
     );
   } catch (err) {
     // Never let a boot-time DB problem crash the process: a missing/blank DB_*

@@ -164,6 +164,10 @@ if (require.main === module) {
   (async () => {
     console.log("\n=== DB PRE-FLIGHT (auth mappings + rules, all endpoints) ===");
     const summary = await ensureAuthSeedData({});
+    if (summary.endpoints === 0) {
+      console.error("\nFAILED: no configured database endpoint could be reached; auth seed data was not verified.");
+      process.exit(1);
+    }
     const bad = summary.details.filter((d) => d.mappings < MAPPINGS.length);
     if (bad.length) {
       console.error(
