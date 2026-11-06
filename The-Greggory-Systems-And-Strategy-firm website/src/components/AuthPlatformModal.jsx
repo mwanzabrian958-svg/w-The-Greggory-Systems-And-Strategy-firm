@@ -44,8 +44,10 @@ export default function AuthPlatformModal({
   const [showPassword, setShowPassword] = useState(false);
   const [regError, setRegError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPhotoReading, setIsPhotoReading] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState(null);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
 
   // Admin login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -72,6 +74,7 @@ export default function AuthPlatformModal({
     }
     setProfilePhoto(null);
     setProfilePhotoPreview(null);
+    setIsPhotoReading(false);
   }, [isOpen, startOnAdminStep]);
 
   if (!isOpen) return null;
@@ -80,6 +83,8 @@ export default function AuthPlatformModal({
     setView("platform");
     setProfilePhoto(null);
     setProfilePhotoPreview(null);
+    setIsPhotoReading(false);
+    setPhotoViewerOpen(false);
     onClose();
   };
 
@@ -110,17 +115,55 @@ export default function AuthPlatformModal({
     setRegError("");
     setProfilePhoto(null);
     setProfilePhotoPreview(null);
+    setIsPhotoReading(false);
     setView("register");
   };
 
   const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfilePhoto(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setProfilePhotoPreview(reader.result);
-      reader.readAsDataURL(file);
+    const input = e.currentTarget;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+      setProfilePhoto(null);
+      setProfilePhotoPreview(null);
+      setIsPhotoReading(false);
+      setRegError("Choose a PNG, JPEG, or WebP image");
+      input.value = "";
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      setProfilePhoto(null);
+      setProfilePhotoPreview(null);
+      setIsPhotoReading(false);
+      setRegError("Profile photo must be under 5MB");
+      input.value = "";
+      return;
+    }
+
+    setRegError("");
+    setProfilePhoto(file);
+    setProfilePhotoPreview(null);
+    setIsPhotoReading(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setProfilePhotoPreview(reader.result);
+      } else {
+        setProfilePhoto(null);
+        setProfilePhotoPreview(null);
+        setRegError("Could not read the selected image");
+      }
+      setIsPhotoReading(false);
+      input.value = "";
+    };
+    reader.onerror = () => {
+      setProfilePhoto(null);
+      setProfilePhotoPreview(null);
+      setIsPhotoReading(false);
+      setRegError("Could not read the selected image");
+      input.value = "";
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRegisterSubmit = async (e) => {
@@ -264,16 +307,8 @@ export default function AuthPlatformModal({
               <div className="text-center mb-6">
                 <div className="relative w-20 h-20 mb-4 shrink-0 mx-auto">
                   <div className="w-full h-full rounded-full bg-teal-600 overflow-hidden flex items-center justify-center border-2 border-slate-100 shadow-lg">
-                    {profilePhotoPreview ? (
-                      <img src={profilePhotoPreview} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <Shield className="w-10 h-10 text-white" />
-                    )}
+                    <Shield className="w-10 h-10 text-white" />
                   </div>
-                  <label className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer hover:bg-green-600 shadow-md">
-                    <span className="text-white text-sm font-bold leading-none">+</span>
-                    <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" />
-                  </label>
                 </div>
                 <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
                   Administrative Access
@@ -320,9 +355,22 @@ export default function AuthPlatformModal({
               <div className="text-center mb-6">
                 <div className="relative w-20 h-20 mb-4 shrink-0 mx-auto">
                   <div className="w-full h-full rounded-full bg-teal-600 flex items-center justify-center overflow-hidden border-2 border-slate-100 shadow-lg">
-                    {profilePhotoPreview ? <img src={profilePhotoPreview} alt="Profile" className="w-full h-full object-cover" /> : <Shield className="w-10 h-10 text-white" />}
+                    {profilePhotoPreview ? (
+                      <button type="button" onClick={() => setPhotoViewerOpen(true)} className="absolute inset-0 cursor-zoom-in" aria-label="View profile photo full size">
+                        <img
+                          src={profilePhotoPreview}
+                          alt="Selected profile photo"
+                          className="w-full h-full object-cover"
+                          onError={() => {
+                            setProfilePhoto(null);
+                            setProfilePhotoPreview(null);
+                            setRegError("The selected image could not be displayed");
+                          }}
+                        />
+                      </button>
+                    ) : <Shield className="w-10 h-10 text-white" />}
                   </div>
-                  <label className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer hover:bg-green-600 shadow-md"><span className="text-white text-sm font-bold">+</span><input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" /></label>
+                  <label className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white cursor-pointer hover:bg-green-600 shadow-md"><span className="text-white text-sm font-bold">+</span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePhotoChange} className="hidden" /></label>
                 </div>
                 <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Create administrator account</h2>
                 <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-2">ADMINISTRATOR</p>
@@ -348,7 +396,7 @@ export default function AuthPlatformModal({
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2 text-gray-400 hover:text-gray-600 transition-colors">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
                   </div>
                   <input type="password" value={regData.confirmPassword} onChange={(e) => setRegData({ ...regData, confirmPassword: e.target.value })} required className="w-full px-3 py-2 border border-gray-200 rounded-lg text-[10px] font-bold" placeholder="Confirm password" />
-                  <button type="submit" disabled={isSubmitting} className="w-full px-4 py-3 bg-teal-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">{isSubmitting ? "Creating account..." : "Create account"}</button>
+                  <button type="submit" disabled={isSubmitting || isPhotoReading} className="w-full px-4 py-3 bg-teal-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg">{isPhotoReading ? "Reading photo..." : isSubmitting ? "Creating account..." : "Create account"}</button>
                   <p className="text-center text-[7px] font-black text-gray-400 uppercase tracking-widest">Already have an account? <button type="button" onClick={() => setView("admin")} className="text-teal-700">Sign in here</button></p>
                 </form>
               )}
@@ -356,6 +404,30 @@ export default function AuthPlatformModal({
           )}
         </div>
       </div>
+      {photoViewerOpen && profilePhotoPreview && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Profile photo preview"
+          onClick={() => setPhotoViewerOpen(false)}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
+            aria-label="Close photo preview"
+            onClick={() => setPhotoViewerOpen(false)}
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={profilePhotoPreview}
+            alt="Profile photo full size"
+            className="max-h-[90vh] max-w-[95vw] rounded-lg object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

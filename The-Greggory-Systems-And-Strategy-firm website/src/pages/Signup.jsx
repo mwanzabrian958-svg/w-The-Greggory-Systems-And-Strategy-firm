@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, User, Phone, Camera } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, Phone, Camera, X } from 'lucide-react'
 import GoogleSignIn, { googleSignInEnabled } from '../components/GoogleSignIn'
 import AuthLayout from '../components/AuthLayout'
 import { usersAPI } from '../services/api'
@@ -23,6 +23,7 @@ const Signup = () => {
   })
   const [profilePreview, setProfilePreview] = useState(null)
   const [profileFile, setProfileFile] = useState(null)
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false)
   const [errors, setErrors] = useState({
     firstName: '',
     lastName: '',
@@ -50,11 +51,44 @@ const Signup = () => {
   }
 
   const handleProfileChange = (e) => {
-    const file = e.target.files?.[0]
+    const input = e.currentTarget
+    const file = input.files?.[0]
     if (!file) return
+
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      setProfileFile(null)
+      setProfilePreview(null)
+      setErrors(prev => ({ ...prev, submit: 'Choose a PNG, JPEG, or WebP image' }))
+      input.value = ''
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileFile(null)
+      setProfilePreview(null)
+      setErrors(prev => ({ ...prev, submit: 'Profile photo must be under 5MB' }))
+      input.value = ''
+      return
+    }
+
     setProfileFile(file)
-    const previewUrl = URL.createObjectURL(file)
-    setProfilePreview(previewUrl)
+    setErrors(prev => ({ ...prev, submit: '' }))
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setProfilePreview(reader.result)
+      } else {
+        setProfileFile(null)
+        setProfilePreview(null)
+        setErrors(prev => ({ ...prev, submit: 'Could not read the selected image' }))
+      }
+    }
+    reader.onerror = () => {
+      setProfileFile(null)
+      setProfilePreview(null)
+      setErrors(prev => ({ ...prev, submit: 'Could not read the selected image' }))
+    }
+    reader.readAsDataURL(file)
+    input.value = ''
   }
 
   const handleSubmit = async (e) => {
@@ -91,9 +125,12 @@ const Signup = () => {
       };
       
       if (profileFile) {
-        const base64Data = await new Promise((resolve) => {
+        const base64Data = await new Promise((resolve, reject) => {
           const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
+          reader.onload = () => typeof reader.result === 'string'
+            ? resolve(reader.result)
+            : reject(new Error('Could not read the selected image'));
+          reader.onerror = () => reject(reader.error || new Error('Could not read the selected image'));
           reader.readAsDataURL(profileFile);
         });
         userData.profile_photo_base64 = base64Data;
@@ -130,12 +167,20 @@ const Signup = () => {
           <div className="relative group">
             <div className="absolute -inset-1 bg-gradient-to-tr from-gold-500 to-cyan-500 rounded-full blur opacity-25"></div>
             <div className="relative w-20 h-20 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border-2 border-white/20 backdrop-blur-xl">
-              {profilePreview ? <img src={profilePreview} alt="Profile" className="w-full h-full object-cover" /> : <User className="w-10 h-10 text-slate-500" />}
+              {profilePreview ? (
+                <button type="button" onClick={() => setPhotoViewerOpen(true)} className="absolute inset-0 cursor-zoom-in" aria-label="View profile photo full size">
+                  <img key={profilePreview} src={profilePreview} alt="Selected profile photo" className="w-full h-full object-cover" onError={() => {
+                    setProfileFile(null)
+                    setProfilePreview(null)
+                    setErrors(prev => ({ ...prev, submit: 'The selected image could not be displayed. Choose a PNG, JPEG, or WebP image.' }))
+                  }} />
+                </button>
+              ) : <User className="w-10 h-10 text-slate-500" />}
             </div>
             <label htmlFor="profilePhoto" className="absolute -bottom-1 -left-1 w-7 h-7 rounded-full bg-gold-500 border-2 border-[#0f172a] flex items-center justify-center text-slate-950 cursor-pointer shadow-xl">
               <Camera className="w-3.5 h-3.5" />
             </label>
-            <input id="profilePhoto" type="file" accept="image/*" className="hidden" onChange={handleProfileChange} />
+            <input id="profilePhoto" type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleProfileChange} />
           </div>
           <p className="mt-4 text-[8px] text-slate-500 font-black uppercase tracking-widest">Add a profile photo</p>
         </div>
@@ -238,6 +283,31 @@ const Signup = () => {
           </>
         )}
       </div>
+
+      {photoViewerOpen && profilePreview && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Profile photo preview"
+          onClick={() => setPhotoViewerOpen(false)}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
+            aria-label="Close photo preview"
+            onClick={() => setPhotoViewerOpen(false)}
+          >
+            <X size={20} />
+          </button>
+          <img
+            src={profilePreview}
+            alt="Profile photo full size"
+            className="max-h-[90vh] max-w-[95vw] rounded-lg object-contain"
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {(isLoading || showSuccess) && (
         <LoadingOverlay

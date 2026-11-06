@@ -236,7 +236,18 @@ router.post('/register', async (req, res) => {
   // platform it guarded is unlisted). Signups are email+password only;
   // scripts/test-admin-code-guard.js fails if any admin-code check comes back.
   try {
-    const { email, password, first_name, last_name, role, admin_level, profile_image_id } = req.body;
+    const {
+      email,
+      password,
+      first_name,
+      last_name,
+      role,
+      admin_level,
+      profile_image_id,
+      profile_photo_base64,
+      profile_photo_mime_type,
+      profile_photo_file_name,
+    } = req.body;
     
     const userRole = role || 'admin';
     if (userRole === 'developer') {
@@ -268,6 +279,46 @@ router.post('/register', async (req, res) => {
         message: 'Password must be at least 8 characters'
       });
     }
+
+    let profilePhotoBlob = null;
+    let profilePhotoMimeType = null;
+    let profilePhotoFileName = null;
+    if (profile_photo_base64) {
+      const match = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(profile_photo_base64);
+      if (!match || match[1] !== profile_photo_mime_type) {
+        return res.status(400).json({
+          success: false,
+          message: 'Profile photo must be a valid PNG, JPEG, or WebP image'
+        });
+      }
+
+      profilePhotoBlob = Buffer.from(match[2], 'base64');
+      if (!profilePhotoBlob.length || profilePhotoBlob.length > 5 * 1024 * 1024 || profilePhotoBlob.toString('base64') !== match[2]) {
+        return res.status(400).json({
+          success: false,
+          message: 'Profile photo must be under 5MB and contain valid image data'
+        });
+      }
+
+      profilePhotoMimeType = match[1];
+      const matchesMime =
+        profilePhotoMimeType === 'image/png'
+          ? profilePhotoBlob.length >= 8 && profilePhotoBlob.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+          : profilePhotoMimeType === 'image/jpeg'
+            ? profilePhotoBlob[0] === 0xff && profilePhotoBlob[1] === 0xd8 && profilePhotoBlob[2] === 0xff
+            : profilePhotoBlob.length >= 12 &&
+              profilePhotoBlob.toString('ascii', 0, 4) === 'RIFF' &&
+              profilePhotoBlob.toString('ascii', 8, 12) === 'WEBP';
+      if (!matchesMime) {
+        return res.status(400).json({
+          success: false,
+          message: 'The selected file contents do not match its image format'
+        });
+      }
+      profilePhotoFileName = String(profile_photo_file_name || 'profile.png')
+        .replace(/[\u0000-\u001f\u007f]/g, '')
+        .slice(0, 255);
+    }
     
     // Check if email exists in the admin table
     const [existing] = await db.promise().query(
@@ -288,12 +339,27 @@ router.post('/register', async (req, res) => {
     
     let result;
     
-    // Insert into admin_users table with optional profile_image_id
+    // Keep uploaded profile photos on the admin identity row as a BLOB.
     const level = admin_level || 'admin';
     [result] = await db.promise().query(
-      `INSERT INTO admin_users (email, password_hash, first_name, last_name, display_name, admin_level, is_active, profile_image_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, true, ?, NOW())`,
-      [email, hashedPassword, first_name, last_name, displayName, level, profile_image_id || null]
+      `INSERT INTO admin_users (
+         email, password_hash, first_name, last_name, display_name, admin_level,
+         is_active, profile_image_id, profile_photo_blob, profile_photo_mime_type,
+         profile_photo_file_name, created_at
+       )
+       VALUES (?, ?, ?, ?, ?, ?, true, ?, ?, ?, ?, NOW())`,
+      [
+        email,
+        hashedPassword,
+        first_name,
+        last_name,
+        displayName,
+        level,
+        profile_image_id || null,
+        profilePhotoBlob,
+        profilePhotoMimeType,
+        profilePhotoFileName,
+      ]
     );
     
     console.log('[REGISTER] ✓ SUCCESS - Inserted into TABLE:', tableName, '| ID:', result.insertId);
