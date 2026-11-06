@@ -83,8 +83,8 @@ export const apiCall = async (endpoint, options = {}) => {
 
     // Handle Empty Response
     if (!text || text.trim() === "") {
-        if (!response.ok) throw new Error(`Protocol Error: ${response.status}`);
-        return { success: true, empty: true };
+      if (!response.ok) throw new Error(`Protocol Error: ${response.status}`);
+      return { success: true, empty: true };
     }
 
     let data = null;
@@ -172,6 +172,20 @@ export const getPdfUrl = (path) => {
   if (!token) return url;
   const sep = url.includes("?") ? "&" : "?";
   return `${url}${sep}token=${encodeURIComponent(token)}`;
+};
+export const normalizeMediaSource = (src) => {
+  const value = String(src ?? "").trim();
+  if (!value) return "";
+  if (/^(data:|blob:|https?:\/\/)/i.test(value)) return value;
+  return getApiUrl(value);
+};
+
+export const buildDataUri = (base64, mimeType) => {
+  const mime = String(mimeType || "").trim().toLowerCase();
+  const safeMime = /^image\/(jpeg|jpg|png|gif|webp|avif|bmp)$/.test(mime)
+    ? mime === "image/jpg" ? "image/jpeg" : mime
+    : "image/jpeg";
+  return `data:${safeMime};base64,${base64 || ""}`;
 };
 
 // M-Pesa API

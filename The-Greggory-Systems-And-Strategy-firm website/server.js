@@ -7386,6 +7386,13 @@ function resolveImageMimeType(blob, storedMime) {
   if (blob[0] === 0x42 && blob[1] === 0x4d) return "image/bmp";
   return "image/jpeg";
 }
+function buildImageDataUri(blob, storedMime) {
+  if (!blob) return null;
+  const mimeType = resolveImageMimeType(blob, storedMime);
+  return `data:${mimeType};base64,${Buffer.from(blob).toString("base64")}`;
+}
+profilePhotoData: buildImageDataUri(user.profile_photo_blob, user.profile_photo_mime_type),
+  profilePhotoData = buildImageDataUri(user.profile_photo_blob, user.profile_photo_mime_type);
 
 /**
  * Single source of truth for photo storage: one identity = one table.

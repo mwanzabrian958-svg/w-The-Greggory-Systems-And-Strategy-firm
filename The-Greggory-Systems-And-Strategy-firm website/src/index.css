@@ -14,6 +14,30 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+img,
+video,
+svg,
+canvas,
+picture {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+  object-position: center;
+}
+
+img,
+video {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+img[src=""],
+video[src=""],
+img:not([src]),
+video:not([src]) {
+  display: none;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -29,6 +53,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   html,
   body,
   *,
@@ -78,6 +103,7 @@ body {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -88,12 +114,15 @@ body {
   0% {
     transform: translate(0px, 0px) scale(1);
   }
+
   33% {
     transform: translate(30px, -50px) scale(1.1);
   }
+
   66% {
     transform: translate(-20px, 20px) scale(0.9);
   }
+
   100% {
     transform: translate(0px, 0px) scale(1);
   }
@@ -111,10 +140,14 @@ body {
   /* Light theme — conservative, higher-contrast defaults */
   --bg-primary: #f8efe6;
   --bg-secondary: #f3e7d8;
-  --text-primary: #0f1720; /* darker for improved legibility */
-  --text-secondary: #475569; /* slightly darker secondary text */
-  --border-primary: #c8b6a3; /* subtle but more visible */
-  --accent-primary: #39543b; /* richer accent for links/buttons */
+  --text-primary: #0f1720;
+  /* darker for improved legibility */
+  --text-secondary: #475569;
+  /* slightly darker secondary text */
+  --border-primary: #c8b6a3;
+  /* subtle but more visible */
+  --accent-primary: #39543b;
+  /* richer accent for links/buttons */
   --accent-secondary: #aa7d3f;
   --card-bg: rgba(255, 251, 247, 0.92);
 }
@@ -124,7 +157,8 @@ body {
   --bg-secondary: #161d1a;
   --text-primary: #f5efe9;
   --text-secondary: #c8b9a7;
-  --border-primary: rgba(255, 255, 255, 0.20); /* slightly stronger borders */
+  --border-primary: rgba(255, 255, 255, 0.20);
+  /* slightly stronger borders */
   --accent-primary: #8fb28a;
   --accent-secondary: #d1a257;
   --card-bg: rgba(28, 35, 31, 0.92);
@@ -137,7 +171,12 @@ body {
     letter-spacing: 0.015em;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading;
     letter-spacing: -0.02em;
   }
@@ -157,15 +196,15 @@ body {
   }
 
   .page-shell {
-    @apply min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(76,106,77,0.18),_transparent_40%),radial-gradient(circle_at_bottom_right,_rgba(170,125,63,0.16),_transparent_35%),linear-gradient(135deg,_#f8efe6_0%,_#f3e7d8_48%,_#efe2d0_100%)] text-[var(--text-primary)] transition-colors duration-300;
+    @apply min-h-screen bg-[radial-gradient(circle_at_top_left, _rgba(76, 106, 77, 0.18), _transparent_40%), radial-gradient(circle_at_bottom_right, _rgba(170, 125, 63, 0.16), _transparent_35%), linear-gradient(135deg, _#f8efe6_0%, _#f3e7d8_48%, _#efe2d0_100%)] text-[var(--text-primary)] transition-colors duration-300;
   }
 
   .soft-panel {
-    @apply rounded-[36px] border border-[#eadbcf] bg-[#fdf8f1]/90 text-inherit shadow-[0_20px_70px_-40px_rgba(31,42,35,0.38)] backdrop-blur-sm;
+    @apply rounded-[36px] border border-[#eadbcf] bg-[#fdf8f1]/90 text-inherit shadow-[0_20px_70px_-40px_rgba(31, 42, 35, 0.38)] backdrop-blur-sm;
   }
 
   .soft-card {
-    @apply rounded-[24px] border border-[#e8dcc9] bg-[rgba(255,250,245,0.95)] shadow-[0_16px_50px_-30px_rgba(31,42,35,0.35)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_-30px_rgba(31,42,35,0.42)] dark:border-white/10 dark:bg-[#1d2521]/95 dark:hover:bg-[#232d27];
+    @apply rounded-[24px] border border-[#e8dcc9] bg-[rgba(255, 250, 245, 0.95)] shadow-[0_16px_50px_-30px_rgba(31, 42, 35, 0.35)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_-30px_rgba(31, 42, 35, 0.42)] dark:border-white/10 dark:bg-[#1d2521]/95 dark:hover:bg-[#232d27];
   }
 
   .eyebrow {
@@ -216,7 +255,7 @@ body {
   pointer-events: none;
 }
 
-.site-footer > * {
+.site-footer>* {
   position: relative;
   z-index: 1;
 }
@@ -266,9 +305,12 @@ body {
   body * {
     visibility: hidden;
   }
-  .printable-area, .printable-area * {
+
+  .printable-area,
+  .printable-area * {
     visibility: visible;
   }
+
   .printable-area {
     position: absolute;
     left: 0;
@@ -279,6 +321,7 @@ body {
     box-shadow: none !important;
     border: none !important;
   }
+
   @page {
     size: A4;
     margin: 0;
@@ -296,9 +339,17 @@ body {
    on desktop monitors, but genuinely hard to read on phones. On screens
    ≤768px these scale up to comfortable sizes. */
 @media (max-width: 768px) {
-  [class*="text-[6px]"] { font-size: 10px; }
-  [class*="text-[7px]"] { font-size: 12px; }
-  [class*="text-[8px]"] { font-size: 13px; }
+  [class*="text-[6px]"] {
+    font-size: 10px;
+  }
+
+  [class*="text-[7px]"] {
+    font-size: 12px;
+  }
+
+  [class*="text-[8px]"] {
+    font-size: 13px;
+  }
 }
 
 /* ── TABLET READABILITY LAYER ─────────────────────────────────
@@ -306,11 +357,25 @@ body {
    which is far too small on an iPad-style screen. Mid-step scaling keeps
    the dense look but makes it legible. Desktops >1024px untouched. */
 @media (min-width: 769px) and (max-width: 1024px) {
-  [class*="text-[6px]"] { font-size: 9px; }
-  [class*="text-[7px]"] { font-size: 10.5px; }
-  [class*="text-[8px]"] { font-size: 11.5px; }
-  [class*="text-[9px]"] { font-size: 12px; }
-  [class*="text-[10px]"] { font-size: 13px; }
+  [class*="text-[6px]"] {
+    font-size: 9px;
+  }
+
+  [class*="text-[7px]"] {
+    font-size: 10.5px;
+  }
+
+  [class*="text-[8px]"] {
+    font-size: 11.5px;
+  }
+
+  [class*="text-[9px]"] {
+    font-size: 12px;
+  }
+
+  [class*="text-[10px]"] {
+    font-size: 13px;
+  }
 }
 
 /* ── MALLEABLE VIEWPORT LAYER ─────────────────────────────────
@@ -321,17 +386,25 @@ body {
    always-visible area exactly. Progressive enhancement: browsers without
    svh keep the original 100vh. */
 @supports (min-height: 100svh) {
-  .min-h-screen { min-height: 100svh; }
+  .min-h-screen {
+    min-height: 100svh;
+  }
 }
 
 /* Never let content push the page sideways on small screens.
    overflow-x: clip (unlike hidden) does NOT create a scroll container,
    so sticky headers/sidebars keep working. */
-html, body { overflow-x: clip; }
+html,
+body {
+  overflow-x: clip;
+}
 
 /* Respect users who disable motion at the OS level (accessibility). */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -343,8 +416,14 @@ html, body { overflow-x: clip; }
    <html> gets device-mobile / device-tablet / device-desktop and
    has-touch / has-pointer classes. Use for per-device tweaks that
    breakpoints can't express (e.g. touch targets, hover-only effects). */
-.device-mobile img, .device-mobile video { -webkit-touch-callout: none; }
-.has-touch * { -webkit-tap-highlight-color: transparent; }
+.device-mobile img,
+.device-mobile video {
+  -webkit-touch-callout: none;
+}
+
+.has-touch * {
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* ── GLOBAL COMPACT PROTOCOL ──────────────────────────────────
    "Font size small, spacing not so big — across the board."
@@ -370,115 +449,302 @@ html {
    Keys are prefixed `ldr-` to avoid collisions with Tailwind keyframes.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@keyframes ldr-spin-slow { to { transform: rotate(360deg); } }
-@keyframes ldr-spin-rev { to { transform: rotate(-360deg); } }
+@keyframes ldr-spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ldr-spin-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
 @keyframes ldr-core {
-  0%, 100% { transform: scale(0.84) rotate(0deg); opacity: 0.85; }
-  50% { transform: scale(1.08) rotate(45deg); opacity: 1; }
+
+  0%,
+  100% {
+    transform: scale(0.84) rotate(0deg);
+    opacity: 0.85;
+  }
+
+  50% {
+    transform: scale(1.08) rotate(45deg);
+    opacity: 1;
+  }
 }
+
 @keyframes ldr-sweep {
-  0% { stroke-dashoffset: 165; stroke-dasharray: 30 300; opacity: 0.15; }
-  50% { opacity: 1; }
-  100% { stroke-dashoffset: -165; stroke-dasharray: 30 300; opacity: 0.15; }
+  0% {
+    stroke-dashoffset: 165;
+    stroke-dasharray: 30 300;
+    opacity: 0.15;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    stroke-dashoffset: -165;
+    stroke-dasharray: 30 300;
+    opacity: 0.15;
+  }
 }
+
 @keyframes ldr-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
+
 @keyframes ldr-rail {
-  0% { transform: translateX(-110%) scaleX(0.55); }
-  55% { transform: translateX(45%) scaleX(1.15); }
-  100% { transform: translateX(210%) scaleX(0.55); }
+  0% {
+    transform: translateX(-110%) scaleX(0.55);
+  }
+
+  55% {
+    transform: translateX(45%) scaleX(1.15);
+  }
+
+  100% {
+    transform: translateX(210%) scaleX(0.55);
+  }
 }
+
 @keyframes ldr-glow {
-  0%, 100% { opacity: 0.28; transform: scale(0.9); }
-  50% { opacity: 0.6; transform: scale(1.12); }
+
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.12);
+  }
 }
+
 @keyframes ldr-rise {
-  0%, 100% { transform: scaleY(0.35); opacity: 0.35; }
-  50% { transform: scaleY(1); opacity: 1; }
+
+  0%,
+  100% {
+    transform: scaleY(0.35);
+    opacity: 0.35;
+  }
+
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
 }
+
 @keyframes ldr-scan {
-  0% { transform: translateY(-130%); opacity: 0; }
-  40% { opacity: 0.12; }
-  100% { transform: translateY(130%); opacity: 0; }
+  0% {
+    transform: translateY(-130%);
+    opacity: 0;
+  }
+
+  40% {
+    opacity: 0.12;
+  }
+
+  100% {
+    transform: translateY(130%);
+    opacity: 0;
+  }
 }
+
 @keyframes ldr-text {
-  0%, 100% { opacity: 0.45; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
+
 @keyframes ldr-drift {
-  0% { transform: translate3d(-2.5%, -2%, 0) scale(1.06); }
-  50% { transform: translate3d(2.5%, 2.5%, 0) scale(1.15); }
-  100% { transform: translate3d(-1.5%, 1.5%, 0) scale(1.09); }
+  0% {
+    transform: translate3d(-2.5%, -2%, 0) scale(1.06);
+  }
+
+  50% {
+    transform: translate3d(2.5%, 2.5%, 0) scale(1.15);
+  }
+
+  100% {
+    transform: translate3d(-1.5%, 1.5%, 0) scale(1.09);
+  }
 }
+
 @keyframes ldr-sweep-x {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* ── Emblem ────────────────────────────────────────────────────────────── */
-.ldr-emblem { position: relative; display: inline-flex; align-items: center; justify-content: center; }
-.ldr-emblem svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.ldr-arc-slow { transform-origin: 50% 50%; animation: ldr-spin-slow 2.6s linear infinite; }
-.ldr-arc-rev { transform-origin: 50% 50%; animation: ldr-spin-rev 1.7s linear infinite; }
-.ldr-arc-fast { transform-origin: 50% 50%; animation: ldr-spin-slow 1.05s linear infinite; }
-.ldr-core { transform-origin: 50% 50%; animation: ldr-core 2.1s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
-.ldr-sweep { animation: ldr-sweep 2.1s ease-in-out infinite; }
+.ldr-emblem {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ldr-emblem svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ldr-arc-slow {
+  transform-origin: 50% 50%;
+  animation: ldr-spin-slow 2.6s linear infinite;
+}
+
+.ldr-arc-rev {
+  transform-origin: 50% 50%;
+  animation: ldr-spin-rev 1.7s linear infinite;
+}
+
+.ldr-arc-fast {
+  transform-origin: 50% 50%;
+  animation: ldr-spin-slow 1.05s linear infinite;
+}
+
+.ldr-core {
+  transform-origin: 50% 50%;
+  animation: ldr-core 2.1s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.ldr-sweep {
+  animation: ldr-sweep 2.1s ease-in-out infinite;
+}
+
 .ldr-glow {
-  position: absolute; inset: 0; border-radius: 9999px; pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  pointer-events: none;
   background: radial-gradient(circle, currentColor 0%, transparent 68%);
-  filter: blur(14px); opacity: 0.3;
+  filter: blur(14px);
+  opacity: 0.3;
   animation: ldr-glow 2.4s ease-in-out infinite;
 }
 
 /* ── Status copy ───────────────────────────────────────────────────────── */
 .ldr-label {
-  font-size: 9px; font-weight: 900; letter-spacing: 0.42em; text-transform: uppercase;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
   background: linear-gradient(90deg, currentColor 0%, currentColor 38%, #fff 50%, currentColor 62%, currentColor 100%);
   background-size: 200% 100%;
-  -webkit-background-clip: text; background-clip: text;
+  -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: ldr-shimmer 2.6s linear infinite, ldr-text 2.6s ease-in-out infinite;
 }
+
 .ldr-label-solid {
-  font-size: 9px; font-weight: 900; letter-spacing: 0.42em; text-transform: uppercase;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
   animation: ldr-text 2.6s ease-in-out infinite;
 }
+
 .ldr-sublabel {
-  font-size: 8px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase;
-  opacity: 0.55; font-variant-numeric: tabular-nums;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Travelling progress rail ──────────────────────────────────────────── */
 .ldr-rail {
-  position: relative; overflow: hidden; border-radius: 9999px; height: 2px; width: 100%;
-  background: currentColor; opacity: 0.16;
+  position: relative;
+  overflow: hidden;
+  border-radius: 9999px;
+  height: 2px;
+  width: 100%;
+  background: currentColor;
+  opacity: 0.16;
 }
+
 .ldr-rail-bar {
-  position: absolute; inset: 0; border-radius: 9999px; transform-origin: left center;
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  transform-origin: left center;
   background: linear-gradient(90deg, transparent, currentColor 22%, currentColor 78%, transparent);
   animation: ldr-rail 1.75s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 /* ── Equaliser bars (replaces the old row of bouncing dots) ────────────── */
-.ldr-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 12px; }
-.ldr-bars i {
-  display: block; width: 2px; height: 100%; border-radius: 9999px; background: currentColor;
-  transform-origin: bottom center; animation: ldr-rise 1.15s ease-in-out infinite;
+.ldr-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 12px;
 }
-.ldr-bars i:nth-child(2) { animation-delay: 0.16s; }
-.ldr-bars i:nth-child(3) { animation-delay: 0.32s; }
-.ldr-bars i:nth-child(4) { animation-delay: 0.48s; }
-.ldr-bars i:nth-child(5) { animation-delay: 0.64s; }
+
+.ldr-bars i {
+  display: block;
+  width: 2px;
+  height: 100%;
+  border-radius: 9999px;
+  background: currentColor;
+  transform-origin: bottom center;
+  animation: ldr-rise 1.15s ease-in-out infinite;
+}
+
+.ldr-bars i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.ldr-bars i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.ldr-bars i:nth-child(4) {
+  animation-delay: 0.48s;
+}
+
+.ldr-bars i:nth-child(5) {
+  animation-delay: 0.64s;
+}
 
 /* ── Skeletons (same shimmer language) ─────────────────────────────────── */
 .ldr-skel {
-  position: relative; overflow: hidden; border-radius: 12px;
-  background: currentColor; opacity: 0.1;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: currentColor;
+  opacity: 0.1;
 }
+
 .ldr-skel::after {
-  content: ''; position: absolute; inset: 0;
+  content: '';
+  position: absolute;
+  inset: 0;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
   transform: translateX(-100%);
   animation: ldr-sweep-x 1.9s ease-in-out infinite;
@@ -493,11 +759,16 @@ html {
    longer use it: with no grid beneath, even a faint bar pulled the eye, so
    PageLoader/LoadingOverlay render aurora + halo only. */
 .ldr-scanline {
-  position: absolute; left: 0; right: 0; height: 35%; pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 35%;
+  pointer-events: none;
   background: linear-gradient(180deg, transparent 25%, currentColor 50%, transparent 75%);
   mask-image: linear-gradient(90deg, transparent 0%, black 22%, black 78%, transparent 100%);
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 22%, black 78%, transparent 100%);
-  opacity: 0.05; animation: ldr-scan 3.4s ease-in-out infinite;
+  opacity: 0.05;
+  animation: ldr-scan 3.4s ease-in-out infinite;
 }
 
 /* ── Aurora backdrop for page-level loaders ────────────────────────────────
@@ -509,7 +780,9 @@ html {
    Layout note: the top pair sits left-centre/right-high on purpose — symmetric
    blobs merged into one fat horizontal bar (light-bleed stripe) on 16:9. */
 .ldr-backdrop {
-  position: absolute; inset: -12%; pointer-events: none;
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
   background-image:
     radial-gradient(28% 46% at 30% 34%, currentColor, transparent 64%),
     radial-gradient(24% 40% at 76% 20%, currentColor, transparent 64%),
@@ -518,48 +791,115 @@ html {
   filter: blur(58px) saturate(118%);
   animation: ldr-drift 26s ease-in-out infinite;
 }
+
 .ldr-backdrop::after {
-  content: ''; position: absolute; inset: -6%;
+  content: '';
+  position: absolute;
+  inset: -6%;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
-  opacity: 0.28; mix-blend-mode: soft-light;
+  opacity: 0.28;
+  mix-blend-mode: soft-light;
 }
 
 /* ── Hero scroll cue: a light that travels down a gradient hairline ─────── */
 .ldr-scroll-cue {
-  position: relative; width: 1px; height: 28px; overflow: hidden;
+  position: relative;
+  width: 1px;
+  height: 28px;
+  overflow: hidden;
   background: linear-gradient(180deg, rgba(234, 179, 8, 0.55), transparent);
 }
+
 .ldr-scroll-cue::after {
-  content: ''; position: absolute; left: 0; width: 1px; height: 10px;
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 10px;
   background: linear-gradient(180deg, transparent, #eab308);
   animation: ldr-cue 2.1s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
+
 @keyframes ldr-cue {
-  0%   { transform: translateY(-12px); opacity: 0; }
-  25%  { opacity: 1; }
-  100% { transform: translateY(30px); opacity: 0; }
+  0% {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+
+  25% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
 }
 
 /* ── Toasts / inline notices: rise instead of bouncing ─────────────────── */
-.ldr-toast-in { animation: ldr-toast 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.ldr-toast-in {
+  animation: ldr-toast 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @keyframes ldr-toast {
-  from { transform: translateY(14px) scale(0.97); opacity: 0; }
-  to   { transform: translateY(0) scale(1); opacity: 1; }
+  from {
+    transform: translateY(14px) scale(0.97);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 
 /* Reduced motion: keep the composition, drop the movement (accessibility).
    The global rule above already clamps durations; these turn the moving parts
    into static, readable states instead of a frozen off-centre frame. */
 @media (prefers-reduced-motion: reduce) {
-  .ldr-arc-slow, .ldr-arc-rev, .ldr-arc-fast, .ldr-core, .ldr-sweep,
-  .ldr-glow, .ldr-label, .ldr-label-solid, .ldr-rail-bar,
-  .ldr-bars i, .ldr-skel::after, .ldr-scanline, .ldr-backdrop,
-  .ldr-scroll-cue::after, .ldr-toast-in {
+
+  .ldr-arc-slow,
+  .ldr-arc-rev,
+  .ldr-arc-fast,
+  .ldr-core,
+  .ldr-sweep,
+  .ldr-glow,
+  .ldr-label,
+  .ldr-label-solid,
+  .ldr-rail-bar,
+  .ldr-bars i,
+  .ldr-skel::after,
+  .ldr-scanline,
+  .ldr-backdrop,
+  .ldr-scroll-cue::after,
+  .ldr-toast-in {
     animation: none !important;
   }
-  .ldr-arc-slow, .ldr-arc-rev, .ldr-arc-fast { opacity: 0.9; }
-  .ldr-label, .ldr-label-solid { -webkit-text-fill-color: currentColor; background: none; opacity: 1; }
-  .ldr-skel { opacity: 0.16; }
-  .ldr-rail-bar { transform: none; opacity: 0.7; }
-  .ldr-scroll-cue::after { opacity: 0.8; transform: none; }
+
+  .ldr-arc-slow,
+  .ldr-arc-rev,
+  .ldr-arc-fast {
+    opacity: 0.9;
+  }
+
+  .ldr-label,
+  .ldr-label-solid {
+    -webkit-text-fill-color: currentColor;
+    background: none;
+    opacity: 1;
+  }
+
+  .ldr-skel {
+    opacity: 0.16;
+  }
+
+  .ldr-rail-bar {
+    transform: none;
+    opacity: 0.7;
+  }
+
+  .ldr-scroll-cue::after {
+    opacity: 0.8;
+    transform: none;
+  }
 }

@@ -190,7 +190,7 @@ function generateInvoicePDFContent(document) {
     const currency = document.currency || "KES";
     const status = String(document.status || "DRAFT").toUpperCase();
     const completionValue = document.completed_at || document.completion_date;
-    const completed = status === "COMPLETED" || Boolean(completionValue);
+    const completed = status === "COMPLETED";
     const issueDate = formatInvoiceDate(
       document.issue_date || document.created_at
     );
@@ -225,7 +225,7 @@ function generateInvoicePDFContent(document) {
       .strokeColor(ACCENT_GOLD)
       .stroke();
     doc.fillColor(ACCENT_GOLD).font("Helvetica-Bold").fontSize(8);
-    doc.text("COMPLETION CERTIFICATE", invoiceX + 14, 103, {
+    doc.text(completed ? "COMPLETION CERTIFICATE" : "INVOICE RECORD", invoiceX + 14, 103, {
       width: 185,
       align: "center",
     });
@@ -287,7 +287,7 @@ function generateInvoicePDFContent(document) {
       ["Due date", dueDate],
       ["Status", status],
     ];
-    if (completionValue) {
+    if (completed && completionValue) {
       metaRows.push(["Completed", completedDate]);
     }
     metaRows.forEach(([label, value], index) => {
@@ -504,9 +504,12 @@ function generateInvoicePDFContent(document) {
     }
     doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(8);
     doc.text(verification, verifyX + 32, y + 12, { width: 92, align: "center" });
-    const recordId = document.completion_id || document.id || ref;
+    const recordLabel = completed ? "Completion ID" : "Invoice ID";
+    const recordId = completed
+      ? document.completion_id || document.id || ref
+      : document.id || ref;
     doc.fillColor(SLATE).font("Helvetica").fontSize(7);
-    doc.text(`Date: ${completed ? completedDate : issueDate}  |  Completion ID: invoices-${document.id || ref}-${recordId}`, verifyX - 100, y + 38, {
+    doc.text(`Date: ${completed ? completedDate : issueDate}  |  ${recordLabel}: invoices-${document.id || ref}-${recordId}`, verifyX - 100, y + 38, {
       width: 232,
       align: "right",
     });

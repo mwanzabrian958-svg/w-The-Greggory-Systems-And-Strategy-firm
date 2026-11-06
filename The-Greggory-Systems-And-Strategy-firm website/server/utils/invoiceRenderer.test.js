@@ -1,5 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const zlib = require("node:zlib");
 const { generatePDFContent } = require("../lib/invoiceRenderer");
 
 const sampleDocument = {
@@ -30,9 +31,55 @@ const sampleDocument = {
     verified: true,
 };
 
+const extractPdfText = (pdf) =>
+    [...pdf.toString("latin1").matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)]
+        .map((match) => {
+            try {
+                const stream = zlib.inflateSync(Buffer.from(match[1], "latin1")).toString("latin1");
+                return [...stream.matchAll(/\[((?:<[^>]+>|[-+]?(?:\d*\.)?\d+|\s)+)\]\s*TJ/g)]
+                    .map((operation) =>
+                        [...operation[1].matchAll(/<([\da-f]+)>/gi)]
+                            .map(([, hex]) => Buffer.from(hex, "hex").toString("latin1"))
+                            .join("")
+                    )
+                    .join(" ");
+            } catch {
+                return "";
+            }
+        })
+        .join("\n");
+
+const normalizePdfText = (text) => text.replace(/\s+/g, " ");
+
 test("invoice PDF stays on a single A4 page for a standard client invoice", async () => {
     const pdf = await generatePDFContent("invoice", sampleDocument);
     const pageCount = (pdf.toString("latin1").match(/\/Type \/Page\b/g) || []).length;
+    const text = normalizePdfText(extractPdfText(pdf));
 
     assert.ok(pageCount <= 1, `Expected a single-page invoice PDF, but generated ${pageCount} pages.`);
+    assert.match(text, /Completed\s*&\s*Recorded\s+by/);
+    assert.match(text, /marked as completed/);
+    assert.match(text, /COMPLETION CERTIFICATE/);
+    assert.match(text, /Subtotal/);
+    assert.match(text, /Total/);
+    assert.match(text, /PAYMENT OPTIONS/);
+    assert.match(text, /Send Money/);
+    assert.match(text, /Bank Transfer/);
+    assert.match(text, /Thank you for your business/);
+});
+
+test("draft invoice wording stays issued when a completion timestamp is present", async () => {
+    const pdf = await generatePDFContent("invoice", {
+        ...sampleDocument,
+        status: "draft",
+        completed_at: "2026-11-02T12:00:00.000Z",
+        verified: false,
+    });
+    const text = normalizePdfText(extractPdfText(pdf));
+
+    assert.match(text, /Issued\s*&\s*Recorded\s+by/);
+    assert.match(text, /INVOICE RECORD/);
+    assert.match(text, /Invoice ID/);
+    assert.doesNotMatch(text, /Completed\s*&\s*Recorded\s+by/);
+    assert.doesNotMatch(text, /completion|completed/i);
 });

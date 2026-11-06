@@ -1,4 +1,5 @@
-﻿import { useState, useEffect } from "react";
+﻿import { apiCall, getApiUrl, mpesaAPI, buildDataUri } from '../services/api';
+import { useState, useEffect } from "react";
 import {
   Briefcase,
   Bell,
@@ -38,10 +39,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { getApiUrl, mpesaAPI } from "../services/api";
 import SearchBlock from "../components/SearchBlock";
 import { useNavigate } from "react-router-dom";
-import { formatKSH } from "../utils/currencyUtils";
+import { formatKSH, formatCurrency } from "../utils/currencyUtils";
 import { Emblem, Spinner, PageLoader } from "../components/Loading";
 
 // Hosted portal page provides the Android APK download.
@@ -58,16 +58,16 @@ const deviceLabel = (ua) => {
   if (!ua) return 'Unknown device';
   const browser = /Edg\//.test(ua) ? 'Edge'
     : /OPR\/|Opera/.test(ua) ? 'Opera'
-    : /Chrome\//.test(ua) ? 'Chrome'
-    : /Firefox\//.test(ua) ? 'Firefox'
-    : /Safari\//.test(ua) ? 'Safari'
-    : 'Browser';
+      : /Chrome\//.test(ua) ? 'Chrome'
+        : /Firefox\//.test(ua) ? 'Firefox'
+          : /Safari\//.test(ua) ? 'Safari'
+            : 'Browser';
   const os = /Android/.test(ua) ? 'Android'
     : /iPhone|iPad|iPod/.test(ua) ? 'iOS'
-    : /Windows/.test(ua) ? 'Windows'
-    : /Mac OS X|Macintosh/.test(ua) ? 'macOS'
-    : /Linux/.test(ua) ? 'Linux'
-    : '';
+      : /Windows/.test(ua) ? 'Windows'
+        : /Mac OS X|Macintosh/.test(ua) ? 'macOS'
+          : /Linux/.test(ua) ? 'Linux'
+            : '';
   return [browser, os].filter(Boolean).join(' on ');
 };
 
@@ -547,7 +547,7 @@ const ClientPortal = () => {
             setCrewTemplates(prev => ({ ...prev, [p.id]: d.template }));
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     });
   }, [projects.length]);
 
@@ -958,11 +958,11 @@ const ClientPortal = () => {
 
               {/* Quick Actions */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {[
-                    { l: outstanding.length ? `Pay ${formatKSH(totalOutstanding)}` : 'All Paid', act: () => setActiveSection('billing'), i: DollarSign, hot: outstanding.length > 0 },
-                    { l: 'Documents', act: () => setActiveSection('documents'), i: CheckSquare },
-                    { l: 'Send Feedback', act: () => setActiveSection('feedback'), i: MessageSquare },
-                  ].map((a, i) => (
+                {[
+                  { l: outstanding.length ? `Pay ${formatKSH(totalOutstanding)}` : 'All Paid', act: () => setActiveSection('billing'), i: DollarSign, hot: outstanding.length > 0 },
+                  { l: 'Documents', act: () => setActiveSection('documents'), i: CheckSquare },
+                  { l: 'Send Feedback', act: () => setActiveSection('feedback'), i: MessageSquare },
+                ].map((a, i) => (
                   <button key={i} onClick={a.act} className={`p-2.5 rounded-xl border flex items-center gap-2 hover:bg-slate-100 dark:bg-slate-700 transition-all ${a.hot ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
                     <a.i size={13} className={a.hot ? 'text-emerald-600 dark:text-emerald-400' : 'text-teal-600'} />
                     <span className="text-[8px] font-bold uppercase truncate">{a.l}</span>
@@ -1051,7 +1051,7 @@ const ClientPortal = () => {
                       const st = String(p.status || 'active').toLowerCase();
                       const tone = st === 'completed' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                         : st === 'on hold' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                        : 'bg-teal-500/10 text-teal-600 border-teal-500/20';
+                          : 'bg-teal-500/10 text-teal-600 border-teal-500/20';
                       const prog = Math.min(100, Math.max(0, Number(p.progress) || 0));
                       return (
                         <div key={p.id} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-teal-500/30 transition-all space-y-3">
@@ -1097,7 +1097,7 @@ const ClientPortal = () => {
                       <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
                         <div className="flex items-center gap-3">
                           {crew.team_leader_image ? (
-                            <img src={`data:${crew.team_leader_image_mime || "image/jpeg"};base64,${crew.team_leader_image}`} alt={crew.leader_name || "Leader"} className="w-10 h-10 rounded-xl object-cover border-2 border-slate-200 dark:border-slate-600 shadow" />
+                            <img src={buildDataUri(crew.team_leader_image, crew.team_leader_image_mime)} alt={crew.leader_name || "Leader"} className="w-10 h-10 rounded-xl object-cover border-2 border-slate-200 dark:border-slate-600 shadow" />
                           ) : (
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white text-xs font-black border-2 border-slate-200 dark:border-slate-600 shadow">
                               {(crew.leader_name || crew.name || '?').split(' ').map(n => n?.[0] || '').join('').slice(0, 2).toUpperCase()}
@@ -1217,8 +1217,8 @@ const ClientPortal = () => {
               {tasks.length > 0 ? tasks.map(t => {
                 const tone = t.status === 'completed' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                   : t.status === 'blocked' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
-                  : t.status === 'in-progress' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20'
-                  : 'bg-slate-50 dark:bg-slate-8000/10 text-slate-400 dark:text-slate-500 border-slate-500/20';
+                    : t.status === 'in-progress' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20'
+                      : 'bg-slate-50 dark:bg-slate-8000/10 text-slate-400 dark:text-slate-500 border-slate-500/20';
                 const prog = Math.min(100, Math.max(0, Number(t.progress) || 0));
                 return (
                   <div key={t.id} className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
@@ -1380,18 +1380,18 @@ const ClientPortal = () => {
 
                   <form onSubmit={handleFeedbackSubmit} className="space-y-4">
                     <div className="space-y-2">
-                       <label className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-300 tracking-widest ml-1">Sentiment Node</label>
-                       <div className="flex justify-between bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <label className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-300 tracking-widest ml-1">Sentiment Node</label>
+                      <div className="flex justify-between bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
                         {[Frown, Meh, Smile, SmilePlus, Heart].map((Ic, i) => (
-                          <button key={i} type="button" onClick={() => setFeedbackData({...feedbackForm, rating: i+1})} className={`transition-all ${feedbackForm.rating === i+1 ? "text-gold-500 scale-110 drop-shadow-[0_0_8px_rgba(234,179,8,0.4)]" : "opacity-30 text-slate-900 dark:text-white hover:opacity-60"}`}><Ic size={18} /></button>
+                          <button key={i} type="button" onClick={() => setFeedbackData({ ...feedbackForm, rating: i + 1 })} className={`transition-all ${feedbackForm.rating === i + 1 ? "text-gold-500 scale-110 drop-shadow-[0_0_8px_rgba(234,179,8,0.4)]" : "opacity-30 text-slate-900 dark:text-white hover:opacity-60"}`}><Ic size={18} /></button>
                         ))}
-                       </div>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
                         <label className="text-[6px] font-black uppercase text-slate-600 dark:text-slate-300 ml-1">Transmission Type</label>
-                        <select value={feedbackForm.type} onChange={e => setFeedbackData({...feedbackForm, type: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[8px] font-bold outline-none text-slate-900 dark:text-white appearance-none border border-slate-200 dark:border-slate-700 focus:border-gold-500/30">
+                        <select value={feedbackForm.type} onChange={e => setFeedbackData({ ...feedbackForm, type: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[8px] font-bold outline-none text-slate-900 dark:text-white appearance-none border border-slate-200 dark:border-slate-700 focus:border-gold-500/30">
                           <option value="service_feedback">Service</option>
                           <option value="bug_report">Bug Report</option>
                           <option value="feature_request">Feature Request</option>
@@ -1399,7 +1399,7 @@ const ClientPortal = () => {
                       </div>
                       <div className="space-y-1">
                         <label className="text-[6px] font-black uppercase text-slate-600 dark:text-slate-300 ml-1">Urgency</label>
-                        <select value={feedbackForm.priority} onChange={e => setFeedbackData({...feedbackForm, priority: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[8px] font-bold outline-none text-slate-900 dark:text-white appearance-none border border-slate-200 dark:border-slate-700 focus:border-gold-500/30">
+                        <select value={feedbackForm.priority} onChange={e => setFeedbackData({ ...feedbackForm, priority: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[8px] font-bold outline-none text-slate-900 dark:text-white appearance-none border border-slate-200 dark:border-slate-700 focus:border-gold-500/30">
                           <option value="Low">Low</option>
                           <option value="Medium">Medium</option>
                           <option value="High">High</option>
@@ -1409,16 +1409,16 @@ const ClientPortal = () => {
 
                     <div className="space-y-1">
                       <label className="text-[6px] font-black uppercase text-slate-600 dark:text-slate-300 ml-1">Header</label>
-                      <input type="text" placeholder="Subject..." value={feedbackForm.title} onChange={e => setFeedbackData({...feedbackForm, title: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[8px] font-bold outline-none border border-slate-200 dark:border-slate-700 focus:border-gold-500/30" />
+                      <input type="text" placeholder="Subject..." value={feedbackForm.title} onChange={e => setFeedbackData({ ...feedbackForm, title: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[8px] font-bold outline-none border border-slate-200 dark:border-slate-700 focus:border-gold-500/30" />
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-[6px] font-black uppercase text-slate-600 dark:text-slate-300 ml-1">Payload Details</label>
-                      <textarea rows="4" placeholder="Message details..." value={feedbackForm.message} onChange={e => setFeedbackData({...feedbackForm, message: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[8px] font-medium outline-none resize-none border border-slate-200 dark:border-slate-700 focus:border-gold-500/30" />
+                      <textarea rows="4" placeholder="Message details..." value={feedbackForm.message} onChange={e => setFeedbackData({ ...feedbackForm, message: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[8px] font-medium outline-none resize-none border border-slate-200 dark:border-slate-700 focus:border-gold-500/30" />
                     </div>
 
                     <button type="submit" disabled={isSubmittingFeedback} className="w-full py-3 bg-gradient-to-r from-gold-500 to-yellow-500 text-slate-950 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2">
-                                          {isSubmittingFeedback ? <Spinner size={12} tone="gold" /> : <>Send Transmission <ArrowRight size={12} /></>}
+                      {isSubmittingFeedback ? <Spinner size={12} tone="gold" /> : <>Send Transmission <ArrowRight size={12} /></>}
                     </button>
                   </form>
                 </div>
@@ -1426,14 +1426,14 @@ const ClientPortal = () => {
                 {/* FEEDBACK HISTORY */}
                 <div className="lg:col-span-8 space-y-4">
                   <div className="flex items-center justify-between px-2">
-                     <div className="flex items-center gap-2">
-                        <MessageSquare size={14} className="text-slate-600 dark:text-slate-300" />
-                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Transmission History</h4>
-                     </div>
-                     <span className="text-[7px] font-mono text-slate-500 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">{feedbackList.length} Archived</span>
+                    <div className="flex items-center gap-2">
+                      <MessageSquare size={14} className="text-slate-600 dark:text-slate-300" />
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 dark:text-white">Transmission History</h4>
+                    </div>
+                    <span className="text-[7px] font-mono text-slate-500 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200 dark:border-slate-700">{feedbackList.length} Archived</span>
                   </div>
 
-                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-x-auto">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[640px]">
                       <thead className="bg-slate-50 dark:bg-slate-800 text-[7px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
                         <tr>
@@ -1445,29 +1445,29 @@ const ClientPortal = () => {
                       </thead>
                       <tbody className="text-[9px]">
                         {feedbackList.length > 0 ? feedbackList.map((item, idx) => (
-                           <tr key={item.id} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:hover:bg-slate-800 transition-all group">
-                            <td className="px-4 py-3 font-mono text-slate-500 dark:text-slate-300">{new Date(item.created_at).toLocaleString([], {dateStyle:'short', timeStyle:'short'})}</td>
+                          <tr key={item.id} className="border-b border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 dark:hover:bg-slate-800 transition-all group">
+                            <td className="px-4 py-3 font-mono text-slate-500 dark:text-slate-300">{new Date(item.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</td>
                             <td className="px-4 py-3 font-bold text-slate-400 dark:text-slate-500">{portalUser?.display_name || 'Personnel Node'}</td>
                             <td className="px-4 py-3">
                               <p className="text-slate-900 dark:text-white font-bold uppercase">{item.title}</p>
                               <p className="text-[7px] text-slate-600 dark:text-slate-300 truncate max-w-[200px] mt-0.5">{item.message}</p>
                             </td>
                             <td className="px-4 py-3 text-right">
-                               <span className={`px-1.5 py-0.5 rounded text-[6px] font-black uppercase tracking-tighter ${item.status === 'new' ? 'bg-gold-500/10 text-gold-500 border border-gold-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'}`}>
-                                  {item.status}
-                               </span>
+                              <span className={`px-1.5 py-0.5 rounded text-[6px] font-black uppercase tracking-tighter ${item.status === 'new' ? 'bg-gold-500/10 text-gold-500 border border-gold-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'}`}>
+                                {item.status}
+                              </span>
                             </td>
                           </tr>
                         )) : (
                           <tr>
                             <td colSpan="4" className="py-20 text-center">
-                               <div className="flex flex-col items-center justify-center space-y-3 opacity-30">
-                                  <HelpCircle size={24} className="text-slate-600 dark:text-slate-300" />
-                                  <div className="space-y-1">
-                                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">No Feedback Nodes</p>
-                                     <p className="text-[8px] uppercase tracking-tighter">Your account has no recorded diagnostic transmissions.</p>
-                                  </div>
-                               </div>
+                              <div className="flex flex-col items-center justify-center space-y-3 opacity-30">
+                                <HelpCircle size={24} className="text-slate-600 dark:text-slate-300" />
+                                <div className="space-y-1">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">No Feedback Nodes</p>
+                                  <p className="text-[8px] uppercase tracking-tighter">Your account has no recorded diagnostic transmissions.</p>
+                                </div>
+                              </div>
                             </td>
                           </tr>
                         )}
@@ -1753,11 +1753,11 @@ const ClientPortal = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-300 ml-1">Display Name</label>
-                    <input type="text" value={settingsForm.display_name} onChange={e => setSettingsForm({...settingsForm, display_name: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[9px] font-bold outline-none border border-slate-200 dark:border-slate-700 focus:border-teal-500/30" />
+                    <input type="text" value={settingsForm.display_name} onChange={e => setSettingsForm({ ...settingsForm, display_name: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[9px] font-bold outline-none border border-slate-200 dark:border-slate-700 focus:border-teal-500/30" />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-300 ml-1">Phone Number</label>
-                    <input type="tel" value={settingsForm.phone_number} onChange={e => setSettingsForm({...settingsForm, phone_number: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[9px] font-bold outline-none border border-slate-200 dark:border-slate-700 focus:border-teal-500/30" />
+                    <input type="tel" value={settingsForm.phone_number} onChange={e => setSettingsForm({ ...settingsForm, phone_number: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[9px] font-bold outline-none border border-slate-200 dark:border-slate-700 focus:border-teal-500/30" />
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -1812,7 +1812,7 @@ const ClientPortal = () => {
                       <p className="text-[9px] font-bold text-slate-900 dark:text-white">{pref.label}</p>
                       <p className="text-[7px] text-slate-500 dark:text-slate-300">{pref.desc}</p>
                     </div>
-                    <button onClick={() => setSettingsForm({...settingsForm, [pref.key]: !settingsForm[pref.key]})} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settingsForm[pref.key] ? 'bg-teal-600' : 'bg-slate-100 dark:bg-slate-700'}`}>
+                    <button onClick={() => setSettingsForm({ ...settingsForm, [pref.key]: !settingsForm[pref.key] })} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settingsForm[pref.key] ? 'bg-teal-600' : 'bg-slate-100 dark:bg-slate-700'}`}>
                       <span className={`inline-block h-3 w-3 transform rounded-full bg-white dark:bg-slate-900 transition-transform ${settingsForm[pref.key] ? 'translate-x-5' : 'translate-x-1'}`} />
                     </button>
                   </div>
@@ -1853,17 +1853,17 @@ const ClientPortal = () => {
               <form onSubmit={handleChangePassword} className="space-y-3 max-w-md">
                 <div className="space-y-1">
                   <label className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-300 ml-1">Current Password</label>
-                  <input type="password" value={passwordForm.current_password} onChange={e => setPasswordForm({...passwordForm, current_password: e.target.value})} className={`w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[9px] font-bold outline-none border ${settingsErrors.current_password ? 'border-rose-500/50' : 'border-slate-200 dark:border-slate-700 focus:border-teal-500/30'}`} />
+                  <input type="password" value={passwordForm.current_password} onChange={e => setPasswordForm({ ...passwordForm, current_password: e.target.value })} className={`w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[9px] font-bold outline-none border ${settingsErrors.current_password ? 'border-rose-500/50' : 'border-slate-200 dark:border-slate-700 focus:border-teal-500/30'}`} />
                   {settingsErrors.current_password && <p className="text-[7px] text-rose-600 dark:text-rose-400 ml-1">{settingsErrors.current_password}</p>}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-300 ml-1">New Password</label>
-                  <input type="password" value={passwordForm.new_password} onChange={e => setPasswordForm({...passwordForm, new_password: e.target.value})} className={`w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[9px] font-bold outline-none border ${settingsErrors.new_password ? 'border-rose-500/50' : 'border-slate-200 dark:border-slate-700 focus:border-teal-500/30'}`} />
+                  <input type="password" value={passwordForm.new_password} onChange={e => setPasswordForm({ ...passwordForm, new_password: e.target.value })} className={`w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[9px] font-bold outline-none border ${settingsErrors.new_password ? 'border-rose-500/50' : 'border-slate-200 dark:border-slate-700 focus:border-teal-500/30'}`} />
                   {settingsErrors.new_password && <p className="text-[7px] text-rose-600 dark:text-rose-400 ml-1">{settingsErrors.new_password}</p>}
                 </div>
                 <div className="space-y-1">
                   <label className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-300 ml-1">Confirm New Password</label>
-                  <input type="password" value={passwordForm.confirm_password} onChange={e => setPasswordForm({...passwordForm, confirm_password: e.target.value})} className={`w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[9px] font-bold outline-none border ${settingsErrors.confirm_password ? 'border-rose-500/50' : 'border-slate-200 dark:border-slate-700 focus:border-teal-500/30'}`} />
+                  <input type="password" value={passwordForm.confirm_password} onChange={e => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })} className={`w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg text-[9px] font-bold outline-none border ${settingsErrors.confirm_password ? 'border-rose-500/50' : 'border-slate-200 dark:border-slate-700 focus:border-teal-500/30'}`} />
                   {settingsErrors.confirm_password && <p className="text-[7px] text-rose-600 dark:text-rose-400 ml-1">{settingsErrors.confirm_password}</p>}
                 </div>
                 {passwordMessage && (

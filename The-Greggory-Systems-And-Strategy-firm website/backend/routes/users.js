@@ -405,31 +405,31 @@ router.post('/reset-password', resetConsumerLimiter, async (req, res) => {
 // Admin Create endpoint
 router.post('/admin-create', (req, res) => {
   const { email, password, first_name, last_name, role, admin_level } = req.body;
-  
+
   if (!email || !password || !first_name || !last_name) {
     return res.status(400).json({
       success: false,
       message: 'All fields are required'
     });
   }
-  
+
   const checkQuery = role === 'admin'
     ? 'SELECT id FROM admin_users WHERE email = ?'
     : 'SELECT id FROM users WHERE email = ?';
-    
+
   db.query(checkQuery, [email], (err, existing) => {
     if (err) return res.status(500).json({ success: false, message: 'Database error' });
-    
+
     if (existing.length > 0) {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
-    
+
     bcrypt.hash(password, 10, (err, hashedPassword) => {
       if (err) return res.status(500).json({ success: false, message: 'Hash failed' });
-      
+
       let insertQuery;
       let insertValues;
-      
+
       if (role === 'admin') {
         insertQuery = `INSERT INTO admin_users 
           (email, password_hash, first_name, last_name, admin_level, access_level, is_active, display_name) 
@@ -441,7 +441,7 @@ router.post('/admin-create', (req, res) => {
           VALUES (?, ?, ?, ?, ?, 'user', true)`;
         insertValues = [email, hashedPassword, first_name, last_name, `${first_name} ${last_name}`];
       }
-      
+
       db.query(insertQuery, insertValues, (err, result) => {
         if (err) return res.status(500).json({ success: false, message: 'Insert failed' });
         res.status(201).json({ success: true, message: 'User created successfully', userId: result.insertId, role: role });
@@ -462,7 +462,7 @@ router.get('/', requireAdminSession, (req, res) => {
     LEFT JOIN team_members tm ON u.job_id = tm.id
     ORDER BY u.created_at DESC
   `;
-  
+
   db.query(query, (err, results) => {
     if (err) return res.status(500).json({ error: 'Failed to fetch users' });
     res.json(results);
@@ -494,7 +494,7 @@ router.post('/register', authEndpointValidator('user', 'users'), async (req, res
       return res.status(400).json({ success: false, message: 'Fields required' });
     }
 
-        // Handle existing user gracefully: if the email already exists in the
+    // Handle existing user gracefully: if the email already exists in the
     // users table (including soft-deleted ones), do NOT block with an error.
     // Instead, return success so the client can be redirected to log in
     // with their existing credentials. This prevents the registration flow
@@ -561,13 +561,13 @@ router.post('/login', loginLimiter, authEndpointValidator('user', 'users'), asyn
        WHERE u.email = ? AND u.is_active = true AND u.deleted_at IS NULL`,
       [email]
     );
-    
+
     if (userResults.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
-    
+
     const user = userResults[0];
     const ok = await bcrypt.compare(password, user.password_hash || '');
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
-    
+
     // MULTI-DEVICE SESSION PROTOCOL: issue a distinct persistent token for
     // THIS device via its own user_sessions row — tokens held by the user's
     // other devices are left untouched, so one credential can carry several
@@ -578,14 +578,17 @@ router.post('/login', loginLimiter, authEndpointValidator('user', 'users'), asyn
       userAgent: req.get('user-agent'),
     });
     await db.promise().query('UPDATE users SET auth_token = ?, last_login_at = NOW(), last_login_ip = ? WHERE id = ?', [personalAuthToken, req.ip, user.id]);
-    
+
     // Profile photo is stored directly on the users table (set at registration).
     let profilePhotoData = null;
     if (user.profile_photo_blob) {
+      const mimeType = user.profile_photo_mime_type && /^image\/(jpeg|jpg|png|gif|webp|avif|bmp)$/.test(user.profile_photo_mime_type.toLowerCase())
+        ? (user.profile_photo_mime_type.toLowerCase() === 'image/jpg' ? 'image/jpeg' : user.profile_photo_mime_type.toLowerCase())
+        : 'image/jpeg';
       const base64 = Buffer.from(user.profile_photo_blob).toString('base64');
-      profilePhotoData = `data:${user.profile_photo_mime_type || 'image/jpeg'};base64,${base64}`;
+      profilePhotoData = `data:${mimeType};base64,${base64}`;
     }
-    
+
     // Return the persistent DB token as the primary authentication token
     // This sets the routing in stone for this terminal/device
     return res.json({
@@ -614,8 +617,11 @@ router.get('/client-dashboard', authenticateUser, async (req, res) => {
     // Build profile photo data URI from DB blob for the dashboard user object
     let dashboardPhotoData = null;
     if (user.profile_photo_blob) {
+      const mimeType = user.profile_photo_mime_type && /^image\/(jpeg|jpg|png|gif|webp|avif|bmp)$/.test(user.profile_photo_mime_type.toLowerCase())
+        ? (user.profile_photo_mime_type.toLowerCase() === 'image/jpg' ? 'image/jpeg' : user.profile_photo_mime_type.toLowerCase())
+        : 'image/jpeg';
       const b64 = Buffer.from(user.profile_photo_blob).toString('base64');
-      dashboardPhotoData = `data:${user.profile_photo_mime_type || 'image/jpeg'};base64,${b64}`;
+      dashboardPhotoData = `data:${mimeType};base64,${b64}`;
     }
 
     const dashboard = {
@@ -892,9 +898,9 @@ router.get('/my-reports/:id/download', authenticateUser, async (req, res) => {
     const type = String(report.file_type || '');
     const ext = type.includes('pdf') ? 'pdf'
       : type.includes('word') || type.includes('officedocument') ? 'docx'
-      : type.includes('excel') || type.includes('spreadsheet') ? 'xlsx'
-      : type.includes('csv') ? 'csv'
-      : 'bin';
+        : type.includes('excel') || type.includes('spreadsheet') ? 'xlsx'
+          : type.includes('csv') ? 'csv'
+            : 'bin';
     const safeTitle = String(report.title || 'report').replace(/[\\/:*?"<>|]/g, '_');
     res.setHeader('Content-Type', type || 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.${ext}"`);
