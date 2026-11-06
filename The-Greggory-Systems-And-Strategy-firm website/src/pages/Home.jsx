@@ -375,12 +375,12 @@ const Home = () => {
           </div>
 
           <div className="relative group">
-            <div className="absolute -inset-px bg-gradient-to-br from-gold-500/10 to-teal-500/10 rounded-[24px] blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div aria-hidden="true" className="pointer-events-none absolute -inset-px bg-gradient-to-br from-gold-500/10 to-teal-500/10 rounded-[24px] blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative bg-white rounded-[20px] overflow-hidden border border-slate-200 max-w-6xl mx-auto">
-              <div className="relative aspect-video">
+              <div className="relative aspect-video overflow-hidden bg-slate-950">
                 <video
                   ref={videoRef}
-                  className="w-full h-full object-cover"
+                  className="absolute inset-0 h-full w-full object-cover"
                   controls
                   loop
                   playsInline
@@ -390,9 +390,14 @@ const Home = () => {
                   <source src="/featured-insight.mp4" type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
-                <div className="absolute bottom-0 right-0 z-50 pointer-events-none p-3">
+                <div className="absolute bottom-0 right-0 z-50 pointer-events-none p-3 max-[640px]:bottom-auto max-[640px]:right-auto max-[640px]:left-0 max-[640px]:top-0 max-[640px]:p-2">
                   <div className="bg-white p-2 rounded-lg shadow-lg border-2 border-white">
-                    <img src="/score-1.jpg" alt="Client results snapshot featured on the Greggory homepage" loading="lazy" className="h-12 sm:h-16 w-auto rounded object-contain" />
+                    <img
+                      src="/score-1.jpg"
+                      alt="The Greggory Systems And Strategy Firm logo and name"
+                      loading="lazy"
+                      className="h-12 sm:h-16 w-auto rounded object-contain"
+                    />
                   </div>
                 </div>
               </div>

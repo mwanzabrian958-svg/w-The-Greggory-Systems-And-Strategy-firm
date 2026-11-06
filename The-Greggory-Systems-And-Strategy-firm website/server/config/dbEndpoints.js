@@ -38,7 +38,7 @@ const DB_NAME = process.env.DB_NAME;
 if (!DB_NAME) {
   throw new Error(
     "DB_NAME is not set. Set it in the environment: `defaultdb` on the Aiven " +
-      "service, or the local XAMPP database name for local dev."
+    "service, or the local XAMPP database name for local dev."
   );
 }
 
@@ -267,8 +267,8 @@ function liveEndpoints() {
         if (!reachable[i]) {
           console.warn(
             `[DB CLUSTER] skipping ${cfg.label} (${cfg.host}:${cfg.port}) — ` +
-              `nothing listening; it would otherwise fail every query once and ` +
-              `be re-tried every 5s.`
+            `nothing listening; it would otherwise fail every query once and ` +
+            `be re-tried every 5s.`
           );
         }
       });

@@ -26,7 +26,7 @@ const DB_NAME = process.env.DB_NAME;
 if (!DB_NAME) {
   console.error(
     '[import] DB_NAME is not set — refusing to guess a database name. ' +
-      'Set it in the environment (Aiven service: `defaultdb`).'
+    'Set it in the environment (Aiven service: `defaultdb`).'
   );
   process.exit(1);
 }

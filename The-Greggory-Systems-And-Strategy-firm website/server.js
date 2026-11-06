@@ -46,13 +46,13 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("he
 if (!process.env.JWT_SECRET) {
   console.error(
     "[SECURITY][CRITICAL] JWT_SECRET is not set — using an ephemeral random secret. " +
-      "All JWT sessions will invalidate on every restart. Set JWT_SECRET in your environment!"
+    "All JWT sessions will invalidate on every restart. Set JWT_SECRET in your environment!"
   );
 }
 if (!process.env.ADMIN_SESSION_SECRET && !process.env.JWT_SECRET) {
   console.error(
     "[SECURITY][CRITICAL] ADMIN_SESSION_SECRET/JWT_SECRET are not set — admin sessions are " +
-      "ephemeral. Set ADMIN_SESSION_SECRET in your environment!"
+    "ephemeral. Set ADMIN_SESSION_SECRET in your environment!"
   );
 }
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 if (!(process.env.GOOGLE_CLIENT_ID || "").trim()) {
   console.warn(
     "[AUTH] Google Sign-In is DISABLED — GOOGLE_CLIENT_ID is not set. " +
-      "Set GOOGLE_CLIENT_ID and VITE_GOOGLE_CLIENT_ID (same OAuth 2.0 client) — see GOOGLE_SIGNIN_SETUP.md",
+    "Set GOOGLE_CLIENT_ID and VITE_GOOGLE_CLIENT_ID (same OAuth 2.0 client) — see GOOGLE_SIGNIN_SETUP.md",
   );
 }
 
@@ -96,9 +96,9 @@ if (!(process.env.GOOGLE_CLIENT_ID || "").trim()) {
 if (!whatsappProviderConfigured()) {
   console.warn(
     "[WHATSAPP] No WhatsApp provider configured — sends are SIMULATED. Set " +
-      "WHATSAPP_INFOBIP_BASE_URL + WHATSAPP_INFOBIP_API_KEY (Infobip, preferred) or " +
-      "WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID (Meta Cloud API) or " +
-      "AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY.",
+    "WHATSAPP_INFOBIP_BASE_URL + WHATSAPP_INFOBIP_API_KEY (Infobip, preferred) or " +
+    "WHATSAPP_CLOUD_TOKEN + WHATSAPP_CLOUD_PHONE_ID (Meta Cloud API) or " +
+    "AFRICASTALKING_USERNAME + AFRICASTALKING_API_KEY.",
   );
 }
 if (
@@ -107,7 +107,7 @@ if (
 ) {
   console.warn(
     "[MPESA] MPESA_CONSUMER_KEY / MPESA_CONSUMER_SECRET not set — M-Pesa STK " +
-      "Push runs in SIMULATION mode (no real payment requests are made).",
+    "Push runs in SIMULATION mode (no real payment requests are made).",
   );
 }
 {
@@ -124,18 +124,18 @@ if (
       console.warn(
         fcmCreds.error
           ? "[FCM] Firebase credentials are INVALID — push notifications " +
-              `are SIMULATED. ${fcmCreds.error}`
+          `are SIMULATED. ${fcmCreds.error}`
           : "[FCM] No Firebase service-account credentials found — push " +
-              "notifications are SIMULATED. Set FIREBASE_SERVICE_ACCOUNT " +
-              "(raw service-account JSON; required on Render) or " +
-              "FIREBASE_SERVICE_ACCOUNT_PATH / place the file at " +
-              "backend/config/firebase-service-account.json.",
+          "notifications are SIMULATED. Set FIREBASE_SERVICE_ACCOUNT " +
+          "(raw service-account JSON; required on Render) or " +
+          "FIREBASE_SERVICE_ACCOUNT_PATH / place the file at " +
+          "backend/config/firebase-service-account.json.",
       );
     }
   } catch (fcmBootErr) {
     console.warn(
       "[FCM] Could not verify Firebase credentials — push notifications " +
-        `may be SIMULATED. ${fcmBootErr.message}`,
+      `may be SIMULATED. ${fcmBootErr.message}`,
     );
   }
 }
@@ -279,13 +279,13 @@ const authenticateAdmin = async (req, res, next) => {
 const authenticateAny = async (req, res, next) => {
   const raw = String(
     req.headers.authorization ||
-      req.header("x-auth-token") ||
-      req.body?.token ||
-      getCookie(req, ADMIN_SESSION_COOKIE) ||
-      // OWASP A07: query-string tokens (authenticated PDF <a href> links)
-      // leak into logs/history — accepted on GET/HEAD only, never mutations.
-      (req.method === "GET" || req.method === "HEAD" ? req.query.token : "") ||
-      ""
+    req.header("x-auth-token") ||
+    req.body?.token ||
+    getCookie(req, ADMIN_SESSION_COOKIE) ||
+    // OWASP A07: query-string tokens (authenticated PDF <a href> links)
+    // leak into logs/history — accepted on GET/HEAD only, never mutations.
+    (req.method === "GET" || req.method === "HEAD" ? req.query.token : "") ||
+    ""
   ).trim();
   const m = raw.match(/^Bearer\s+(.+)$/i);
   const token = (m ? m[1] : raw).trim();
@@ -717,14 +717,14 @@ app.use(async (req, res, next) => {
       const adminPayload = await verifyActiveAdminSession(token);
       if (adminPayload && adminPayload.uid) {
         // Fire and forget the admin activity stamp (the Developer platform was purged)
-        mainDb.query("UPDATE admin_users SET last_active_at = NOW() WHERE id = ?", [adminPayload.uid]).catch(() => {});
+        mainDb.query("UPDATE admin_users SET last_active_at = NOW() WHERE id = ?", [adminPayload.uid]).catch(() => { });
       } else {
         // 2. Check for Standard JWT (Regular Users)
         try {
           const decoded = jwt.verify(token, JWT_SECRET);
           const userId = decoded.userId || decoded.id || decoded.user?.id;
           if (userId) {
-            mainDb.query("UPDATE users SET last_active_at = NOW() WHERE id = ?", [userId]).catch(() => {});
+            mainDb.query("UPDATE users SET last_active_at = NOW() WHERE id = ?", [userId]).catch(() => { });
           }
         } catch (jwtErr) {
           // Token might be invalid or for another part of the system, ignore
@@ -1194,8 +1194,8 @@ async function resolveFkProjectId(table, provided) {
     try {
       const [dup] = await mainDb.query(
         "SELECT id FROM `" + target + "` WHERE " +
-          (target === "projects" ? "name = ?" : "project_name = ?") +
-          " ORDER BY id LIMIT 1",
+        (target === "projects" ? "name = ?" : "project_name = ?") +
+        " ORDER BY id LIMIT 1",
         [name]
       );
       if (dup && dup[0]) return dup[0].id; // mirror already exists — reuse it
@@ -1488,7 +1488,7 @@ app.post('/api/mpesa/stkpush', async (req, res) => {
     if (!stkResponse.ok) {
       throw new Error(
         (stkData && (stkData.errorMessage || stkData.requestDescription)) ||
-          `Safaricom STK push request failed (HTTP ${stkResponse.status}${stkText ? "" : ", empty body"})`
+        `Safaricom STK push request failed (HTTP ${stkResponse.status}${stkText ? "" : ", empty body"})`
       );
     }
 
@@ -2122,70 +2122,70 @@ const loadClientPortalPayload = async (id) => {
        WHERE pt.project_id IN (${placeholders}) AND pt.deleted_at IS NULL
        ORDER BY pt.due_date ASC
        LIMIT 20`,
-       projectIds.length > 0 ? projectIds : [],
-     );
+      projectIds.length > 0 ? projectIds : [],
+    );
 
-     // Optional portal sections must never 500 the whole dashboard: one
-     // failing/missing table degrades to an empty section instead.
-     const safeQuery = async (section, sql, params) => {
-       try {
-         return await mainDb.query(sql, params);
-       } catch (err) {
-         console.error(`[CLIENT DASHBOARD] "${section}" section failed:`, err.code || "", err.message);
-         return [[]];
-       }
-     };
+    // Optional portal sections must never 500 the whole dashboard: one
+    // failing/missing table degrades to an empty section instead.
+    const safeQuery = async (section, sql, params) => {
+      try {
+        return await mainDb.query(sql, params);
+      } catch (err) {
+        console.error(`[CLIENT DASHBOARD] "${section}" section failed:`, err.code || "", err.message);
+        return [[]];
+      }
+    };
 
-     const teamMembers = [];
-     if (projectIds.length > 0) {
-       const teamPlaceholders = projectIds.map(() => "?").join(",");
+    const teamMembers = [];
+    if (projectIds.length > 0) {
+      const teamPlaceholders = projectIds.map(() => "?").join(",");
 
-       const [managerRows] = await safeQuery(
-         "team members (managers)",
-         `SELECT up.id AS project_id, up.project_name, pm.id, pm.email, pm.first_name, pm.last_name, pm.display_name,
+      const [managerRows] = await safeQuery(
+        "team members (managers)",
+        `SELECT up.id AS project_id, up.project_name, pm.id, pm.email, pm.first_name, pm.last_name, pm.display_name,
                  pm.primary_role AS role, 'Project Manager' AS duties, 'active' AS status
           FROM user_projects up
           LEFT JOIN users pm ON pm.id = up.project_manager_id
           WHERE up.id IN (${teamPlaceholders}) AND up.deleted_at IS NULL AND pm.id IS NOT NULL`,
-         projectIds,
-       );
+        projectIds,
+      );
 
-       const [assigneeRows] = await safeQuery(
-         "team members (assignees)",
-         `SELECT pt.project_id, up.project_name, u.id, u.email, u.first_name, u.last_name, u.display_name,
+      const [assigneeRows] = await safeQuery(
+        "team members (assignees)",
+        `SELECT pt.project_id, up.project_name, u.id, u.email, u.first_name, u.last_name, u.display_name,
                  u.primary_role AS role, pt.task_name AS duties, 'active' AS status
           FROM project_tasks pt
           LEFT JOIN user_projects up ON up.id = pt.project_id
           LEFT JOIN users u ON u.id = pt.assigned_to
           WHERE pt.project_id IN (${teamPlaceholders}) AND pt.deleted_at IS NULL AND u.id IS NOT NULL`,
-         projectIds,
-       );
+        projectIds,
+      );
 
-        const [projectTeamRows] = await safeQuery(
-          "team members (project roster)",
-          `SELECT ptm.project_id, up.project_name, u.id, u.email, u.first_name, u.last_name, u.display_name,
+      const [projectTeamRows] = await safeQuery(
+        "team members (project roster)",
+        `SELECT ptm.project_id, up.project_name, u.id, u.email, u.first_name, u.last_name, u.display_name,
                   u.primary_role AS role, 'Team Member' AS duties, 'active' AS status
            FROM project_team_members ptm
            LEFT JOIN user_projects up ON up.id = ptm.project_id
            LEFT JOIN users u ON u.id = ptm.user_id
            WHERE ptm.project_id IN (${teamPlaceholders}) AND ptm.removed_at IS NULL AND u.id IS NOT NULL`,
-          projectIds,
-        );
+        projectIds,
+      );
 
-       const seen = new Set();
-       const addMember = (row) => {
-         const key = `${row.project_id}-${row.id}`;
-         if (seen.has(key)) return;
-         seen.add(key);
-         teamMembers.push(row);
-       };
+      const seen = new Set();
+      const addMember = (row) => {
+        const key = `${row.project_id}-${row.id}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        teamMembers.push(row);
+      };
 
-       managerRows.forEach(addMember);
-       assigneeRows.forEach(addMember);
-       projectTeamRows.forEach(addMember);
-     }
+      managerRows.forEach(addMember);
+      assigneeRows.forEach(addMember);
+      projectTeamRows.forEach(addMember);
+    }
 
-     const [activityRows] = await safeQuery(
+    const [activityRows] = await safeQuery(
       "activities",
       `SELECT pa.id, pa.project_id, pa.activity_type, pa.message, pa.created_at, CONCAT(u.first_name, ' ', u.last_name) AS sender_name
        FROM project_activities pa
@@ -2592,7 +2592,7 @@ const googleIdColumnAvailable = async () => {
     if (!googleIdColumnState) {
       console.warn(
         "[GOOGLE AUTH] users.google_id is missing — sign-in still works, accounts are matched by email. " +
-          "Run scripts/add-google-id-column.js to enable Google-id matching.",
+        "Run scripts/add-google-id-column.js to enable Google-id matching.",
       );
     }
   } catch (error) {
@@ -5391,7 +5391,7 @@ app.get("/api/projects/:projectId/documents", authenticateAny, async (req, res) 
       success: true,
       documents: allDocuments,
     });
-    } catch (error) {
+  } catch (error) {
     console.error("Error fetching project documents:", error);
     res.status(500).json({
       success: false,
@@ -5399,92 +5399,92 @@ app.get("/api/projects/:projectId/documents", authenticateAny, async (req, res) 
       error: "Internal server error",
     });
   }
-// Admin: compose (upload) a client document into the vault. Stores the
-// metadata row in client_documents and the PDF at file_path.
-// Callers are admins; ownership is scoped by client_id / project_id.
-app.post("/api/documents", authenticateAdmin, async (req, res) => {
-  try {
-    const {
-      document_name,
-      document_type = "other",
-      category = "general",
-      description = null,
-      file_path = null,
-      file_size = null,
-      file_type = "application/pdf",
-      version_number = 1,
-      is_current_version = true,
-      parent_document_id = null,
-      status = "draft",
-      access_level = "private",
-      project_id = null,
-      client_id = null,
-      tags = null,
-      created_by = null,
-      updated_by = null,
-    } = req.body || {};
+  // Admin: compose (upload) a client document into the vault. Stores the
+  // metadata row in client_documents and the PDF at file_path.
+  // Callers are admins; ownership is scoped by client_id / project_id.
+  app.post("/api/documents", authenticateAdmin, async (req, res) => {
+    try {
+      const {
+        document_name,
+        document_type = "other",
+        category = "general",
+        description = null,
+        file_path = null,
+        file_size = null,
+        file_type = "application/pdf",
+        version_number = 1,
+        is_current_version = true,
+        parent_document_id = null,
+        status = "draft",
+        access_level = "private",
+        project_id = null,
+        client_id = null,
+        tags = null,
+        created_by = null,
+        updated_by = null,
+      } = req.body || {};
 
-    if (!document_name) {
-      return res.status(400).json({
-        success: false,
-        message: "document_name is required",
-      });
-    }
+      if (!document_name) {
+        return res.status(400).json({
+          success: false,
+          message: "document_name is required",
+        });
+      }
 
-    if (!file_path) {
-      return res.status(400).json({
-        success: false,
-        message: "file_path is required (the stored PDF link)",
-      });
-    }
+      if (!file_path) {
+        return res.status(400).json({
+          success: false,
+          message: "file_path is required (the stored PDF link)",
+        });
+      }
 
-    const [rows] = await mainDb.query(
-      `INSERT INTO client_documents
+      const [rows] = await mainDb.query(
+        `INSERT INTO client_documents
         (project_id, client_id, document_name, document_type, category, description,
          file_path, file_size, file_type, version_number, is_current_version,
          parent_document_id, status, access_level, tags,
          created_by, updated_by, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [
-        project_id,
-        client_id,
-        document_name,
-        document_type,
-        category,
-        description,
-        file_path,
-        file_size,
-        file_type,
-        version_number,
-        is_current_version ? 1 : 0,
-        parent_document_id,
-        status,
-        access_level,
-        tags,
-        created_by,
-        updated_by,
-      ],
-    );
+        [
+          project_id,
+          client_id,
+          document_name,
+          document_type,
+          category,
+          description,
+          file_path,
+          file_size,
+          file_type,
+          version_number,
+          is_current_version ? 1 : 0,
+          parent_document_id,
+          status,
+          access_level,
+          tags,
+          created_by,
+          updated_by,
+        ],
+      );
 
-    const documentId = Number(rows.insertId);
+      const documentId = Number(rows.insertId);
 
-    res.status(201).json({
-      success: true,
-      id: documentId,
-      message: "Document composed and stored in the client vault.",
-    });
-  } catch (error) {
-    console.error("Error composing document:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to compose document",
-      error: "Internal server error",
-    });
-  }
-});
+      res.status(201).json({
+        success: true,
+        id: documentId,
+        message: "Document composed and stored in the client vault.",
+      });
+    } catch (error) {
+      console.error("Error composing document:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to compose document",
+        error: "Internal server error",
+      });
+    }
+  });
 
-// =============================================================================
-// Completion PDF Co-Generator
+  // =============================================================================
+  // Completion PDF Co-Generator
 });
 
 // =============================================================================
@@ -6379,7 +6379,7 @@ app.delete("/api/admin/team/:id", authenticateAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const [result] = await mainDb.query(`DELETE FROM team_members WHERE id = ?`, [id]);
-    
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: "Team member not found" });
     }
@@ -6894,17 +6894,17 @@ app.post("/api/contact-forms", async (req, res) => {
       });
     }
     const [result] = await mainDb.query(
-    // NOTE: keep column list in sync with the contact_forms schema —
-    // the table has no preferred_contact column and the UI doesn't send one.
-    "INSERT INTO contact_forms (name, email, phone, company, subject, message) VALUES (?, ?, ?, ?, ?, ?)",
-    [
-      form.name,
-      form.email,
-      form.phone,
-      form.company,
-      form.subject,
-      form.message,
-    ],
+      // NOTE: keep column list in sync with the contact_forms schema —
+      // the table has no preferred_contact column and the UI doesn't send one.
+      "INSERT INTO contact_forms (name, email, phone, company, subject, message) VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        form.name,
+        form.email,
+        form.phone,
+        form.company,
+        form.subject,
+        form.message,
+      ],
     );
 
     res.json({ success: true, formId: result.insertId });
@@ -7975,8 +7975,8 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
     const due = due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const subtotal =
       req.body.subtotal != null ? parseFloat(req.body.subtotal)
-      : req.body.total_amount_kes != null ? parseFloat(req.body.total_amount_kes)
-      : req.body.total_amount != null ? parseFloat(req.body.total_amount) : 0;
+        : req.body.total_amount_kes != null ? parseFloat(req.body.total_amount_kes)
+          : req.body.total_amount != null ? parseFloat(req.body.total_amount) : 0;
     // KRA compliance: ALWAYS store tax_rate as a DECIMAL FRACTION (0.16 = 16%).
     // `tax_amount` is a STORED generated column (subtotal * tax_rate), so a
     // whole percent like 16 would silently compute 1600% tax. normalizeRate
@@ -7991,7 +7991,7 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
     const rawPaymentMethod = String(req.body.payment_method || 'mpesa').toLowerCase();
     const paymentMethod = rawPaymentMethod === 'bank' ? 'bank_transfer'
       : rawPaymentMethod === 'mpesa' ? 'mpesa'
-      : rawPaymentMethod;
+        : rawPaymentMethod;
     const [result] = await mainDb.query(
       `INSERT INTO invoices
         (project_id, invoice_number, invoice_type, title, description, subtotal, tax_rate,
@@ -7999,62 +7999,62 @@ app.post("/api/invoices", authenticateAdmin, async (req, res) => {
          client_phone, client_address, items, notes, payment_terms, payment_method, payment_phone, payment_reference, created_by, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [project_id, invoice_number, req.body.invoice_type || 'project_fee', title, description || null,
-       subtotal, tax_rate, req.body.currency || 'KES',
-       req.body.exchange_rate != null ? parseFloat(req.body.exchange_rate) : 1,
-       issue_date, due, clientName, clientEmail, clientPhone, clientAddress,
-       items, req.body.notes || null, req.body.payment_terms || null,
-       paymentMethod, req.body.payment_phone || '+254115525854', req.body.payment_reference || null,
-       userId]
-     );
-     // Notify the client: look up the user by client_email (the address that
-     // belongs to the invoice) and create an in-portal notification. Fire-and-
-     // forget — a notification failure must never fail the invoice creation.
-     if (clientEmail) {
-       try {
-         const [clients] = await mainDb.query("SELECT id FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1", [clientEmail]);
-         if (clients.length) {
-           await mainDb.query(
-             `INSERT INTO notifications (user_id, notification_type, title, message, status, related_entity_type, related_entity_id, created_at)
+        subtotal, tax_rate, req.body.currency || 'KES',
+        req.body.exchange_rate != null ? parseFloat(req.body.exchange_rate) : 1,
+        issue_date, due, clientName, clientEmail, clientPhone, clientAddress,
+        items, req.body.notes || null, req.body.payment_terms || null,
+        paymentMethod, req.body.payment_phone || '+254115525854', req.body.payment_reference || null,
+        userId]
+    );
+    // Notify the client: look up the user by client_email (the address that
+    // belongs to the invoice) and create an in-portal notification. Fire-and-
+    // forget — a notification failure must never fail the invoice creation.
+    if (clientEmail) {
+      try {
+        const [clients] = await mainDb.query("SELECT id FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1", [clientEmail]);
+        if (clients.length) {
+          await mainDb.query(
+            `INSERT INTO notifications (user_id, notification_type, title, message, status, related_entity_type, related_entity_id, created_at)
               VALUES (?, 'invoice_sent', ?, ?, 'unread', 'invoices', ?, NOW())`,
-             [clients[0].id, `New invoice ${invoice_number}`, `Invoice "${title}" for ${clientName} — KSH ${Number(subtotal || 0).toLocaleString()} due ${due}.`, result.insertId]
-           );
-         }
-       } catch (nErr) { console.warn('[INVOICE] notification skipped:', nErr.message); }
-        // Auto-push to Android (display + cache receipt/report payload) — fire-and-forget.
-        try {
-          const { invoiceSentPush } = require("./backend/utils/notificationHelper");
-          invoiceSentPush(mainDb, {
-            clientEmail, invoiceId: result.insertId,
-            invoiceNumber: invoice_number, title, clientName,
-            amount: subtotal, dueDate: due,
-          }).catch(() => {});
-        } catch (pushErr) { console.warn('[INVOICE] push skipped:', pushErr.message); }
-     }
-     // Ledger: create an accounting_entries row so the invoice appears in the billing ledger
-     // (fire-and-forget; a ledger failure must never roll back the invoice itself).
-     try {
-       const taxAmount = Number(((subtotal || 0) * (tax_rate || 0)).toFixed(2));
-       await mainDb.query(
-         `INSERT INTO accounting_entries
+            [clients[0].id, `New invoice ${invoice_number}`, `Invoice "${title}" for ${clientName} — KSH ${Number(subtotal || 0).toLocaleString()} due ${due}.`, result.insertId]
+          );
+        }
+      } catch (nErr) { console.warn('[INVOICE] notification skipped:', nErr.message); }
+      // Auto-push to Android (display + cache receipt/report payload) — fire-and-forget.
+      try {
+        const { invoiceSentPush } = require("./backend/utils/notificationHelper");
+        invoiceSentPush(mainDb, {
+          clientEmail, invoiceId: result.insertId,
+          invoiceNumber: invoice_number, title, clientName,
+          amount: subtotal, dueDate: due,
+        }).catch(() => { });
+      } catch (pushErr) { console.warn('[INVOICE] push skipped:', pushErr.message); }
+    }
+    // Ledger: create an accounting_entries row so the invoice appears in the billing ledger
+    // (fire-and-forget; a ledger failure must never roll back the invoice itself).
+    try {
+      const taxAmount = Number(((subtotal || 0) * (tax_rate || 0)).toFixed(2));
+      await mainDb.query(
+        `INSERT INTO accounting_entries
            (entry_type, category, amount, tax_amount, currency, exchange_rate,
             transaction_date, transaction_reference, payment_method, payment_status,
             description, notes, tax_rate, tax_region, project_id, invoice_id,
             client_email, created_by, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-         [
-           'invoice', 'income', subtotal, taxAmount,
-           req.body.currency || 'KES', 1,
-           issue_date, invoice_number, null, 'pending',
-           title, req.body.notes || null,
-           tax_rate, 'KE', project_id, result.insertId,
-           clientEmail, userId,
-         ]
-       );
-     } catch (ledgerErr) {
-       console.warn('[INVOICE] ledger entry skipped:', ledgerErr.message);
-     }
+        [
+          'invoice', 'income', subtotal, taxAmount,
+          req.body.currency || 'KES', 1,
+          issue_date, invoice_number, null, 'pending',
+          title, req.body.notes || null,
+          tax_rate, 'KE', project_id, result.insertId,
+          clientEmail, userId,
+        ]
+      );
+    } catch (ledgerErr) {
+      console.warn('[INVOICE] ledger entry skipped:', ledgerErr.message);
+    }
 
-     res.status(201).json({ success: true, id: result.insertId });
+    res.status(201).json({ success: true, id: result.insertId });
   } catch (error) { console.error('[POST /api/invoices]', error.code || '', error.message, '\nSQL:', String(error.sql || '').substring(0, 500)); res.status(500).json({ error: 'Failed', detail: "Internal server error" }); }
 });
 
@@ -8077,13 +8077,15 @@ app.post("/api/accounting-entries", async (req, res) => {
 
 // Audit Logs
 app.get("/api/audit-logs", async (req, res) => {
-  try { const [rows] = await mainDb.query('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 100'); res.json({ success: true, logs: rows });
+  try {
+    const [rows] = await mainDb.query('SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 100'); res.json({ success: true, logs: rows });
   } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 // Data Access Logs
 app.get("/api/data-access-logs", async (req, res) => {
-  try { const [rows] = await mainDb.query('SELECT * FROM data_access_logs ORDER BY created_at DESC LIMIT 100'); res.json({ success: true, logs: rows });
+  try {
+    const [rows] = await mainDb.query('SELECT * FROM data_access_logs ORDER BY created_at DESC LIMIT 100'); res.json({ success: true, logs: rows });
   } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
@@ -8544,7 +8546,7 @@ app.put("/api/accounting/entries/:id", authenticateAdmin, async (req, res) => {
     vals.push(id);
     await mainDb.query(`UPDATE accounting_entries SET ${sets.join(",")} WHERE id=? AND deleted_at IS NULL`, vals);
     res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: "Failed" }); }
+  } catch (e) { res.status(500).json({ error: "Failed" }); }
 });
 
 // ── Team Management (admin-scoped) ───────────────────────────────────────────
@@ -8567,12 +8569,12 @@ app.get("/api/admin/dashboard", authenticateAdmin, async (req, res) => {
     res.json({
       success: true,
       dashboard: {
-        userCounts: { total: u[0]?.total||0, verified: u[0]?.verified||0, live: u[0]?.live||0, total_active_projects: p[0]?.active||0 },
-        pending_count: pc[0]?.pending||0,
+        userCounts: { total: u[0]?.total || 0, verified: u[0]?.verified || 0, live: u[0]?.live || 0, total_active_projects: p[0]?.active || 0 },
+        pending_count: pc[0]?.pending || 0,
         recentActivity: []
       }
     });
-  } catch (e) { console.error("Dashboard err:", e); res.status(500).json({ success:false, message:"Dashboard error" }); }
+  } catch (e) { console.error("Dashboard err:", e); res.status(500).json({ success: false, message: "Dashboard error" }); }
 });
 
 // ── Pending Approvals ────────────────────────────────────────────────────────
@@ -8583,7 +8585,7 @@ app.get("/api/admin/pending-approvals", authenticateAdmin, async (req, res) => {
     // admin change requests (invoices/project changes routed for review).
     const [rows] = await mainDb.query("SELECT id, project_id, request_number, requested_by, change_description, status, created_at FROM change_requests WHERE status = 'pending' ORDER BY created_at DESC LIMIT 20");
     res.json({ success: true, data: rows });
-  } catch (e) { res.status(500).json({ success:false, message:"Failed" }); }
+  } catch (e) { res.status(500).json({ success: false, message: "Failed" }); }
 });
 
 // ── Admin Projects All ────────────────────────────────────────────────────────
@@ -8671,16 +8673,16 @@ app.get("/api/admin/node-settings", authenticateAdmin, async (req, res) => {
     await ensureAdminSettingsTable(mainDb);
     const [s] = await mainDb.query("SELECT * FROM admin_settings");
     const settings = {}; s.forEach((r) => { settings[r.setting_key] = r.setting_value; });
-    res.json({ success: true, settings, system: { status:"operational", uptime:"99.9%" } });
-  } catch (e) { console.error("[GET /api/admin/node-settings]", e.code || "", e.message); res.status(500).json({ success:false, message:"Failed" }); }
+    res.json({ success: true, settings, system: { status: "operational", uptime: "99.9%" } });
+  } catch (e) { console.error("[GET /api/admin/node-settings]", e.code || "", e.message); res.status(500).json({ success: false, message: "Failed" }); }
 });
 
 // ── System Calibration ───────────────────────────────────────────────────────
 app.post("/api/admin/system-calibration", authenticateAdmin, async (req, res) => {
   try {
     const [tbl] = await mainDb.query("SHOW TABLES");
-    res.json({ success:true, calibration:{status:"healthy",ran_at:new Date().toISOString(),tables:tbl.length,node:process.version} });
-  } catch (e) { res.status(500).json({ success:false, message:"Failed" }); }
+    res.json({ success: true, calibration: { status: "healthy", ran_at: new Date().toISOString(), tables: tbl.length, node: process.version } });
+  } catch (e) { res.status(500).json({ success: false, message: "Failed" }); }
 });
 
 // ── Admin Search ────────────────────────────────────────────────────────────
@@ -8745,7 +8747,7 @@ app.get("/api/admin/client-documents", authenticateAdmin, async (req, res) => {
 // Client PII list — admin session only for read and create.
 app.get("/api/admin/crm/contacts", authenticateAdmin, async (req, res) => {
   try { const [rows] = await mainDb.query("SELECT * FROM crm_contacts WHERE deleted_at IS NULL ORDER BY created_at DESC"); res.json({ success: true, clients: rows, opportunities: [], pipeline: [] }); }
-  catch (e) { res.status(500).json({ success:false, message:"CRM failed" }); }
+  catch (e) { res.status(500).json({ success: false, message: "CRM failed" }); }
 });
 
 app.post("/api/admin/crm/contacts", authenticateAdmin, async (req, res) => {
@@ -8754,7 +8756,7 @@ app.post("/api/admin/crm/contacts", authenticateAdmin, async (req, res) => {
     if (!name) return res.status(400).json({ error: "Name required" });
     const allowedStatuses = new Set(["lead", "active", "inactive", "archived"]);
     const safeStatus = allowedStatuses.has(String(status)) ? status : "lead";
-    const [r] = await mainDb.query("INSERT INTO crm_contacts (name,email,phone,company,status,is_active,created_at) VALUES (?,?,?,?,?,1,NOW())", [name, email||null, phone||null, company||null, safeStatus]);
+    const [r] = await mainDb.query("INSERT INTO crm_contacts (name,email,phone,company,status,is_active,created_at) VALUES (?,?,?,?,?,1,NOW())", [name, email || null, phone || null, company || null, safeStatus]);
     res.status(201).json({ success: true, id: r.insertId });
   } catch (e) { res.status(500).json({ error: "Failed" }); }
 });
