@@ -13,6 +13,29 @@
 const db = require('../config/database');
 const crypto = require('crypto');
 
+let authMappingRepairPromise = null;
+
+async function ensureAuthMappings() {
+  if (!authMappingRepairPromise) {
+    const { ensureAuthSeedData, MAPPINGS } = require('../../scripts/preflight-db');
+    authMappingRepairPromise = ensureAuthSeedData({
+      log: (message) => console.log(`[AUTH MAPPING REPAIR] ${message}`),
+    })
+      .then((summary) => {
+        const incomplete =
+          summary.endpoints === 0 ||
+          summary.details.some((detail) => detail.mappings < MAPPINGS.length);
+        if (incomplete) {
+          throw new Error('Auth platform mappings could not be restored on every reachable cloud database');
+        }
+      })
+      .finally(() => {
+        authMappingRepairPromise = null;
+      });
+  }
+  return authMappingRepairPromise;
+}
+
 /**
  * Generate unique request ID for audit trail
  */
@@ -38,21 +61,41 @@ function hashRequestBody(body = {}) {
 /**
  * Validate auth request against platform mapping
  */
-async function validateAuthRequest(platform, tableName, endpoint, email, req) {
+async function validateAuthRequest(
+  platform,
+  tableName,
+  endpoint,
+  email,
+  req,
+  repairMappings = ensureAuthMappings,
+) {
   try {
     // 1. Check if platform mapping exists and is locked
-    const [mapping] = await db.promise().query(
-      `SELECT * FROM auth_platform_mapping 
-       WHERE platform_name = ? AND table_name = ? AND is_locked = TRUE AND is_active = TRUE`,
-      [platform, tableName]
-    );
+    const findMapping = () =>
+      db.promise().query(
+        `SELECT * FROM auth_platform_mapping
+         WHERE platform_name = ? AND table_name = ? AND is_locked = TRUE AND is_active = TRUE`,
+        [platform, tableName]
+      );
+    let mapping;
+    try {
+      [mapping] = await findMapping();
+    } catch (error) {
+      if (error.code !== 'ER_NO_SUCH_TABLE') throw error;
+      await repairMappings(platform, tableName);
+      [mapping] = await findMapping();
+    }
 
     if (mapping.length === 0) {
-      return {
-        valid: false,
-        error: `Auth platform mapping not found or not locked for ${platform}/${tableName}`,
-        errorCode: 'MAPPING_NOT_LOCKED'
-      };
+      await repairMappings(platform, tableName);
+      [mapping] = await findMapping();
+      if (mapping.length === 0) {
+        return {
+          valid: false,
+          error: `Auth platform mapping not found or not locked for ${platform}/${tableName}`,
+          errorCode: 'MAPPING_NOT_LOCKED'
+        };
+      }
     }
 
     // 2. Endpoint-to-platform consistency check
