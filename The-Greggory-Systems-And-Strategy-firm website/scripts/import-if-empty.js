@@ -30,7 +30,15 @@ if (!DB_NAME) {
   );
   process.exit(1);
 }
-const ENDPOINTS = require('../server/config/dbEndpoints').endpoints();
+const {
+  endpoints: getEndpoints,
+  noMySqlEndpointError,
+} = require('../server/config/dbEndpoints');
+const ENDPOINTS = getEndpoints();
+if (ENDPOINTS.length === 0) {
+  console.error(`[import] ${noMySqlEndpointError().message}`);
+  process.exit(1);
+}
 
 // On a managed MySQL (Aiven) the service ships with its schema already present
 // (`defaultdb`) and avnadmin owns ONLY that one, so CREATE DATABASE is a

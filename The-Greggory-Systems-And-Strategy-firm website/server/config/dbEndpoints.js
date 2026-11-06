@@ -158,6 +158,13 @@ function endpoints() {
   return list;
 }
 
+function noMySqlEndpointError() {
+  const message = process.env.NODE_ENV === "production"
+    ? "No MySQL endpoint configured. Set DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, and DB_NAME in Render; for Aiven set DB_NAME=defaultdb and DB_SSL=true."
+    : "No MySQL endpoint configured. Set DB_HOST_2/DB_PORT_2 for local XAMPP or DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME for Aiven.";
+  return Object.assign(new Error(message), { code: "DB_ENDPOINTS_NOT_CONFIGURED" });
+}
+
 
 /**
  * TCP reachability probe used to keep DEAD endpoints out of the pool cluster.
@@ -322,6 +329,7 @@ function clean(cfg) {
 
 module.exports = {
   endpoints,
+  noMySqlEndpointError,
   clean,
   DB_NAME,
   cloudSslEnabled,

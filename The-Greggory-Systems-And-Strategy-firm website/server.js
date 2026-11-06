@@ -770,7 +770,12 @@ app.use(limiter);
 // Explicit pools + a hard per-query timeout guarantee requests always get an
 // answer (from the other endpoint, or a fast error the routes can render).
 // ============================================================================
-const { endpoints: dbEndpoints, cloudSslEnabled, liveEndpoints } = require("./server/config/dbEndpoints");
+const {
+  endpoints: dbEndpoints,
+  noMySqlEndpointError,
+  cloudSslEnabled,
+  liveEndpoints,
+} = require("./server/config/dbEndpoints");
 
 const DB_NAME = process.env.DB_NAME || "the_greggory_systems_and_strategy_firm_db_main";
 const MAIN_DB_TIMEOUT_MS = 12000; // hard cap per query attempt (failover budget)
@@ -869,9 +874,11 @@ const CONNECTIVITY_ERRORS = new Set([
 const DB_RETRY_ATTEMPTS = 3;
 
 async function _dbRun(fn) {
+  if (_dbPools.length === 0) throw noMySqlEndpointError();
   // Wait for the prune before choosing a pool, so a query can never land on an
   // endpoint that was about to be detached.
   await _poolsReady;
+  if (_dbPools.length === 0) throw noMySqlEndpointError();
   let lastErr;
   for (const { label, pool } of _dbPools) {
     for (let attempt = 1; attempt <= DB_RETRY_ATTEMPTS; attempt++) {
@@ -893,7 +900,7 @@ async function _dbRun(fn) {
       }
     }
   }
-  throw lastErr;
+  throw lastErr || noMySqlEndpointError();
 }
 
 // mainDb = failover-capable pool. `db` is an alias for legacy compatibility.
@@ -909,7 +916,9 @@ const mainDb = {
     return _dbRun((pool) => pool.query(sql, values));
   },
   async getConnection() {
+    if (_dbPools.length === 0) throw noMySqlEndpointError();
     await _poolsReady;
+    if (_dbPools.length === 0) throw noMySqlEndpointError();
     let lastErr;
     for (const { label, pool } of _dbPools) {
       try {
@@ -919,7 +928,7 @@ const mainDb = {
         console.error(`[DATABASE] getConnection ${label} failed:`, err.code || err.message);
       }
     }
-    throw lastErr;
+    throw lastErr || noMySqlEndpointError();
   },
   cluster: {
     end: (cb) => {
@@ -975,8 +984,9 @@ async function ensureTeamTemplateTables() {
       console.log('[SCHEMA] created missing team_template_members table');
     }
   } catch (error) {
-    console.error('[SCHEMA] ensureTeamTemplateTables failed:', error.code || error.message);
-    throw error;
+    const failure = error instanceof Error ? error : new Error(String(error || "Unknown database error"));
+    console.error('[SCHEMA] ensureTeamTemplateTables failed:', failure.code || failure.message);
+    throw failure;
   }
 }
 
@@ -993,8 +1003,9 @@ async function ensureNotificationReadAtColumn() {
       console.log('[SCHEMA] added missing notifications.read_at column');
     }
   } catch (error) {
-    console.error('[SCHEMA] ensureNotificationReadAtColumn failed:', error.code || error.message);
-    throw error;
+    const failure = error instanceof Error ? error : new Error(String(error || "Unknown database error"));
+    console.error('[SCHEMA] ensureNotificationReadAtColumn failed:', failure.code || failure.message);
+    throw failure;
   }
 }
 

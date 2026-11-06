@@ -3,6 +3,12 @@
 **Checked:** 2026-11-06  
 **Status:** Aiven TLS and all 91 local table definitions verified; Render still requires deployment, and homepage content has not been populated.
 
+## Render Database Startup Failure
+
+- The reported `[sync] ERROR: No MySQL endpoint reachable` occurs when `dbEndpoints()` returns no configured endpoints. In the shown Render boot, `DB_NAME` is present (otherwise endpoint loading fails earlier), but no `DB_HOST`, `DB_CLOUD_HOST`, local `DB_HOST_2`, or secondary host was configured. The app did not reach Aiven TLS or issue a SQL query in this failure.
+- Startup now reports the required DB variable names when the endpoint list is empty. Schema-sync errors now exit nonzero, so Render's `&&` start chain will stop instead of marking an API with an unavailable database as live. The server failover path also throws a real error instead of `undefined`, preventing the `Cannot read properties of undefined (reading 'code')` crash.
+- Render still needs its Aiven connection values set: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME=defaultdb`, and `DB_SSL=true`. The password must be entered directly in Render's environment settings; no secret values were copied into the repo.
+
 ## Hero image
 
 - The homepage uses `/hero-phoenix.jpg`, which exists in `public/` and builds successfully.
