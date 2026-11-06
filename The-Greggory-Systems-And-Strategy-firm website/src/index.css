@@ -196,15 +196,26 @@ body {
   }
 
   .page-shell {
-    @apply min-h-screen bg-[radial-gradient(circle_at_top_left, _rgba(76, 106, 77, 0.18), _transparent_40%), radial-gradient(circle_at_bottom_right, _rgba(170, 125, 63, 0.16), _transparent_35%), linear-gradient(135deg, _#f8efe6_0%, _#f3e7d8_48%, _#efe2d0_100%)] text-[var(--text-primary)] transition-colors duration-300;
+    @apply min-h-screen text-[var(--text-primary)] transition-colors duration-300;
+    background:
+      radial-gradient(circle at top left, rgba(76, 106, 77, 0.18), transparent 40%),
+      radial-gradient(circle at bottom right, rgba(170, 125, 63, 0.16), transparent 35%),
+      linear-gradient(135deg, #f8efe6 0%, #f3e7d8 48%, #efe2d0 100%);
   }
 
   .soft-panel {
-    @apply rounded-[36px] border border-[#eadbcf] bg-[#fdf8f1]/90 text-inherit shadow-[0_20px_70px_-40px_rgba(31, 42, 35, 0.38)] backdrop-blur-sm;
+    @apply rounded-[36px] border border-[#eadbcf] bg-[#fdf8f1]/90 text-inherit backdrop-blur-sm;
+    box-shadow: 0 20px 70px -40px rgba(31, 42, 35, 0.38);
   }
 
   .soft-card {
-    @apply rounded-[24px] border border-[#e8dcc9] bg-[rgba(255, 250, 245, 0.95)] shadow-[0_16px_50px_-30px_rgba(31, 42, 35, 0.35)] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_-30px_rgba(31, 42, 35, 0.42)] dark:border-white/10 dark:bg-[#1d2521]/95 dark:hover:bg-[#232d27];
+    @apply rounded-[24px] border border-[#e8dcc9] backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 dark:border-white/10 dark:bg-[#1d2521]/95 dark:hover:bg-[#232d27];
+    background-color: rgba(255, 250, 245, 0.95);
+    box-shadow: 0 16px 50px -30px rgba(31, 42, 35, 0.35);
+  }
+
+  .soft-card:hover {
+    box-shadow: 0 24px 60px -30px rgba(31, 42, 35, 0.42);
   }
 
   .eyebrow {

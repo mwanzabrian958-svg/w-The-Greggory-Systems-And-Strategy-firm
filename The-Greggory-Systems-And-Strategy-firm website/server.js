@@ -2328,7 +2328,7 @@ const loadClientPortalPayload = async (id) => {
         locale: user.locale,
         role: user.primary_role || "user",
         has_photo: !!user.profile_photo_blob,
-        profilePhotoData: user.profile_photo_blob ? `data:${user.profile_photo_mime_type || "image/jpeg"};base64,${Buffer.from(user.profile_photo_blob).toString("base64")}` : null,
+        profilePhotoData: buildImageDataUri(user.profile_photo_blob, user.profile_photo_mime_type),
       },
       projects: projectRows,
       tasks: taskRows,
@@ -2788,7 +2788,7 @@ app.post("/api/users/google-auth", async (req, res) => {
 
     let profilePhotoData = null;
     if (user.profile_photo_blob) {
-      profilePhotoData = `data:${user.profile_photo_mime_type || "image/jpeg"};base64,${Buffer.from(user.profile_photo_blob).toString("base64")}`;
+      profilePhotoData = buildImageDataUri(user.profile_photo_blob, user.profile_photo_mime_type);
     }
 
     const clientUser = {
@@ -7391,8 +7391,6 @@ function buildImageDataUri(blob, storedMime) {
   const mimeType = resolveImageMimeType(blob, storedMime);
   return `data:${mimeType};base64,${Buffer.from(blob).toString("base64")}`;
 }
-profilePhotoData: buildImageDataUri(user.profile_photo_blob, user.profile_photo_mime_type),
-  profilePhotoData = buildImageDataUri(user.profile_photo_blob, user.profile_photo_mime_type);
 
 /**
  * Single source of truth for photo storage: one identity = one table.

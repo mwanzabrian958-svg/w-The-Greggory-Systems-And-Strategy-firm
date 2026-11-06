@@ -8,6 +8,9 @@
       "path": "/",
       "title": "Business Systems & Strategy Firm in Kenya",
       "description": "The Greggory Systems And Strategy Firm in Kabarak, Kenya delivers business strategy, systems and software, project delivery, and ongoing IT support for organizations across Kenya and East Africa.",
+      "images": [
+        "/hero-phoenix.jpg"
+      ],
       "changefreq": "weekly",
       "priority": "1.0"
     },

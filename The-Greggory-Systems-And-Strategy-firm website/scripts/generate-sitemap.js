@@ -102,9 +102,17 @@ function buildSitemap(siteUrl) {
   const now = new Date().toISOString().slice(0, 10);
   const locs = publicRoutes().map((route) => {
     const loc = url(siteUrl, route.path);
+    const images = (Array.isArray(route.images) ? route.images : [])
+      .filter((imagePath) => typeof imagePath === 'string' && imagePath.trim())
+      .map((imagePath) => [
+        '    <image:image>',
+        '      <image:loc>' + escapeXml(url(siteUrl, imagePath.trim())) + '</image:loc>',
+        '    </image:image>',
+      ].join('\n'));
     return [
       '  <url>',
       '    <loc>' + escapeXml(loc) + '</loc>',
+      ...images,
       '    <lastmod>' + now + '</lastmod>',
       '    <changefreq>' + escapeXml(route.changefreq || 'monthly') + '</changefreq>',
       '    <priority>' + escapeXml(route.priority || '0.8') + '</priority>',
@@ -113,7 +121,7 @@ function buildSitemap(siteUrl) {
   });
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
     ...locs,
     '</urlset>',
     '',
