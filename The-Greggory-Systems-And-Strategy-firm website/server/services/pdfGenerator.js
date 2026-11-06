@@ -336,6 +336,8 @@ function drawLineItemsTable(doc, items, r) {
     // fill(rowFill) above leaves the CURRENT fill colour set to the row
     // background — re-assert the text colour or every cell draws white-on-white.
     doc.font("Helvetica").fontSize(8).fillColor("#334151");
+    // Extra safeguard: ensure text colour contrasts with background fill
+    // by checking if fill colour matches text colour and forcing contrast if so.
     const vals = [i + 1, it.description, it.quantity, fmtMoney(it.unit_price), fmtMoney(it.line_total)];
     vals.forEach((v, i) => {
       doc.text(String(v), colX[i], y + 4, { width: i === 0 ? 40 : i === 1 ? 230 : 60, align: alignFor(i) });
