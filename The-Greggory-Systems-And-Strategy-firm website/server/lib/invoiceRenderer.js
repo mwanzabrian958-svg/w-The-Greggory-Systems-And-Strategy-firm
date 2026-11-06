@@ -63,10 +63,10 @@ function parseDocumentItems(document) {
   if (!items.length) {
     const fallback = Number(
       document.grand_total ||
-        document.total_amount ||
-        document.subtotal ||
-        document.amount ||
-        0
+      document.total_amount ||
+      document.subtotal ||
+      document.amount ||
+      0
     );
     items = [
       {
@@ -161,9 +161,16 @@ function formatInvoiceDate(value) {
   }).format(date);
 }
 
+function clampText(value, maxChars = 80) {
+  const text = String(value ?? "").trim();
+  if (text.length <= maxChars) return text;
+  return `${text.slice(0, Math.max(12, maxChars - 1)).trimEnd()}…`;
+}
+
 function generateInvoicePDFContent(document) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 36, size: "A4" });
+    doc.addPage = function () { return this; };
     const chunks = [];
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -176,108 +183,124 @@ function generateInvoicePDFContent(document) {
     const INK = PRIMARY_DARK;
     const SLATE = "#64748b";
     const TEAL = ACCENT_TEAL;
-    const PALE = LIGHT_TEAL;
     const LIGHT = "#e2e8f0";
     const ref = String(document.invoice_number || `INV-${document.id || "DRAFT"}`);
     const items = parseDocumentItems(document);
     const { subtotal, taxAmount, ratePct, total } = documentTotals(document, items);
     const currency = document.currency || "KES";
     const status = String(document.status || "DRAFT").toUpperCase();
-    const completed = ["COMPLETED", "PAID"].includes(status);
+    const completionValue = document.completed_at || document.completion_date;
+    const completed = status === "COMPLETED" || Boolean(completionValue);
     const issueDate = formatInvoiceDate(
       document.issue_date || document.created_at
     );
     const dueDate = formatInvoiceDate(document.due_date);
-    const completedDate = formatInvoiceDate(
-      document.completed_at || document.completion_date
-    );
+    const completedDate = formatInvoiceDate(completionValue);
     const accountName =
       document.payment_account_name ||
       process.env.PAYMENT_ACCOUNT_NAME ||
       "Brian Mwanza";
     const paymentPhone = document.payment_phone || FIRM_PHONE;
-    const logoSize = 46;
 
     stampWatermark(doc);
     doc.on("pageAdded", () => stampWatermark(doc));
 
-    let y = 34;
-    doc.rect(M, y, CW, 70).fill(INK);
-    stampLogo(doc, M + 12, y + 12, logoSize);
-    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(13);
-    doc.text("THE GREGGORY SYSTEMS", M + 68, y + 15, { width: 215 });
-    doc.fontSize(9).text("AND STRATEGY FIRM", M + 68, y + 32, { width: 215 });
-    doc.font("Helvetica").fontSize(7).fillColor("#5eead4");
-    doc.text(FIRM_EMAIL, M + 68, y + 50, { width: 215 });
-    doc.fillColor("#5eead4").font("Helvetica-Bold").fontSize(25);
-    doc.text("INVOICE", M + CW - 185, y + 12, { width: 170, align: "right" });
-    doc.fillColor("#ffffff").font("Helvetica").fontSize(8);
-    doc.text(ref, M + CW - 185, y + 45, { width: 170, align: "right" });
-    y += 82;
+    let y = 150;
+    doc.rect(0, 0, PAGE_W, y).fill(INK);
+    doc.rect(0, y - 3, PAGE_W, 3).fill(TEAL);
+    stampLogo(doc, M + 8, 24, 60);
+    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(17);
+    doc.text("THE GREGGORY SYSTEMS", M + 82, 30, { width: 240 });
+    doc.fontSize(12).text("AND STRATEGY FIRM", M + 82, 52, { width: 240 });
+    doc.font("Helvetica").fontSize(9).fillColor("#99f6e4");
+    doc.text("Your vision delivered with trust", M + 82, 78, { width: 240 });
 
-    doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(8);
-    doc.text("COMPLETION CERTIFICATE", M, y);
-    y += 14;
-    const amountBoxY = y;
-    doc.roundedRect(M, amountBoxY, CW, 62, 5).fill(PALE);
-    doc.rect(M, amountBoxY, 4, 62).fill(TEAL);
-    doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(7);
-    doc.text("AMOUNT DUE", M + 16, amountBoxY + 10);
-    doc.fillColor(INK).font("Helvetica-Bold").fontSize(19);
-    doc.text(fmtMoney(total, currency), M + 16, amountBoxY + 24);
-    doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(7);
-    doc.text("PLEASE PAY BY", M + CW - 150, amountBoxY + 10, {
-      width: 132,
-      align: "right",
+    const invoiceX = PAGE_W - M - 205;
+    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(29);
+    doc.text("INVOICE", invoiceX, 24, { width: 205, align: "right" });
+    doc.fillColor("#facc15").font("Helvetica-Bold").fontSize(11);
+    doc.text(ref, invoiceX, 62, { width: 205, align: "right" });
+    doc.roundedRect(invoiceX + 8, 94, 197, 28, 14)
+      .lineWidth(1.2)
+      .strokeColor(ACCENT_GOLD)
+      .stroke();
+    doc.fillColor(ACCENT_GOLD).font("Helvetica-Bold").fontSize(8);
+    doc.text("COMPLETION CERTIFICATE", invoiceX + 14, 103, {
+      width: 185,
+      align: "center",
     });
-    doc.fillColor(INK).font("Helvetica-Bold").fontSize(10);
-    doc.text(dueDate, M + CW - 150, amountBoxY + 28, {
-      width: 132,
-      align: "right",
+
+    const amountBoxY = y + 16;
+    doc.roundedRect(M, amountBoxY, CW, 82, 14).fill("#119b8e");
+    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(8);
+    doc.text("AMOUNT DUE", M + 24, amountBoxY + 14);
+    doc.font("Helvetica-Bold").fontSize(24);
+    doc.text(fmtMoney(total, currency), M + 24, amountBoxY + 34, {
+      width: CW - 235,
     });
-    y = amountBoxY + 78;
+    const dueBoxX = M + CW - 182;
+    doc.roundedRect(dueBoxX, amountBoxY + 12, 164, 58, 12).fill("#32ad9f");
+    doc.fillColor("#d1fae5").font("Helvetica-Bold").fontSize(8);
+    doc.text("PLEASE PAY BY", dueBoxX + 8, amountBoxY + 21, {
+      width: 148,
+      align: "center",
+    });
+    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(13);
+    doc.text(dueDate, dueBoxX + 6, amountBoxY + 39, {
+      width: 152,
+      align: "center",
+    });
+    y = amountBoxY + 104;
 
     const detailsTop = y;
     doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(7);
     doc.text("BILLED TO", M, detailsTop);
     doc.fillColor(INK).font("Helvetica-Bold").fontSize(11);
-    doc.text(document.client_name || "Client", M, detailsTop + 12, {
-      width: 220,
+    const clientName = clampText(document.client_name || "Client", 26);
+    doc.text(clientName, M, detailsTop + 12, {
+      width: 235,
     });
     doc.fillColor(SLATE).font("Helvetica").fontSize(8);
     const clientDetails = [
+      document.client_type || "Client",
       document.client_company,
       document.client_email,
       document.client_phone,
       document.client_address,
-    ].filter(Boolean);
+    ]
+      .filter((value) => value && value !== clientName)
+      .map((value) => clampText(value, 28));
     let clientY = detailsTop + 28;
+    const clientBottomLimit = PAGE_H - 136;
     for (const detail of clientDetails) {
-      doc.text(String(detail), M, clientY, { width: 230 });
-      clientY += doc.heightOfString(String(detail), { width: 230 }) + 3;
+      const safeDetail = String(detail);
+      const detailHeight = doc.heightOfString(safeDetail, { width: 230 });
+      if (clientY + detailHeight > clientBottomLimit) break;
+      doc.text(safeDetail, M, clientY, { width: 230 });
+      clientY += detailHeight + 2;
     }
 
-    const metaX = M + CW - 190;
+    const metaX = M + CW - 218;
     const metaRows = [
       ["Invoice number", ref],
       ["Issue date", issueDate],
       ["Due date", dueDate],
       ["Status", status],
     ];
-    if (document.completed_at || document.completion_date) {
+    if (completionValue) {
       metaRows.push(["Completed", completedDate]);
     }
     metaRows.forEach(([label, value], index) => {
-      const metaY = detailsTop + index * 17;
+      const metaY = detailsTop + index * 19;
       doc.fillColor(SLATE).font("Helvetica").fontSize(7);
-      doc.text(label, metaX, metaY, { width: 84 });
+      doc.text(label, metaX, metaY, { width: 92 });
       doc.fillColor(INK).font("Helvetica-Bold").fontSize(7.5);
-      doc.text(String(value), metaX + 84, metaY, {
-        width: 106,
+      doc.text(String(value), metaX + 92, metaY, {
+        width: 126,
         align: "right",
       });
     });
-    y = Math.max(clientY, detailsTop + metaRows.length * 17) + 18;
+    y = Math.max(clientY, detailsTop + metaRows.length * 19) + 20;
 
     doc.fillColor(INK).font("Helvetica-Bold").fontSize(8);
     doc.text("SERVICE ITEMS", M, y);
@@ -302,26 +325,23 @@ function generateInvoicePDFContent(document) {
 
     for (const [index, item] of items.entries()) {
       const descWidth = xQty - xDesc - 10;
-      const descHeight = doc.heightOfString(item.description, {
+      const itemDescription = clampText(item.description, 48);
+      const descHeight = doc.heightOfString(itemDescription, {
         width: descWidth,
         font: "Helvetica",
         fontSize: 8,
       });
-      const rowHeight = Math.max(24, descHeight + 10);
-      if (y + rowHeight > PAGE_H - 44) {
-        doc.addPage({ margin: M, size: "A4" });
-        y = M;
-        doc.fillColor(SLATE).font("Helvetica-Bold").fontSize(7);
-        doc.text("SERVICE ITEMS (CONTINUED)", M, y);
-        y += 14;
-        drawTableHeader();
+      const rowHeight = Math.max(18, Math.min(28, descHeight + 8));
+      const serviceBottom = PAGE_H - 235;
+      if (y + rowHeight > serviceBottom) {
+        break;
       }
 
       if (index % 2 === 1) doc.rect(M, y, CW, rowHeight).fill(LIGHT_TEAL);
       doc.fillColor(SLATE).font("Helvetica").fontSize(7);
       doc.text(String(index + 1), xIdx, y + 8);
       doc.fillColor(INK).font("Helvetica").fontSize(8);
-      doc.text(item.description, xDesc, y + 6, { width: descWidth });
+      doc.text(itemDescription, xDesc, y + 6, { width: descWidth });
       doc.fillColor(SLATE).font("Helvetica").fontSize(7);
       doc.text(String(item.quantity), xQty, y + 8, {
         width: 48,
@@ -346,142 +366,169 @@ function generateInvoicePDFContent(document) {
     }
 
     y += 10;
-    const totalX = M + CW - 180;
-    const totalW = 180;
-
-    // Certification text (from reference PDF)
-    const certificationText = "This is to certify that the above invoice record has been marked as completed within the THE GREGGORY SYSTEMS AND STRATEGY FIRM system.";
-
-    // VERIFIED stamp details
-    const completionId = "invoices-16-" + (document.id || Date.now());
-    const verificationDate = new Date().toLocaleDateString();
-    const drawTotal = (label, amount, emphasis) => {
-      doc
-        .font(emphasis ? "Helvetica-Bold" : "Helvetica")
-        .fontSize(emphasis ? 10 : 8)
-        .fillColor(emphasis ? INK : SLATE);
-      doc.text(label, totalX, y);
-      doc
-        .font("Helvetica-Bold")
-        .fontSize(emphasis ? 11 : 8)
-        .fillColor(emphasis ? TEAL : INK);
-      doc.text(fmtMoney(amount, currency), totalX, y, {
-        width: totalW,
-        align: "right",
-      });
-      y += emphasis ? 20 : 15;
-    };
-    drawTotal("Subtotal", subtotal, false);
-    if (ratePct > 0) {
-      drawTotal(taxLabel(ratePct) || `Tax (${ratePct}%)`, taxAmount, false);
-    }
-    doc.moveTo(totalX, y).lineTo(M + CW, y).lineWidth(1).strokeColor(INK).stroke();
-    y += 8;
-    drawTotal("Total", total, true);
-
-    const certificationPhrase = completed
+    const certificationText = completed
       ? `This is to certify that the above invoice record has been marked as completed within the ${FIRM_LEGAL_NAME} system.`
       : `This document certifies the invoice details and service items recorded above. The amount due is ${fmtMoney(total, currency)}.`;
-    const certificationHeight =
-      doc.heightOfString(certificationPhrase, { width: CW - 28, fontSize: 8 }) +
-      32;
-    if (y + certificationHeight > PAGE_H - 170) {
-      doc.addPage({ margin: M, size: "A4" });
-      y = M;
-    }
-    y += 5;
-    doc.roundedRect(M, y, CW, certificationHeight, 4).fill("#f8fafc");
-    doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(7);
-    doc.text("CERTIFICATION", M + 12, y + 9);
-    doc.fillColor(SLATE).font("Helvetica").fontSize(8);
-    doc.text(certificationText, M + 12, y + 21, {
-      width: CW - 24,
+    const certX = M;
+    const certW = 252;
+    const summaryGap = 18;
+    const totalsX = certX + certW + summaryGap;
+    const totalsW = CW - certW - summaryGap;
+    const certTextHeight = doc.heightOfString(certificationText, {
+      width: certW,
+      font: "Helvetica",
+      fontSize: 8,
       lineGap: 2,
     });
-    y += certificationHeight + 12;
-
-    if (y + 136 > PAGE_H - 92) {
-      doc.addPage({ margin: M, size: "A4" });
-      y = M;
+    const summaryY = y + 8;
+    const footerBandY = PAGE_H - 58;
+    const paymentHeight = 28 + 88 + 15;
+    const summaryHeight = Math.max(certTextHeight + 42, ratePct > 0 ? 94 : 76);
+    const singlePageBottom = footerBandY - 110;
+    if (summaryY + summaryHeight + paymentHeight + 52 > singlePageBottom) {
+      y = Math.max(70, singlePageBottom - (summaryHeight + paymentHeight + 24));
+    } else {
+      y = summaryY;
     }
-    doc.fillColor(INK).font("Helvetica-Bold").fontSize(8);
+
+    const detailY = y;
+    doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(8);
+    doc.text("CERTIFICATION", certX, detailY);
+    doc.fillColor(SLATE).font("Helvetica").fontSize(8);
+    doc.text(certificationText, certX, detailY + 18, {
+      width: certW,
+      lineGap: 2,
+    });
+
+    let totalY = detailY;
+    const drawTotal = (label, amount) => {
+      doc.fillColor(SLATE).font("Helvetica").fontSize(8);
+      doc.text(label, totalsX, totalY + 3, { width: totalsW / 2 });
+      doc.fillColor(INK).font("Helvetica-Bold").fontSize(8);
+      doc.text(fmtMoney(amount, currency), totalsX + totalsW / 2, totalY + 3, {
+        width: totalsW / 2,
+        align: "right",
+      });
+      totalY += 18;
+    };
+    drawTotal("Subtotal", subtotal);
+    if (ratePct > 0) drawTotal(taxLabel(ratePct) || `Tax (${ratePct}%)`, taxAmount);
+    doc.roundedRect(totalsX, totalY + 3, totalsW, 34, 10)
+      .fillAndStroke("#e6fffb", TEAL);
+    doc.fillColor("#0f766e").font("Helvetica-Bold").fontSize(10);
+    doc.text("Total", totalsX + 12, totalY + 14, { width: 70 });
+    doc.text(fmtMoney(total, currency), totalsX + 82, totalY + 14, {
+      width: totalsW - 94,
+      align: "right",
+    });
+    y = detailY + Math.max(certTextHeight + 30, totalY - detailY + 48) + 12;
+
+    if (y + paymentHeight + 60 > footerBandY - 8) {
+      y = Math.max(64, footerBandY - paymentHeight - 68);
+    }
+    doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(8);
     doc.text("PAYMENT OPTIONS", M, y);
     doc.fillColor(SLATE).font("Helvetica").fontSize(7);
-    doc.text(`Use ${ref} as your payment reference`, M, y + 12);
-    y += 28;
+    doc.text(`Use ${ref} as your payment reference`, M + 180, y, {
+      width: CW - 180,
+      align: "right",
+    });
+    y += 20;
 
-    const cardGap = 12;
+    const cardGap = 14;
     const cardWidth = (CW - cardGap) / 2;
-    const cardHeight = 91;
-    const drawPaymentCard = (x, title, subtitle, lines) => {
-      doc.roundedRect(x, y, cardWidth, cardHeight, 4).fill("#f8fafc");
-      doc.rect(x, y, 3, cardHeight).fill(TEAL);
-      doc.fillColor(INK).font("Helvetica-Bold").fontSize(8);
-      doc.text(title, x + 10, y + 8, { width: cardWidth - 20 });
+    const cardHeight = 72;
+    const drawPaymentCard = (x, number, title, subtitle, lines) => {
+      doc.roundedRect(x, y, cardWidth, cardHeight, 12)
+        .fillAndStroke("#f8fafc", "#e2e8f0");
+      doc.roundedRect(x, y, 4, cardHeight, 2).fill(TEAL);
+      doc.circle(x + 24, y + 23, 12).fill(TEAL);
+      doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(9);
+      doc.text(String(number), x + 18, y + 19, { width: 12, align: "center" });
+      doc.fillColor(INK).font("Helvetica-Bold").fontSize(9);
+      doc.text(title, x + 43, y + 10, { width: cardWidth - 54 });
       doc.fillColor(SLATE).font("Helvetica").fontSize(7);
-      doc.text(subtitle, x + 10, y + 19, { width: cardWidth - 20 });
-      let lineY = y + 33;
+      doc.text(subtitle, x + 43, y + 24, { width: cardWidth - 54 });
+      let lineY = y + 42;
       for (const [label, value] of lines) {
+        const safeLabel = clampText(label, 16);
+        const safeValue = clampText(value, 18);
         doc.fillColor(SLATE).font("Helvetica").fontSize(6.5);
-        doc.text(label, x + 10, lineY, { width: 74 });
+        doc.text(safeLabel, x + 12, lineY, { width: 84 });
         doc.fillColor(INK).font("Helvetica-Bold").fontSize(6.5);
-        doc.text(value, x + 84, lineY, {
-          width: cardWidth - 94,
+        doc.text(String(safeValue), x + 96, lineY, {
+          width: cardWidth - 108,
           align: "right",
         });
-        lineY += 11;
+        lineY += 12;
       }
     };
-    drawPaymentCard(M, "1  Send Money", "Mobile money transfer", [
+    drawPaymentCard(M, 1, "Send Money", "Mobile money transfer", [
       ["Send to (number)", paymentPhone],
       ["Account name", accountName],
       ["Amount", fmtMoney(total, currency)],
       ["Reference", ref],
     ]);
-    drawPaymentCard(M + cardWidth + cardGap, "2  Bank Transfer", "KCB paybill deposit", [
+    drawPaymentCard(M + cardWidth + cardGap, 2, "Bank Transfer", "KCB paybill deposit", [
       ["Bank", "KCB"],
       ["Paybill number", KCB_PAYBILL],
       ["Account number", KCB_ACCOUNT_NUMBER],
       ["Reference", ref],
     ]);
-    y += cardHeight + 15;
+    y += cardHeight + 12;
 
-    if (y + 45 > PAGE_H - 42) {
-      doc.addPage({ margin: M, size: "A4" });
-      y = M;
+    const signatureSpace = 42;
+    if (y + signatureSpace > footerBandY - 8) {
+      y = Math.max(60, footerBandY - signatureSpace - 26);
     }
-    doc.fillColor(SLATE).font("Helvetica").fontSize(7);
-    doc.text("Completed & Recorded by,", M, y);
-    doc.fillColor(INK).font("Helvetica-Bold").fontSize(8);
-    doc.text(FIRM_LEGAL_NAME, M, y + 11);
-    const verification = document.verified === true ? "VERIFIED" : status;
-    doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(7);
-    doc.text(verification, M + CW - 110, y, { width: 110, align: "right" });
-    doc.fillColor(SLATE).font("Helvetica").fontSize(7);
+    doc.fillColor(SLATE).font("Helvetica").fontSize(8);
+    doc.text(completed ? "Completed & Recorded by," : "Issued & Recorded by,", M, y);
+    doc.fillColor(INK).font("Helvetica-Bold").fontSize(9);
+    doc.text(FIRM_LEGAL_NAME, M, y + 15);
+    doc.fillColor(SLATE).font("Helvetica").fontSize(8);
+    doc.text(`${FIRM_EMAIL}  |  ${FIRM_PHONE}`, M, y + 29);
+
+    const verification = document.verified === true && completed ? "VERIFIED" : status;
+    const verifyX = M + CW - 132;
+    doc.roundedRect(verifyX, y + 2, 132, 30, 8)
+      .lineWidth(1.3)
+      .strokeColor(TEAL)
+      .stroke();
+    if (verification === "VERIFIED") {
+      doc.moveTo(verifyX + 13, y + 17)
+        .lineTo(verifyX + 18, y + 22)
+        .lineTo(verifyX + 27, y + 11)
+        .lineWidth(2)
+        .strokeColor(TEAL)
+        .stroke();
+    }
+    doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(8);
+    doc.text(verification, verifyX + 32, y + 12, { width: 92, align: "center" });
     const recordId = document.completion_id || document.id || ref;
-    doc.text(`Date: ${completed ? completedDate : issueDate}  |  Invoice ID: ${recordId}`, M + CW - 230, y + 12, {
-      width: 230,
+    doc.fillColor(SLATE).font("Helvetica").fontSize(7);
+    doc.text(`Date: ${completed ? completedDate : issueDate}  |  Completion ID: invoices-${document.id || ref}-${recordId}`, verifyX - 100, y + 38, {
+      width: 232,
       align: "right",
     });
 
-    const footerY = PAGE_H - 54;
-    doc
-      .moveTo(M, footerY - 8)
-      .lineTo(M + CW, footerY - 8)
-      .lineWidth(0.5)
-      .strokeColor(LIGHT)
-      .stroke();
-    doc.fillColor(INK).font("Helvetica-Bold").fontSize(7);
-    doc.text(FIRM_LEGAL_NAME, M, footerY, { width: CW, align: "center" });
-    doc.fillColor(SLATE).font("Helvetica").fontSize(7);
-    doc.text(`${FIRM_ADDRESS}  ·  ${FIRM_EMAIL}  ·  ${FIRM_PHONE}`, M, footerY + 10, {
-      width: CW,
-      align: "center",
+    const footerY = PAGE_H - 58;
+    doc.rect(0, footerY, PAGE_W, PAGE_H - footerY).fill(INK);
+    doc.rect(0, footerY, PAGE_W, 3).fill(TEAL);
+    doc.fillColor("#ffffff").font("Helvetica-Bold").fontSize(8);
+    doc.text(FIRM_LEGAL_NAME, M, footerY + 17, { width: 315 });
+    doc.fillColor("#94a3b8").font("Helvetica").fontSize(7);
+    doc.text(`${FIRM_ADDRESS}  |  ${FIRM_EMAIL}  |  ${FIRM_PHONE}`, M, footerY + 31, {
+      width: 360,
     });
-    doc.fillColor(SLATE).font("Helvetica-Oblique").fontSize(7);
-    doc.text("Thank you for your business", M, footerY + 20, {
-      width: CW,
-      align: "center",
+    doc.fillColor(ACCENT_GOLD).font("Helvetica-Bold").fontSize(8);
+    doc.text("Thank you for your business", PAGE_W - M - 175, footerY + 18, {
+      width: 175,
+      align: "right",
+    });
+    doc.fillColor("#94a3b8").font("Helvetica").fontSize(7);
+    doc.text("Page 1", PAGE_W - M - 175, footerY + 33, {
+      width: 175,
+      align: "right",
     });
     doc.end();
   });
@@ -619,7 +666,7 @@ function generatePDFContent(type, document) {
     doc.text("RATE", xRate, y + 6, { width: 60, align: "right" });
     doc.text("AMOUNT", xAmt, y + 6, { width: 70, align: "right" });
     y += colH;
-let rowIdx = 1;
+    let rowIdx = 1;
     for (const it of items) {
       const descW = xQty - xDesc - 8;
       doc.font("Helvetica").fontSize(7);
@@ -675,7 +722,7 @@ let rowIdx = 1;
     doc.font("Helvetica-Bold").fontSize(13).fillColor(TEAL);
     doc.text(fmtMoney(total, currency), totalX, y, { width: totalW, align: "right" });
     y += 24;
-// ---- Payment instructions ----
+    // ---- Payment instructions ----
     const lines = paymentInstructions(document);
     const boxH = 58;
     doc.rect(M, y, CW, boxH).fill(LIGHT_TEAL);
@@ -759,8 +806,8 @@ function buildDocumentEmailHtml(type, document, message) {
       document.status
         ? String(document.status).toUpperCase()
         : isQuote
-        ? "QUOTED"
-        : "SENT",
+          ? "QUOTED"
+          : "SENT",
     ],
   ]
     .map(
@@ -782,14 +829,13 @@ function buildDocumentEmailHtml(type, document, message) {
       </tr>`
     )
     .join("");
-const totalsRows = `
+  const totalsRows = `
     <tr><td style="padding:5px 8px;font-size:11px;color:#64748b;">Subtotal</td>
         <td style="padding:5px 8px;font-size:12px;font-weight:700;color:#0f172a;text-align:right;">${money(subtotal, currency)}</td></tr>
-    ${
-      ratePct > 0
-        ? `<tr><td style="padding:5px 8px;font-size:11px;color:#64748b;">${esc(taxLabel(ratePct) || `Tax (${ratePct}%)`)}</td>
+    ${ratePct > 0
+      ? `<tr><td style="padding:5px 8px;font-size:11px;color:#64748b;">${esc(taxLabel(ratePct) || `Tax (${ratePct}%)`)}</td>
         <td style="padding:5px 8px;font-size:12px;font-weight:700;color:#0f172a;text-align:right;">${money(taxAmount, currency)}</td></tr>`
-        : ""
+      : ""
     }
     <tr><td style="padding:10px 8px 4px;border-top:2px solid #0f172a;font-size:12px;font-weight:800;color:#0f172a;text-transform:uppercase;">TOTAL</td>
         <td style="padding:10px 8px 4px;border-top:2px solid #0f172a;font-size:18px;font-weight:800;color:#0d9488;text-align:right;">${money(total, currency)}</td></tr>`;
@@ -833,9 +879,9 @@ const totalsRows = `
             <div style="font-size:9px;color:#64748b;font-weight:700;letter-spacing:1px;text-transform:uppercase;">Billed To</div>
             <div style="font-size:15px;font-weight:800;color:#0f172a;margin-top:6px;">${esc(document.client_name || "Client")}</div>
             ${[document.client_email, document.client_phone, document.client_address]
-              .filter(Boolean)
-              .map((l) => `<div style="font-size:11px;color:#64748b;margin-top:2px;">${esc(l)}</div>`)
-              .join("")}
+      .filter(Boolean)
+      .map((l) => `<div style="font-size:11px;color:#64748b;margin-top:2px;">${esc(l)}</div>`)
+      .join("")}
           </td>
           <td style="padding:22px 30px 4px;width:50%;vertical-align:top;">
             <table width="100%" cellpadding="0" cellspacing="0">${metaRows}</table>
@@ -869,11 +915,11 @@ ${personalNote}
             <div style="background:#f0fdfa;border-left:3px solid #0d9488;border-radius:6px;padding:12px 14px;margin-top:4px;">
               <div style="font-size:9px;font-weight:800;color:#0d9488;letter-spacing:1px;text-transform:uppercase;">Payment Instructions</div>
               ${payLines
-                .map(
-                  (l, i) =>
-                    `<div style="font-size:11px;color:${i === 0 ? "#0f172a" : "#64748b"};font-weight:${i === 0 ? 700 : 400};margin-top:2px;">${esc(l)}</div>`
-                )
-                .join("")}
+      .map(
+        (l, i) =>
+          `<div style="font-size:11px;color:${i === 0 ? "#0f172a" : "#64748b"};font-weight:${i === 0 ? 700 : 400};margin-top:2px;">${esc(l)}</div>`
+      )
+      .join("")}
               ${document.title ? `<div style="font-size:11px;color:#64748b;margin-top:8px;"><strong style="color:#0f172a;">Reference:</strong> ${esc(document.title)}</div>` : ""}
             </div>
 </td>
@@ -881,11 +927,10 @@ ${personalNote}
             <table width="100%" cellpadding="0" cellspacing="0">${totalsRows}</table>
           </td>
         </tr>
-${
-          notes
-            ? `<tr><td colspan="2" style="padding:14px 30px 18px;font-size:11px;color:#475569;border-top:1px solid #eef2f7;"><strong style="color:#0f172a;">Notes &amp; Terms</strong><br/>${esc(notes)}</td></tr>`
-            : ""
-        }
+${notes
+      ? `<tr><td colspan="2" style="padding:14px 30px 18px;font-size:11px;color:#475569;border-top:1px solid #eef2f7;"><strong style="color:#0f172a;">Notes &amp; Terms</strong><br/>${esc(notes)}</td></tr>`
+      : ""
+    }
         <tr>
           <td colspan="2" style="background:#f8fafc;padding:16px 30px;border-top:1px solid #e2e8f0;">
             <table width="100%" cellpadding="0" cellspacing="0">
