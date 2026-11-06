@@ -323,14 +323,9 @@ async function apply() {
   } catch (e) {
     errors.push(`users: ${e.message}`);
   }
-  // Code-required tables for the admin Posts area (testimonials, portfolio
-  // entries, and their uploaded media). The committed schema manifest and
-  // fresh cloud DB seed dump do not carry these tables. Without this block,
-  // every /api/posts query answers
-  // ER_NO_SUCH_TABLE and the whole Posts area is dead on a fresh deploy.
-  // CREATE TABLE IF NOT EXISTS is idempotent and never touches existing data,
-  // so this is safe to run on every boot.
-  const POSTS_REQUIRED_TABLES = [
+  // Code-required tables missing from the seed dump and captured manifest.
+  // CREATE TABLE IF NOT EXISTS is idempotent and never touches existing data.
+  const CODE_REQUIRED_TABLES = [
     {
       name: 'testimonials',
       create: `CREATE TABLE IF NOT EXISTS testimonials (
@@ -396,8 +391,41 @@ async function apply() {
     REFERENCES portfolio_items (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     },
+    {
+      name: 'crm_contacts',
+      create: `CREATE TABLE IF NOT EXISTS crm_contacts (
+  id INT NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) DEFAULT NULL,
+  phone VARCHAR(50) DEFAULT NULL,
+  company VARCHAR(255) DEFAULT NULL,
+  status VARCHAR(50) DEFAULT 'lead',
+  notes TEXT DEFAULT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    },
+    {
+      name: 'management_info',
+      create: `CREATE TABLE IF NOT EXISTS management_info (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  company_id BIGINT NOT NULL,
+  station_manager VARCHAR(200) DEFAULT 'Not specified',
+  service_area VARCHAR(500) DEFAULT 'Not specified',
+  base_location VARCHAR(500) DEFAULT 'Not specified',
+  updated_by BIGINT DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_management_company (company_id),
+  KEY idx_management_company (company_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+    },
   ];
-  for (const t of POSTS_REQUIRED_TABLES) {
+  for (const t of CODE_REQUIRED_TABLES) {
     try {
       await conn.query(t.create);
     } catch (e) {

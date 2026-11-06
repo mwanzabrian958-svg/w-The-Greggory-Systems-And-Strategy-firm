@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-31T20:06:16.188Z",
+  "generatedAt": "2026-11-06T00:16:42.447Z",
   "source": "local XAMPP (phpMyAdmin) database",
   "database": "the_greggory_systems_and_strategy_firm_db_main",
   "tables": {
@@ -323,7 +323,7 @@
       ]
     },
     "activity_logs": {
-      "create": "CREATE TABLE `activity_logs` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `activity` varchar(255) DEFAULT NULL,\n  `admin_email` varchar(255) DEFAULT NULL,\n  `user_id` bigint(20) DEFAULT NULL,\n  `action_type` varchar(100) DEFAULT NULL,\n  `action_description` text DEFAULT NULL,\n  `ip_address` varchar(45) DEFAULT NULL,\n  `status` varchar(50) DEFAULT NULL,\n  `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `activity_logs` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `activity` varchar(255) DEFAULT NULL,\n  `admin_email` varchar(255) DEFAULT NULL,\n  `user_id` bigint(20) DEFAULT NULL,\n  `action_type` varchar(100) DEFAULT NULL,\n  `action_description` text DEFAULT NULL,\n  `ip_address` varchar(45) DEFAULT NULL,\n  `status` varchar(50) DEFAULT NULL,\n  `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -417,7 +417,7 @@
       ]
     },
     "admin_navbar_items": {
-      "create": "CREATE TABLE `admin_navbar_items` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `item_name` varchar(255) NOT NULL,\n  `item_type` enum('link','dropdown','button','separator') DEFAULT 'link',\n  `display_text` varchar(255) NOT NULL,\n  `url` varchar(512) DEFAULT NULL,\n  `icon_class` varchar(100) DEFAULT NULL,\n  `parent_id` bigint(20) DEFAULT NULL,\n  `sort_order` int(11) DEFAULT 0,\n  `is_visible` tinyint(1) DEFAULT 1,\n  `is_active` tinyint(1) DEFAULT 1,\n  `target_blank` tinyint(1) DEFAULT 0,\n  `css_class` varchar(255) DEFAULT NULL,\n  `requires_auth` tinyint(1) DEFAULT 0,\n  `required_role` varchar(50) DEFAULT NULL,\n  `mobile_only` tinyint(1) DEFAULT 0,\n  `desktop_only` tinyint(1) DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `idx_admin_navbar_parent` (`parent_id`,`sort_order`),\n  KEY `idx_admin_navbar_visible` (`is_visible`,`is_active`,`sort_order`),\n  KEY `idx_admin_navbar_type` (`item_type`,`is_active`),\n  CONSTRAINT `admin_navbar_items_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `admin_navbar_items` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `admin_navbar_items_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `admin_navbar_items_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `admin_navbar_items` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `item_name` varchar(255) NOT NULL,\n  `item_type` enum('link','dropdown','button','separator') DEFAULT 'link',\n  `display_text` varchar(255) NOT NULL,\n  `url` varchar(512) DEFAULT NULL,\n  `icon_class` varchar(100) DEFAULT NULL,\n  `parent_id` bigint(20) DEFAULT NULL,\n  `sort_order` int(11) DEFAULT 0,\n  `is_visible` tinyint(1) DEFAULT 1,\n  `is_active` tinyint(1) DEFAULT 1,\n  `target_blank` tinyint(1) DEFAULT 0,\n  `css_class` varchar(255) DEFAULT NULL,\n  `requires_auth` tinyint(1) DEFAULT 0,\n  `required_role` varchar(50) DEFAULT NULL,\n  `mobile_only` tinyint(1) DEFAULT 0,\n  `desktop_only` tinyint(1) DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `idx_admin_navbar_parent` (`parent_id`,`sort_order`),\n  KEY `idx_admin_navbar_visible` (`is_visible`,`is_active`,`sort_order`),\n  KEY `idx_admin_navbar_type` (`item_type`,`is_active`),\n  CONSTRAINT `admin_navbar_items_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `admin_navbar_items` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `admin_navbar_items_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `admin_navbar_items_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -509,8 +509,70 @@
         }
       ]
     },
+    "admin_sessions": {
+      "create": "CREATE TABLE `admin_sessions` (\n  `session_id` varchar(64) NOT NULL,\n  `admin_id` bigint(20) unsigned NOT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `expires_at` datetime NOT NULL,\n  `revoked_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`session_id`),\n  KEY `idx_admin_sessions_admin` (`admin_id`,`revoked_at`),\n  KEY `idx_admin_sessions_expiry` (`expires_at`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "session_id",
+          "def": "varchar(64) NOT NULL"
+        },
+        {
+          "name": "admin_id",
+          "def": "bigint(20) unsigned NOT NULL"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "expires_at",
+          "def": "datetime NOT NULL"
+        },
+        {
+          "name": "revoked_at",
+          "def": "timestamp"
+        }
+      ]
+    },
+    "admin_settings": {
+      "create": "CREATE TABLE `admin_settings` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `setting_key` varchar(255) NOT NULL,\n  `setting_value` text DEFAULT NULL,\n  `setting_group` varchar(100) DEFAULT 'general',\n  `description` varchar(500) DEFAULT NULL,\n  `updated_by` int(11) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `setting_key` (`setting_key`)\n) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "int(11) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "setting_key",
+          "def": "varchar(255) NOT NULL"
+        },
+        {
+          "name": "setting_value",
+          "def": "text"
+        },
+        {
+          "name": "setting_group",
+          "def": "varchar(100) DEFAULT 'general'"
+        },
+        {
+          "name": "description",
+          "def": "varchar(500)"
+        },
+        {
+          "name": "updated_by",
+          "def": "int(11)"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ]
+    },
     "admin_users": {
-      "create": "CREATE TABLE `admin_users` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) NOT NULL,\n  `email_verified` tinyint(1) DEFAULT 0,\n  `email_verification_token` varchar(255) DEFAULT NULL,\n  `email_verification_expires` datetime DEFAULT NULL,\n  `password_hash` varchar(255) DEFAULT NULL,\n  `password_reset_token` varchar(255) DEFAULT NULL,\n  `password_reset_expires` datetime DEFAULT NULL,\n  `first_name` varchar(100) NOT NULL,\n  `last_name` varchar(100) NOT NULL,\n  `display_name` varchar(200) DEFAULT NULL,\n  `phone_number` varchar(50) DEFAULT NULL,\n  `profile_photo_id` bigint(20) DEFAULT NULL,\n  `profile_photo_blob` longblob DEFAULT NULL,\n  `profile_photo_mime_type` varchar(100) DEFAULT NULL,\n  `profile_photo_file_name` varchar(255) DEFAULT NULL,\n  `profile_image_id` bigint(20) DEFAULT NULL,\n  `admin_level` enum('super_admin','admin','moderator') DEFAULT 'admin',\n  `admin_permissions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`admin_permissions`)),\n  `access_level` enum('full','limited','read_only') DEFAULT 'full',\n  `department` varchar(100) DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `last_login_at` timestamp NULL DEFAULT NULL,\n  `last_login_ip` varchar(45) DEFAULT NULL,\n  `failed_login_attempts` int(11) DEFAULT 0,\n  `account_locked_until` timestamp NULL DEFAULT NULL,\n  `two_factor_enabled` tinyint(1) DEFAULT 0,\n  `two_factor_secret` varchar(255) DEFAULT NULL,\n  `timezone` varchar(50) DEFAULT 'UTC',\n  `locale` varchar(10) DEFAULT 'en-US',\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `whatsapp_verified` tinyint(1) DEFAULT 0,\n  `whatsapp_auth_key` varchar(10) DEFAULT NULL,\n  `last_active_at` timestamp NULL DEFAULT NULL,\n  `physical_address` text DEFAULT NULL,\n  `id_number` varchar(50) DEFAULT NULL,\n  `alt_phone` varchar(50) DEFAULT NULL,\n  `expertise` text DEFAULT NULL,\n  `private_notes` text DEFAULT NULL,\n  `emergency_contact_name` varchar(255) DEFAULT NULL,\n  `emergency_contact_phone` varchar(50) DEFAULT NULL,\n  `manual_projects` text DEFAULT NULL,\n  `mission_briefing` text DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `email` (`email`),\n  KEY `profile_photo_id` (`profile_photo_id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  KEY `idx_admin_users_email` (`email`),\n  KEY `idx_admin_users_active` (`is_active`,`deleted_at`),\n  KEY `idx_admin_users_level` (`admin_level`),\n  KEY `idx_admin_users_access` (`access_level`),\n  KEY `idx_admin_users_department` (`department`),\n  KEY `idx_admin_users_login` (`last_login_at`),\n  CONSTRAINT `admin_users_ibfk_1` FOREIGN KEY (`profile_photo_id`) REFERENCES `images` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `admin_users_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `admin_users_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `admin_users_ibfk_4` FOREIGN KEY (`deleted_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `admin_users` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) NOT NULL,\n  `email_verified` tinyint(1) DEFAULT 0,\n  `email_verification_token` varchar(255) DEFAULT NULL,\n  `email_verification_expires` datetime DEFAULT NULL,\n  `password_hash` varchar(255) DEFAULT NULL,\n  `password_reset_token` varchar(255) DEFAULT NULL,\n  `password_reset_expires` datetime DEFAULT NULL,\n  `first_name` varchar(100) NOT NULL,\n  `last_name` varchar(100) NOT NULL,\n  `display_name` varchar(200) DEFAULT NULL,\n  `phone_number` varchar(50) DEFAULT NULL,\n  `profile_photo_id` bigint(20) DEFAULT NULL,\n  `profile_photo_blob` longblob DEFAULT NULL,\n  `profile_photo_mime_type` varchar(100) DEFAULT NULL,\n  `profile_photo_file_name` varchar(255) DEFAULT NULL,\n  `profile_image_id` bigint(20) DEFAULT NULL,\n  `admin_level` enum('super_admin','admin','moderator') DEFAULT 'admin',\n  `admin_permissions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`admin_permissions`)),\n  `access_level` enum('full','limited','read_only') DEFAULT 'full',\n  `department` varchar(100) DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `last_login_at` timestamp NULL DEFAULT NULL,\n  `last_login_ip` varchar(45) DEFAULT NULL,\n  `failed_login_attempts` int(11) DEFAULT 0,\n  `account_locked_until` timestamp NULL DEFAULT NULL,\n  `two_factor_enabled` tinyint(1) DEFAULT 0,\n  `two_factor_secret` varchar(255) DEFAULT NULL,\n  `timezone` varchar(50) DEFAULT 'UTC',\n  `locale` varchar(10) DEFAULT 'en-US',\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `whatsapp_verified` tinyint(1) DEFAULT 0,\n  `whatsapp_auth_key` varchar(10) DEFAULT NULL,\n  `last_active_at` timestamp NULL DEFAULT NULL,\n  `physical_address` text DEFAULT NULL,\n  `id_number` varchar(50) DEFAULT NULL,\n  `alt_phone` varchar(50) DEFAULT NULL,\n  `expertise` text DEFAULT NULL,\n  `private_notes` text DEFAULT NULL,\n  `emergency_contact_name` varchar(255) DEFAULT NULL,\n  `emergency_contact_phone` varchar(50) DEFAULT NULL,\n  `manual_projects` text DEFAULT NULL,\n  `mission_briefing` text DEFAULT NULL,\n  `fcm_token` varchar(255) DEFAULT NULL,\n  `device_info` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`device_info`)),\n  `session_version` bigint(20) unsigned NOT NULL DEFAULT 0,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `email` (`email`),\n  KEY `profile_photo_id` (`profile_photo_id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  KEY `idx_admin_users_email` (`email`),\n  KEY `idx_admin_users_active` (`is_active`,`deleted_at`),\n  KEY `idx_admin_users_level` (`admin_level`),\n  KEY `idx_admin_users_access` (`access_level`),\n  KEY `idx_admin_users_department` (`department`),\n  KEY `idx_admin_users_login` (`last_login_at`),\n  CONSTRAINT `admin_users_ibfk_1` FOREIGN KEY (`profile_photo_id`) REFERENCES `images` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `admin_users_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `admin_users_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `admin_users_ibfk_4` FOREIGN KEY (`deleted_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -703,11 +765,23 @@
         {
           "name": "mission_briefing",
           "def": "text"
+        },
+        {
+          "name": "fcm_token",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "device_info",
+          "def": "longtext"
+        },
+        {
+          "name": "session_version",
+          "def": "bigint(20) unsigned NOT NULL DEFAULT 0"
         }
       ]
     },
     "admin_website_settings": {
-      "create": "CREATE TABLE `admin_website_settings` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `setting_key` varchar(255) NOT NULL,\n  `setting_value` longtext DEFAULT NULL,\n  `setting_type` enum('text','textarea','number','boolean','json','file') DEFAULT 'text',\n  `display_name` varchar(255) DEFAULT NULL,\n  `description` text DEFAULT NULL,\n  `category` varchar(100) DEFAULT 'general',\n  `is_public` tinyint(1) DEFAULT 0,\n  `sort_order` int(11) DEFAULT 0,\n  `validation_rules` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`validation_rules`)),\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `setting_key` (`setting_key`),\n  KEY `idx_admin_settings_key` (`setting_key`),\n  KEY `idx_admin_settings_category` (`category`,`sort_order`),\n  KEY `idx_admin_settings_public` (`is_public`,`category`)\n) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `admin_website_settings` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `setting_key` varchar(255) NOT NULL,\n  `setting_value` longtext DEFAULT NULL,\n  `setting_type` enum('text','textarea','number','boolean','json','file') DEFAULT 'text',\n  `display_name` varchar(255) DEFAULT NULL,\n  `description` text DEFAULT NULL,\n  `category` varchar(100) DEFAULT 'general',\n  `is_public` tinyint(1) DEFAULT 0,\n  `sort_order` int(11) DEFAULT 0,\n  `validation_rules` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`validation_rules`)),\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `setting_key` (`setting_key`),\n  KEY `idx_admin_settings_key` (`setting_key`),\n  KEY `idx_admin_settings_category` (`category`,`sort_order`),\n  KEY `idx_admin_settings_public` (`is_public`,`category`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -748,39 +822,6 @@
         {
           "name": "validation_rules",
           "def": "longtext"
-        },
-        {
-          "name": "created_at",
-          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
-        },
-        {
-          "name": "updated_at",
-          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-        },
-        {
-          "name": "updated_by",
-          "def": "bigint(20)"
-        }
-      ]
-    },
-    "admin_settings": {
-      "create": "CREATE TABLE `admin_settings` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `setting_key` varchar(191) NOT NULL,\n  `setting_value` longtext DEFAULT NULL,\n  `setting_group` varchar(100) DEFAULT 'general',\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `setting_key` (`setting_key`),\n  KEY `idx_admin_settings_group` (`setting_group`,`setting_key`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-      "columns": [
-        {
-          "name": "id",
-          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
-        },
-        {
-          "name": "setting_key",
-          "def": "varchar(191) NOT NULL"
-        },
-        {
-          "name": "setting_value",
-          "def": "longtext"
-        },
-        {
-          "name": "setting_group",
-          "def": "varchar(100) DEFAULT 'general'"
         },
         {
           "name": "created_at",
@@ -879,7 +920,7 @@
       ]
     },
     "app_status_enum": {
-      "create": "CREATE TABLE `app_status_enum` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `name` varchar(100) NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `name` (`name`)\n) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `app_status_enum` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `name` varchar(100) NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `name` (`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -961,7 +1002,7 @@
       ]
     },
     "auth_platform_mapping": {
-      "create": "CREATE TABLE `auth_platform_mapping` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `platform_name` varchar(50) NOT NULL,\n  `table_name` varchar(100) NOT NULL,\n  `register_endpoint` varchar(255) NOT NULL,\n  `login_endpoint` varchar(255) NOT NULL,\n  `description` varchar(500) DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `is_locked` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `locked_at` timestamp NULL DEFAULT current_timestamp(),\n  `locked_by` varchar(100) DEFAULT 'SYSTEM',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `platform_name` (`platform_name`),\n  UNIQUE KEY `table_name` (`table_name`),\n  KEY `idx_platform_name` (`platform_name`),\n  KEY `idx_table_name` (`table_name`),\n  KEY `idx_is_locked` (`is_locked`),\n  CONSTRAINT `check_platform_name` CHECK (`platform_name` in ('user','admin','developer')),\n  CONSTRAINT `check_table_name` CHECK (`table_name` in ('users','admin_users','developer_users'))\n) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `auth_platform_mapping` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `platform_name` varchar(50) NOT NULL,\n  `table_name` varchar(100) NOT NULL,\n  `register_endpoint` varchar(255) NOT NULL,\n  `login_endpoint` varchar(255) NOT NULL,\n  `description` varchar(500) DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `is_locked` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `locked_at` timestamp NULL DEFAULT current_timestamp(),\n  `locked_by` varchar(100) DEFAULT 'SYSTEM',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `platform_name` (`platform_name`),\n  UNIQUE KEY `table_name` (`table_name`),\n  KEY `idx_platform_name` (`platform_name`),\n  KEY `idx_table_name` (`table_name`),\n  KEY `idx_is_locked` (`is_locked`),\n  CONSTRAINT `check_platform_name` CHECK (`platform_name` in ('user','admin','developer')),\n  CONSTRAINT `check_table_name` CHECK (`table_name` in ('users','admin_users','developer_users'))\n) ENGINE=InnoDB AUTO_INCREMENT=172 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -1014,7 +1055,7 @@
       ]
     },
     "auth_request_log": {
-      "create": "CREATE TABLE `auth_request_log` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `request_id` varchar(100) NOT NULL,\n  `platform` varchar(50) NOT NULL,\n  `table_name` varchar(100) NOT NULL,\n  `endpoint` varchar(255) NOT NULL,\n  `email` varchar(255) DEFAULT NULL,\n  `ip_address` varchar(45) DEFAULT NULL,\n  `request_method` varchar(10) DEFAULT NULL,\n  `request_body_hash` varchar(64) DEFAULT NULL,\n  `response_status` int(11) DEFAULT NULL,\n  `response_message` varchar(255) DEFAULT NULL,\n  `error_message` varchar(500) DEFAULT NULL,\n  `execution_time_ms` int(11) DEFAULT NULL,\n  `is_success` tinyint(1) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `request_id` (`request_id`),\n  KEY `idx_platform` (`platform`),\n  KEY `idx_table_name` (`table_name`),\n  KEY `idx_endpoint` (`endpoint`),\n  KEY `idx_email` (`email`),\n  KEY `idx_created_at` (`created_at`),\n  KEY `idx_is_success` (`is_success`)\n) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `auth_request_log` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `request_id` varchar(100) NOT NULL,\n  `platform` varchar(50) NOT NULL,\n  `table_name` varchar(100) NOT NULL,\n  `endpoint` varchar(255) NOT NULL,\n  `email` varchar(255) DEFAULT NULL,\n  `ip_address` varchar(45) DEFAULT NULL,\n  `request_method` varchar(10) DEFAULT NULL,\n  `request_body_hash` varchar(64) DEFAULT NULL,\n  `response_status` int(11) DEFAULT NULL,\n  `response_message` varchar(255) DEFAULT NULL,\n  `error_message` varchar(500) DEFAULT NULL,\n  `execution_time_ms` int(11) DEFAULT NULL,\n  `is_success` tinyint(1) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `request_id` (`request_id`),\n  KEY `idx_platform` (`platform`),\n  KEY `idx_table_name` (`table_name`),\n  KEY `idx_endpoint` (`endpoint`),\n  KEY `idx_email` (`email`),\n  KEY `idx_created_at` (`created_at`),\n  KEY `idx_is_success` (`is_success`)\n) ENGINE=InnoDB AUTO_INCREMENT=180 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -1079,7 +1120,7 @@
       ]
     },
     "auth_validation_rules": {
-      "create": "CREATE TABLE `auth_validation_rules` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `platform` varchar(50) NOT NULL,\n  `rule_name` varchar(100) NOT NULL,\n  `rule_type` enum('required_field','table_isolation','cross_check','password_policy','rate_limit') DEFAULT 'required_field',\n  `rule_value` varchar(255) NOT NULL,\n  `description` varchar(500) DEFAULT NULL,\n  `enforcement_level` enum('strict','warning','info') DEFAULT 'strict',\n  `is_active` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `unique_platform_rule` (`platform`,`rule_name`),\n  KEY `idx_platform` (`platform`),\n  KEY `idx_rule_type` (`rule_type`)\n) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `auth_validation_rules` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `platform` varchar(50) NOT NULL,\n  `rule_name` varchar(100) NOT NULL,\n  `rule_type` enum('required_field','table_isolation','cross_check','password_policy','rate_limit') DEFAULT 'required_field',\n  `rule_value` varchar(255) NOT NULL,\n  `description` varchar(500) DEFAULT NULL,\n  `enforcement_level` enum('strict','warning','info') DEFAULT 'strict',\n  `is_active` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `unique_platform_rule` (`platform`,`rule_name`),\n  KEY `idx_platform` (`platform`),\n  KEY `idx_rule_type` (`rule_type`)\n) ENGINE=InnoDB AUTO_INCREMENT=403 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -1120,7 +1161,7 @@
       ]
     },
     "blog_articles": {
-      "create": "CREATE TABLE `blog_articles` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `title` varchar(255) NOT NULL,\n  `excerpt` text DEFAULT NULL,\n  `content` longtext NOT NULL,\n  `author` varchar(100) DEFAULT NULL,\n  `read_time` varchar(50) DEFAULT NULL,\n  `category` varchar(100) DEFAULT NULL,\n  `image_url` varchar(512) DEFAULT NULL,\n  `image_blob` longblob DEFAULT NULL,\n  `image_mime_type` varchar(100) DEFAULT NULL,\n  `image_file_name` varchar(255) DEFAULT NULL,\n  `image_id` bigint(20) DEFAULT NULL,\n  `icon_class` varchar(100) DEFAULT NULL,\n  `is_published` tinyint(1) DEFAULT 0,\n  `published_date` timestamp NULL DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `image_id` (`image_id`),\n  KEY `idx_blog_articles_published` (`is_published`,`published_date`),\n  KEY `idx_blog_articles_category` (`category`),\n  KEY `idx_blog_articles_created` (`created_at`),\n  CONSTRAINT `blog_articles_ibfk_1` FOREIGN KEY (`image_id`) REFERENCES `images` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `blog_articles` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `title` varchar(255) NOT NULL,\n  `excerpt` text DEFAULT NULL,\n  `content` longtext NOT NULL,\n  `author` varchar(100) DEFAULT NULL,\n  `read_time` varchar(50) DEFAULT NULL,\n  `category` varchar(100) DEFAULT NULL,\n  `image_url` varchar(512) DEFAULT NULL,\n  `image_blob` longblob DEFAULT NULL,\n  `image_mime_type` varchar(100) DEFAULT NULL,\n  `image_file_name` varchar(255) DEFAULT NULL,\n  `image_id` bigint(20) DEFAULT NULL,\n  `icon_class` varchar(100) DEFAULT NULL,\n  `is_published` tinyint(1) DEFAULT 0,\n  `published_date` timestamp NULL DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `image_id` (`image_id`),\n  KEY `idx_blog_articles_published` (`is_published`,`published_date`),\n  KEY `idx_blog_articles_category` (`category`),\n  KEY `idx_blog_articles_created` (`created_at`),\n  CONSTRAINT `blog_articles_ibfk_1` FOREIGN KEY (`image_id`) REFERENCES `images` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -1222,63 +1263,6 @@
         {
           "name": "updated_at",
           "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-        }
-      ]
-    },
-    "company_personnel": {
-      "create": "CREATE TABLE `company_personnel` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(255) NOT NULL,\n  `position` varchar(150) NOT NULL,\n  `bio` longtext DEFAULT NULL,\n  `image_url` varchar(512) DEFAULT NULL,\n  `image_blob` longblob DEFAULT NULL,\n  `image_mime_type` varchar(100) DEFAULT NULL,\n  `image_file_name` varchar(255) DEFAULT NULL,\n  `sort_order` int(11) DEFAULT 0,\n  `is_active` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_company_personnel_active` (`is_active`),\n  KEY `idx_company_personnel_sort` (`sort_order`)\n) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-      "columns": [
-        {
-          "name": "id",
-          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
-        },
-        {
-          "name": "name",
-          "def": "varchar(255) NOT NULL"
-        },
-        {
-          "name": "position",
-          "def": "varchar(150) NOT NULL"
-        },
-        {
-          "name": "bio",
-          "def": "longtext"
-        },
-        {
-          "name": "image_url",
-          "def": "varchar(512)"
-        },
-        {
-          "name": "image_blob",
-          "def": "longblob"
-        },
-        {
-          "name": "image_mime_type",
-          "def": "varchar(100)"
-        },
-        {
-          "name": "image_file_name",
-          "def": "varchar(255)"
-        },
-        {
-          "name": "sort_order",
-          "def": "int(11) DEFAULT 0"
-        },
-        {
-          "name": "is_active",
-          "def": "tinyint(1) DEFAULT  1"
-        },
-        {
-          "name": "created_at",
-          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
-        },
-        {
-          "name": "updated_at",
-          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-        },
-        {
-          "name": "deleted_at",
-          "def": "timestamp"
         }
       ]
     },
@@ -1482,7 +1466,7 @@
       ]
     },
     "client_documents": {
-      "create": "CREATE TABLE `client_documents` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `project_id` bigint(20) DEFAULT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `document_name` varchar(255) NOT NULL,\n  `document_type` enum('contract','proposal','report','invoice','deliverable','legal','technical','other') NOT NULL,\n  `category` varchar(100) DEFAULT NULL,\n  `description` text DEFAULT NULL,\n  `file_path` varchar(512) DEFAULT NULL,\n  `file_size` bigint(20) DEFAULT NULL,\n  `file_type` varchar(100) DEFAULT NULL,\n  `version_number` int(11) DEFAULT 1,\n  `is_current_version` tinyint(1) DEFAULT 1,\n  `parent_document_id` bigint(20) DEFAULT NULL,\n  `status` enum('draft','review','approved','rejected','archived') DEFAULT 'draft',\n  `access_level` enum('public','private','confidential') DEFAULT 'private',\n  `expiry_date` date DEFAULT NULL,\n  `tags` varchar(255) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_documents_project` (`project_id`),\n  KEY `idx_documents_client` (`client_id`),\n  KEY `idx_documents_type` (`document_type`),\n  KEY `idx_documents_status` (`status`),\n  KEY `idx_documents_version` (`parent_document_id`),\n  CONSTRAINT `client_documents_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `client_projects` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `client_documents_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `client_documents_ibfk_3` FOREIGN KEY (`parent_document_id`) REFERENCES `client_documents` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `client_documents` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `project_id` bigint(20) DEFAULT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `document_name` varchar(255) NOT NULL,\n  `document_type` enum('contract','proposal','report','invoice','deliverable','legal','technical','other') NOT NULL,\n  `category` varchar(100) DEFAULT NULL,\n  `description` text DEFAULT NULL,\n  `file_path` varchar(512) DEFAULT NULL,\n  `file_size` bigint(20) DEFAULT NULL,\n  `file_type` varchar(100) DEFAULT NULL,\n  `version_number` int(11) DEFAULT 1,\n  `is_current_version` tinyint(1) DEFAULT 1,\n  `parent_document_id` bigint(20) DEFAULT NULL,\n  `status` enum('draft','review','approved','rejected','archived') DEFAULT 'draft',\n  `access_level` enum('public','private','confidential') DEFAULT 'private',\n  `expiry_date` date DEFAULT NULL,\n  `tags` varchar(255) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `file_data` longblob DEFAULT NULL,\n  `file_name` varchar(255) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_documents_project` (`project_id`),\n  KEY `idx_documents_client` (`client_id`),\n  KEY `idx_documents_type` (`document_type`),\n  KEY `idx_documents_status` (`status`),\n  KEY `idx_documents_version` (`parent_document_id`),\n  CONSTRAINT `client_documents_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `client_projects` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `client_documents_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `client_documents_ibfk_3` FOREIGN KEY (`parent_document_id`) REFERENCES `client_documents` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -1575,6 +1559,14 @@
         {
           "name": "deleted_by",
           "def": "bigint(20)"
+        },
+        {
+          "name": "file_data",
+          "def": "longblob"
+        },
+        {
+          "name": "file_name",
+          "def": "varchar(255)"
         }
       ]
     },
@@ -2133,8 +2125,65 @@
         }
       ]
     },
+    "company_personnel": {
+      "create": "CREATE TABLE `company_personnel` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(255) NOT NULL,\n  `position` varchar(150) NOT NULL,\n  `bio` longtext DEFAULT NULL,\n  `image_url` varchar(512) DEFAULT NULL,\n  `image_blob` longblob DEFAULT NULL,\n  `image_mime_type` varchar(100) DEFAULT NULL,\n  `image_file_name` varchar(255) DEFAULT NULL,\n  `sort_order` int(11) DEFAULT 0,\n  `is_active` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_company_personnel_active` (`is_active`),\n  KEY `idx_company_personnel_sort` (`sort_order`)\n) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "name",
+          "def": "varchar(255) NOT NULL"
+        },
+        {
+          "name": "position",
+          "def": "varchar(150) NOT NULL"
+        },
+        {
+          "name": "bio",
+          "def": "longtext"
+        },
+        {
+          "name": "image_url",
+          "def": "varchar(512)"
+        },
+        {
+          "name": "image_blob",
+          "def": "longblob"
+        },
+        {
+          "name": "image_mime_type",
+          "def": "varchar(100)"
+        },
+        {
+          "name": "image_file_name",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "sort_order",
+          "def": "int(11) DEFAULT 0"
+        },
+        {
+          "name": "is_active",
+          "def": "tinyint(1) DEFAULT 1"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "deleted_at",
+          "def": "timestamp"
+        }
+      ]
+    },
     "contact_forms": {
-      "create": "CREATE TABLE `contact_forms` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(200) NOT NULL,\n  `email` varchar(255) NOT NULL,\n  `phone` varchar(50) DEFAULT NULL,\n  `company` varchar(255) DEFAULT NULL,\n  `subject` varchar(255) DEFAULT NULL,\n  `message` longtext NOT NULL,\n  `is_read` tinyint(1) DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_contact_forms_email` (`email`,`created_at`),\n  KEY `idx_contact_forms_read` (`is_read`,`created_at`)\n) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `contact_forms` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(200) NOT NULL,\n  `email` varchar(255) NOT NULL,\n  `phone` varchar(50) DEFAULT NULL,\n  `company` varchar(255) DEFAULT NULL,\n  `subject` varchar(255) DEFAULT NULL,\n  `message` longtext NOT NULL,\n  `is_read` tinyint(1) DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_contact_forms_email` (`email`,`created_at`),\n  KEY `idx_contact_forms_read` (`is_read`,`created_at`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -2178,8 +2227,53 @@
         }
       ]
     },
+    "crm_contacts": {
+      "create": "CREATE TABLE `crm_contacts` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `name` varchar(255) NOT NULL,\n  `email` varchar(255) DEFAULT NULL,\n  `phone` varchar(50) DEFAULT NULL,\n  `company` varchar(255) DEFAULT NULL,\n  `status` varchar(50) DEFAULT 'lead',\n  `notes` text DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "int(11) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "name",
+          "def": "varchar(255) NOT NULL"
+        },
+        {
+          "name": "email",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "phone",
+          "def": "varchar(50)"
+        },
+        {
+          "name": "company",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "status",
+          "def": "varchar(50) DEFAULT 'lead'"
+        },
+        {
+          "name": "notes",
+          "def": "text"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "deleted_at",
+          "def": "timestamp"
+        }
+      ]
+    },
     "currencies": {
-      "create": "CREATE TABLE `currencies` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `code` varchar(10) NOT NULL,\n  `name` varchar(100) NOT NULL,\n  `symbol` varchar(10) NOT NULL,\n  `exchange_rate` decimal(15,6) DEFAULT 1.000000,\n  `region` varchar(100) DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `is_default` tinyint(1) DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `code` (`code`)\n) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `currencies` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `code` varchar(10) NOT NULL,\n  `name` varchar(100) NOT NULL,\n  `symbol` varchar(10) NOT NULL,\n  `exchange_rate` decimal(15,6) DEFAULT 1.000000,\n  `region` varchar(100) DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `is_default` tinyint(1) DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `code` (`code`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -2224,7 +2318,7 @@
       ]
     },
     "data_access_logs": {
-      "create": "CREATE TABLE `data_access_logs` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `user_id` bigint(20) NOT NULL,\n  `user_type` enum('admin','developer','user','system') NOT NULL,\n  `entity_type` varchar(100) NOT NULL,\n  `entity_id` bigint(20) NOT NULL,\n  `action` enum('view','create','update','delete','export','download','share') NOT NULL,\n  `data_classification_id` bigint(20) DEFAULT NULL,\n  `ip_address` varchar(45) DEFAULT NULL,\n  `user_agent` text DEFAULT NULL,\n  `session_id` varchar(255) DEFAULT NULL,\n  `request_method` varchar(10) DEFAULT NULL,\n  `request_url` text DEFAULT NULL,\n  `query_params` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`query_params`)),\n  `response_status` int(11) DEFAULT NULL,\n  `error_message` text DEFAULT NULL,\n  `access_granted` tinyint(1) DEFAULT 1,\n  `denial_reason` varchar(255) DEFAULT NULL,\n  `created_at` timestamp NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_data_access_user` (`user_id`,`created_at`),\n  KEY `idx_data_access_entity` (`entity_type`,`entity_id`,`created_at`),\n  KEY `idx_data_access_action` (`action`,`created_at`),\n  KEY `idx_data_access_classification` (`data_classification_id`),\n  CONSTRAINT `data_access_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `data_access_logs_ibfk_2` FOREIGN KEY (`data_classification_id`) REFERENCES `data_classifications` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `data_access_logs` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `user_id` bigint(20) NOT NULL,\n  `user_type` enum('admin','developer','user','system') NOT NULL,\n  `entity_type` varchar(100) NOT NULL,\n  `entity_id` bigint(20) NOT NULL,\n  `action` enum('view','create','update','delete','export','download','share') NOT NULL,\n  `data_classification_id` bigint(20) DEFAULT NULL,\n  `ip_address` varchar(45) DEFAULT NULL,\n  `user_agent` text DEFAULT NULL,\n  `session_id` varchar(255) DEFAULT NULL,\n  `request_method` varchar(10) DEFAULT NULL,\n  `request_url` text DEFAULT NULL,\n  `query_params` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`query_params`)),\n  `response_status` int(11) DEFAULT NULL,\n  `error_message` text DEFAULT NULL,\n  `access_granted` tinyint(1) DEFAULT 1,\n  `denial_reason` varchar(255) DEFAULT NULL,\n  `created_at` timestamp NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_data_access_user` (`user_id`,`created_at`),\n  KEY `idx_data_access_entity` (`entity_type`,`entity_id`,`created_at`),\n  KEY `idx_data_access_action` (`action`,`created_at`),\n  KEY `idx_data_access_classification` (`data_classification_id`),\n  CONSTRAINT `data_access_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `data_access_logs_ibfk_2` FOREIGN KEY (`data_classification_id`) REFERENCES `data_classifications` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -2301,7 +2395,7 @@
       ]
     },
     "data_classifications": {
-      "create": "CREATE TABLE `data_classifications` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(100) NOT NULL,\n  `description` text DEFAULT NULL,\n  `sensitivity_level` enum('public','internal','confidential','restricted') DEFAULT 'internal',\n  `encryption_required` tinyint(1) DEFAULT 0,\n  `access_log_required` tinyint(1) DEFAULT 1,\n  `retention_days` int(11) DEFAULT 365,\n  `auto_delete` tinyint(1) DEFAULT 0,\n  `allowed_roles` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`allowed_roles`)),\n  `created_at` timestamp NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `name` (`name`),\n  KEY `idx_data_classifications_level` (`sensitivity_level`),\n  KEY `idx_data_classifications_encryption` (`encryption_required`)\n) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `data_classifications` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(100) NOT NULL,\n  `description` text DEFAULT NULL,\n  `sensitivity_level` enum('public','internal','confidential','restricted') DEFAULT 'internal',\n  `encryption_required` tinyint(1) DEFAULT 0,\n  `access_log_required` tinyint(1) DEFAULT 1,\n  `retention_days` int(11) DEFAULT 365,\n  `auto_delete` tinyint(1) DEFAULT 0,\n  `allowed_roles` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`allowed_roles`)),\n  `created_at` timestamp NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `name` (`name`),\n  KEY `idx_data_classifications_level` (`sensitivity_level`),\n  KEY `idx_data_classifications_encryption` (`encryption_required`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -2407,7 +2501,7 @@
       ]
     },
     "data_retention_policies": {
-      "create": "CREATE TABLE `data_retention_policies` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `entity_type` varchar(100) NOT NULL,\n  `retention_period_days` int(11) NOT NULL,\n  `auto_archive` tinyint(1) DEFAULT 0,\n  `auto_delete` tinyint(1) DEFAULT 0,\n  `archive_location` varchar(512) DEFAULT NULL,\n  `legal_basis` varchar(255) DEFAULT NULL,\n  `compliance_framework` varchar(100) DEFAULT NULL,\n  `created_by` bigint(20) DEFAULT NULL,\n  `created_at` timestamp NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_retention_entity` (`entity_type`),\n  KEY `created_by` (`created_by`),\n  CONSTRAINT `data_retention_policies_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `data_retention_policies` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `entity_type` varchar(100) NOT NULL,\n  `retention_period_days` int(11) NOT NULL,\n  `auto_archive` tinyint(1) DEFAULT 0,\n  `auto_delete` tinyint(1) DEFAULT 0,\n  `archive_location` varchar(512) DEFAULT NULL,\n  `legal_basis` varchar(255) DEFAULT NULL,\n  `compliance_framework` varchar(100) DEFAULT NULL,\n  `created_by` bigint(20) DEFAULT NULL,\n  `created_at` timestamp NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_retention_entity` (`entity_type`),\n  KEY `created_by` (`created_by`),\n  CONSTRAINT `data_retention_policies_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -2455,8 +2549,139 @@
         }
       ]
     },
+    "departments": {
+      "create": "CREATE TABLE `departments` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `name` varchar(100) NOT NULL,\n  `slug` varchar(50) NOT NULL,\n  `description` text DEFAULT NULL,\n  `icon` varchar(50) DEFAULT 'Building2',\n  `color` varchar(20) DEFAULT '#002D62',\n  `is_active` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `name` (`name`),\n  UNIQUE KEY `slug` (`slug`),\n  KEY `idx_departments_slug` (`slug`),\n  KEY `idx_departments_active` (`is_active`)\n) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "int(11) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "name",
+          "def": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "slug",
+          "def": "varchar(50) NOT NULL"
+        },
+        {
+          "name": "description",
+          "def": "text"
+        },
+        {
+          "name": "icon",
+          "def": "varchar(50) DEFAULT 'Building2'"
+        },
+        {
+          "name": "color",
+          "def": "varchar(20) DEFAULT '#002D62'"
+        },
+        {
+          "name": "is_active",
+          "def": "tinyint(1) DEFAULT 1"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    "department_metrics": {
+      "create": "CREATE TABLE `department_metrics` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `department_id` int(11) NOT NULL,\n  `metric_label` varchar(200) NOT NULL,\n  `metric_value` decimal(14,2) NOT NULL DEFAULT 0.00,\n  `metric_unit` varchar(20) DEFAULT NULL,\n  `target_value` decimal(14,2) DEFAULT NULL,\n  `higher_is_better` tinyint(1) NOT NULL DEFAULT 1,\n  `sort_order` int(11) NOT NULL DEFAULT 0,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_department_metrics_dept` (`department_id`),\n  CONSTRAINT `department_metrics_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB AUTO_INCREMENT=123 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "department_id",
+          "def": "int(11) NOT NULL"
+        },
+        {
+          "name": "metric_label",
+          "def": "varchar(200) NOT NULL"
+        },
+        {
+          "name": "metric_value",
+          "def": "decimal(14,2) NOT NULL DEFAULT 0.00"
+        },
+        {
+          "name": "metric_unit",
+          "def": "varchar(20)"
+        },
+        {
+          "name": "target_value",
+          "def": "decimal(14,2)"
+        },
+        {
+          "name": "higher_is_better",
+          "def": "tinyint(1) NOT NULL DEFAULT 1"
+        },
+        {
+          "name": "sort_order",
+          "def": "int(11) NOT NULL DEFAULT 0"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    "department_tasks": {
+      "create": "CREATE TABLE `department_tasks` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `department_id` int(11) NOT NULL,\n  `title` varchar(255) NOT NULL,\n  `description` text DEFAULT NULL,\n  `status` enum('todo','in_progress','review','done') NOT NULL DEFAULT 'todo',\n  `priority` enum('low','medium','high','urgent') NOT NULL DEFAULT 'medium',\n  `assignee_id` bigint(20) DEFAULT NULL,\n  `due_date` date DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `completed_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_department_tasks_dept` (`department_id`),\n  KEY `idx_department_tasks_status` (`status`),\n  KEY `idx_department_tasks_assignee` (`assignee_id`),\n  CONSTRAINT `department_tasks_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `department_tasks_ibfk_2` FOREIGN KEY (`assignee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "department_id",
+          "def": "int(11) NOT NULL"
+        },
+        {
+          "name": "title",
+          "def": "varchar(255) NOT NULL"
+        },
+        {
+          "name": "description",
+          "def": "text"
+        },
+        {
+          "name": "status",
+          "def": "enum('todo','in_progress','review','done') NOT NULL DEFAULT 'todo'"
+        },
+        {
+          "name": "priority",
+          "def": "enum('low','medium','high','urgent') NOT NULL DEFAULT 'medium'"
+        },
+        {
+          "name": "assignee_id",
+          "def": "bigint(20)"
+        },
+        {
+          "name": "due_date",
+          "def": "date"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "completed_at",
+          "def": "timestamp"
+        }
+      ]
+    },
     "developer_users": {
-      "create": "CREATE TABLE `developer_users` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) NOT NULL,\n  `email_verified` tinyint(1) DEFAULT 0,\n  `email_verification_token` varchar(255) DEFAULT NULL,\n  `email_verification_expires` datetime DEFAULT NULL,\n  `password_hash` varchar(255) DEFAULT NULL,\n  `password_reset_token` varchar(255) DEFAULT NULL,\n  `password_reset_expires` datetime DEFAULT NULL,\n  `first_name` varchar(100) NOT NULL,\n  `last_name` varchar(100) NOT NULL,\n  `display_name` varchar(200) DEFAULT NULL,\n  `phone_number` varchar(50) DEFAULT NULL,\n  `profile_photo_id` bigint(20) DEFAULT NULL,\n  `profile_photo_blob` longblob DEFAULT NULL,\n  `profile_photo_mime_type` varchar(100) DEFAULT NULL,\n  `profile_photo_file_name` varchar(255) DEFAULT NULL,\n  `profile_image_id` bigint(20) DEFAULT NULL,\n  `developer_level` enum('senior','mid','junior','lead') DEFAULT 'mid',\n  `tech_stack` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tech_stack`)),\n  `specialization` varchar(100) DEFAULT NULL,\n  `access_level` enum('full','limited','read_only') DEFAULT 'limited',\n  `team_id` bigint(20) DEFAULT NULL,\n  `github_username` varchar(100) DEFAULT NULL,\n  `linkedin_url` varchar(512) DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `last_login_at` timestamp NULL DEFAULT NULL,\n  `last_login_ip` varchar(45) DEFAULT NULL,\n  `failed_login_attempts` int(11) DEFAULT 0,\n  `account_locked_until` timestamp NULL DEFAULT NULL,\n  `two_factor_enabled` tinyint(1) DEFAULT 0,\n  `two_factor_secret` varchar(255) DEFAULT NULL,\n  `timezone` varchar(50) DEFAULT 'UTC',\n  `locale` varchar(10) DEFAULT 'en-US',\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `whatsapp_verified` tinyint(1) DEFAULT 0,\n  `whatsapp_auth_key` varchar(10) DEFAULT NULL,\n  `last_active_at` timestamp NULL DEFAULT NULL,\n  `physical_address` text DEFAULT NULL,\n  `id_number` varchar(50) DEFAULT NULL,\n  `alt_phone` varchar(50) DEFAULT NULL,\n  `expertise` text DEFAULT NULL,\n  `private_notes` text DEFAULT NULL,\n  `emergency_contact_name` varchar(255) DEFAULT NULL,\n  `emergency_contact_phone` varchar(50) DEFAULT NULL,\n  `manual_projects` text DEFAULT NULL,\n  `department` varchar(100) DEFAULT NULL,\n  `mission_briefing` text DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `email` (`email`),\n  KEY `profile_photo_id` (`profile_photo_id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  KEY `idx_developer_users_email` (`email`),\n  KEY `idx_developer_users_active` (`is_active`,`deleted_at`),\n  KEY `idx_developer_users_level` (`developer_level`),\n  KEY `idx_developer_users_stack` (`specialization`),\n  KEY `idx_developer_users_team` (`team_id`),\n  KEY `idx_developer_users_login` (`last_login_at`),\n  CONSTRAINT `developer_users_ibfk_1` FOREIGN KEY (`profile_photo_id`) REFERENCES `images` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `developer_users_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `developer_users_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `developer_users_ibfk_4` FOREIGN KEY (`deleted_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `developer_users` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) NOT NULL,\n  `email_verified` tinyint(1) DEFAULT 0,\n  `email_verification_token` varchar(255) DEFAULT NULL,\n  `email_verification_expires` datetime DEFAULT NULL,\n  `password_hash` varchar(255) DEFAULT NULL,\n  `password_reset_token` varchar(255) DEFAULT NULL,\n  `password_reset_expires` datetime DEFAULT NULL,\n  `first_name` varchar(100) NOT NULL,\n  `last_name` varchar(100) NOT NULL,\n  `display_name` varchar(200) DEFAULT NULL,\n  `phone_number` varchar(50) DEFAULT NULL,\n  `profile_photo_id` bigint(20) DEFAULT NULL,\n  `profile_photo_blob` longblob DEFAULT NULL,\n  `profile_photo_mime_type` varchar(100) DEFAULT NULL,\n  `profile_photo_file_name` varchar(255) DEFAULT NULL,\n  `profile_image_id` bigint(20) DEFAULT NULL,\n  `developer_level` enum('senior','mid','junior','lead') DEFAULT 'mid',\n  `tech_stack` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`tech_stack`)),\n  `specialization` varchar(100) DEFAULT NULL,\n  `access_level` enum('full','limited','read_only') DEFAULT 'limited',\n  `team_id` bigint(20) DEFAULT NULL,\n  `github_username` varchar(100) DEFAULT NULL,\n  `linkedin_url` varchar(512) DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `last_login_at` timestamp NULL DEFAULT NULL,\n  `last_login_ip` varchar(45) DEFAULT NULL,\n  `failed_login_attempts` int(11) DEFAULT 0,\n  `account_locked_until` timestamp NULL DEFAULT NULL,\n  `two_factor_enabled` tinyint(1) DEFAULT 0,\n  `two_factor_secret` varchar(255) DEFAULT NULL,\n  `timezone` varchar(50) DEFAULT 'UTC',\n  `locale` varchar(10) DEFAULT 'en-US',\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `whatsapp_verified` tinyint(1) DEFAULT 0,\n  `whatsapp_auth_key` varchar(10) DEFAULT NULL,\n  `last_active_at` timestamp NULL DEFAULT NULL,\n  `physical_address` text DEFAULT NULL,\n  `id_number` varchar(50) DEFAULT NULL,\n  `alt_phone` varchar(50) DEFAULT NULL,\n  `expertise` text DEFAULT NULL,\n  `private_notes` text DEFAULT NULL,\n  `emergency_contact_name` varchar(255) DEFAULT NULL,\n  `emergency_contact_phone` varchar(50) DEFAULT NULL,\n  `manual_projects` text DEFAULT NULL,\n  `department` varchar(100) DEFAULT NULL,\n  `mission_briefing` text DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `email` (`email`),\n  KEY `profile_photo_id` (`profile_photo_id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  KEY `idx_developer_users_email` (`email`),\n  KEY `idx_developer_users_active` (`is_active`,`deleted_at`),\n  KEY `idx_developer_users_level` (`developer_level`),\n  KEY `idx_developer_users_stack` (`specialization`),\n  KEY `idx_developer_users_team` (`team_id`),\n  KEY `idx_developer_users_login` (`last_login_at`),\n  CONSTRAINT `developer_users_ibfk_1` FOREIGN KEY (`profile_photo_id`) REFERENCES `images` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `developer_users_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `developer_users_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `developer_users_ibfk_4` FOREIGN KEY (`deleted_by`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -2737,6 +2962,71 @@
         }
       ]
     },
+    "employees": {
+      "create": "CREATE TABLE `employees` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `employee_code` varchar(20) NOT NULL,\n  `first_name` varchar(100) NOT NULL,\n  `last_name` varchar(100) NOT NULL,\n  `display_name` varchar(200) DEFAULT NULL,\n  `email` varchar(255) DEFAULT NULL,\n  `phone` varchar(30) DEFAULT NULL,\n  `department_id` int(11) DEFAULT NULL,\n  `role_slug` varchar(100) NOT NULL,\n  `role_title` varchar(200) NOT NULL,\n  `is_active` tinyint(1) NOT NULL DEFAULT 1,\n  `last_active_at` timestamp NULL DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_employees_code` (`employee_code`),\n  UNIQUE KEY `uq_employees_role_slug` (`role_slug`),\n  KEY `idx_employees_department` (`department_id`),\n  KEY `idx_employees_active` (`is_active`),\n  CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "employee_code",
+          "def": "varchar(20) NOT NULL"
+        },
+        {
+          "name": "first_name",
+          "def": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "last_name",
+          "def": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "display_name",
+          "def": "varchar(200)"
+        },
+        {
+          "name": "email",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "phone",
+          "def": "varchar(30)"
+        },
+        {
+          "name": "department_id",
+          "def": "int(11)"
+        },
+        {
+          "name": "role_slug",
+          "def": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "role_title",
+          "def": "varchar(200) NOT NULL"
+        },
+        {
+          "name": "is_active",
+          "def": "tinyint(1) NOT NULL DEFAULT 1"
+        },
+        {
+          "name": "last_active_at",
+          "def": "timestamp"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "deleted_at",
+          "def": "timestamp"
+        }
+      ]
+    },
     "financial_reports": {
       "create": "CREATE TABLE `financial_reports` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `project_id` bigint(20) NOT NULL,\n  `report_name` varchar(255) NOT NULL,\n  `report_type` enum('profit_loss','balance_sheet','cash_flow','budget_variance','expense_breakdown','income_statement','custom') DEFAULT 'profit_loss',\n  `report_data` longtext DEFAULT NULL,\n  `summary` text DEFAULT NULL,\n  `insights` text DEFAULT NULL,\n  `report_date` date NOT NULL,\n  `period_start` date DEFAULT NULL,\n  `period_end` date DEFAULT NULL,\n  `generated_by` bigint(20) DEFAULT NULL,\n  `generated_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `template_version` varchar(20) DEFAULT '1.0',\n  `status` enum('draft','final','archived') DEFAULT 'draft',\n  `is_public` tinyint(1) DEFAULT 1,\n  `shared_with` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`shared_with`)),\n  `download_count` int(11) DEFAULT 0,\n  `last_downloaded_at` timestamp NULL DEFAULT NULL,\n  `export_format` enum('pdf','excel','csv','json') DEFAULT 'pdf',\n  `file_path` varchar(512) DEFAULT NULL,\n  `file_size` bigint(20) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_by` bigint(20) NOT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_financial_reports_project` (`project_id`),\n  KEY `idx_financial_reports_type` (`report_type`),\n  KEY `idx_financial_reports_date` (`report_date`),\n  KEY `idx_financial_reports_status` (`status`),\n  KEY `idx_financial_reports_generated` (`generated_at`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `generated_by` (`generated_by`),\n  CONSTRAINT `financial_reports_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `financial_reports_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `financial_reports_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `financial_reports_ibfk_4` FOREIGN KEY (`generated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
@@ -2896,7 +3186,7 @@
       ]
     },
     "images": {
-      "create": "CREATE TABLE `images` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `file_name` varchar(255) NOT NULL,\n  `file_path` varchar(512) DEFAULT NULL,\n  `file_type` varchar(100) DEFAULT NULL,\n  `file_size` bigint(20) DEFAULT NULL,\n  `content_type` varchar(100) DEFAULT NULL,\n  `data` longblob DEFAULT NULL,\n  `alt_text` varchar(255) DEFAULT NULL,\n  `title` varchar(255) DEFAULT NULL,\n  `width` int(11) DEFAULT NULL,\n  `height` int(11) DEFAULT NULL,\n  `is_public` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_images_filename` (`file_name`),\n  KEY `idx_images_created` (`created_at`)\n) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `images` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `file_name` varchar(255) NOT NULL,\n  `file_path` varchar(512) DEFAULT NULL,\n  `file_type` varchar(100) DEFAULT NULL,\n  `file_size` bigint(20) DEFAULT NULL,\n  `content_type` varchar(100) DEFAULT NULL,\n  `data` longblob DEFAULT NULL,\n  `alt_text` varchar(255) DEFAULT NULL,\n  `title` varchar(255) DEFAULT NULL,\n  `width` int(11) DEFAULT NULL,\n  `height` int(11) DEFAULT NULL,\n  `is_public` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_images_filename` (`file_name`),\n  KEY `idx_images_created` (`created_at`)\n) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -2973,7 +3263,7 @@
       ]
     },
     "invoices": {
-      "create": "CREATE TABLE `invoices` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `project_id` bigint(20) NOT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `invoice_number` varchar(50) NOT NULL,\n  `invoice_type` enum('project_fee','milestone','expense','retainer','custom') DEFAULT 'project_fee',\n  `title` varchar(255) NOT NULL,\n  `description` text DEFAULT NULL,\n  `subtotal` decimal(15,2) NOT NULL DEFAULT 0.00,\n  `tax_rate` decimal(5,4) DEFAULT 0.0000,\n  `tax_amount` decimal(15,2) GENERATED ALWAYS AS (`subtotal` * `tax_rate`) STORED,\n  `total_amount` decimal(15,2) GENERATED ALWAYS AS (`subtotal` + `tax_amount`) STORED,\n  `currency` varchar(3) DEFAULT 'KES',\n  `exchange_rate` decimal(10,6) DEFAULT 1.000000,\n  `total_amount_kes` decimal(15,2) GENERATED ALWAYS AS (`total_amount` * `exchange_rate`) STORED,\n  `issue_date` date NOT NULL,\n  `due_date` date NOT NULL,\n  `paid_date` date DEFAULT NULL,\n  `status` enum('draft','sent','viewed','partial','paid','overdue','cancelled') DEFAULT 'draft',\n  `payment_status` enum('pending','partial','paid','failed') DEFAULT 'pending',\n  `payment_method` enum('mpesa','bank_transfer','cash','check','online_payment','other') DEFAULT 'mpesa',\n  `payment_phone` varchar(20) DEFAULT '+254115525854',\n  `payment_reference` varchar(255) DEFAULT NULL,\n  `client_name` varchar(255) NOT NULL,\n  `client_email` varchar(255) DEFAULT NULL,\n  `client_phone` varchar(20) DEFAULT NULL,\n  `client_address` text DEFAULT NULL,\n  `items` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`items`)),\n  `notes` text DEFAULT NULL,\n  `payment_terms` text DEFAULT NULL,\n  `terms_conditions` text DEFAULT NULL,\n  `pdf_file_path` varchar(512) DEFAULT NULL,\n  `pdf_generated` tinyint(1) DEFAULT 0,\n  `pdf_generated_at` timestamp NULL DEFAULT NULL,\n  `email_sent` tinyint(1) DEFAULT 0,\n  `email_sent_at` timestamp NULL DEFAULT NULL,\n  `email_opened` tinyint(1) DEFAULT 0,\n  `email_opened_at` timestamp NULL DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_by` bigint(20) NOT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `invoice_number` (`invoice_number`),\n  KEY `idx_invoices_project` (`project_id`),\n  KEY `idx_invoices_client` (`client_id`),\n  KEY `idx_invoices_number` (`invoice_number`),\n  KEY `idx_invoices_status` (`status`),\n  KEY `idx_invoices_payment_status` (`payment_status`),\n  KEY `idx_invoices_dates` (`issue_date`,`due_date`),\n  KEY `idx_invoices_created` (`created_at`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  CONSTRAINT `invoices_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `invoices_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `invoices_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `invoices_ibfk_4` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `invoices_ibfk_5` FOREIGN KEY (`deleted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `invoices` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `project_id` bigint(20) NOT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `invoice_number` varchar(50) NOT NULL,\n  `invoice_type` enum('project_fee','milestone','expense','retainer','custom') DEFAULT 'project_fee',\n  `title` varchar(255) NOT NULL,\n  `description` text DEFAULT NULL,\n  `subtotal` decimal(15,2) NOT NULL DEFAULT 0.00,\n  `tax_rate` decimal(5,4) DEFAULT 0.0000,\n  `tax_amount` decimal(15,2) GENERATED ALWAYS AS (`subtotal` * `tax_rate`) STORED,\n  `total_amount` decimal(15,2) GENERATED ALWAYS AS (`subtotal` + `tax_amount`) STORED,\n  `currency` varchar(3) DEFAULT 'KES',\n  `exchange_rate` decimal(10,6) DEFAULT 1.000000,\n  `total_amount_kes` decimal(15,2) GENERATED ALWAYS AS (`total_amount` * `exchange_rate`) STORED,\n  `issue_date` date NOT NULL,\n  `due_date` date NOT NULL,\n  `paid_date` date DEFAULT NULL,\n  `status` enum('draft','sent','viewed','partial','paid','overdue','cancelled') DEFAULT 'draft',\n  `payment_status` enum('pending','partial','paid','failed') DEFAULT 'pending',\n  `payment_method` enum('mpesa','bank_transfer','cash','check','online_payment','other') DEFAULT 'mpesa',\n  `payment_phone` varchar(20) DEFAULT '+254799789956',\n  `payment_reference` varchar(255) DEFAULT NULL,\n  `client_name` varchar(255) NOT NULL,\n  `client_email` varchar(255) DEFAULT NULL,\n  `client_phone` varchar(20) DEFAULT NULL,\n  `client_address` text DEFAULT NULL,\n  `items` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`items`)),\n  `notes` text DEFAULT NULL,\n  `payment_terms` text DEFAULT NULL,\n  `terms_conditions` text DEFAULT NULL,\n  `pdf_file_path` varchar(512) DEFAULT NULL,\n  `pdf_generated` tinyint(1) DEFAULT 0,\n  `pdf_generated_at` timestamp NULL DEFAULT NULL,\n  `email_sent` tinyint(1) DEFAULT 0,\n  `email_sent_at` timestamp NULL DEFAULT NULL,\n  `email_opened` tinyint(1) DEFAULT 0,\n  `email_opened_at` timestamp NULL DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_by` bigint(20) NOT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `invoice_number` (`invoice_number`),\n  KEY `idx_invoices_project` (`project_id`),\n  KEY `idx_invoices_client` (`client_id`),\n  KEY `idx_invoices_number` (`invoice_number`),\n  KEY `idx_invoices_status` (`status`),\n  KEY `idx_invoices_payment_status` (`payment_status`),\n  KEY `idx_invoices_dates` (`issue_date`,`due_date`),\n  KEY `idx_invoices_created` (`created_at`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  CONSTRAINT `invoices_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `invoices_ibfk_4` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `invoices_ibfk_5` FOREIGN KEY (`deleted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -3045,7 +3335,7 @@
         },
         {
           "name": "payment_phone",
-          "def": "varchar(20) DEFAULT '+254115525854'"
+          "def": "varchar(20) DEFAULT '+254799789956'"
         },
         {
           "name": "payment_reference",
@@ -3219,8 +3509,45 @@
         }
       ]
     },
+    "management_info": {
+      "create": "CREATE TABLE `management_info` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `company_id` bigint(20) NOT NULL,\n  `station_manager` varchar(200) DEFAULT 'Not specified',\n  `service_area` varchar(500) DEFAULT 'Not specified',\n  `base_location` varchar(500) DEFAULT 'Not specified',\n  `updated_by` bigint(20) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uq_management_company` (`company_id`),\n  KEY `idx_management_company` (`company_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "company_id",
+          "def": "bigint(20) NOT NULL"
+        },
+        {
+          "name": "station_manager",
+          "def": "varchar(200) DEFAULT 'Not specified'"
+        },
+        {
+          "name": "service_area",
+          "def": "varchar(500) DEFAULT 'Not specified'"
+        },
+        {
+          "name": "base_location",
+          "def": "varchar(500) DEFAULT 'Not specified'"
+        },
+        {
+          "name": "updated_by",
+          "def": "bigint(20)"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ]
+    },
     "mpesa_transactions": {
-      "create": "CREATE TABLE `mpesa_transactions` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `invoice_id` bigint(20) DEFAULT NULL,\n  `project_id` bigint(20) DEFAULT NULL,\n  `transaction_id` varchar(100) NOT NULL,\n  `merchant_request_id` varchar(100) DEFAULT NULL,\n  `checkout_request_id` varchar(100) DEFAULT NULL,\n  `amount` decimal(15,2) NOT NULL,\n  `currency` varchar(3) DEFAULT 'KES',\n  `exchange_rate` decimal(10,6) DEFAULT 1.000000,\n  `amount_kes` decimal(15,2) GENERATED ALWAYS AS (`amount` * `exchange_rate`) STORED,\n  `phone_number` varchar(20) NOT NULL,\n  `status` enum('pending','completed','failed','cancelled','reversed') DEFAULT 'pending',\n  `result_code` int(11) DEFAULT NULL,\n  `result_desc` varchar(255) DEFAULT NULL,\n  `transaction_date` timestamp NOT NULL DEFAULT current_timestamp(),\n  `completion_time` timestamp NULL DEFAULT NULL,\n  `response_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`response_data`)),\n  `payment_method` enum('paybill','till_number','buy_goods') DEFAULT 'paybill',\n  `business_number` varchar(20) DEFAULT '174379',\n  `account_reference` varchar(255) DEFAULT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `user_id` bigint(20) DEFAULT NULL,\n  `client_name` varchar(255) DEFAULT NULL,\n  `client_email` varchar(255) DEFAULT NULL,\n  `reconciled` tinyint(1) DEFAULT 0,\n  `reconciled_at` timestamp NULL DEFAULT NULL,\n  `reconciled_by` bigint(20) DEFAULT NULL,\n  `reconciliation_notes` text DEFAULT NULL,\n  `is_refund` tinyint(1) DEFAULT 0,\n  `original_transaction_id` varchar(100) DEFAULT NULL,\n  `refund_reason` text DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `mpesa_receipt` varchar(50) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `transaction_id` (`transaction_id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  KEY `reconciled_by` (`reconciled_by`),\n  KEY `idx_mpesa_transaction_id` (`transaction_id`),\n  KEY `idx_mpesa_status` (`status`),\n  KEY `idx_mpesa_phone` (`phone_number`),\n  KEY `idx_mpesa_client` (`client_id`),\n  KEY `idx_mpesa_date` (`transaction_date`),\n  KEY `idx_mpesa_created` (`created_at`),\n  KEY `idx_mpesa_tx_transaction_id` (`transaction_id`),\n  CONSTRAINT `mpesa_transactions_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `mpesa_transactions_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `mpesa_transactions_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `mpesa_transactions_ibfk_4` FOREIGN KEY (`deleted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `mpesa_transactions_ibfk_5` FOREIGN KEY (`reconciled_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `mpesa_transactions` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `invoice_id` bigint(20) DEFAULT NULL,\n  `project_id` bigint(20) DEFAULT NULL,\n  `transaction_id` varchar(100) NOT NULL,\n  `merchant_request_id` varchar(100) DEFAULT NULL,\n  `checkout_request_id` varchar(100) DEFAULT NULL,\n  `amount` decimal(15,2) NOT NULL,\n  `currency` varchar(3) DEFAULT 'KES',\n  `exchange_rate` decimal(10,6) DEFAULT 1.000000,\n  `amount_kes` decimal(15,2) GENERATED ALWAYS AS (`amount` * `exchange_rate`) STORED,\n  `phone_number` varchar(20) NOT NULL,\n  `status` enum('pending','completed','failed','cancelled','reversed') DEFAULT 'pending',\n  `result_code` int(11) DEFAULT NULL,\n  `result_desc` varchar(255) DEFAULT NULL,\n  `transaction_date` timestamp NOT NULL DEFAULT current_timestamp(),\n  `completion_time` timestamp NULL DEFAULT NULL,\n  `response_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`response_data`)),\n  `payment_method` enum('paybill','till_number','buy_goods') DEFAULT 'paybill',\n  `business_number` varchar(20) DEFAULT '174379',\n  `account_reference` varchar(255) DEFAULT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `user_id` bigint(20) DEFAULT NULL,\n  `client_name` varchar(255) DEFAULT NULL,\n  `client_email` varchar(255) DEFAULT NULL,\n  `reconciled` tinyint(1) DEFAULT 0,\n  `reconciled_at` timestamp NULL DEFAULT NULL,\n  `reconciled_by` bigint(20) DEFAULT NULL,\n  `reconciliation_notes` text DEFAULT NULL,\n  `is_refund` tinyint(1) DEFAULT 0,\n  `original_transaction_id` varchar(100) DEFAULT NULL,\n  `refund_reason` text DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `mpesa_receipt` varchar(50) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `transaction_id` (`transaction_id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  KEY `reconciled_by` (`reconciled_by`),\n  KEY `idx_mpesa_transaction_id` (`transaction_id`),\n  KEY `idx_mpesa_status` (`status`),\n  KEY `idx_mpesa_phone` (`phone_number`),\n  KEY `idx_mpesa_client` (`client_id`),\n  KEY `idx_mpesa_date` (`transaction_date`),\n  KEY `idx_mpesa_created` (`created_at`),\n  KEY `idx_mpesa_tx_transaction_id` (`transaction_id`),\n  CONSTRAINT `mpesa_transactions_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `mpesa_transactions_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `mpesa_transactions_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `mpesa_transactions_ibfk_4` FOREIGN KEY (`deleted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `mpesa_transactions_ibfk_5` FOREIGN KEY (`reconciled_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -3373,7 +3700,7 @@
       ]
     },
     "notifications": {
-      "create": "CREATE TABLE `notifications` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `user_id` bigint(20) NOT NULL,\n  `notification_type` enum('project_update','task_assigned','milestone_complete','invoice_sent','payment_received','message','risk_alert','qa_result','system') NOT NULL,\n  `title` varchar(255) NOT NULL,\n  `message` text NOT NULL,\n  `priority` enum('low','normal','high','urgent') DEFAULT 'normal',\n  `status` enum('unread','read','archived') DEFAULT 'unread',\n  `action_url` varchar(512) DEFAULT NULL,\n  `related_entity_type` varchar(100) DEFAULT NULL,\n  `related_entity_id` bigint(20) DEFAULT NULL,\n  `sent_via_email` tinyint(1) DEFAULT 0,\n  `sent_via_sms` tinyint(1) DEFAULT 0,\n  `sent_via_push` tinyint(1) DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `read_at` timestamp NULL DEFAULT NULL,\n  `expires_at` timestamp NULL DEFAULT NULL,\n  `attachment_data` longblob DEFAULT NULL,\n  `attachment_type` varchar(100) DEFAULT NULL,\n  `attachment_name` varchar(255) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_notifications_user` (`user_id`),\n  KEY `idx_notifications_type` (`notification_type`),\n  KEY `idx_notifications_status` (`status`),\n  KEY `idx_notifications_date` (`created_at`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `notifications` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `user_id` bigint(20) NOT NULL,\n  `notification_type` enum('project_update','task_assigned','milestone_complete','invoice_sent','payment_received','message','risk_alert','qa_result','system') NOT NULL,\n  `title` varchar(255) NOT NULL,\n  `message` text NOT NULL,\n  `priority` enum('low','normal','high','urgent') DEFAULT 'normal',\n  `status` enum('unread','read','archived') DEFAULT 'unread',\n  `action_url` varchar(512) DEFAULT NULL,\n  `related_entity_type` varchar(100) DEFAULT NULL,\n  `related_entity_id` bigint(20) DEFAULT NULL,\n  `sent_via_email` tinyint(1) DEFAULT 0,\n  `sent_via_sms` tinyint(1) DEFAULT 0,\n  `sent_via_push` tinyint(1) DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `read_at` timestamp NULL DEFAULT NULL,\n  `expires_at` timestamp NULL DEFAULT NULL,\n  `attachment_data` longblob DEFAULT NULL,\n  `attachment_type` varchar(100) DEFAULT NULL,\n  `attachment_name` varchar(255) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_notifications_user` (`user_id`),\n  KEY `idx_notifications_type` (`notification_type`),\n  KEY `idx_notifications_status` (`status`),\n  KEY `idx_notifications_date` (`created_at`)\n) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -3530,8 +3857,122 @@
         }
       ]
     },
+    "portfolio_items": {
+      "create": "CREATE TABLE `portfolio_items` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `title` varchar(255) NOT NULL,\n  `client_name` varchar(255) DEFAULT NULL,\n  `sector` varchar(160) DEFAULT NULL,\n  `summary` varchar(500) DEFAULT NULL,\n  `body` mediumtext DEFAULT NULL,\n  `image_url` varchar(512) DEFAULT NULL,\n  `outcomes` text DEFAULT NULL,\n  `status` enum('draft','published') NOT NULL DEFAULT 'draft',\n  `sort_order` int(11) NOT NULL DEFAULT 0,\n  `is_featured` tinyint(1) NOT NULL DEFAULT 0,\n  `is_active` tinyint(1) NOT NULL DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_posts_public` (`status`,`is_active`,`deleted_at`),\n  KEY `idx_posts_sort` (`sort_order`)\n) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "title",
+          "def": "varchar(255) NOT NULL"
+        },
+        {
+          "name": "client_name",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "sector",
+          "def": "varchar(160)"
+        },
+        {
+          "name": "summary",
+          "def": "varchar(500)"
+        },
+        {
+          "name": "body",
+          "def": "mediumtext"
+        },
+        {
+          "name": "image_url",
+          "def": "varchar(512)"
+        },
+        {
+          "name": "outcomes",
+          "def": "text"
+        },
+        {
+          "name": "status",
+          "def": "enum('draft','published') NOT NULL DEFAULT 'draft'"
+        },
+        {
+          "name": "sort_order",
+          "def": "int(11) NOT NULL DEFAULT 0"
+        },
+        {
+          "name": "is_featured",
+          "def": "tinyint(1) NOT NULL DEFAULT 0"
+        },
+        {
+          "name": "is_active",
+          "def": "tinyint(1) NOT NULL DEFAULT 1"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "created_by",
+          "def": "bigint(20)"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_by",
+          "def": "bigint(20)"
+        },
+        {
+          "name": "deleted_at",
+          "def": "timestamp"
+        }
+      ]
+    },
+    "portfolio_media": {
+      "create": "CREATE TABLE `portfolio_media` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `portfolio_id` bigint(20) NOT NULL,\n  `media_type` enum('image','video') NOT NULL,\n  `file_name` varchar(255) NOT NULL,\n  `mime_type` varchar(100) NOT NULL,\n  `file_size` int(10) unsigned NOT NULL,\n  `file_data` mediumblob NOT NULL,\n  `sort_order` int(11) NOT NULL DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_portfolio_media_parent` (`portfolio_id`,`sort_order`),\n  CONSTRAINT `fk_portfolio_media_parent` FOREIGN KEY (`portfolio_id`) REFERENCES `portfolio_items` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "portfolio_id",
+          "def": "bigint(20) NOT NULL"
+        },
+        {
+          "name": "media_type",
+          "def": "enum('image','video') NOT NULL"
+        },
+        {
+          "name": "file_name",
+          "def": "varchar(255) NOT NULL"
+        },
+        {
+          "name": "mime_type",
+          "def": "varchar(100) NOT NULL"
+        },
+        {
+          "name": "file_size",
+          "def": "int(10) unsigned NOT NULL"
+        },
+        {
+          "name": "file_data",
+          "def": "mediumblob NOT NULL"
+        },
+        {
+          "name": "sort_order",
+          "def": "int(11) NOT NULL DEFAULT 0"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        }
+      ]
+    },
     "projects": {
-      "create": "CREATE TABLE `projects` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(255) NOT NULL,\n  `description` text NOT NULL,\n  `status` enum('active','completed','pending','on_hold','cancelled') DEFAULT 'active',\n  `progress` int(11) DEFAULT 0 CHECK (`progress` >= 0 and `progress` <= 100),\n  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',\n  `start_date` date NOT NULL,\n  `expected_completion` date NOT NULL,\n  `actual_completion` date DEFAULT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `client_name` varchar(255) NOT NULL,\n  `client_contact` varchar(255) DEFAULT NULL,\n  `location` varchar(500) DEFAULT NULL,\n  `project_type` varchar(100) DEFAULT NULL,\n  `budget` decimal(12,2) DEFAULT 0.00,\n  `spent` decimal(12,2) DEFAULT 0.00,\n  `remaining` decimal(12,2) GENERATED ALWAYS AS (`budget` - `spent`) STORED,\n  `currency` varchar(3) DEFAULT 'USD',\n  `project_manager_id` bigint(20) DEFAULT NULL,\n  `team_lead_id` bigint(20) DEFAULT NULL,\n  `team_size` int(11) DEFAULT 0,\n  `main_photo_data` longblob DEFAULT NULL,\n  `main_photo_name` varchar(255) DEFAULT NULL,\n  `main_photo_type` varchar(100) DEFAULT NULL,\n  `main_photo_size` bigint(20) DEFAULT NULL,\n  `cover_photo_data` longblob DEFAULT NULL,\n  `cover_photo_name` varchar(255) DEFAULT NULL,\n  `cover_photo_type` varchar(100) DEFAULT NULL,\n  `cover_photo_size` bigint(20) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) NOT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_projects_status` (`status`),\n  KEY `idx_projects_client_id` (`client_id`),\n  KEY `idx_projects_client` (`client_name`),\n  KEY `idx_projects_manager` (`project_manager_id`),\n  KEY `idx_projects_dates` (`start_date`,`expected_completion`),\n  KEY `idx_projects_created` (`created_at`),\n  KEY `team_lead_id` (`team_lead_id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `projects_ibfk_2` FOREIGN KEY (`project_manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `projects_ibfk_3` FOREIGN KEY (`team_lead_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `projects_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `projects_ibfk_5` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `projects_ibfk_6` FOREIGN KEY (`deleted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `projects` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(255) NOT NULL,\n  `description` text NOT NULL,\n  `status` enum('active','completed','pending','on_hold','cancelled') DEFAULT 'active',\n  `progress` int(11) DEFAULT 0 CHECK (`progress` >= 0 and `progress` <= 100),\n  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',\n  `start_date` date NOT NULL,\n  `expected_completion` date NOT NULL,\n  `actual_completion` date DEFAULT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `client_name` varchar(255) NOT NULL,\n  `client_contact` varchar(255) DEFAULT NULL,\n  `location` varchar(500) DEFAULT NULL,\n  `project_type` varchar(100) DEFAULT NULL,\n  `budget` decimal(12,2) DEFAULT 0.00,\n  `spent` decimal(12,2) DEFAULT 0.00,\n  `remaining` decimal(12,2) GENERATED ALWAYS AS (`budget` - `spent`) STORED,\n  `currency` varchar(3) DEFAULT 'USD',\n  `project_manager_id` bigint(20) DEFAULT NULL,\n  `team_lead_id` bigint(20) DEFAULT NULL,\n  `team_size` int(11) DEFAULT 0,\n  `main_photo_data` longblob DEFAULT NULL,\n  `main_photo_name` varchar(255) DEFAULT NULL,\n  `main_photo_type` varchar(100) DEFAULT NULL,\n  `main_photo_size` bigint(20) DEFAULT NULL,\n  `cover_photo_data` longblob DEFAULT NULL,\n  `cover_photo_name` varchar(255) DEFAULT NULL,\n  `cover_photo_type` varchar(100) DEFAULT NULL,\n  `cover_photo_size` bigint(20) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) NOT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_projects_status` (`status`),\n  KEY `idx_projects_client_id` (`client_id`),\n  KEY `idx_projects_client` (`client_name`),\n  KEY `idx_projects_manager` (`project_manager_id`),\n  KEY `idx_projects_dates` (`start_date`,`expected_completion`),\n  KEY `idx_projects_created` (`created_at`),\n  KEY `team_lead_id` (`team_lead_id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `projects_ibfk_2` FOREIGN KEY (`project_manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `projects_ibfk_3` FOREIGN KEY (`team_lead_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `projects_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `projects_ibfk_5` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `projects_ibfk_6` FOREIGN KEY (`deleted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -3989,7 +4430,7 @@
       ]
     },
     "project_invoices": {
-      "create": "CREATE TABLE `project_invoices` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `project_id` bigint(20) NOT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `invoice_number` varchar(100) NOT NULL,\n  `client_name` varchar(255) NOT NULL,\n  `amount` decimal(12,2) NOT NULL,\n  `amount_kes` decimal(12,2) NOT NULL DEFAULT 0.00,\n  `currency_code` varchar(3) NOT NULL DEFAULT 'KES',\n  `exchange_rate` decimal(10,6) DEFAULT 1.000000,\n  `issue_date` date NOT NULL,\n  `due_date` date NOT NULL,\n  `status` enum('draft','sent','paid','overdue','cancelled') DEFAULT 'draft',\n  `description` text DEFAULT NULL,\n  `terms` text DEFAULT NULL,\n  `notes` text DEFAULT NULL,\n  `paid_amount` decimal(12,2) DEFAULT 0.00,\n  `paid_amount_kes` decimal(12,2) DEFAULT 0.00,\n  `paid_date` date DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) NOT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `invoice_number` (`invoice_number`),\n  KEY `idx_project_invoices_project` (`project_id`),\n  KEY `idx_project_invoices_client` (`client_id`),\n  KEY `idx_project_invoices_number` (`invoice_number`),\n  KEY `idx_project_invoices_status` (`status`),\n  KEY `idx_project_invoices_dates` (`issue_date`,`due_date`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  CONSTRAINT `project_invoices_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `project_invoices_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `project_invoices_ibfk_4` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `project_invoices_user_projects_fk` FOREIGN KEY (`project_id`) REFERENCES `user_projects` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `project_invoices` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `project_id` bigint(20) NOT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `invoice_number` varchar(100) NOT NULL,\n  `client_name` varchar(255) NOT NULL,\n  `amount` decimal(12,2) NOT NULL,\n  `amount_kes` decimal(12,2) NOT NULL DEFAULT 0.00,\n  `currency_code` varchar(3) NOT NULL DEFAULT 'KES',\n  `exchange_rate` decimal(10,6) DEFAULT 1.000000,\n  `issue_date` date NOT NULL,\n  `due_date` date NOT NULL,\n  `status` enum('draft','sent','paid','overdue','cancelled') DEFAULT 'draft',\n  `description` text DEFAULT NULL,\n  `terms` text DEFAULT NULL,\n  `notes` text DEFAULT NULL,\n  `paid_amount` decimal(12,2) DEFAULT 0.00,\n  `paid_amount_kes` decimal(12,2) DEFAULT 0.00,\n  `paid_date` date DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) NOT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `invoice_number` (`invoice_number`),\n  KEY `idx_project_invoices_project` (`project_id`),\n  KEY `idx_project_invoices_client` (`client_id`),\n  KEY `idx_project_invoices_number` (`invoice_number`),\n  KEY `idx_project_invoices_status` (`status`),\n  KEY `idx_project_invoices_dates` (`issue_date`,`due_date`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  CONSTRAINT `project_invoices_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `project_invoices_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `project_invoices_ibfk_4` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `project_invoices_user_projects_fk` FOREIGN KEY (`project_id`) REFERENCES `user_projects` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -4078,6 +4519,10 @@
         {
           "name": "updated_by",
           "def": "bigint(20)"
+        },
+        {
+          "name": "deleted_at",
+          "def": "timestamp"
         }
       ]
     },
@@ -4776,7 +5221,7 @@
       ]
     },
     "prop_type_enum": {
-      "create": "CREATE TABLE `prop_type_enum` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `name` varchar(100) NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `name` (`name`)\n) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `prop_type_enum` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `name` varchar(100) NOT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `name` (`name`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -5253,8 +5698,25 @@
         }
       ]
     },
+    "schema_migrations": {
+      "create": "CREATE TABLE `schema_migrations` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `migration_name` varchar(255) NOT NULL,\n  `applied_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `migration_name` (`migration_name`)\n) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "int(11) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "migration_name",
+          "def": "varchar(255) NOT NULL"
+        },
+        {
+          "name": "applied_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        }
+      ]
+    },
     "team_members": {
-      "create": "CREATE TABLE `team_members` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(255) NOT NULL,\n  `role` varchar(100) NOT NULL,\n  `department` varchar(100) DEFAULT NULL,\n  `description` text DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_team_members_name` (`name`),\n  KEY `idx_team_members_role` (`role`),\n  KEY `idx_team_members_active` (`is_active`)\n) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `team_members` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(255) NOT NULL,\n  `role` varchar(100) NOT NULL,\n  `department` varchar(100) DEFAULT NULL,\n  `description` text DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_team_members_name` (`name`),\n  KEY `idx_team_members_role` (`role`),\n  KEY `idx_team_members_active` (`is_active`)\n) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -5290,8 +5752,135 @@
         }
       ]
     },
+    "team_templates": {
+      "create": "CREATE TABLE `team_templates` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `name` varchar(255) NOT NULL,\n  `description` text DEFAULT NULL,\n  `project_id` bigint(20) DEFAULT NULL,\n  `team_leader_id` bigint(20) DEFAULT NULL,\n  `team_leader_image` longblob DEFAULT NULL,\n  `team_leader_image_mime` varchar(100) DEFAULT NULL,\n  `created_at` datetime DEFAULT current_timestamp(),\n  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_project_id` (`project_id`),\n  KEY `idx_team_leader_id` (`team_leader_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "name",
+          "def": "varchar(255) NOT NULL"
+        },
+        {
+          "name": "description",
+          "def": "text"
+        },
+        {
+          "name": "project_id",
+          "def": "bigint(20)"
+        },
+        {
+          "name": "team_leader_id",
+          "def": "bigint(20)"
+        },
+        {
+          "name": "team_leader_image",
+          "def": "longblob"
+        },
+        {
+          "name": "team_leader_image_mime",
+          "def": "varchar(100)"
+        },
+        {
+          "name": "created_at",
+          "def": "datetime DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_at",
+          "def": "datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    "team_template_members": {
+      "create": "CREATE TABLE `team_template_members` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `template_id` bigint(20) NOT NULL,\n  `team_member_id` bigint(20) NOT NULL,\n  `role` varchar(100) DEFAULT 'member',\n  `created_at` datetime DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  KEY `idx_template_id` (`template_id`),\n  KEY `idx_team_member_id` (`team_member_id`),\n  CONSTRAINT `team_template_members_ibfk_1` FOREIGN KEY (`template_id`) REFERENCES `team_templates` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `team_template_members_ibfk_2` FOREIGN KEY (`team_member_id`) REFERENCES `team_members` (`id`) ON DELETE CASCADE\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "template_id",
+          "def": "bigint(20) NOT NULL"
+        },
+        {
+          "name": "team_member_id",
+          "def": "bigint(20) NOT NULL"
+        },
+        {
+          "name": "role",
+          "def": "varchar(100) DEFAULT 'member'"
+        },
+        {
+          "name": "created_at",
+          "def": "datetime DEFAULT CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    "testimonials": {
+      "create": "CREATE TABLE `testimonials` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `quote` text NOT NULL,\n  `author_name` varchar(255) NOT NULL,\n  `author_role` varchar(255) DEFAULT NULL,\n  `author_company` varchar(255) DEFAULT NULL,\n  `rating` int(11) NOT NULL DEFAULT 5,\n  `status` enum('draft','published') NOT NULL DEFAULT 'draft',\n  `sort_order` int(11) NOT NULL DEFAULT 0,\n  `is_active` tinyint(1) NOT NULL DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `idx_posts_public` (`status`,`is_active`,`deleted_at`),\n  KEY `idx_posts_sort` (`sort_order`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "quote",
+          "def": "text NOT NULL"
+        },
+        {
+          "name": "author_name",
+          "def": "varchar(255) NOT NULL"
+        },
+        {
+          "name": "author_role",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "author_company",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "rating",
+          "def": "int(11) NOT NULL DEFAULT 5"
+        },
+        {
+          "name": "status",
+          "def": "enum('draft','published') NOT NULL DEFAULT 'draft'"
+        },
+        {
+          "name": "sort_order",
+          "def": "int(11) NOT NULL DEFAULT 0"
+        },
+        {
+          "name": "is_active",
+          "def": "tinyint(1) NOT NULL DEFAULT 1"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "created_by",
+          "def": "bigint(20)"
+        },
+        {
+          "name": "updated_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "updated_by",
+          "def": "bigint(20)"
+        },
+        {
+          "name": "deleted_at",
+          "def": "timestamp"
+        }
+      ]
+    },
     "users": {
-      "create": "CREATE TABLE `users` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) NOT NULL,\n  `email_verified` tinyint(1) DEFAULT 0,\n  `email_verification_token` varchar(255) DEFAULT NULL,\n  `email_verification_expires` datetime DEFAULT NULL,\n  `password_hash` varchar(255) DEFAULT NULL,\n  `password_reset_token` varchar(255) DEFAULT NULL,\n  `password_reset_expires` datetime DEFAULT NULL,\n  `first_name` varchar(100) NOT NULL,\n  `last_name` varchar(100) NOT NULL,\n  `display_name` varchar(200) DEFAULT NULL,\n  `phone_number` varchar(50) DEFAULT NULL,\n  `profile_photo_id` bigint(20) DEFAULT NULL,\n  `profile_photo_blob` longblob DEFAULT NULL,\n  `profile_photo_mime_type` varchar(100) DEFAULT NULL,\n  `profile_photo_file_name` varchar(255) DEFAULT NULL,\n  `job_id` bigint(20) DEFAULT NULL,\n  `primary_role` varchar(50) DEFAULT 'user',\n  `mission_briefing` text DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `last_login_at` timestamp NULL DEFAULT NULL,\n  `last_login_ip` varchar(45) DEFAULT NULL,\n  `timezone` varchar(50) DEFAULT 'UTC',\n  `locale` varchar(10) DEFAULT 'en-US',\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `whatsapp_verified` tinyint(1) DEFAULT 0,\n  `whatsapp_auth_key` varchar(10) DEFAULT NULL,\n  `last_active_at` timestamp NULL DEFAULT NULL,\n  `physical_address` text DEFAULT NULL,\n  `id_number` varchar(50) DEFAULT NULL,\n  `alt_phone` varchar(50) DEFAULT NULL,\n  `expertise` text DEFAULT NULL,\n  `private_notes` text DEFAULT NULL,\n  `emergency_contact_name` varchar(255) DEFAULT NULL,\n  `emergency_contact_phone` varchar(50) DEFAULT NULL,\n  `manual_projects` text DEFAULT NULL,\n  `department` varchar(100) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `email` (`email`),\n  KEY `profile_photo_id` (`profile_photo_id`),\n  KEY `job_id` (`job_id`),\n  KEY `idx_users_email` (`email`),\n  KEY `idx_users_active` (`is_active`,`deleted_at`),\n  KEY `idx_users_name` (`first_name`,`last_name`),\n  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`profile_photo_id`) REFERENCES `images` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `users_ibfk_2` FOREIGN KEY (`job_id`) REFERENCES `team_members` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `users` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `email` varchar(255) NOT NULL,\n  `email_verified` tinyint(1) DEFAULT 0,\n  `email_verification_token` varchar(255) DEFAULT NULL,\n  `email_verification_expires` datetime DEFAULT NULL,\n  `password_hash` varchar(255) DEFAULT NULL,\n  `password_reset_token` varchar(255) DEFAULT NULL,\n  `password_reset_expires` datetime DEFAULT NULL,\n  `first_name` varchar(100) NOT NULL,\n  `last_name` varchar(100) NOT NULL,\n  `display_name` varchar(200) DEFAULT NULL,\n  `phone_number` varchar(50) DEFAULT NULL,\n  `profile_photo_id` bigint(20) DEFAULT NULL,\n  `profile_photo_blob` longblob DEFAULT NULL,\n  `profile_photo_mime_type` varchar(100) DEFAULT NULL,\n  `profile_photo_file_name` varchar(255) DEFAULT NULL,\n  `job_id` bigint(20) DEFAULT NULL,\n  `primary_role` varchar(50) DEFAULT 'user',\n  `auth_token` varchar(255) DEFAULT NULL,\n  `mission_briefing` text DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `last_login_at` timestamp NULL DEFAULT NULL,\n  `last_login_ip` varchar(45) DEFAULT NULL,\n  `timezone` varchar(50) DEFAULT 'UTC',\n  `locale` varchar(10) DEFAULT 'en-US',\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `whatsapp_verified` tinyint(1) DEFAULT 0,\n  `whatsapp_auth_key` varchar(10) DEFAULT NULL,\n  `last_active_at` timestamp NULL DEFAULT NULL,\n  `physical_address` text DEFAULT NULL,\n  `id_number` varchar(50) DEFAULT NULL,\n  `alt_phone` varchar(50) DEFAULT NULL,\n  `expertise` text DEFAULT NULL,\n  `private_notes` text DEFAULT NULL,\n  `emergency_contact_name` varchar(255) DEFAULT NULL,\n  `emergency_contact_phone` varchar(50) DEFAULT NULL,\n  `manual_projects` text DEFAULT NULL,\n  `department` varchar(100) DEFAULT NULL,\n  `fcm_token` varchar(255) DEFAULT NULL,\n  `device_info` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`device_info`)),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `email` (`email`),\n  KEY `profile_photo_id` (`profile_photo_id`),\n  KEY `job_id` (`job_id`),\n  KEY `idx_users_email` (`email`),\n  KEY `idx_users_active` (`is_active`,`deleted_at`),\n  KEY `idx_users_name` (`first_name`,`last_name`),\n  KEY `idx_users_auth_token` (`auth_token`),\n  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`profile_photo_id`) REFERENCES `images` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `users_ibfk_2` FOREIGN KEY (`job_id`) REFERENCES `team_members` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=72 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -5366,8 +5955,8 @@
           "def": "varchar(50) DEFAULT 'user'"
         },
         {
-          "name": "role",
-          "def": "varchar(50) DEFAULT 'user'"
+          "name": "auth_token",
+          "def": "varchar(255)"
         },
         {
           "name": "mission_briefing",
@@ -5464,11 +6053,39 @@
         {
           "name": "department",
           "def": "varchar(100)"
+        },
+        {
+          "name": "fcm_token",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "device_info",
+          "def": "longtext"
+        },
+        {
+          "name": "role",
+          "def": "varchar(50)"
+        },
+        {
+          "name": "whatsapp_code_hash",
+          "def": "VARCHAR(64) DEFAULT NULL"
+        },
+        {
+          "name": "whatsapp_code_expires",
+          "def": "DATETIME DEFAULT NULL"
+        },
+        {
+          "name": "whatsapp_code_attempts",
+          "def": "TINYINT UNSIGNED NOT NULL DEFAULT 0"
+        },
+        {
+          "name": "whatsapp_code_sent_at",
+          "def": "DATETIME DEFAULT NULL"
         }
       ]
     },
     "user_feedback": {
-      "create": "CREATE TABLE `user_feedback` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `project_id` bigint(20) DEFAULT NULL,\n  `user_id` bigint(20) DEFAULT NULL,\n  `feedback_type` enum('project_review','service_feedback','complaint','suggestion','testimonial','bug_report') DEFAULT 'project_review',\n  `author` enum('client','admin') NOT NULL DEFAULT 'admin',\n  `rating` int(11) DEFAULT NULL CHECK (`rating` >= 1 and `rating` <= 5),\n  `title` varchar(255) DEFAULT NULL,\n  `message` text NOT NULL,\n  `status` enum('new','reviewed','responded','resolved','closed') DEFAULT 'new',\n  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',\n  `admin_response` text DEFAULT NULL,\n  `responded_by` bigint(20) DEFAULT NULL,\n  `responded_at` timestamp NULL DEFAULT NULL,\n  `contact_name` varchar(255) DEFAULT NULL,\n  `contact_email` varchar(255) DEFAULT NULL,\n  `contact_phone` varchar(20) DEFAULT NULL,\n  `source` enum('website','email','phone','in_person','social_media') DEFAULT 'website',\n  `ip_address` varchar(45) DEFAULT NULL,\n  `user_agent` text DEFAULT NULL,\n  `attachment_url` varchar(512) DEFAULT NULL,\n  `attachment_type` varchar(100) DEFAULT NULL,\n  `internal_notes` text DEFAULT NULL,\n  `assigned_to` bigint(20) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  KEY `responded_by` (`responded_by`),\n  KEY `assigned_to` (`assigned_to`),\n  KEY `idx_feedback_user` (`user_id`),\n  KEY `idx_feedback_type` (`feedback_type`),\n  KEY `idx_feedback_status` (`status`),\n  KEY `idx_feedback_priority` (`priority`),\n  KEY `idx_feedback_rating` (`rating`),\n  KEY `idx_feedback_created` (`created_at`),\n  KEY `idx_feedback_author` (`author`),\n  CONSTRAINT `user_feedback_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_feedback_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_feedback_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_feedback_ibfk_4` FOREIGN KEY (`deleted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_feedback_ibfk_5` FOREIGN KEY (`responded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_feedback_ibfk_6` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `user_feedback` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `project_id` bigint(20) DEFAULT NULL,\n  `user_id` bigint(20) DEFAULT NULL,\n  `feedback_type` enum('project_review','service_feedback','complaint','suggestion','testimonial','bug_report') DEFAULT 'project_review',\n  `author` enum('client','admin') NOT NULL DEFAULT 'admin',\n  `rating` int(11) DEFAULT NULL CHECK (`rating` >= 1 and `rating` <= 5),\n  `title` varchar(255) DEFAULT NULL,\n  `message` text NOT NULL,\n  `status` enum('new','reviewed','responded','resolved','closed') DEFAULT 'new',\n  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',\n  `admin_response` text DEFAULT NULL,\n  `responded_by` bigint(20) DEFAULT NULL,\n  `responded_at` timestamp NULL DEFAULT NULL,\n  `contact_name` varchar(255) DEFAULT NULL,\n  `contact_email` varchar(255) DEFAULT NULL,\n  `contact_phone` varchar(20) DEFAULT NULL,\n  `source` enum('website','email','phone','in_person','social_media') DEFAULT 'website',\n  `ip_address` varchar(45) DEFAULT NULL,\n  `user_agent` text DEFAULT NULL,\n  `attachment_url` varchar(512) DEFAULT NULL,\n  `attachment_type` varchar(100) DEFAULT NULL,\n  `internal_notes` text DEFAULT NULL,\n  `assigned_to` bigint(20) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `deleted_by` (`deleted_by`),\n  KEY `responded_by` (`responded_by`),\n  KEY `assigned_to` (`assigned_to`),\n  KEY `idx_feedback_user` (`user_id`),\n  KEY `idx_feedback_type` (`feedback_type`),\n  KEY `idx_feedback_status` (`status`),\n  KEY `idx_feedback_priority` (`priority`),\n  KEY `idx_feedback_rating` (`rating`),\n  KEY `idx_feedback_created` (`created_at`),\n  KEY `idx_feedback_author` (`author`),\n  CONSTRAINT `user_feedback_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_feedback_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_feedback_ibfk_3` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_feedback_ibfk_4` FOREIGN KEY (`deleted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_feedback_ibfk_5` FOREIGN KEY (`responded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_feedback_ibfk_6` FOREIGN KEY (`assigned_to`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -5589,7 +6206,7 @@
       ]
     },
     "user_projects": {
-      "create": "CREATE TABLE `user_projects` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `user_id` bigint(20) NOT NULL,\n  `project_name` varchar(255) NOT NULL,\n  `project_description` longtext DEFAULT NULL,\n  `project_type` enum('consulting','development','design','marketing','management','other') DEFAULT 'consulting',\n  `status` enum('planning','in_progress','completed','on_hold','cancelled') DEFAULT 'planning',\n  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',\n  `start_date` date DEFAULT NULL,\n  `end_date` date DEFAULT NULL,\n  `estimated_budget` decimal(12,2) DEFAULT NULL,\n  `actual_budget` decimal(12,2) DEFAULT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `client_name` varchar(255) DEFAULT NULL,\n  `client_id_number` varchar(50) DEFAULT NULL,\n  `client_email` varchar(255) DEFAULT NULL,\n  `client_phone` varchar(50) DEFAULT NULL,\n  `project_manager_id` bigint(20) DEFAULT NULL,\n  `team_members` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`team_members`)),\n  `deliverables` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`deliverables`)),\n  `milestones` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`milestones`)),\n  `documents` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`documents`)),\n  `progress_percentage` int(11) DEFAULT 0,\n  `notes` text DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `telemetry_sync_active` tinyint(1) DEFAULT 1,\n  `last_telemetry_sync` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `project_manager_id` (`project_manager_id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `idx_user_projects_user` (`user_id`,`status`),\n  KEY `idx_user_projects_client_id` (`client_id`),\n  KEY `idx_user_projects_client` (`client_name`),\n  KEY `idx_user_projects_status` (`status`,`priority`),\n  KEY `idx_user_projects_dates` (`start_date`,`end_date`),\n  KEY `idx_user_projects_active` (`is_active`,`deleted_at`),\n  CONSTRAINT `user_projects_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `user_projects_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_projects_ibfk_3` FOREIGN KEY (`project_manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_projects_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_projects_ibfk_5` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `user_projects` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `user_id` bigint(20) NOT NULL,\n  `project_name` varchar(255) NOT NULL,\n  `project_description` longtext DEFAULT NULL,\n  `project_type` enum('consulting','development','design','marketing','management','other') DEFAULT 'consulting',\n  `status` enum('planning','in_progress','completed','on_hold','cancelled') DEFAULT 'planning',\n  `priority` enum('low','medium','high','urgent') DEFAULT 'medium',\n  `start_date` date DEFAULT NULL,\n  `end_date` date DEFAULT NULL,\n  `estimated_budget` decimal(12,2) DEFAULT NULL,\n  `actual_budget` decimal(12,2) DEFAULT NULL,\n  `client_id` bigint(20) DEFAULT NULL,\n  `client_name` varchar(255) DEFAULT NULL,\n  `client_id_number` varchar(50) DEFAULT NULL,\n  `client_email` varchar(255) DEFAULT NULL,\n  `client_phone` varchar(50) DEFAULT NULL,\n  `project_manager_id` bigint(20) DEFAULT NULL,\n  `crew_template_id` bigint(20) DEFAULT NULL,\n  `team_members` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`team_members`)),\n  `deliverables` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`deliverables`)),\n  `milestones` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`milestones`)),\n  `documents` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`documents`)),\n  `progress_percentage` int(11) DEFAULT 0,\n  `notes` text DEFAULT NULL,\n  `is_active` tinyint(1) DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `created_by` bigint(20) DEFAULT NULL,\n  `updated_by` bigint(20) DEFAULT NULL,\n  `deleted_at` timestamp NULL DEFAULT NULL,\n  `deleted_by` bigint(20) DEFAULT NULL,\n  `telemetry_sync_active` tinyint(1) DEFAULT 1,\n  `last_telemetry_sync` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  KEY `project_manager_id` (`project_manager_id`),\n  KEY `created_by` (`created_by`),\n  KEY `updated_by` (`updated_by`),\n  KEY `idx_user_projects_user` (`user_id`,`status`),\n  KEY `idx_user_projects_client_id` (`client_id`),\n  KEY `idx_user_projects_client` (`client_name`),\n  KEY `idx_user_projects_status` (`status`,`priority`),\n  KEY `idx_user_projects_dates` (`start_date`,`end_date`),\n  KEY `idx_user_projects_active` (`is_active`,`deleted_at`),\n  CONSTRAINT `user_projects_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `user_projects_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_projects_ibfk_3` FOREIGN KEY (`project_manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_projects_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,\n  CONSTRAINT `user_projects_ibfk_5` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -5660,6 +6277,10 @@
           "def": "bigint(20)"
         },
         {
+          "name": "crew_template_id",
+          "def": "bigint(20)"
+        },
+        {
           "name": "team_members",
           "def": "longtext"
         },
@@ -5722,7 +6343,7 @@
       ]
     },
     "user_roles": {
-      "create": "CREATE TABLE `user_roles` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `user_id` bigint(20) NOT NULL,\n  `role_id` bigint(20) NOT NULL,\n  `assigned_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `assigned_by` bigint(20) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `unique_user_role` (`user_id`,`role_id`),\n  KEY `assigned_by` (`assigned_by`),\n  KEY `idx_user_roles_user` (`user_id`),\n  KEY `idx_user_roles_role` (`role_id`),\n  CONSTRAINT `user_roles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `user_roles_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `user_roles_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `user_roles` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `user_id` bigint(20) NOT NULL,\n  `role_id` bigint(20) NOT NULL,\n  `assigned_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `assigned_by` bigint(20) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `unique_user_role` (`user_id`,`role_id`),\n  KEY `assigned_by` (`assigned_by`),\n  KEY `idx_user_roles_user` (`user_id`),\n  KEY `idx_user_roles_role` (`role_id`),\n  CONSTRAINT `user_roles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `user_roles_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,\n  CONSTRAINT `user_roles_ibfk_3` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
@@ -5747,6 +6368,39 @@
         {
           "name": "created_at",
           "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        }
+      ]
+    },
+    "user_sessions": {
+      "create": "CREATE TABLE `user_sessions` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `user_id` bigint(20) NOT NULL,\n  `token` varchar(128) NOT NULL,\n  `ip` varchar(45) DEFAULT NULL,\n  `user_agent` varchar(255) DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),\n  `revoked_at` timestamp NULL DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uniq_user_sessions_token` (`token`),\n  KEY `idx_user_sessions_user` (`user_id`,`revoked_at`)\n) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "columns": [
+        {
+          "name": "id",
+          "def": "bigint(20) NOT NULL AUTO_INCREMENT"
+        },
+        {
+          "name": "user_id",
+          "def": "bigint(20) NOT NULL"
+        },
+        {
+          "name": "token",
+          "def": "varchar(128) NOT NULL"
+        },
+        {
+          "name": "ip",
+          "def": "varchar(45)"
+        },
+        {
+          "name": "user_agent",
+          "def": "varchar(255)"
+        },
+        {
+          "name": "created_at",
+          "def": "timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "revoked_at",
+          "def": "timestamp"
         }
       ]
     },
@@ -5840,7 +6494,7 @@
       ]
     },
     "website_content": {
-      "create": "CREATE TABLE `website_content` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `content_key` varchar(100) NOT NULL,\n  `content_value` longtext DEFAULT NULL,\n  `content_type` enum('text','html','json','image_url') DEFAULT 'text',\n  `section` varchar(100) DEFAULT NULL,\n  `description` text DEFAULT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `content_key` (`content_key`),\n  KEY `updated_by` (`updated_by`),\n  CONSTRAINT `website_content_ibfk_1` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+      "create": "CREATE TABLE `website_content` (\n  `id` bigint(20) NOT NULL AUTO_INCREMENT,\n  `content_key` varchar(100) NOT NULL,\n  `content_value` longtext DEFAULT NULL,\n  `content_type` enum('text','html','json','image_url') DEFAULT 'text',\n  `section` varchar(100) DEFAULT NULL,\n  `description` text DEFAULT NULL,\n  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),\n  `updated_by` bigint(20) DEFAULT NULL,\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `content_key` (`content_key`),\n  KEY `updated_by` (`updated_by`),\n  CONSTRAINT `website_content_ibfk_1` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
       "columns": [
         {
           "name": "id",
