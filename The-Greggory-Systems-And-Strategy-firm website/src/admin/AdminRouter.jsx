@@ -19,7 +19,6 @@ import { Communication } from './pages/Communication';
 import { CreateInvoice } from './pages/CreateInvoice';
 import { ManualEntry } from './pages/ManualEntry';
 import { ProfitLossReport } from './pages/ProfitLossReport';
-import { InvoicePreview } from './pages/InvoicePreview';
 import { InvoicePdfPreview } from './pages/InvoicePdfPreview';
 import { UserForm } from './pages/UserForm';
 import { UserDetail } from './pages/UserDetail';
@@ -195,7 +194,7 @@ export function AdminRouter() {
       <Route path="billing/create" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><CreateInvoice /></AdminRoute>} />
       <Route path="billing/entry" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><ManualEntry /></AdminRoute>} />
       <Route path="billing/pl-report" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><ProfitLossReport /></AdminRoute>} />
-      <Route path="billing/preview/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><InvoicePreview /></AdminRoute>} />
+      <Route path="billing/preview/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><InvoicePdfPreview /></AdminRoute>} />
       <Route path="billing/pdf/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><InvoicePdfPreview /></AdminRoute>} />
       <Route path="users/manage" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><UserForm /></AdminRoute>} />
       <Route path="users/manage/:id" element={<AdminRoute user={user} isAuthenticated={isAuthenticated}><UserForm /></AdminRoute>} />

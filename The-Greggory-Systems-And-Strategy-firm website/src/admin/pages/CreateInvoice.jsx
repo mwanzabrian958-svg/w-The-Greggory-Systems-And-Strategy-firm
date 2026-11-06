@@ -248,12 +248,6 @@ export function CreateInvoice() {
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-end pt-1">
-                  <div className="text-right">
-                    <p className="text-[6px] font-black text-slate-500 uppercase tracking-widest">Subtotal</p>
-                    <p className="text-sm font-black text-emerald-400">{formatKSH(itemsSubtotal)}</p>
-                  </div>
-                </div>
               </section>
             </div>
 

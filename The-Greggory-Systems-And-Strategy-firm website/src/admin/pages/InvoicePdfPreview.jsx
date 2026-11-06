@@ -1,14 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Download, Send, X } from "lucide-react";
+import { Download, MailCheck, Printer, Send, X } from "lucide-react";
 import { apiCall, getPdfUrl } from "../../services/api";
 import { PageLoader } from "../../components/Loading";
 
 export function InvoicePdfPreview() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const pdfFrame = useRef(null);
   const [invoice, setInvoice] = useState(null);
   const [error, setError] = useState("");
+  const [sendMessage, setSendMessage] = useState(null);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -27,6 +30,30 @@ export function InvoicePdfPreview() {
 
   const pdfUrl = getPdfUrl(`/api/documents/invoices/${id}/pdf?inline=true`);
   const downloadUrl = getPdfUrl(`/api/documents/invoices/${id}/pdf`);
+
+  const handleSendInvoice = async () => {
+    if (!invoice) return;
+    if (!invoice.client_email) {
+      setSendMessage({ ok: false, text: "This invoice has no client email address." });
+      return;
+    }
+    if (!window.confirm(`Send invoice ${invoice.invoice_number || `INV-${invoice.id}`} to ${invoice.client_email}?`)) return;
+
+    setSending(true);
+    setSendMessage(null);
+    try {
+      const result = await apiCall(`/invoices/${invoice.id}/send`, {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
+      setInvoice((current) => ({ ...current, email_sent: 1, status: "sent" }));
+      setSendMessage({ ok: true, text: result.message || "Invoice sent to client." });
+    } catch (sendError) {
+      setSendMessage({ ok: false, text: sendError.message || "Could not send invoice." });
+    } finally {
+      setSending(false);
+    }
+  };
 
   if (!invoice && !error) {
     return <PageLoader label="Generating invoice PDF…" tone="teal" className="bg-[#020617]" />;
@@ -48,10 +75,19 @@ export function InvoicePdfPreview() {
             <>
               <button
                 type="button"
-                onClick={() => navigate(`/admin/billing/preview/${id}`)}
+                onClick={handleSendInvoice}
+                disabled={sending}
                 className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/10"
               >
-                <Send size={14} /> Email invoice
+                {sending ? <Send size={14} className="animate-pulse" /> : invoice.email_sent ? <MailCheck size={14} /> : <Send size={14} />}
+                {sending ? "Sending…" : invoice.email_sent ? "Sent" : "Email invoice"}
+              </button>
+              <button
+                type="button"
+                onClick={() => pdfFrame.current?.contentWindow?.print()}
+                className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/10"
+              >
+                <Printer size={14} /> Print
               </button>
               <a
                 href={downloadUrl}
@@ -79,11 +115,20 @@ export function InvoicePdfPreview() {
         </div>
       ) : (
         <iframe
+          ref={pdfFrame}
           key={id}
           title={`Invoice PDF ${invoice?.invoice_number || id}`}
           src={pdfUrl}
           className="min-h-0 flex-1 border-0 bg-slate-700"
         />
+      )}
+      {sendMessage && (
+        <div
+          role={sendMessage.ok ? "status" : "alert"}
+          className={`fixed bottom-4 right-4 z-[520] max-w-lg rounded-lg border px-4 py-3 text-sm shadow-lg ${sendMessage.ok ? "border-emerald-500/30 bg-emerald-950 text-emerald-100" : "border-rose-500/30 bg-rose-950 text-rose-100"}`}
+        >
+          {sendMessage.text}
+        </div>
       )}
     </div>
   );

@@ -382,14 +382,7 @@ function generateInvoicePDFContent(document) {
     });
     const summaryY = y + 8;
     const footerBandY = PAGE_H - 58;
-    const paymentHeight = 28 + 88 + 15;
-    const summaryHeight = Math.max(certTextHeight + 42, ratePct > 0 ? 94 : 76);
-    const singlePageBottom = footerBandY - 110;
-    if (summaryY + summaryHeight + paymentHeight + 52 > singlePageBottom) {
-      y = Math.max(70, singlePageBottom - (summaryHeight + paymentHeight + 24));
-    } else {
-      y = summaryY;
-    }
+    y = summaryY;
 
     const detailY = y;
     doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(8);
@@ -423,9 +416,6 @@ function generateInvoicePDFContent(document) {
     });
     y = detailY + Math.max(certTextHeight + 30, totalY - detailY + 48) + 12;
 
-    if (y + paymentHeight + 60 > footerBandY - 8) {
-      y = Math.max(64, footerBandY - paymentHeight - 68);
-    }
     doc.fillColor(TEAL).font("Helvetica-Bold").fontSize(8);
     doc.text("PAYMENT OPTIONS", M, y);
     doc.fillColor(SLATE).font("Helvetica").fontSize(7);
@@ -477,10 +467,6 @@ function generateInvoicePDFContent(document) {
     ]);
     y += cardHeight + 12;
 
-    const signatureSpace = 42;
-    if (y + signatureSpace > footerBandY - 8) {
-      y = Math.max(60, footerBandY - signatureSpace - 26);
-    }
     doc.fillColor(SLATE).font("Helvetica").fontSize(8);
     doc.text(completed ? "Completed & Recorded by," : "Issued & Recorded by,", M, y);
     doc.fillColor(INK).font("Helvetica-Bold").fontSize(9);
@@ -787,6 +773,44 @@ function generatePDFContent(type, document) {
  * every mail client; the text part alone would be ignored).
  */
 function buildDocumentEmailHtml(type, document, message) {
+  const normalizedType = String(type).toLowerCase();
+  if (normalizedType.indexOf("invoice") === 0 || normalizedType === "invoices") {
+    const ref = document.invoice_number || `INV-${document.id || ""}`;
+    const items = parseDocumentItems(document);
+    const { total } = documentTotals(document, items);
+    const currency = document.currency || "KES";
+    const personalNote =
+      message && String(message).trim()
+        ? `<p style="margin:18px 0 0;padding:14px 16px;border-left:3px solid #14b8a6;background:#f0fdfa;color:#334155;white-space:pre-line;">${escHtml(String(message).trim())}</p>`
+        : "";
+    return `<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:24px 12px;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+    <div style="padding:22px 28px;background:#0f172a;color:#fff;border-bottom:3px solid #14b8a6;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:#99f6e4;">THE GREGGORY SYSTEMS</div>
+      <div style="font-size:18px;font-weight:800;margin-top:3px;">AND STRATEGY FIRM</div>
+    </div>
+    <div style="padding:26px 28px;">
+      <h1 style="margin:0 0 12px;font-size:20px;">Invoice ${escHtml(ref)}</h1>
+      <p style="margin:0;color:#475569;line-height:1.6;">Dear ${escHtml(document.client_name || "Client")}, please find your invoice attached as a PDF.</p>
+      <div style="margin-top:20px;padding:14px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;">
+        <div style="font-size:11px;color:#64748b;">AMOUNT DUE</div>
+        <div style="margin-top:4px;font-size:22px;font-weight:800;color:#0d9488;">${escHtml(fmtMoney(total, currency))}</div>
+        ${document.due_date ? `<div style="margin-top:8px;font-size:12px;color:#475569;">Due date: ${escHtml(formatInvoiceDate(document.due_date))}</div>` : ""}
+      </div>
+      ${personalNote}
+      <p style="margin:22px 0 0;font-size:12px;color:#64748b;">The attached PDF contains the complete invoice and payment details.</p>
+    </div>
+    <div style="padding:14px 28px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:11px;color:#64748b;">
+      ${escHtml(FIRM_EMAIL)} &nbsp;·&nbsp; ${escHtml(FIRM_PHONE)} &nbsp;·&nbsp; ${escHtml(FIRM_ADDRESS)}
+    </div>
+  </div>
+</body>
+</html>`;
+  }
+
   const isQuote = String(type).toLowerCase().indexOf("quote") === 0;
   const isReceipt = String(type).toLowerCase().indexOf("receipt") === 0;
   const docTitle = isReceipt ? "RECEIPT" : isQuote ? "QUOTE" : "INVOICE";
