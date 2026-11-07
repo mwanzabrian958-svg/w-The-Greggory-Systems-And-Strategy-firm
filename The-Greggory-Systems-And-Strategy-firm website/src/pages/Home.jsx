@@ -394,8 +394,10 @@ const Home = () => {
                 <video
                   ref={videoRef}
                   className="absolute inset-0 h-full w-full object-cover"
+                  autoPlay
                   controls
                   loop
+                  muted
                   playsInline
                   poster="/video-placeholder.jpg"
                   onTimeUpdate={handleVideoTimeUpdate}
