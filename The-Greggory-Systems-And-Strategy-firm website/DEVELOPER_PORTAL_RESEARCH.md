@@ -1044,7 +1044,7 @@ Muted Text: #64748b (Slate 500)
 - Application logs (Node.js, Python, Java, etc.)
 - System logs (Windows Event Log, Linux syslog)
 - Web server logs (Apache, Nginx, IIS)
-- Database logs (MySQL, PostgreSQL, MongoDB)
+- Database logs (MySQL, PostgreSQL)
 - Cloud service logs (AWS CloudTrail, Azure Monitor)
 - Security logs (firewall, IDS/IPS)
 - Network device logs (routers, switches)
@@ -1198,7 +1198,7 @@ Muted Text: #64748b (Slate 500)
 - Restore workflow automation
 
 **Backup Targets**:
-- Database backups (MySQL, PostgreSQL, MongoDB)
+- Database backups (MySQL, PostgreSQL)
 - File system backups
 - Application configuration backups
 - Cloud resource backups
@@ -1701,7 +1701,7 @@ Muted Text: #64748b (Slate 500)
 
 **Database Support**:
 - Relational: MySQL, PostgreSQL, SQL Server, Oracle
-- NoSQL: MongoDB, Cassandra, DynamoDB
+- NoSQL: Cassandra, DynamoDB
 - Time-series: InfluxDB, TimescaleDB
 - Graph: Neo4j, Amazon Neptune
 - Search: Elasticsearch, Solr

@@ -218,6 +218,5 @@ services:
       - key: FIREBASE_SERVICE_ACCOUNT
         sync: false
 
-      # NOTE: MONGODB_URI and REDIS_URL are intentionally omitted — the server
-      # skips MongoDB when unset and falls back to in-memory rate-limit/session
-      # storage without Redis. Add them later only if you actually need them.
+      # REDIS_URL is intentionally omitted — the server falls back to
+      # in-memory rate-limit/session storage without Redis.

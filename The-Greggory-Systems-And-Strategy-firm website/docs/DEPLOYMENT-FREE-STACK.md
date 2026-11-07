@@ -13,7 +13,7 @@ no API-URL env var to get wrong.
 | Backend + built frontend (one service) | **Render** (`w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com`) | 750 instance-hours/month |
 | MySQL database | **Aiven for MySQL** (`free-1-5gb`) | 5 GB storage, always on |
 | Keep-alive ping (no cold starts) | **cron-job.org** or **UptimeRobot** | Free |
-| MongoDB / Redis | *Skipped* — server skips Mongo when `MONGODB_URI` is unset and falls back to memory without Redis | — |
+| Redis | *Skipped* — server falls back to in-memory rate limiting and sessions | — |
 
 > Your SQL dump is only ~0.1 MB, so the free 5 GB Aiven database is 50,000×
 > bigger than you need today.
@@ -122,8 +122,8 @@ want a custom-looking free domain:
    stays git-ignored as you configured).
 3. **Cloud DB needs TLS** — the old pool had no SSL option, so any managed MySQL
    rejected the connection. → **Fixed:** `DB_SSL=true` enables TLS.
-4. **Hidden server bugs** — a MongoDB import typo that crashed boot, and a 404
-   handler registered *before* some API routes (making `/api/user-projects` and
+4. **Hidden server bugs** — a 404 handler registered *before* some API routes
+   (making `/api/user-projects` and
    the task APIs unreachable even locally). → **Both fixed** in `server.js`.
 5. **Production-only traps** (invisible in local dev because Vite serves the
    frontend there): behind Render's proxy all visitors shared one rate-limit

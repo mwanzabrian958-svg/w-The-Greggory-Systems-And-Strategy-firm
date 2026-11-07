@@ -16,12 +16,10 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const mysql = require("mysql2/promise");
-const mongoose = require("mongoose");
 const jwt = require("jsonwebtoken");
 const { createClient } = require('redis');
 const PDFDocument = require('pdfkit');
 const { OAuth2Client } = require('google-auth-library');
-const { connectMongoDB } = require("./server/config/mongodb");
 // admin_settings has no CREATE TABLE in the schema (see the module doc) yet is
 // read/written by five routes below. Guaranteeing it here keeps every one of
 // those call sites to a single `await` instead of repeating the DDL.
@@ -29,12 +27,6 @@ const { ensureAdminSettingsTable } = require("./backend/utils/ensureAdminSetting
 const { verifyActiveAdminSession } = require("./backend/utils/adminSessionState");
 const { ADMIN_SESSION_COOKIE, getCookie } = require("./backend/utils/sessionCookies");
 const { getActiveClientAccount, getClientDisplayName } = require("./backend/utils/clientAssignment");
-const models = require("./server/models");
-const {
-  User, Project, Document, Message, WebsiteContent,
-  Finance, Company, BlogArticle, CaseStudy, Video,
-  ContactForm, Transaction, ActivityLog
-} = models;
 const multer = require("multer");
 const crypto = require("crypto");
 
@@ -1319,25 +1311,6 @@ app.get("/api/test-db", async (req, res) => {
       hint: missingEnv
         ? "A cloud database setting is missing. Set DATABASE_URL (Aiven) or DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME and DB_SSL=true in the service environment, then redeploy."
         : "All DB_* env vars are present; check the server logs for the driver error code (timeout / TLS / auth).",
-    });
-  }
-});
-
-// Test MongoDB connection
-app.get("/api/test-mongodb", async (req, res) => {
-  try {
-    const state = mongoose.connection.readyState;
-    const states = ["disconnected", "connected", "connecting", "disconnecting"];
-    res.json({
-      success: true,
-      message: `MongoDB Status: ${states[state]}`,
-      connectionState: state
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "MongoDB connection test failed",
-      error: "Internal server error"
     });
   }
 });
@@ -6686,28 +6659,6 @@ app.get("/api/website-content", async (req, res) => {
 app.get("/api/blog-articles", async (req, res) => {
   try {
     const { limit = 20, offset = 0 } = req.query;
-
-    // 1. Try MongoDB
-    if (mongoose.connection.readyState === 1) {
-      const articles = await BlogArticle.find({ is_published: true })
-        .sort({ created_at: -1 })
-        .limit(parseInt(limit))
-        .skip(parseInt(offset));
-
-      if (articles.length > 0) {
-        return res.json({
-          success: true,
-          articles: articles.map(a => ({
-            ...a.toObject(),
-            has_photo: !!a.featured_image?.data,
-            image_url: a.featured_image?.data ? `/api/blog-articles/photo/${a._id}?source=mongodb` : a.featured_image?.url
-          })),
-          source: 'mongodb'
-        });
-      }
-    }
-
-    // 2. Fallback to MySQL
     const [articles] = await mainDb.query(
       "SELECT id, title, excerpt, content, author, read_time, category, image_url, icon_class, is_published, published_date, created_at, image_blob IS NOT NULL as has_photo FROM blog_articles WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT ? OFFSET ?",
       [parseInt(limit), parseInt(offset)],
@@ -6717,7 +6668,7 @@ app.get("/api/blog-articles", async (req, res) => {
       success: true,
       articles: articles.map(a => ({
         ...a,
-        image_url: a.has_photo ? `/api/blog-articles/photo/${a.id}?source=mysql` : a.image_url
+        image_url: a.has_photo ? `/api/blog-articles/photo/${a.id}` : a.image_url
       })),
       source: 'mysql'
     });
@@ -6731,15 +6682,6 @@ app.get("/api/blog-articles", async (req, res) => {
 app.get("/api/blog-articles/photo/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { source = 'mysql' } = req.query;
-
-    if (source === 'mongodb' && mongoose.connection.readyState === 1) {
-      const article = await BlogArticle.findById(id);
-      if (article && article.featured_image?.data) {
-        res.set("Content-Type", article.featured_image.contentType || "image/jpeg");
-        return res.send(article.featured_image.data);
-      }
-    }
 
     const [articles] = await mainDb.query(
       "SELECT image_blob, image_mime_type FROM blog_articles WHERE id = ? AND image_blob IS NOT NULL",
@@ -6779,15 +6721,6 @@ app.post("/api/blog-articles", async (req, res) => {
       [article.title, article.excerpt, article.content, article.author, article.read_time, article.category, article.image_url, imageBlob, imageMimeType, article.is_published],
     );
 
-    // Sync to MongoDB
-    if (mongoose.connection.readyState === 1) {
-      const mongoArticle = new BlogArticle({
-        ...article,
-        sql_id: result.insertId
-      });
-      await mongoArticle.save();
-    }
-
     res.json({ success: true, articleId: result.insertId });
   } catch (error) {
     console.error("Error creating blog article:", error);
@@ -6801,15 +6734,6 @@ app.delete("/api/blog-articles/:id", async (req, res) => {
 
     // Soft delete in MySQL
     await mainDb.query("UPDATE blog_articles SET deleted_at = NOW() WHERE id = ?", [id]);
-
-    // Delete from MongoDB if exists
-    if (mongoose.connection.readyState === 1) {
-      await BlogArticle.deleteOne({ sql_id: id });
-      // Also try by MongoDB ID just in case
-      if (mongoose.Types.ObjectId.isValid(id)) {
-        await BlogArticle.deleteOne({ _id: id });
-      }
-    }
 
     res.json({ success: true, message: "Blog article deleted successfully" });
   } catch (error) {
@@ -8964,18 +8888,6 @@ app.listen(PORT, "0.0.0.0", async () => {
   }
 
   console.log(`Server running on port ${PORT}`);
-
-  // Connect to MongoDB Atlas (optional — a Mongo outage must never take the
-  // whole API down with it)
-  if (process.env.MONGODB_URI) {
-    try {
-      await connectMongoDB();
-    } catch (mongoErr) {
-      console.warn("[MONGODB] Connection failed, continuing without it:", mongoErr.message);
-    }
-  } else {
-    console.log("MONGODB_URI not found in .env, skipping MongoDB connection.");
-  }
 
   dbEndpoints().forEach((cfg, i) => {
     const { label, ...opts } = cfg;

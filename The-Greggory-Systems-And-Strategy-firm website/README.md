@@ -25,7 +25,6 @@ The digital interface of **The Greggory Systems And Strategy Firm**, a global co
 - Node.js (v16 or higher)
 - Aiven MySQL (application database)
 - XAMPP (optional; local database synchronization/maintenance only)
-- MongoDB Atlas (Strategic Data Node)
 
 ### Initialization (Windows)
 Run the automated synchronization script:
@@ -53,7 +52,7 @@ npm run dev
 - **UI Framework**: React 18, Vite, TailwindCSS.
 - **Design Pattern**: Glassmorphism with Slate/Teal/Indigo aesthetic.
 - **Backend Relay**: Express.js with Hardened API Nodes.
-- **Data Matrix**: MySQL for relational integrity + MongoDB for strategic scaling.
+- **Data Matrix**: MySQL for relational integrity and strategic scaling.
 - **Security Hub**: JWT-based Role-Based Access Control (RBAC).
 
 ## License

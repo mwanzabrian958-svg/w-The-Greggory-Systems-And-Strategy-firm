@@ -71,7 +71,6 @@ auto-imported** from `The-Greggory-Systems-And-Strategy-firm-db-main/the-…db-m
 | Key | Why |
 |---|---|
 | `REDIS_URL` | no Redis on Render — server falls back to in-memory storage |
-| `MONGODB_URI` | intentionally skipped by the server |
 | `PORT` | Render injects it automatically |
 | `RATE_LIMIT_*` | not read by the code (limits are hardcoded) |
 | `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_CLOUD_PROJECT`, `STORAGE_BUCKET_*` | GCP service-account file isn't deployed |

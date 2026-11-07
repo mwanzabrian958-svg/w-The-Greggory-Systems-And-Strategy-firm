@@ -57,7 +57,7 @@ This repository houses the digital engine that powers our firm. Our platform is 
 ## 📂 Repository Structure
 
 - **`The-Greggory-Systems-And-Strategy-firm website/`**: The core digital platform (Frontend & Backend).
-- **`database/`**: SQL schemas and MongoDB model definitions for the primary strategic matrix.
+- **`database/`**: SQL schemas for the primary relational datastore.
 - **`scripts/`**: Automation tools for system-wide branding, database synchronization, and backup protocols.
 - **`docs/`**: Technical blueprints, setup guides, and operational manuals.
 
