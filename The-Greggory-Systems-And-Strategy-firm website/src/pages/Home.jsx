@@ -374,52 +374,48 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Video Section - Compacted */}
-        <section className="py-12 sm:py-16 bg-slate-100 dark:bg-[#050b14] text-slate-900 dark:text-white relative transition-colors overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent" />
-
-          <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10 max-w-3xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-black mb-4 tracking-tight">Featured Insight</h2>
-              <div className="h-1 w-20 bg-gold-500 mx-auto mb-6 rounded-full" />
-              <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 font-light">
-                Discover our vision and methodologies through our featured strategic content.
-              </p>
+        {/* ── VIDEO ── */}
+        <section className="py-14 bg-white">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+            <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto mb-6 leading-relaxed text-center">
+              {SITE_NAME} helps individuals and organizations turn business goals into practical results through systems and software design, business strategy and intelligence, project delivery, and IT infrastructure. From planning and implementation to ongoing maintenance, upgrades, and support, we stand behind the solutions we deliver. Your Vision Delivered With Trust.
+            </p>
+            <div className="text-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Featured Insight</h2>
+              <div className="h-px w-8 bg-gold-500 mx-auto mb-3" />
+              <p className="text-[11px] text-slate-500 max-w-lg mx-auto">A closer look at our methodology and strategic approach.</p>
             </div>
+          </div>
 
-            <div className="relative group max-w-5xl mx-auto px-4 sm:px-10 lg:px-20">
-              <div className="absolute inset-0 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[60px] border-2 border-slate-200 dark:border-white/10 shadow-2xl dark:shadow-[0_0_100px_rgba(0,0,0,0.5)] transform -rotate-2 scale-[1.02]" />
-
-              <div className="relative z-10 bg-white dark:bg-[#0f172a] rounded-[40px] overflow-hidden shadow-2xl border-4 border-slate-100 dark:border-white/10 p-2 sm:p-4 lg:p-6 transition-all duration-500 hover:rotate-0 transform rotate-1">
-                <div className="relative">
-                  <video
-                    ref={videoRef}
-                    className="w-full h-auto rounded-[30px] shadow-inner"
-                    controls
-                    loop
-                    playsInline
-                    poster="/video-placeholder.jpg"
-                    onTimeUpdate={handleVideoTimeUpdate}
-                  >
-                    <source src="/featured-insight.mp4" type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-
-                  <div className="absolute bottom-0 right-0 z-50 pointer-events-none">
-                    <div className="w-[28%] sm:w-[22%] max-w-[190px] min-w-[92px] bg-white p-1 sm:p-2 rounded-tl-xl shadow-[0_0_30px_rgba(255,255,255,0.4)] border-2 border-white/50">
-                      <img
-                        src="/score-1.jpg"
-                        alt="The Greggory Systems And Strategy Firm logo and name"
-                        loading="lazy"
-                        className="w-full rounded-lg object-contain"
-                      />
-                    </div>
+          <div className="relative group">
+            <div aria-hidden="true" className="pointer-events-none absolute -inset-px bg-gradient-to-br from-gold-500/10 to-teal-500/10 rounded-[24px] blur opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative bg-white rounded-[20px] overflow-hidden border border-slate-200 max-w-6xl mx-auto">
+              <div className="relative aspect-video overflow-hidden bg-slate-950">
+                <video
+                  ref={videoRef}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  autoPlay
+                  controls
+                  loop
+                  muted
+                  playsInline
+                  poster="/video-placeholder.jpg"
+                  onTimeUpdate={handleVideoTimeUpdate}
+                >
+                  <source src="/featured-insight.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+                <div className="absolute bottom-0 right-0 z-50 pointer-events-none p-3 max-[640px]:bottom-auto max-[640px]:right-auto max-[640px]:left-0 max-[640px]:top-0 max-[640px]:p-2">
+                  <div className="bg-white p-2 rounded-lg shadow-lg border-2 border-white">
+                    <img
+                      src="/score-1.jpg"
+                      alt="The Greggory Systems And Strategy Firm logo and name"
+                      loading="lazy"
+                      className="h-12 sm:h-16 w-auto rounded object-contain"
+                    />
                   </div>
                 </div>
               </div>
-
-              <div className="absolute -top-6 -right-6 h-32 w-32 rounded-full bg-gold-500/10 blur-3xl -z-0" />
-              <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-teal-500/10 blur-3xl -z-0" />
             </div>
           </div>
         </section>
