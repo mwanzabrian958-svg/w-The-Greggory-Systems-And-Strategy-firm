@@ -10,6 +10,7 @@ export function ReportsModal({ isOpen, onClose }) {
   const [preview, setPreview] = useState(null);
   const [notice, setNotice] = useState(null);
   const [data, setData] = useState(null);
+  const [loadError, setLoadError] = useState(null);
   const [customTemplates, setCustomTemplates] = useState([]);
   const [schedules, setSchedules] = useState([]);
 
@@ -24,8 +25,8 @@ export function ReportsModal({ isOpen, onClose }) {
 
   const recentReports = data ? [
     { id: 'r1', name: 'Business Report (live)', generated: new Date().toISOString().split('T')[0], format, size: `${buildLines().length} rows`, author: 'Admin' },
-    { id: 'r2', name: 'Invoice Register', generated: new Date().toISOString().split('T')[0], format: 'CSV', size: `${data.invoices.length} rows`, author: 'Admin' },
-    { id: 'r3', name: 'Ledger Export', generated: new Date().toISOString().split('T')[0], format: 'CSV', size: `${data.entries.length} rows`, author: 'Admin' },
+    { id: 'r2', name: 'Invoice Register', generated: new Date().toISOString().split('T')[0], format: 'CSV', size: `${data.invoices.length} latest rows`, author: 'Admin' },
+    { id: 'r3', name: 'Ledger Export', generated: new Date().toISOString().split('T')[0], format: 'CSV', size: `${data.entries.length} latest rows`, author: 'Admin' },
   ] : [];
 
   // Live data + persisted state — same endpoints as Reports.jsx, so the
@@ -38,8 +39,7 @@ export function ReportsModal({ isOpen, onClose }) {
     } catch { /* corrupted storage — start clean */ }
     (async () => {
       try {
-        const [budgetRes, invoiceRes, projectsRes, ledgerRes] = await Promise.all([
-          apiCall('/admin-complete/budget-overview'),
+        const [invoiceRes, projectsRes, ledgerRes] = await Promise.all([
           apiCall('/invoices'),
           apiCall('/user-projects'),
           apiCall('/admin/ledger'),
@@ -47,18 +47,22 @@ export function ReportsModal({ isOpen, onClose }) {
         const invoices = invoiceRes?.invoices || invoiceRes?.data || (Array.isArray(invoiceRes) ? invoiceRes : []);
         const projects = Array.isArray(projectsRes) ? projectsRes : (projectsRes?.projects || projectsRes?.data || []);
         const entries = ledgerRes?.entries || [];
-        const b = budgetRes?.data || {};
-        const outstanding = invoices
-          .filter(i => String(i.status || '').toLowerCase() !== 'paid')
-          .reduce((s, i) => s + parseFloat(i.total_amount_kes || 0), 0);
+        const ledgerSummary = ledgerRes?.summary;
+        if (!ledgerSummary) throw new Error('The ledger did not return aggregate financial totals.');
+        const invoiceSummary = invoiceRes?.summary;
+        if (!invoiceSummary) throw new Error('The invoice service did not return aggregate balances.');
         setData({
-          revenue: b.revenue ?? 0, expenses: b.expenses ?? 0,
-          net: b.net_income ?? ((b.revenue ?? 0) - (b.expenses ?? 0)),
-          outstanding, invoices, projects, entries,
+          revenue: Number(ledgerSummary.revenue) || 0,
+          expenses: Number(ledgerSummary.expenses) || 0,
+          net: Number(ledgerSummary.net_income) || 0,
+          outstanding: Number(invoiceSummary.outstanding_total) || 0,
+          invoices, projects, entries, ledgerSummary, invoiceSummary,
         });
+        setLoadError(null);
       } catch (e) {
         console.error('Report data fetch failed:', e);
-        setData({ revenue: 0, expenses: 0, net: 0, outstanding: 0, invoices: [], projects: [], entries: [] });
+        setData(null);
+        setLoadError(e.message || 'Could not load financial records.');
       }
     })();
   }, [isOpen]);
@@ -66,7 +70,8 @@ export function ReportsModal({ isOpen, onClose }) {
   const fmtKES = (n) => `KSH ${Number(n || 0).toLocaleString()}`;
 
   function buildLines() {
-    const d = data || { revenue: 0, expenses: 0, net: 0, outstanding: 0, invoices: [], projects: [], entries: [] };
+    if (!data) return [];
+    const d = data;
     const status = d.projects.reduce((m, p) => { const s = p.status || 'unknown'; m[s] = (m[s] || 0) + 1; return m; }, {});
     return [
       'GREGGORY SYSTEMS & STRATEGY FIRM — BUSINESS REPORT',
@@ -77,12 +82,13 @@ export function ReportsModal({ isOpen, onClose }) {
       `Net Profit: ${fmtKES(d.net)}`,
       `Outstanding (Unpaid Invoices): ${fmtKES(d.outstanding)}`, '',
       '== INVOICES ==',
-      `Total: ${d.invoices.length}  Paid: ${d.invoices.filter(i => String(i.status).toLowerCase() === 'paid').length}  Unpaid: ${d.invoices.filter(i => String(i.status).toLowerCase() !== 'paid').length}`, '',
+      `Total: ${d.invoiceSummary.total_invoices}  Paid: ${d.invoiceSummary.paid_invoices}  Unpaid: ${d.invoiceSummary.outstanding_invoices}`, '',
       '== PROJECTS ==', `Total: ${d.projects.length}`,
       ...Object.entries(status).map(([s, n]) => `${s}: ${n}`), '',
-      '== LEDGER ==', `Total Entries: ${d.entries.length}`,
-      `Income Entries: ${d.entries.filter(e => e.entry_type !== 'expense').length}`,
-      `Expense Entries: ${d.entries.filter(e => e.entry_type === 'expense').length}`,
+      '== LEDGER ==', `All matching entries: ${d.ledgerSummary.total_entries}`,
+      `Income Entries: ${d.ledgerSummary.income_entries}`,
+      `Expense Entries: ${d.ledgerSummary.expense_entries}`,
+      `Rows included in export (maximum 500): ${d.entries.length}`,
     ];
   }
 
@@ -107,17 +113,23 @@ export function ReportsModal({ isOpen, onClose }) {
   };
 
   const doPrint = () => {
+    if (!data) return;
     const w = window.open('', '_blank', 'width=900,height=700');
     if (!w) { setNotice({ ok: false, text: 'Pop-up blocked — allow pop-ups to print/save as PDF.' }); setTimeout(() => setNotice(null), 4000); return; }
     w.document.write(buildHtml()); w.document.close(); w.focus();
     setTimeout(() => w.print(), 300);
   };
 
-  const handleDownload = (fmtOverride) => {
+  const handleDownload = (fmtOverride, dataSet = 'invoices') => {
+    if (!data) return;
     const activeFormat = fmtOverride || format;
     const stamp = new Date().toISOString().split('T')[0];
     if (activeFormat === 'PDF') { doPrint(); return; } // print dialog = Save as PDF
-    if (activeFormat === 'CSV') saveBlob(csvOf(data?.invoices) || buildLines().join('\n'), 'text/csv;charset=utf-8;', `greggory-report-${stamp}.csv`);
+    if (activeFormat === 'CSV') {
+      const rows = dataSet === 'ledger' ? data.entries : data.invoices;
+      const filename = dataSet === 'ledger' ? 'greggory-ledger-latest-500' : 'greggory-invoices-latest-50';
+      saveBlob(csvOf(rows) || buildLines().join('\n'), 'text/csv;charset=utf-8;', `${filename}-${stamp}.csv`);
+    }
     else if (activeFormat === 'HTML') saveBlob(buildHtml(), 'text/html;charset=utf-8;', `greggory-report-${stamp}.html`);
     else if (activeFormat === 'Excel') {
       // HTML table saved as .xls — Excel opens it natively (project has no xlsx lib)
@@ -129,16 +141,18 @@ export function ReportsModal({ isOpen, onClose }) {
   };
 
   const handlePreview = () => {
+    if (!data) return;
     setGenerating(true);
     setTimeout(() => {
       setPreview(buildLines());
       setGenerating(false);
-      setNotice({ ok: true, text: `Preview compiled from ${data ? data.entries.length + ' ledger entries' : 'live data'}.` });
+      setNotice({ ok: true, text: `Preview compiled from ${data.ledgerSummary.total_entries} ledger entries.` });
       setTimeout(() => setNotice(null), 4000);
     }, 350);
   };
 
   const handleShare = async () => {
+    if (!data) return;
     const text = buildLines().join('\n');
     try {
       if (navigator.share) { await navigator.share({ title: 'Greggory Business Report', text }); setNotice({ ok: true, text: 'Report shared.' }); }
@@ -191,6 +205,11 @@ export function ReportsModal({ isOpen, onClose }) {
         {notice && (
           <div className={`px-6 py-2 text-xs font-bold flex items-center gap-2 ${notice.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-emerald-50 text-emerald-700'}`}>
             <CheckCircle className="w-4 h-4" /> {notice.text}
+          </div>
+        )}
+        {loadError && (
+          <div role="alert" className="mx-6 mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+            Live report data unavailable: {loadError}
           </div>
         )}
 
@@ -275,7 +294,7 @@ export function ReportsModal({ isOpen, onClose }) {
                             <button onClick={() => { setPreview(buildLines()); setActiveTab('builder'); }} title="Preview report" className="p-1 hover:bg-blue-100 rounded transition-colors">
                               <Eye className="w-4 h-4 text-blue-600" />
                             </button>
-                            <button onClick={() => handleDownload(report.format === 'CSV' ? 'CSV' : report.format === 'Excel' ? 'Excel' : format)} title="Download report" className="p-1 hover:bg-green-100 rounded transition-colors">
+                            <button onClick={() => handleDownload(report.format === 'CSV' ? 'CSV' : report.format === 'Excel' ? 'Excel' : format, report.id === 'r3' ? 'ledger' : 'invoices')} title="Download report" className="p-1 hover:bg-green-100 rounded transition-colors">
                               <Download className="w-4 h-4 text-green-600" />
                             </button>
                             <button onClick={handleShare} title="Share report" className="p-1 hover:bg-slate-100 rounded transition-colors">
@@ -286,7 +305,7 @@ export function ReportsModal({ isOpen, onClose }) {
                       </tr>
                     ))}
                     {recentReports.length === 0 && (
-                      <tr><td colSpan="5" className="px-4 py-10 text-center text-sm text-gray-400">{data ? 'No reports yet — use Generate Report.' : 'Loading live report data…'}</td></tr>
+                      <tr><td colSpan="6" className="px-4 py-10 text-center text-sm text-gray-400">{loadError || (data ? 'No reports yet — use Generate Report.' : 'Loading live report data…')}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -340,15 +359,17 @@ export function ReportsModal({ isOpen, onClose }) {
                 <div className="space-y-4">
                   <h4 className="font-medium text-gray-900">Report Contents (live)</h4>
                   <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 space-y-1">
-                    <div className="flex justify-between"><span>Revenue</span><b>{fmtKES(data?.revenue)}</b></div>
-                    <div className="flex justify-between"><span>Expenses</span><b>{fmtKES(data?.expenses)}</b></div>
-                    <div className="flex justify-between"><span>Net Profit</span><b>{fmtKES(data?.net)}</b></div>
-                    <div className="flex justify-between"><span>Outstanding</span><b>{fmtKES(data?.outstanding)}</b></div>
-                    <div className="flex justify-between"><span>Invoices</span><b>{data?.invoices.length ?? '—'}</b></div>
+                    <div className="flex justify-between"><span>Revenue</span><b>{data ? fmtKES(data.revenue) : 'Unavailable'}</b></div>
+                    <div className="flex justify-between"><span>Expenses</span><b>{data ? fmtKES(data.expenses) : 'Unavailable'}</b></div>
+                    <div className="flex justify-between"><span>Net Profit</span><b>{data ? fmtKES(data.net) : 'Unavailable'}</b></div>
+                    <div className="flex justify-between"><span>Outstanding</span><b>{data ? fmtKES(data.outstanding) : 'Unavailable'}</b></div>
+                    <div className="flex justify-between"><span>All matching invoices</span><b>{data?.invoiceSummary.total_invoices ?? '—'}</b></div>
+                    <div className="flex justify-between"><span>Rows available in invoice export</span><b>{data?.invoices.length ?? '—'}</b></div>
                     <div className="flex justify-between"><span>Projects</span><b>{data?.projects.length ?? '—'}</b></div>
-                    <div className="flex justify-between"><span>Ledger entries</span><b>{data?.entries.length ?? '—'}</b></div>
+                    <div className="flex justify-between"><span>All matching ledger entries</span><b>{data?.ledgerSummary.total_entries ?? '—'}</b></div>
+                    <div className="flex justify-between"><span>Rows available in ledger export</span><b>{data?.entries.length ?? '—'}</b></div>
                   </div>
-                  <p className="text-xs text-gray-500">Source: live endpoints (budget overview, invoices, projects, ledger) — same numbers as Reports.</p>
+                  <p className="text-xs text-gray-500">Financial totals use all matching ledger and invoice records. Exports include only the latest rows shown above.</p>
                 </div>
 
                 <div className="space-y-4">

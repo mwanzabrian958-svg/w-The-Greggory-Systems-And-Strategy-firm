@@ -1010,10 +1010,9 @@ const ClientPortal = () => {
                   <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-700" style={{ width: pct(budgetOverviewData.planned ? (budgetOverviewData.spent / budgetOverviewData.planned) * 100 : 0), background: budgetOverviewData.spent <= budgetOverviewData.planned ? 'linear-gradient(90deg,#059669,#34d399)' : 'linear-gradient(90deg,#e11d48,#fb7185)' }} />
                   </div>
-                  <div className="grid grid-cols-3 gap-2 mt-2.5 text-[8px]">
+                  <div className="grid grid-cols-2 gap-2 mt-2.5 text-[8px]">
                     <div><p className="text-slate-600 dark:text-slate-300 uppercase font-bold text-[6px]">Planned</p><p className="font-black">{formatKSH(budgetOverviewData.planned)}</p></div>
                     <div><p className="text-slate-600 dark:text-slate-300 uppercase font-bold text-[6px]">Spent</p><p className="font-black">{formatKSH(budgetOverviewData.spent)}</p></div>
-                    <div><p className="text-slate-600 dark:text-slate-300 uppercase font-bold text-[6px]">Remaining</p><p className="font-black text-emerald-600 dark:text-emerald-400">{formatKSH(budgetOverviewData.forecast)}</p></div>
                   </div>
                 </div>
               )}

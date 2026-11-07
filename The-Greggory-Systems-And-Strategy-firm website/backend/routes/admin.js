@@ -954,14 +954,35 @@ router.get('/dashboard', async (req, res) => {
 // =============================================
 router.get('/budget-overview', async (req, res) => {
   try {
-    const [pb] = await db.promise().query('SELECT COALESCE(SUM(actual_budget),0) as spent, COALESCE(SUM(estimated_budget),0) as planned FROM user_projects WHERE deleted_at IS NULL');
-    const [fn] = await db.promise().query("SELECT COALESCE(SUM(CASE WHEN entry_type IN ('income','invoice_payment') THEN amount ELSE 0 END),0) as revenue, COALESCE(SUM(CASE WHEN entry_type='expense' THEN amount ELSE 0 END),0) as expenses FROM accounting_entries WHERE deleted_at IS NULL AND payment_status='completed'");
-    const [ac] = await db.promise().query("SELECT COUNT(*) as count FROM user_projects WHERE status IN ('in-progress','active') AND deleted_at IS NULL");
-    const r = fn[0]?.revenue || 0;
-    const e = fn[0]?.expenses || 0;
-    const p = pb[0]?.planned || 0;
-    res.json({ success: true, data: { planned: p, spent: e, forecast: e > 0 ? e * 1.1 : 0, revenue: r, expenses: e, net_income: r - e, active_projects: ac[0]?.count || 0, remaining: Math.max(0, p - e) } });
-  } catch (error) { res.status(500).json({ success: false, message: 'Budget overview failed' }); }
+    const [rows] = await db.promise().query(`
+      SELECT
+        COALESCE(SUM(CASE
+          WHEN entry_type IN ('income', 'invoice_payment') AND payment_status = 'completed'
+          THEN amount * COALESCE(exchange_rate, 1) ELSE 0
+        END), 0) AS revenue,
+        COALESCE(SUM(CASE
+          WHEN entry_type = 'expense' AND payment_status = 'completed'
+          THEN amount * COALESCE(exchange_rate, 1) ELSE 0
+        END), 0) AS expenses,
+        COUNT(CASE WHEN payment_status = 'completed' THEN 1 END) AS recorded_entries
+      FROM accounting_entries
+      WHERE deleted_at IS NULL
+    `);
+    const revenue = Number(rows[0]?.revenue) || 0;
+    const expenses = Number(rows[0]?.expenses) || 0;
+    res.json({
+      success: true,
+      data: {
+        revenue,
+        expenses,
+        net_income: revenue - expenses,
+        recorded_entries: Number(rows[0]?.recorded_entries) || 0,
+      },
+    });
+  } catch (error) {
+    console.error('[ADMIN BUDGET OVERVIEW] Error:', error);
+    res.status(500).json({ success: false, message: 'Budget overview failed' });
+  }
 });
 
 // =============================================
@@ -1089,49 +1110,91 @@ router.get('/ledger', async (req, res) => {
   try {
     const { client_id, project_id, team_member_id, start_date, end_date, type } = req.query;
 
-    let query = `
-      SELECT
-        ae.*,
-        p.project_name,
-        u.display_name as client_name,
-        cb.display_name as creator_name
-      FROM accounting_entries ae
-      LEFT JOIN user_projects p ON ae.project_id = p.id
-      LEFT JOIN users u ON p.user_id = u.id
-      LEFT JOIN users cb ON ae.created_by = cb.id
-      WHERE ae.deleted_at IS NULL
-    `;
-
+    const filters = ["ae.deleted_at IS NULL"];
     const params = [];
 
     if (client_id) {
-      query += " AND p.user_id = ?";
+      filters.push("p.user_id = ?");
       params.push(client_id);
     }
 
     if (project_id) {
-      query += " AND ae.project_id = ?";
+      filters.push("ae.project_id = ?");
       params.push(project_id);
     }
 
     if (team_member_id) {
-      query += " AND (ae.project_id IN (SELECT project_id FROM project_team_members WHERE user_id = ? AND removed_at IS NULL))";
+      filters.push("ae.project_id IN (SELECT project_id FROM project_team_members WHERE user_id = ? AND removed_at IS NULL)");
       params.push(team_member_id);
     }
 
     if (start_date && end_date) {
-      query += " AND ae.transaction_date BETWEEN ? AND ?";
+      filters.push("ae.transaction_date BETWEEN ? AND ?");
       params.push(start_date, end_date);
     }
 
     if (type && type !== 'all') {
-      query += " AND ae.entry_type = ?";
+      filters.push("ae.entry_type = ?");
       params.push(type);
     }
 
-    query += " ORDER BY ae.transaction_date DESC, ae.created_at DESC LIMIT 500";
+    const whereClause = filters.join(" AND ");
+    const joins = `
+      FROM accounting_entries ae
+      LEFT JOIN user_projects p ON ae.project_id = p.id
+      LEFT JOIN users u ON p.user_id = u.id
+      LEFT JOIN users cb ON ae.created_by = cb.id
+      WHERE ${whereClause}
+    `;
 
-    const [entries] = await db.promise().query(query, params);
+    const [entries] = await db.promise().query(
+      `SELECT ae.*, p.project_name, u.display_name AS client_name,
+              cb.display_name AS creator_name
+         ${joins}
+        ORDER BY ae.transaction_date DESC, ae.created_at DESC
+        LIMIT 500`,
+      params,
+    );
+    const [summaryRows] = await db.promise().query(
+      `SELECT
+         COALESCE(SUM(CASE
+           WHEN ae.entry_type IN ('income', 'invoice_payment')
+             AND ae.payment_status = 'completed'
+           THEN ae.amount * COALESCE(ae.exchange_rate, 1)
+           ELSE 0
+         END), 0) AS revenue,
+         COALESCE(SUM(CASE
+           WHEN ae.entry_type = 'income' AND ae.payment_status = 'completed'
+           THEN ae.amount * COALESCE(ae.exchange_rate, 1)
+           ELSE 0
+         END), 0) AS income_revenue,
+         COALESCE(SUM(CASE
+           WHEN ae.entry_type = 'invoice_payment' AND ae.payment_status = 'completed'
+           THEN ae.amount * COALESCE(ae.exchange_rate, 1)
+           ELSE 0
+         END), 0) AS invoice_payment_revenue,
+         COALESCE(SUM(CASE
+           WHEN ae.entry_type = 'expense' AND ae.payment_status = 'completed'
+           THEN ae.amount * COALESCE(ae.exchange_rate, 1)
+           ELSE 0
+         END), 0) AS expenses,
+         COUNT(*) AS total_entries,
+         COUNT(CASE WHEN ae.entry_type IN ('income', 'invoice_payment') AND ae.payment_status = 'completed' THEN 1 END) AS income_entries,
+         COUNT(CASE WHEN ae.entry_type = 'expense' AND ae.payment_status = 'completed' THEN 1 END) AS expense_entries,
+         COUNT(CASE WHEN ae.payment_status = 'completed' THEN 1 END) AS recorded_entries
+         ${joins}`,
+      params,
+    );
+    const [expenseCategories] = await db.promise().query(
+      `SELECT COALESCE(ae.category, 'Uncategorized') AS category,
+              COALESCE(SUM(ae.amount * COALESCE(ae.exchange_rate, 1)), 0) AS total
+         ${joins}
+          AND ae.entry_type = 'expense'
+          AND ae.payment_status = 'completed'
+        GROUP BY ae.category
+        ORDER BY total DESC`,
+      params,
+    );
 
     // Metadata for filters
     const [clients] = await db.promise().query("SELECT id, display_name as name FROM users WHERE deleted_at IS NULL");
@@ -1141,6 +1204,21 @@ router.get('/ledger', async (req, res) => {
     res.json({
       success: true,
       entries,
+      summary: {
+        revenue: Number(summaryRows[0]?.revenue) || 0,
+        income_revenue: Number(summaryRows[0]?.income_revenue) || 0,
+        invoice_payment_revenue: Number(summaryRows[0]?.invoice_payment_revenue) || 0,
+        expenses: Number(summaryRows[0]?.expenses) || 0,
+        net_income: (Number(summaryRows[0]?.revenue) || 0) - (Number(summaryRows[0]?.expenses) || 0),
+        total_entries: Number(summaryRows[0]?.total_entries) || 0,
+        income_entries: Number(summaryRows[0]?.income_entries) || 0,
+        expense_entries: Number(summaryRows[0]?.expense_entries) || 0,
+        recorded_entries: Number(summaryRows[0]?.recorded_entries) || 0,
+        expense_categories: expenseCategories.map((row) => ({
+          category: row.category || 'Uncategorized',
+          total: Number(row.total) || 0,
+        })),
+      },
       filters: {
         clients,
         projects,

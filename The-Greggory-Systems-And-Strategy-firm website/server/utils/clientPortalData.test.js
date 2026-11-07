@@ -39,6 +39,7 @@ test('buildClientPortalPayload derives business metrics from project rows', () =
   assert.equal(payload.projects.length, 2);
   assert.equal(payload.budgetOverview.planned, 120000);
   assert.equal(payload.budgetOverview.spent, 88000);
+  assert.equal(Object.hasOwn(payload.budgetOverview, 'forecast'), false);
   assert.equal(payload.documentSummary[0].value, 1);
   // The KPI label was intentionally reworded to "Direct Strategy Support"
   // (the old "On-time Delivery" wording was never a real metric). Keep the

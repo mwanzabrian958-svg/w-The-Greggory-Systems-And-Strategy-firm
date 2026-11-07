@@ -13,7 +13,7 @@ export function Reports() {
   const [showBuilder, setShowBuilder] = useState(false);
   const [data, setData] = useState({
     revenue: 0, expenses: 0, net: 0, outstanding: 0,
-    projects: [], invoices: [], entries: []
+    projects: [], invoices: [], entries: [], ledgerSummary: null, loadError: null
   });
 
   useEffect(() => { fetchReportData(); }, []);
@@ -21,8 +21,7 @@ export function Reports() {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const [budgetRes, invoiceRes, projectsRes, ledgerRes] = await Promise.all([
-        apiCall("/admin-complete/budget-overview"),
+      const [invoiceRes, projectsRes, ledgerRes] = await Promise.all([
         apiCall("/invoices"),
         apiCall("/user-projects"),
         apiCall("/admin/ledger")
@@ -31,22 +30,27 @@ export function Reports() {
       const invoices = invoiceRes?.invoices || invoiceRes?.data || (Array.isArray(invoiceRes) ? invoiceRes : []);
       const projects = Array.isArray(projectsRes) ? projectsRes : (projectsRes?.projects || projectsRes?.data || []);
       const entries = ledgerRes?.entries || [];
-      const b = budgetRes?.data || {};
-
-      const outstanding = invoices
-        .filter(i => String(i.status || '').toLowerCase() !== 'paid')
-        .reduce((s, i) => s + parseFloat(i.total_amount_kes || 0), 0);
+      const ledgerSummary = ledgerRes?.summary;
+      if (!ledgerSummary) throw new Error("The ledger did not return aggregate financial totals.");
+      const invoiceSummary = invoiceRes?.summary;
+      if (!invoiceSummary) throw new Error("The invoice service did not return aggregate balances.");
 
       setData({
-        revenue: b.revenue ?? 0,
-        expenses: b.expenses ?? 0,
-        net: b.net_income ?? ((b.revenue ?? 0) - (b.expenses ?? 0)),
-        outstanding,
+        revenue: Number(ledgerSummary.revenue) || 0,
+        expenses: Number(ledgerSummary.expenses) || 0,
+        net: Number(ledgerSummary.net_income) || 0,
+        outstanding: Number(invoiceSummary.outstanding_total) || 0,
+        invoiceSummary,
         projects,
         invoices,
-        entries
+        entries,
+        ledgerSummary,
+        loadError: null
       });
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+    } catch (e) {
+      console.error(e);
+      setData((current) => ({ ...current, loadError: e.message || "Could not load financial records." }));
+    } finally { setLoading(false); }
   };
 
   const exportCsv = (rows, filename) => {
@@ -72,16 +76,19 @@ export function Reports() {
       `Outstanding (Unpaid Invoices): KSH ${data.outstanding.toLocaleString()}`,
       ``,
       `== INVOICES ==`,
-      `Total Invoices: ${data.invoices.length}`,
-      `Paid: ${data.invoices.filter(i => String(i.status).toLowerCase() === 'paid').length}`,
-      `Unpaid: ${data.invoices.filter(i => String(i.status).toLowerCase() !== 'paid').length}`,
+      `Total Invoices: ${data.invoiceSummary.total_invoices}`,
+      `Paid: ${data.invoiceSummary.paid_invoices}`,
+      `Unpaid: ${data.invoiceSummary.outstanding_invoices}`,
       ``,
       `== PROJECTS ==`,
       `Total Projects: ${data.projects.length}`,
       ...Object.entries(projectStatusCounts()).map(([s, n]) => `${s}: ${n}`),
       ``,
       `== LEDGER ==`,
-      `Total Entries: ${data.entries.length}`,
+      `All matching Ledger Entries: ${data.ledgerSummary?.total_entries ?? 0}`,
+      `Income Entries: ${data.ledgerSummary?.income_entries ?? 0}`,
+      `Expense Entries: ${data.ledgerSummary?.expense_entries ?? 0}`,
+      `Rows shown (maximum 500): ${data.entries.length}`,
     ];
     const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
     const a = document.createElement('a');
@@ -106,16 +113,23 @@ export function Reports() {
     </div>
   );
 
+  if (data.loadError) return (
+    <div className="max-w-[1200px] mx-auto p-6">
+      <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-800">
+        <p className="font-bold">Financial report unavailable</p>
+        <p className="mt-1 text-sm">{data.loadError}</p>
+        <button onClick={fetchReportData} className="mt-4 rounded-lg bg-rose-700 px-4 py-2 text-sm font-bold text-white">
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+
   const statusCounts = projectStatusCounts();
   const maxStatus = Math.max(1, ...Object.values(statusCounts));
-  const paidInvoices = data.invoices.filter(i => String(i.status).toLowerCase() === 'paid');
-
-  const expenseByCategory = {};
-  data.entries.filter(e => e.entry_type === 'expense').forEach(e => {
-    const c = e.category || 'Uncategorized';
-    expenseByCategory[c] = (expenseByCategory[c] || 0) + parseFloat(e.amount || 0);
-  });
-  const topExpenses = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topExpenses = (data.ledgerSummary?.expense_categories || [])
+    .map(({ category, total }) => [category, Number(total) || 0])
+    .slice(0, 5);
   const maxExpense = Math.max(1, ...topExpenses.map(e => e[1]));
 
 
@@ -196,9 +210,9 @@ export function Reports() {
           </div>
           <div className="grid grid-cols-3 gap-3 mb-6">
             {[
-              { label: "Total", n: data.invoices.length, color: "text-slate-900" },
-              { label: "Paid", n: paidInvoices.length, color: "text-emerald-600" },
-              { label: "Unpaid", n: data.invoices.length - paidInvoices.length, color: "text-amber-600" },
+              { label: "Total", n: data.invoiceSummary.total_invoices, color: "text-slate-900" },
+              { label: "Paid", n: data.invoiceSummary.paid_invoices, color: "text-emerald-600" },
+              { label: "Unpaid", n: data.invoiceSummary.outstanding_invoices, color: "text-amber-600" },
             ].map(s => (
               <div key={s.label} className="bg-slate-50/60 rounded-2xl p-4 text-center">
                 <p className={`text-xl font-black ${s.color}`}>{s.n}</p>
@@ -207,7 +221,7 @@ export function Reports() {
             ))}
           </div>
           <button onClick={() => exportCsv(data.invoices, 'invoices.csv')} className="w-full py-2.5 border border-slate-200 hover:border-teal-500 rounded-xl text-[8px] font-black text-slate-600 uppercase tracking-widest transition-all flex items-center justify-center gap-2">
-            <Download size={11} /> Export Invoices CSV
+            <Download size={11} /> Export Latest 50 Invoice Rows
           </button>
         </div>
 
@@ -234,7 +248,7 @@ export function Reports() {
                 </div>
               ))}
               <button onClick={() => exportCsv(data.entries, 'ledger.csv')} className="w-full mt-2 py-2.5 border border-slate-200 hover:border-teal-500 rounded-xl text-[8px] font-black text-slate-600 uppercase tracking-widest transition-all flex items-center justify-center gap-2">
-                <Download size={11} /> Export Full Ledger CSV
+                <Download size={11} /> Export Latest 500 Ledger Rows
               </button>
             </div>
           )}
@@ -248,9 +262,10 @@ export function Reports() {
           </div>
           <div className="space-y-3">
             {[
-              { label: "Income Entries", n: data.entries.filter(e => e.entry_type !== 'expense').length, color: "text-emerald-600" },
-              { label: "Expense Entries", n: data.entries.filter(e => e.entry_type === 'expense').length, color: "text-rose-600" },
-              { label: "Total Entries", n: data.entries.length, color: "text-slate-900" },
+              { label: "Income Entries (all matching)", n: data.ledgerSummary.income_entries, color: "text-emerald-600" },
+              { label: "Expense Entries (all matching)", n: data.ledgerSummary.expense_entries, color: "text-rose-600" },
+              { label: "Entries (all matching)", n: data.ledgerSummary.total_entries, color: "text-slate-900" },
+              { label: "Rows available for export", n: data.entries.length, color: "text-slate-500" },
             ].map(s => (
               <div key={s.label} className="flex justify-between items-center py-2.5 border-b border-slate-50 last:border-0">
                 <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{s.label}</span>

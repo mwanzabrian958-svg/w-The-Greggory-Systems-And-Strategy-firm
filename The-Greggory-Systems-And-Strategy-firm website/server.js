@@ -3733,9 +3733,9 @@ app.get("/api/accounting/reports/summary", async (req, res) => {
 
     const [totalsRows] = await db.execute(
       `SELECT
-         COALESCE(SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END), 0) AS total_income,
-         COALESCE(SUM(CASE WHEN entry_type = 'expense' THEN amount ELSE 0 END), 0) AS total_expenses,
-         COALESCE(SUM(tax_amount), 0) AS total_tax,
+         COALESCE(SUM(CASE WHEN entry_type IN ('income', 'invoice_payment') AND payment_status = 'completed' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS total_income,
+         COALESCE(SUM(CASE WHEN entry_type = 'expense' AND payment_status = 'completed' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS total_expenses,
+         COALESCE(SUM(CASE WHEN payment_status = 'completed' THEN tax_amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS total_tax,
          COUNT(*) AS entry_count
        FROM accounting_entries
        WHERE ${whereClause}`,
@@ -3744,8 +3744,12 @@ app.get("/api/accounting/reports/summary", async (req, res) => {
 
     const [byCategory] = await db.execute(
       `SELECT entry_type, category,
-              COALESCE(SUM(amount), 0) AS total,
-              COUNT(*) AS entry_count
+              COALESCE(SUM(CASE
+                WHEN payment_status = 'completed'
+                THEN amount * COALESCE(exchange_rate, 1)
+                ELSE 0
+              END), 0) AS total,
+              COUNT(CASE WHEN payment_status = 'completed' THEN 1 END) AS entry_count
          FROM accounting_entries
         WHERE ${whereClause}
         GROUP BY entry_type, category
@@ -3755,8 +3759,8 @@ app.get("/api/accounting/reports/summary", async (req, res) => {
 
     const [byMonth] = await db.execute(
       `SELECT DATE_FORMAT(transaction_date, '%Y-%m') AS month,
-              COALESCE(SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END), 0) AS income,
-              COALESCE(SUM(CASE WHEN entry_type = 'expense' THEN amount ELSE 0 END), 0) AS expenses
+              COALESCE(SUM(CASE WHEN entry_type IN ('income', 'invoice_payment') AND payment_status = 'completed' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS income,
+              COALESCE(SUM(CASE WHEN entry_type = 'expense' AND payment_status = 'completed' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS expenses
          FROM accounting_entries
         WHERE ${whereClause}
         GROUP BY month
@@ -3766,7 +3770,7 @@ app.get("/api/accounting/reports/summary", async (req, res) => {
 
     const [byStatus] = await db.execute(
       `SELECT payment_status,
-              COALESCE(SUM(amount), 0) AS total,
+              COALESCE(SUM(CASE WHEN payment_status = 'completed' THEN amount * COALESCE(exchange_rate, 1) ELSE 0 END), 0) AS total,
               COUNT(*) AS entry_count
          FROM accounting_entries
         WHERE ${whereClause}
@@ -3970,14 +3974,7 @@ app.get("/api/invoices", authenticateAny, async (req, res) => {
       offset = 0,
     } = req.query;
 
-    let query = `
-      SELECT i.*, p.name as project_name, u.first_name, u.last_name,
-             CONCAT(u.first_name, ' ', u.last_name) as created_by_name
-      FROM invoices i
-      LEFT JOIN projects p ON i.project_id = p.id
-      LEFT JOIN users u ON i.created_by = u.id
-      WHERE i.deleted_at IS NULL
-    `;
+    let whereClause = "WHERE i.deleted_at IS NULL";
     const params = [];
 
     if (req.authRole === "user") {
@@ -3988,7 +3985,7 @@ app.get("/api/invoices", authenticateAny, async (req, res) => {
       if (!me.length) {
         return res.status(401).json({ success: false, message: "Authentication required" });
       }
-      query += ` AND (i.client_email = ? OR EXISTS (
+      whereClause += ` AND (i.client_email = ? OR EXISTS (
         SELECT 1 FROM user_projects up
         WHERE up.id = i.project_id AND up.user_id = ? AND up.deleted_at IS NULL
       ) OR i.client_id = ?)`;
@@ -3996,31 +3993,77 @@ app.get("/api/invoices", authenticateAny, async (req, res) => {
     }
 
     if (project_id) {
-      query += " AND i.project_id = ?";
+      whereClause += " AND i.project_id = ?";
       params.push(project_id);
     }
 
     if (status) {
-      query += " AND i.status = ?";
+      whereClause += " AND i.status = ?";
       params.push(status);
     }
 
     if (payment_status) {
-      query += " AND i.payment_status = ?";
+      whereClause += " AND i.payment_status = ?";
       params.push(payment_status);
     }
+
+    const [summaryRows] = await db.query(
+      `SELECT
+         COUNT(*) AS total_invoices,
+         COUNT(CASE WHEN i.status = 'paid' OR i.payment_status = 'paid' THEN 1 END) AS paid_invoices,
+         COUNT(CASE
+           WHEN i.status NOT IN ('paid', 'cancelled', 'draft')
+             AND i.payment_status <> 'paid'
+           THEN 1
+         END) AS outstanding_invoices,
+         COALESCE(SUM(CASE
+           WHEN i.status NOT IN ('paid', 'cancelled', 'draft')
+             AND i.payment_status <> 'paid'
+           THEN GREATEST(
+             COALESCE(i.total_amount_kes, i.total_amount, 0) - COALESCE(payments.paid_total, 0),
+             0
+           )
+           ELSE 0
+         END), 0) AS outstanding_total
+       FROM invoices i
+       LEFT JOIN (
+         SELECT invoice_id, SUM(amount * COALESCE(exchange_rate, 1)) AS paid_total
+         FROM accounting_entries
+         WHERE entry_type = 'invoice_payment'
+           AND payment_status = 'completed'
+           AND deleted_at IS NULL
+           AND invoice_id IS NOT NULL
+         GROUP BY invoice_id
+       ) payments ON payments.invoice_id = i.id
+       ${whereClause}`,
+      params,
+    );
 
     // mysql2 prepared statements cannot bind LIMIT/OFFSET on this server
     // (ER_WRONG_ARGUMENTS 1210) — inline sanitized integers instead.
     const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 500);
     const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
-    query += ` ORDER BY i.issue_date DESC, i.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+    const query = `
+      SELECT i.*, p.name as project_name, u.first_name, u.last_name,
+             CONCAT(u.first_name, ' ', u.last_name) as created_by_name
+      FROM invoices i
+      LEFT JOIN projects p ON i.project_id = p.id
+      LEFT JOIN users u ON i.created_by = u.id
+      ${whereClause}
+      ORDER BY i.issue_date DESC, i.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}
+    `;
 
     const [invoices] = await db.query(query, params);
 
     res.json({
       success: true,
       invoices,
+      summary: {
+        total_invoices: Number(summaryRows[0]?.total_invoices) || 0,
+        paid_invoices: Number(summaryRows[0]?.paid_invoices) || 0,
+        outstanding_invoices: Number(summaryRows[0]?.outstanding_invoices) || 0,
+        outstanding_total: Number(summaryRows[0]?.outstanding_total) || 0,
+      },
     });
   } catch (error) {
     console.error("Error fetching invoices:", error);
@@ -5962,34 +6005,33 @@ app.get("/api/admin/session", async (req, res) => {
 // =============================================
 app.get("/api/admin/budget-overview", authenticateAdmin, async (req, res) => {
   try {
-    const [budgetData] = await mainDb.query(`
-      SELECT 
-        SUM(estimated_budget) as planned,
-        SUM(actual_budget) as spent,
-        SUM(estimated_budget - actual_budget) as forecast
-      FROM user_projects
-      WHERE is_active = 1 AND deleted_at IS NULL
+    const [rows] = await mainDb.query(`
+      SELECT
+        COALESCE(SUM(CASE
+          WHEN entry_type IN ('income', 'invoice_payment')
+            AND payment_status = 'completed'
+          THEN amount * COALESCE(exchange_rate, 1)
+          ELSE 0
+        END), 0) AS revenue,
+        COALESCE(SUM(CASE
+          WHEN entry_type = 'expense' AND payment_status = 'completed'
+          THEN amount * COALESCE(exchange_rate, 1)
+          ELSE 0
+        END), 0) AS expenses,
+        COUNT(CASE WHEN payment_status = 'completed' THEN 1 END) AS recorded_entries
+      FROM accounting_entries
+      WHERE deleted_at IS NULL
     `);
-
-    const [revenueData] = await mainDb.query(`
-      SELECT SUM(amount) as revenue
-      FROM project_invoices
-      WHERE status = 'paid'
-    `);
-
-    const planned = parseFloat(budgetData[0]?.planned || 0);
-    const spent = parseFloat(budgetData[0]?.spent || 0);
-    const revenue = parseFloat(revenueData[0]?.revenue || 0);
+    const revenue = Number(rows[0]?.revenue) || 0;
+    const expenses = Number(rows[0]?.expenses) || 0;
 
     res.json({
       success: true,
       data: {
-        expenses: spent,
-        spent: spent,
-        remaining: planned - spent,
-        forecast: planned - spent,
-        revenue: revenue,
-        net_income: revenue - spent,
+        revenue,
+        expenses,
+        net_income: revenue - expenses,
+        recorded_entries: Number(rows[0]?.recorded_entries) || 0,
       }
     });
   } catch (error) {

@@ -11,21 +11,18 @@ export function ProfitLossReport() {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
-  const [data, setData] = useState({ revenue: 0, expenses: 0, net: 0, entries: [] });
+  const [data, setData] = useState({
+    revenue: 0,
+    invoicePayments: 0,
+    otherIncome: 0,
+    expenses: 0,
+    net: 0,
+    entries: [],
+    expenseCategories: [],
+    totalEntries: 0,
+  });
 
-  // Group expenses by category for the breakdown panel
-  const expenseBreakdown = React.useMemo(() => {
-    const map = {};
-    data.entries
-      .filter(e => e.entry_type === 'expense')
-      .forEach(e => {
-        const cat = e.category_name || e.category || 'Uncategorized';
-        map[cat] = (map[cat] || 0) + parseFloat(e.amount || 0);
-      });
-    return Object.entries(map)
-      .map(([category, total]) => ({ category, total }))
-      .sort((a, b) => b.total - a.total);
-  }, [data.entries]);
+  const expenseBreakdown = data.expenseCategories;
 
   // Export the P&L ledger as a CSV audit file
   const handleDownload = () => {
@@ -37,6 +34,8 @@ export function ProfitLossReport() {
         ['Gross Revenue (KES)', data.revenue],
         ['Total Expenses (KES)', data.expenses],
         ['Net Profit (KES)', data.net],
+        ['All matching ledger entries', data.totalEntries],
+        ['Exported ledger rows (latest 500)', data.entries.length],
         [],
         ['Date', 'Type', 'Category', 'Description', 'Amount (KES)'],
         ...data.entries.map(e => [
@@ -71,9 +70,17 @@ export function ProfitLossReport() {
         // apiCall attaches the admin Bearer — /api/admin/ledger is
         // session-gated (see backend/routes/admin.js).
         const result = await apiCall(`/admin/ledger${location.search}`);
-        const rev = result.entries.filter(e => e.entry_type === 'invoice_payment' || e.entry_type === 'income').reduce((s, e) => s + parseFloat(e.amount), 0);
-        const exp = result.entries.filter(e => e.entry_type === 'expense').reduce((s, e) => s + parseFloat(e.amount), 0);
-        setData({ revenue: rev, expenses: exp, net: rev - exp, entries: result.entries });
+        if (!result.summary) throw new Error("The ledger did not return aggregate financial totals.");
+        setData({
+          revenue: Number(result.summary.revenue) || 0,
+          invoicePayments: Number(result.summary.invoice_payment_revenue) || 0,
+          otherIncome: Number(result.summary.income_revenue) || 0,
+          expenses: Number(result.summary.expenses) || 0,
+          net: Number(result.summary.net_income) || 0,
+          entries: result.entries || [],
+          expenseCategories: result.summary.expense_categories || [],
+          totalEntries: Number(result.summary.total_entries) || 0,
+        });
       } catch (err) {
         console.error('P&L fetch failed:', err);
       } finally {
@@ -127,8 +134,10 @@ export function ProfitLossReport() {
          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
             <div className="space-y-6">
               <h4 className="text-[10px] font-black text-white uppercase tracking-[0.4em] border-b border-white/5 pb-4">Revenue Streams</h4>
-              {['invoice_payment', 'income'].map(type => {
-                const amount = data.entries.filter(e => e.entry_type === type).reduce((s, e) => s + parseFloat(e.amount), 0);
+              {[
+                { type: 'invoice_payment', amount: data.invoicePayments },
+                { type: 'income', amount: data.otherIncome },
+              ].map(({ type, amount }) => {
                 const p = data.revenue > 0 ? (amount / data.revenue) * 100 : 0;
                 return (
                   <div key={type} className="space-y-3">

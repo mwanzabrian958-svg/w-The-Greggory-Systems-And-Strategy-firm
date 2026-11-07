@@ -15,6 +15,7 @@ export function Billing() {
   const [sendingId, setSendingId] = useState(null);
   const [recordingId, setRecordingId] = useState(null);
   const [notice, setNotice] = useState(null);
+  const [loadError, setLoadError] = useState("");
   const [financials, setFinancials] = useState({
     revenue: 0, expenses: 0, net_income: 0, outstanding: 0,
     entries: [], invoices: [], mpesa: []
@@ -25,6 +26,7 @@ export function Billing() {
   const fetchFinancialData = async () => {
     try {
       setLoading(true);
+      setLoadError("");
       const [ledgerRes, invoiceRes, mpesaRes] = await Promise.all([
         apiCall("/admin/ledger"),
         apiCall("/invoices"),
@@ -33,25 +35,24 @@ export function Billing() {
 
       const entries = ledgerRes.entries || [];
       const invoices = invoiceRes.invoices || invoiceRes.data || (Array.isArray(invoiceRes) ? invoiceRes : []);
-      const totalRevenue = entries.filter(e => e.entry_type === 'income' || e.entry_type === 'invoice_payment').reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-      const totalExpenses = entries.filter(e => e.entry_type === 'expense').reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-
-      // Outstanding = sum of invoices not yet marked paid
-      const outstanding = invoices
-        .filter(inv => String(inv.status || '').toLowerCase() !== 'paid')
-        .reduce((s, inv) => s + parseFloat(inv.total_amount_kes || 0), 0);
+      const summary = ledgerRes.summary;
+      if (!summary) throw new Error("The ledger did not return its financial totals. Refresh before relying on these figures.");
+      if (!invoiceRes.summary) throw new Error("The invoice service did not return aggregate balances. Refresh before relying on these figures.");
 
       const mpesaList = Array.isArray(mpesaRes) ? mpesaRes : ((mpesaRes && (mpesaRes.transactions || mpesaRes.data)) || []);
       setFinancials({
-        revenue: totalRevenue,
-        expenses: totalExpenses,
-        net_income: totalRevenue - totalExpenses,
-        outstanding,
+        revenue: Number(summary.revenue) || 0,
+        expenses: Number(summary.expenses) || 0,
+        net_income: Number(summary.net_income) || 0,
+        outstanding: Number(invoiceRes.summary.outstanding_total) || 0,
         entries,
         invoices,
         mpesa: mpesaList
       });
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+    } catch (e) {
+      console.error(e);
+      setLoadError(e.message || "Could not load financial records.");
+    } finally { setLoading(false); }
   };
 
   const handleSendInvoice = async (inv) => {
@@ -168,11 +169,21 @@ export function Billing() {
     </div>
   );
 
+  if (loadError) return (
+    <div role="alert" className="mx-auto max-w-2xl rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+      <p className="font-bold">Financial records could not be verified.</p>
+      <p className="mt-1">{loadError}</p>
+      <button onClick={fetchFinancialData} className="mt-4 rounded-lg bg-rose-700 px-4 py-2 font-semibold text-white hover:bg-rose-800">
+        Retry
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-6 animate-fade-in font-sans max-w-[1200px] mx-auto pb-10">
 
       {notice && (
-        <div className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border ${notice.ok ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}`}>
+        <div className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border ${notice.ok ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
           {notice.text}
         </div>
       )}

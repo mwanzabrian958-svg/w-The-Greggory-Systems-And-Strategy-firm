@@ -50,8 +50,8 @@ export function ManualEntry() {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0f172a]/95 backdrop-blur-md z-[500] flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
-      <div className="bg-[#0f172a] w-full max-w-2xl rounded-2xl border border-white/10 shadow-2xl flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 bg-[#0f172a] z-[500] flex flex-col font-sans overflow-hidden">
+      <div className="bg-[#0f172a] w-full h-full flex flex-col">
         <div className="bg-[#0f172a] px-6 py-3 flex items-center justify-between border-b border-white/5 bg-[#1e293b]/20">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-white font-black text-sm border border-white/10">GS</div>

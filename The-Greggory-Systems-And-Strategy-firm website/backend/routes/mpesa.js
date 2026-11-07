@@ -3,6 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const { initiateSTKPush } = require('../services/mpesaService');
 const db = require('../config/database');
+const { getInvoicePaymentStatus } = require('../utils/invoicePaymentStatus');
 
 // OWASP A07: constant-time comparison for the shared-secret callback path —
 // never use === on secrets (leaks prefix length via timing).
@@ -256,14 +257,24 @@ router.post(['/callback', '/callback/:urlToken'], async (req, res) => {
             `INSERT INTO accounting_entries (
               project_id, entry_type, category, amount, currency,
               transaction_date, transaction_reference, payment_method,
-              payment_status, description, created_by, created_at
-            ) VALUES (?, 'invoice_payment', 'Revenue', ?, 'KES', NOW(), ?, 'online_payment', 'completed', ?, ?, NOW())`,
+              payment_status, description, created_by, created_at, invoice_id
+            ) VALUES (?, 'invoice_payment', 'Revenue', ?, 'KES', NOW(), ?, 'online_payment', 'completed', ?, ?, NOW(),
+              (SELECT i.id
+               FROM invoices i
+               WHERE i.invoice_number = ? AND i.deleted_at IS NULL
+                 AND NOT EXISTS (
+                   SELECT 1 FROM project_invoices pi
+                   WHERE pi.invoice_number = i.invoice_number AND pi.deleted_at IS NULL
+                 )
+               LIMIT 1)
+            )`,
             [
               projectId,
               tx.amount,
               mpesaReceiptNumber || checkoutRequestId,
               `M-Pesa Payment from ${tx.phone_number} (Ref: ${tx.account_reference})`,
-              ledgerCreatedBy
+              ledgerCreatedBy,
+              tx.account_reference,
             ]
           );
           console.log(`[MPESA] Ledger Entry Created for transaction ${checkoutRequestId}`);
@@ -271,7 +282,8 @@ router.post(['/callback', '/callback/:urlToken'], async (req, res) => {
           // Resolve by invoice number across both website invoice sources.
           try {
             const [standardRows] = await db.promise().query(
-              `SELECT id, project_id, client_email, client_name, title, status
+              `SELECT id, project_id, client_email, client_name, title, status,
+                      payment_status, total_amount_kes
                FROM invoices
                WHERE invoice_number = ? AND deleted_at IS NULL
                LIMIT 1`,
@@ -292,16 +304,37 @@ router.post(['/callback', '/callback/:urlToken'], async (req, res) => {
               console.error(`[MPESA] Invoice reference ${tx.account_reference} is ambiguous across invoice tables; status was not changed`);
             } else if (standardRows.length) {
               const inv = standardRows[0];
-              const newlyPaid = !['paid', 'cancelled', 'draft'].includes(String(inv.status || '').toLowerCase());
-              if (newlyPaid) {
-                await db.promise().query(
-                  `UPDATE invoices
-                   SET status = 'paid', payment_status = 'paid', paid_date = CURDATE(), updated_at = NOW()
-                   WHERE id = ?`,
+              const status = String(inv.status || '').toLowerCase();
+              const paymentStatus = String(inv.payment_status || '').toLowerCase();
+              const canReceivePayment = !['cancelled', 'draft'].includes(status);
+              let isFullyPaid = status === 'paid' || paymentStatus === 'paid';
+              if (canReceivePayment && !isFullyPaid) {
+                const [payments] = await db.promise().query(
+                  `SELECT COALESCE(SUM(amount * COALESCE(exchange_rate, 1)), 0) AS paid_total
+                   FROM accounting_entries
+                   WHERE invoice_id = ?
+                     AND entry_type = 'invoice_payment'
+                     AND payment_status = 'completed'
+                     AND deleted_at IS NULL`,
                   [inv.id]
                 );
+                const paidTotal = Number(payments[0]?.paid_total ?? 0);
+                const invoiceTotal = Number(inv.total_amount_kes ?? 0);
+                const paymentState = getInvoicePaymentStatus(invoiceTotal, paidTotal);
+                isFullyPaid = paymentState.status === 'paid';
+                await db.promise().query(
+                  `UPDATE invoices
+                   SET status = ?, payment_status = ?, paid_date = ?, updated_at = NOW()
+                   WHERE id = ?`,
+                  [
+                    paymentState.status,
+                    paymentState.paymentStatus,
+                    isFullyPaid ? new Date() : null,
+                    inv.id,
+                  ]
+                );
               }
-              if (newlyPaid && inv.client_email) {
+              if (canReceivePayment && inv.client_email) {
                 const [clients] = await db.promise().query(
                   "SELECT id FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1",
                   [inv.client_email]
@@ -323,9 +356,9 @@ router.post(['/callback', '/callback/:urlToken'], async (req, res) => {
                   } catch (pushErr) { console.warn('[MPESA] receipt push skipped:', pushErr.message); }
                 }
               }
-              console.log(newlyPaid
-                ? `[MPESA] Invoice ${tx.account_reference} marked PAID`
-                : `[MPESA] Invoice ${tx.account_reference} was already closed; status unchanged`);
+              console.log(canReceivePayment
+                ? `[MPESA] Invoice ${tx.account_reference} payment recorded as ${isFullyPaid ? 'PAID' : 'PARTIAL'}`
+                : `[MPESA] Invoice ${tx.account_reference} was closed; status unchanged`);
             } else if (portalRows.length) {
               const inv = portalRows[0];
               const newlyPaid = !['paid', 'cancelled', 'draft'].includes(String(inv.status || '').toLowerCase());

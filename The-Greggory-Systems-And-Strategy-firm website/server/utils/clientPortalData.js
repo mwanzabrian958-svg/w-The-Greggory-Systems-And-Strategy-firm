@@ -244,7 +244,6 @@ function buildClientPortalPayload({
     budgetOverview: {
       planned: plannedBudget,
       spent: spentBudget,
-      forecast: plannedBudget > 0 ? Math.max(0, plannedBudget - spentBudget) : 0,
       variance: plannedBudget > 0 ? Math.round(((spentBudget - plannedBudget) / plannedBudget) * 100) : 0,
     },
     documentSummary,

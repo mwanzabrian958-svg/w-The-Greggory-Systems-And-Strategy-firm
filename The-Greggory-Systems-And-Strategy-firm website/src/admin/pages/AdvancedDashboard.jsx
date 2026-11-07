@@ -41,13 +41,12 @@ export function AdvancedDashboard({ user }) {
     liveUsers: 0
   });
   const [budgetOverview, setBudgetOverview] = useState({
-    spent: 0,
-    planned: 0,
-    forecast: 0,
     revenue: 0,
+    expenses: 0,
     net_income: 0,
-    remaining: 0
+    recorded_entries: 0
   });
+  const [budgetOverviewAvailable, setBudgetOverviewAvailable] = useState(false);
   const [recentActivity, setRecentActivity] = useState([]);
   const [pendingApprovals, setPendingApprovals] = useState([]);
   const [recentInvoices, setRecentInvoices] = useState([]);
@@ -80,7 +79,12 @@ export function AdvancedDashboard({ user }) {
         setRecentActivity(dashRes.dashboard.recentActivity || []);
       }
 
-      if (budgetRes.success) setBudgetOverview(budgetRes.data || {});
+      if (budgetRes.success && budgetRes.data) {
+        setBudgetOverview(budgetRes.data);
+        setBudgetOverviewAvailable(true);
+      } else {
+        setBudgetOverviewAvailable(false);
+      }
       if (approvalsRes.success) setPendingApprovals(approvalsRes.data || []);
       if (Array.isArray(invoicesRes)) {
         setRecentInvoices(invoicesRes.slice(0, 5));
@@ -99,6 +103,7 @@ export function AdvancedDashboard({ user }) {
       }
 
     } catch (error) {
+      setBudgetOverviewAvailable(false);
       console.error("Telemetry Node Failure:", error);
     } finally {
       setLoading(false);
@@ -143,11 +148,11 @@ export function AdvancedDashboard({ user }) {
           <div className="flex gap-3">
             <button onClick={() => navigate('/admin/billing')} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 hover:bg-white/10 transition-all text-left group">
               <p className="text-[6px] text-slate-500 font-black uppercase tracking-widest group-hover:text-teal-400">Revenue</p>
-              <p className="text-sm font-black text-white">{formatKSH(budgetOverview?.revenue)}</p>
+              <p className="text-sm font-black text-white">{budgetOverviewAvailable ? formatKSH(budgetOverview?.revenue) : "Unavailable"}</p>
             </button>
             <button onClick={() => navigate('/admin/billing/pl-report')} className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 hover:bg-white/10 transition-all text-left group">
               <p className="text-[6px] text-slate-500 font-black uppercase tracking-widest group-hover:text-teal-400">Net Income</p>
-              <p className="text-sm font-black text-white">{formatKSH(budgetOverview?.net_income)}</p>
+              <p className="text-sm font-black text-white">{budgetOverviewAvailable ? formatKSH(budgetOverview?.net_income) : "Unavailable"}</p>
             </button>
           </div>
         </div>
@@ -198,10 +203,10 @@ export function AdvancedDashboard({ user }) {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Total Burn", val: budgetOverview?.expenses, color: "text-slate-900" },
-            { label: "Spent Node", val: budgetOverview?.spent, color: "text-teal-600" },
-            { label: "Remaining", val: budgetOverview?.remaining, color: "text-blue-600" },
-            { label: "Forecast", val: budgetOverview?.forecast, color: "text-teal-700" }
+            { label: "Recorded Revenue", val: budgetOverviewAvailable ? formatKSH(budgetOverview?.revenue) : "Unavailable", color: "text-emerald-600" },
+            { label: "Recorded Expenses", val: budgetOverviewAvailable ? formatKSH(budgetOverview?.expenses) : "Unavailable", color: "text-rose-600" },
+            { label: "Net Income", val: budgetOverviewAvailable ? formatKSH(budgetOverview?.net_income) : "Unavailable", color: "text-blue-600" },
+            { label: "Completed Entries", val: budgetOverviewAvailable ? Number(budgetOverview?.recorded_entries || 0).toLocaleString() : "Unavailable", color: "text-teal-700" }
           ].map(node => (
             <div
               key={node.label}
@@ -209,7 +214,7 @@ export function AdvancedDashboard({ user }) {
               className="bg-slate-50 rounded-xl p-3 border border-slate-100 cursor-pointer hover:bg-white hover:shadow-inner transition-all"
             >
               <p className="text-[6px] text-slate-400 font-black uppercase tracking-widest">{node.label}</p>
-              <p className={`text-base font-black mt-1 ${node.color}`}>{formatKSH(node.val)}</p>
+              <p className={`text-base font-black mt-1 ${node.color}`}>{node.val}</p>
             </div>
           ))}
         </div>

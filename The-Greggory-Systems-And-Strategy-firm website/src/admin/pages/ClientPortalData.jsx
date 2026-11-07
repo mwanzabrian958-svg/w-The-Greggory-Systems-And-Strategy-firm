@@ -560,7 +560,6 @@ export function ClientPortalData({ user }) {
                 <div className="grid grid-cols-2 gap-3">
                   {statTile("Planned", formatKSH(budget.planned || 0))}
                   {statTile("Spent", formatKSH(budget.spent || 0), "text-rose-500")}
-                  {statTile("Forecast", formatKSH(budget.forecast || 0), "text-teal-600")}
                   {statTile("Variance", `${budget.variance ?? 0}%`, (budget.variance || 0) > 0 ? "text-rose-500" : "text-emerald-600")}
                 </div>
               </div>
