@@ -607,7 +607,7 @@ const Home = () => {
             </h2>
             <div className="h-px w-8 bg-gold-500 mx-auto mb-5" />
           </div>
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
             <div>
               <img src="/systems-analysis.jpg" alt="Systems design and architecture" loading="lazy" className="w-full md:float-none md:w-full h-48 sm:h-56 object-cover rounded-2xl shadow-lg md:mr-0 mb-5" />
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Systems Design & Architecture</h3>
@@ -658,14 +658,14 @@ const Home = () => {
 
         {/* ── HOW WE DELIVER ── */}
         <section className="py-14 bg-slate-50">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">How We Deliver</h2>
               <div className="h-px w-8 bg-gold-500 mx-auto mb-3" />
               <p className="text-[11px] text-slate-500 max-w-lg mx-auto">A proven four-phase approach spanning systems, strategy, and network infrastructure. Each phase is executed with rigor, transparency, and a clear focus on measurable outcomes.</p>
             </div>
 
-            <div className="max-w-6xl mx-auto space-y-12">
+            <div className="w-full max-w-[1400px] mx-auto space-y-12">
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
@@ -818,14 +818,14 @@ const Home = () => {
 
         {/* ── WHAT WE DELIVER ── */}
         <section className="py-14 bg-white">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">What We Deliver</h2>
               <div className="h-px w-8 bg-gold-500 mx-auto mb-3" />
               <p className="text-[11px] text-slate-500 max-w-lg mx-auto">Full-cycle technology, strategy, and infrastructure services. From concept to deployment and ongoing support, we handle every layer of the stack.</p>
             </div>
 
-            <div className="max-w-6xl mx-auto space-y-12">
+            <div className="w-full max-w-[1400px] mx-auto space-y-12">
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
@@ -1284,7 +1284,7 @@ const Home = () => {
 
         {/* ── TERMS OF USE ── */}
         <section className="py-14 bg-white">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold-600 mb-2">Terms of Use</p>
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">A formal framework for working together</h2>
@@ -1294,7 +1294,7 @@ const Home = () => {
               </p>
             </div>
 
-            <div className="max-w-6xl mx-auto space-y-12">
+            <div className="w-full max-w-[1400px] mx-auto space-y-12">
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
@@ -1442,8 +1442,8 @@ const Home = () => {
             </div>
           </div>
 
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
-            <div className="max-w-6xl mx-auto space-y-12">
+          <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+            <div className="w-full max-w-[1400px] mx-auto space-y-12">
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
