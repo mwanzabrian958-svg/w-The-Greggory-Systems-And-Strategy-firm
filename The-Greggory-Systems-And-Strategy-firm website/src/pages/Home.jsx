@@ -395,13 +395,14 @@ const Home = () => {
               </p>
             </div>
 
-            <div className="relative group max-w-5xl mx-auto px-4 sm:px-10 lg:px-20">
+            <div className="relative group w-screen max-w-none left-1/2 -translate-x-1/2 px-0">
               <div className="absolute inset-0 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[60px] border-2 border-slate-200 dark:border-white/10 shadow-2xl dark:shadow-[0_0_100px_rgba(0,0,0,0.5)] transform -rotate-2 scale-[1.02]" />
 
               <div className="relative z-10 bg-white dark:bg-[#0f172a] rounded-[40px] overflow-hidden shadow-2xl border-4 border-slate-100 dark:border-white/10 p-2 sm:p-4 lg:p-6 transition-all duration-500 hover:rotate-0 transform rotate-1">
                 <div className="relative">
                   <video
                     ref={videoRef}
+                    src="/featured-insight.mp4"
                     className="w-full aspect-video rounded-[30px] object-cover shadow-inner"
                     autoPlay
                     playsInline
