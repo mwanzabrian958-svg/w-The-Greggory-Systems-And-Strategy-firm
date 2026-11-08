@@ -46,7 +46,7 @@ services:
       # bundler garbage-collects before the container gets OOM-killed mid-build.
       - key: NODE_OPTIONS
         value: --max-old-space-size=460
-      # ---- Cloud MySQL (Aiven free tier) ----
+      # ---- Google Sign-In (frontend client ID, not a secret) ----\n      # Needed for the Google Sign-In button to render in production.\n      # Get from: https://console.cloud.google.com/apis/credentials\n      # (the client ID is not a secret - it ships in the frontend bundle)\n      - key: VITE_GOOGLE_CLIENT_ID\n        sync: false\n      # ---- SEO / Site URL ----\n      # Drives sitemap.xml, robots.txt, canonical and og:url at BUILD time.\n      # Set to the live URL (e.g. https://w-the-greggory-systems-and-strategy-firm-1vf9.onrender.com)\n      # Falls back to Render's RENDER_EXTERNAL_URL if left blank.\n      - key: SITE_URL\n        sync: false\n      # ---- Cloud MySQL (Aiven free tier) ----
       # Use DATABASE_URL with Aiven's mysql:// service URI, OR the split DB_*
       # variables below. The URI's path supplies DB_NAME and ssl-mode=REQUIRED
       # is honored by server/config/dbEndpoints.js.
