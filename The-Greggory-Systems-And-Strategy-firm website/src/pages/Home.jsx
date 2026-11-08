@@ -609,6 +609,7 @@ const Home = () => {
           </div>
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
             <div>
+              <img src="/systems-analysis.jpg" alt="Systems design and architecture" loading="lazy" className="w-full md:float-left md:w-1/3 h-48 sm:h-56 object-cover rounded-2xl shadow-lg md:mr-6 mb-5" />
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Systems Design & Architecture</h3>
               <div className="space-y-4">
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -623,6 +624,7 @@ const Home = () => {
               </div>
             </div>
             <div>
+              <img src="/strategy-formulation.jpg" alt="Strategy and business intelligence" loading="lazy" className="w-full md:float-left md:w-1/3 h-48 sm:h-56 object-cover rounded-2xl shadow-lg md:mr-6 mb-5" />
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Strategy & Business Intelligence</h3>
               <div className="space-y-4">
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -637,6 +639,7 @@ const Home = () => {
               </div>
             </div>
             <div>
+              <img src="/network-systems-build.jpg" alt="Networks and infrastructure" loading="lazy" className="w-full md:float-left md:w-1/3 h-48 sm:h-56 object-cover rounded-2xl shadow-lg md:mr-6 mb-5" />
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Networks & Infrastructure</h3>
               <div className="space-y-4">
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -663,9 +666,9 @@ const Home = () => {
             </div>
 
             <div className="max-w-4xl mx-auto space-y-12">
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {analysisImgOk ? (
                       <img
                         src="/systems-analysis.jpg"
@@ -700,9 +703,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {strategyImgOk ? (
                       <img
                         src="/strategy-formulation.jpg"
@@ -737,9 +740,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {buildImgOk ? (
                       <img
                         src="/network-systems-build.jpg"
@@ -774,9 +777,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {supportImgOk ? (
                       <img
                         src="/optimization-support.jpg"
@@ -823,9 +826,9 @@ const Home = () => {
             </div>
 
             <div className="max-w-4xl mx-auto space-y-12">
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {svc1DesignImgOk ? (
                       <img
                         src="/deliver-systems-design.jpg"
@@ -860,9 +863,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {svc2StrategyImgOk ? (
                       <img
                         src="/deliver-strategic-creation.jpg"
@@ -897,9 +900,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {svc3MaintImgOk ? (
                       <img
                         src="/deliver-continuous-maintenance.jpg"
@@ -934,9 +937,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {svc4WebDevImgOk ? (
                       <img
                         src="/deliver-website-development.jpg"
@@ -968,9 +971,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {svc5AppsImgOk ? (
                       <img
                         src="/deliver-web-desktop-apps.jpg"
@@ -1005,9 +1008,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {svc6MobileImgOk ? (
                       <img
                         src="/deliver-mobile-applications.jpg"
@@ -1042,9 +1045,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {svc7SupportImgOk ? (
                       <img
                         src="/deliver-product-support.jpg"
@@ -1079,9 +1082,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {svc8HardwareImgOk ? (
                       <img
                         src="/deliver-hardware-installations.jpg"
@@ -1116,9 +1119,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {svc9NetworkImgOk ? (
                       <img
                         src="/deliver-network-infrastructure.jpg"
@@ -1153,9 +1156,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10 overflow-hidden">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     {svc10ConsultImgOk ? (
                       <img
                         src="/deliver-strategy-consultations.jpg"
@@ -1292,10 +1295,10 @@ const Home = () => {
             </div>
 
             <div className="max-w-3xl mx-auto space-y-12">
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                    <FileText className="w-4 h-4" />
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
+                    <img src="/strategy-formulation.jpg" alt="Acceptance of terms" loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1311,10 +1314,10 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                    <Target className="w-4 h-4" />
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
+                    <img src="/systems-analysis.jpg" alt="Scope of services" loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1330,10 +1333,10 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                    <UserCheck className="w-4 h-4" />
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
+                    <img src="/deliver-product-support.jpg" alt="Authorized access" loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1349,10 +1352,10 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                    <Lock className="w-4 h-4" />
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
+                    <img src="/deliver-network-infrastructure.jpg" alt="Confidentiality and data protection" loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1368,10 +1371,10 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                    <Shield className="w-4 h-4" />
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
+                    <img src="/deliver-systems-design.jpg" alt="Intellectual property" loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1387,10 +1390,10 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
-                    <AlertCircle className="w-4 h-4" />
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
+                    <img src="/deliver-continuous-maintenance.jpg" alt="Limitation of liability" loading="lazy" className="w-full h-full object-cover" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1406,9 +1409,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                 </div>
@@ -1441,9 +1444,9 @@ const Home = () => {
 
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
             <div className="max-w-3xl mx-auto space-y-12">
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     <Globe className="w-4 h-4" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
@@ -1460,9 +1463,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     <Clock className="w-4 h-4" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
@@ -1479,9 +1482,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     <Award className="w-4 h-4" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
@@ -1498,9 +1501,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     <Lock className="w-4 h-4" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
@@ -1517,9 +1520,9 @@ const Home = () => {
                 </div>
               </div>
 
-              <div className="relative pl-16">
-                <div className="absolute left-0 top-0 flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-md shadow-gold-500/10">
+              <div className="grid md:grid-cols-[minmax(190px,30%)_1fr] gap-6 items-start">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
                     <Phone className="w-4 h-4" />
                   </div>
                 </div>
