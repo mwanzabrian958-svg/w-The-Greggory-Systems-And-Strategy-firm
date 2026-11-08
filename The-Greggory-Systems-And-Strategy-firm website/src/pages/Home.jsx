@@ -395,14 +395,21 @@ const Home = () => {
                   ref={videoRef}
                   className="absolute inset-0 h-full w-full object-cover"
                   autoPlay
-                  controls
-                  loop
-                  muted
                   playsInline
+                  muted
+                  loop
+                  controls
                   poster="/video-placeholder.jpg"
                   onTimeUpdate={handleVideoTimeUpdate}
+                  onError={(e) => {
+                    console.error("Video playback error:", e);
+                  }}
+                  onCanPlayThrough={() => {
+                    console.log("Video can play through");
+                  }}
                 >
                   <source src="/featured-insight.mp4" type="video/mp4" />
+                  <source src="/featured-insight.webm" type="video/webm" />
                   Your browser does not support the video tag.
                 </video>
                 <div className="absolute bottom-0 right-0 z-50 pointer-events-none p-3 max-[640px]:bottom-auto max-[640px]:right-auto max-[640px]:left-0 max-[640px]:top-0 max-[640px]:p-2">
