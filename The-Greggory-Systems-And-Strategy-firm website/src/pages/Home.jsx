@@ -209,9 +209,6 @@ const Home = () => {
   useEffect(() => {
     const video = videoRef.current
     if (video) {
-      video.muted = true
-      video.defaultMuted = true
-      video.setAttribute('muted', '')
       video.preload = 'auto'
     }
 
@@ -221,7 +218,6 @@ const Home = () => {
           if (entry.isIntersecting) {
             const currentVideo = videoRef.current
             if (currentVideo) {
-              currentVideo.muted = true
               currentVideo.play().catch(() => { })
             }
           } else {
@@ -406,10 +402,8 @@ const Home = () => {
                 <div className="relative">
                   <video
                     ref={videoRef}
-                    className="w-full h-auto rounded-[30px] shadow-inner"
+                    className="w-full aspect-video rounded-[30px] object-cover shadow-inner"
                     autoPlay
-                    muted
-                    defaultMuted
                     playsInline
                     loop
                     controls
@@ -423,13 +417,13 @@ const Home = () => {
                     Your browser does not support the video tag.
                   </video>
 
-                  <div className="absolute bottom-0 right-0 z-50 pointer-events-none">
-                    <div className="w-[28%] sm:w-[22%] max-w-[190px] min-w-[92px] bg-white p-1 sm:p-2 rounded-tl-xl shadow-[0_0_30px_rgba(255,255,255,0.4)] border-2 border-white/50">
+                  <div className="absolute bottom-0 right-0 z-50 pointer-events-none p-2 sm:p-4">
+                    <div className="bg-white p-1 sm:p-2 rounded-xl shadow-[0_0_30px_rgba(255,255,255,0.4)] border-2 border-white/50">
                       <img
                         src="/score-1.jpg"
                         alt="The Greggory Systems And Strategy Firm logo and name"
                         loading="lazy"
-                        className="w-full rounded-lg object-contain"
+                        className="h-12 sm:h-20 w-auto rounded-lg object-contain"
                       />
                     </div>
                   </div>
