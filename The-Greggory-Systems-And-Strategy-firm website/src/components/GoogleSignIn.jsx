@@ -4,22 +4,25 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { usersAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-// Google Sign-In is driven entirely by VITE_GOOGLE_CLIENT_ID, which Vite bakes
-// into the bundle at BUILD time (import.meta.env is not read at runtime). A
-// missing/placeholder value can never work, so the widget is hidden instead of
-// rendering a broken Google button — and the dev console says exactly why.
-const GOOGLE_CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+// The client ID is public and is normally supplied by VITE_GOOGLE_CLIENT_ID.
+// Keep the configured production client as a fallback because Vite embeds
+// environment variables at build time; a Render build that misses the
+// variable should not remove the sign-in button from the deployed UI.
+const GOOGLE_CLIENT_ID_FALLBACK =
+  '185973717779-47ao92saus16o75abmk059cmqdr6qq52.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID =
+  (import.meta.env.VITE_GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID_FALLBACK).trim();
 export const googleSignInEnabled =
   Boolean(GOOGLE_CLIENT_ID) && !/your_google_client_id/i.test(GOOGLE_CLIENT_ID);
 
-if (!googleSignInEnabled && import.meta.env?.DEV) {
+if (!import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env?.DEV) {
   // Dev-only hint (stripped from production builds): explains why the
-  // Google button is hidden instead of rendering broken.
+  // the configured fallback is being used.
   if (typeof console !== 'undefined') {
     console.warn(
-      '[GoogleSignIn] hidden — VITE_GOOGLE_CLIENT_ID is empty or still the placeholder. ' +
-        'Set it in .env to the SAME OAuth 2.0 client id as GOOGLE_CLIENT_ID, then RESTART the ' +
-        'dev server (Vite reads .env only at start-up; production needs it set at build time). ' +
+      '[GoogleSignIn] VITE_GOOGLE_CLIENT_ID is missing; using the configured public production ' +
+        'client ID fallback. Set it in .env to the SAME OAuth 2.0 client id as GOOGLE_CLIENT_ID, then RESTART the ' +
+        'dev server. ' +
         'Full walkthrough: GOOGLE_SIGNIN_SETUP.md'
     );
   }
