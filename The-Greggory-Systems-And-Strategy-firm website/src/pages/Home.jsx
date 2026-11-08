@@ -11,6 +11,7 @@ import { getYearsActiveLabel } from '../utils/companyStats'
 const Home = () => {
   useSeo(SEO.home)
   const videoRef = useRef(null)
+  const videoSectionRef = useRef(null)
   const carouselRef = useRef(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [selectedProject, setSelectedProject] = useState(null)
@@ -208,9 +209,8 @@ const Home = () => {
 
   useEffect(() => {
     const video = videoRef.current
-    if (video) {
-      video.preload = 'auto'
-    }
+    const videoSection = videoSectionRef.current
+    if (video) video.preload = 'metadata'
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -225,10 +225,10 @@ const Home = () => {
           }
         })
       },
-      { threshold: 0.2 }
+      { threshold: 0.35 }
     )
-    if (video) observer.observe(video)
-    return () => { if (video) observer.unobserve(video) }
+    if (videoSection) observer.observe(videoSection)
+    return () => { if (videoSection) observer.unobserve(videoSection) }
   }, [])
 
   const stats = [
@@ -383,7 +383,7 @@ const Home = () => {
         </section>
 
         {/* Video Section - Compacted */}
-        <section className="py-12 sm:py-16 bg-slate-100 dark:bg-[#050b14] text-slate-900 dark:text-white relative transition-colors overflow-hidden">
+        <section ref={videoSectionRef} className="py-12 sm:py-16 bg-slate-100 dark:bg-[#050b14] text-slate-900 dark:text-white relative transition-colors overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent" />
 
           <div className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -404,14 +404,12 @@ const Home = () => {
                     ref={videoRef}
                     src="/featured-insight.mp4"
                     className="w-full aspect-video rounded-[30px] object-cover shadow-inner"
-                    autoPlay
                     playsInline
                     loop
                     controls
-                    preload="auto"
+                    preload="metadata"
                     poster="/video-placeholder.jpg"
                     onTimeUpdate={handleVideoTimeUpdate}
-                    onCanPlay={() => videoRef.current?.play().catch(() => { })}
                     onError={(event) => console.error('Video playback error:', event)}
                   >
                     <source src="/featured-insight.mp4" type="video/mp4" />
@@ -609,7 +607,7 @@ const Home = () => {
           </div>
           <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
             <div>
-              <img src="/systems-analysis.jpg" alt="Systems design and architecture" loading="lazy" className="w-full md:float-none md:w-full h-48 sm:h-56 object-cover rounded-2xl shadow-lg md:mr-0 mb-5" />
+              <img src="/systems-analysis.jpg" alt="Systems design and architecture" loading="lazy" className="block w-full max-w-[900px] h-auto max-h-[420px] object-contain bg-slate-50 rounded-2xl shadow-lg md:mr-0 mb-5 mx-auto" />
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Systems Design & Architecture</h3>
               <div className="space-y-4">
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -624,7 +622,7 @@ const Home = () => {
               </div>
             </div>
             <div>
-              <img src="/strategy-formulation.jpg" alt="Strategy and business intelligence" loading="lazy" className="w-full md:float-none md:w-full h-48 sm:h-56 object-cover rounded-2xl shadow-lg md:mr-0 mb-5" />
+              <img src="/strategy-formulation.jpg" alt="Strategy and business intelligence" loading="lazy" className="block w-full max-w-[900px] h-auto max-h-[420px] object-contain bg-slate-50 rounded-2xl shadow-lg md:mr-0 mb-5 mx-auto" />
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Strategy & Business Intelligence</h3>
               <div className="space-y-4">
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -639,7 +637,7 @@ const Home = () => {
               </div>
             </div>
             <div>
-              <img src="/network-systems-build.jpg" alt="Networks and infrastructure" loading="lazy" className="w-full md:float-none md:w-full h-48 sm:h-56 object-cover rounded-2xl shadow-lg md:mr-0 mb-5" />
+              <img src="/network-systems-build.jpg" alt="Networks and infrastructure" loading="lazy" className="block w-full max-w-[900px] h-auto max-h-[420px] object-contain bg-slate-50 rounded-2xl shadow-lg md:mr-0 mb-5 mx-auto" />
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Networks & Infrastructure</h3>
               <div className="space-y-4">
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
@@ -674,7 +672,7 @@ const Home = () => {
                         src="/systems-analysis.jpg"
                         alt="Systems analysis"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setAnalysisImgOk(false)}
                       />
                     ) : (
@@ -711,7 +709,7 @@ const Home = () => {
                         src="/strategy-formulation.jpg"
                         alt="Strategy formulation"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setStrategyImgOk(false)}
                       />
                     ) : (
@@ -748,7 +746,7 @@ const Home = () => {
                         src="/network-systems-build.jpg"
                         alt="Network and systems build"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setBuildImgOk(false)}
                       />
                     ) : (
@@ -785,11 +783,11 @@ const Home = () => {
                         src="/optimization-support.jpg"
                         alt="Optimization and support"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSupportImgOk(false)}
                       />
                     ) : (
-                      <img src="/deliver-network-infrastructure.jpg" alt="Termination and enforcement" loading="lazy" className="w-full h-full object-cover" />
+                      <img src="/deliver-network-infrastructure.jpg" alt="Termination and enforcement" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                     )}
                   </div>
                 </div>
@@ -834,7 +832,7 @@ const Home = () => {
                         src="/deliver-systems-design.jpg"
                         alt="Systems design"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSvc1DesignImgOk(false)}
                       />
                     ) : (
@@ -871,7 +869,7 @@ const Home = () => {
                         src="/deliver-strategic-creation.jpg"
                         alt="Strategic creation"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSvc2StrategyImgOk(false)}
                       />
                     ) : (
@@ -908,7 +906,7 @@ const Home = () => {
                         src="/deliver-continuous-maintenance.jpg"
                         alt="Continuous maintenance"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSvc3MaintImgOk(false)}
                       />
                     ) : (
@@ -945,11 +943,11 @@ const Home = () => {
                         src="/deliver-website-development.jpg"
                         alt="Website development"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSvc4WebDevImgOk(false)}
                       />
                     ) : (
-                      <img src="/deliver-strategy-consultations.jpg" alt="Service areas" loading="lazy" className="w-full h-full object-cover" />
+                      <img src="/deliver-strategy-consultations.jpg" alt="Service areas" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                     )}
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
@@ -979,7 +977,7 @@ const Home = () => {
                         src="/deliver-web-desktop-apps.jpg"
                         alt="Web and desktop applications"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSvc5AppsImgOk(false)}
                       />
                     ) : (
@@ -1016,7 +1014,7 @@ const Home = () => {
                         src="/deliver-mobile-applications.jpg"
                         alt="Mobile applications"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSvc6MobileImgOk(false)}
                       />
                     ) : (
@@ -1053,7 +1051,7 @@ const Home = () => {
                         src="/deliver-product-support.jpg"
                         alt="Product maintenance and support"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSvc7SupportImgOk(false)}
                       />
                     ) : (
@@ -1090,7 +1088,7 @@ const Home = () => {
                         src="/deliver-hardware-installations.jpg"
                         alt="Hardware and software installations"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSvc8HardwareImgOk(false)}
                       />
                     ) : (
@@ -1127,7 +1125,7 @@ const Home = () => {
                         src="/deliver-network-infrastructure.jpg"
                         alt="Network installations and infrastructure"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSvc9NetworkImgOk(false)}
                       />
                     ) : (
@@ -1164,7 +1162,7 @@ const Home = () => {
                         src="/deliver-strategy-consultations.jpg"
                         alt="Strategy consultations and general projects"
                         loading="lazy"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain bg-slate-50 p-2"
                         onError={() => setSvc10ConsultImgOk(false)}
                       />
                     ) : (
@@ -1298,7 +1296,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/strategy-formulation.jpg" alt="Acceptance of terms" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/strategy-formulation.jpg" alt="Acceptance of terms" loading="lazy"                     className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1317,7 +1315,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/systems-analysis.jpg" alt="Scope of services" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/systems-analysis.jpg" alt="Scope of services" loading="lazy"                     className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1336,7 +1334,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/deliver-product-support.jpg" alt="Authorized access" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/deliver-product-support.jpg" alt="Authorized access" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1355,7 +1353,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/deliver-network-infrastructure.jpg" alt="Confidentiality and data protection" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/deliver-network-infrastructure.jpg" alt="Confidentiality and data protection" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1374,7 +1372,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/deliver-systems-design.jpg" alt="Intellectual property" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/deliver-systems-design.jpg" alt="Intellectual property" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1393,7 +1391,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/deliver-continuous-maintenance.jpg" alt="Limitation of liability" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/deliver-continuous-maintenance.jpg" alt="Limitation of liability" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1412,7 +1410,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/deliver-network-infrastructure.jpg" alt="Termination and enforcement" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/deliver-network-infrastructure.jpg" alt="Termination and enforcement" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                 </div>
                 <div>
@@ -1447,7 +1445,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/deliver-strategy-consultations.jpg" alt="Service areas" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/deliver-strategy-consultations.jpg" alt="Service areas" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1466,7 +1464,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/deliver-continuous-maintenance.jpg" alt="Response commitment" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/deliver-continuous-maintenance.jpg" alt="Response commitment" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1485,7 +1483,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/deliver-strategic-creation.jpg" alt="Client success" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/deliver-strategic-creation.jpg" alt="Client success" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1504,7 +1502,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/deliver-systems-design.jpg" alt="Data protection and confidentiality" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/deliver-systems-design.jpg" alt="Data protection and confidentiality" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                   <div className="w-px h-full bg-slate-200 mt-2" />
                 </div>
@@ -1523,7 +1521,7 @@ const Home = () => {
               <div className="grid md:grid-cols-1 gap-6 items-start">
                 <div className="relative flex flex-col items-center">
                   <div className="w-full h-40 sm:h-48 rounded-2xl bg-gradient-to-br from-gold-500 to-gold-600 text-white flex items-center justify-center shadow-lg shadow-gold-500/10 overflow-hidden">
-                    <img src="/deliver-product-support.jpg" alt="Accessibility and support" loading="lazy" className="w-full h-full object-cover" />
+                    <img src="/deliver-product-support.jpg" alt="Accessibility and support" loading="lazy" className="w-full h-full object-contain bg-slate-50 p-2" />
                   </div>
                 </div>
                 <div>
